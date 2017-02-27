@@ -12,3 +12,10 @@ Documentation:
 
 Contributing:
 - See the contributing guidelines provided in `CONTRIBUTING.md`
+
+Download:
+```
+git clone https://git.scc.kit.edu/WAVE/IFOS.git
+git submodule init
+git submodule update
+```
