@@ -1,0 +1,10 @@
+stages:
+    - build
+
+gcc:
+  stage: build
+  before_script:
+    - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
+  script:
+    - echo "g++ Version:" && g++ --version
+
