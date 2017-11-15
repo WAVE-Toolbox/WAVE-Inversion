@@ -98,8 +98,6 @@ int main(int argc, char *argv[])
     //     /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
     model->init(config, ctx, dist);
-    lama::Vector &VelocityP = model->getVelocityP();
-  //  lama::Vector &Density = model->getDensity();
 
     /* --------------------------------------- */
     /* Forward solver                          */
@@ -143,6 +141,8 @@ int main(int argc, char *argv[])
     wavefieldrecordp.allocate(dist, no_dist_NT);
     wavefieldrecordp.setContextPtr(ctx);
 
+   // lama::GridVector<ValueType> wavefieldStorage;
+    
     lama::Scalar Misfit;
     lama::Scalar MisfitSum;
     lama::Scalar MisfitSumTemp;
@@ -153,17 +153,11 @@ int main(int argc, char *argv[])
     /*               Gradients                 */
     /* --------------------------------------- */
 
-    lama::DenseVector<ValueType> grad_bulk;
-    lama::DenseVector<ValueType> grad_rho;
-    lama::DenseVector<ValueType> grad_vp;
+    lama::DenseVector<ValueType> grad_bulk(dist,ctx);
+    lama::DenseVector<ValueType> grad_rho(dist,ctx);
+    lama::DenseVector<ValueType> grad_vp(dist,ctx);
 
-    grad_vp.allocate(dist);
-    grad_vp.setContextPtr(ctx);
-    grad_bulk.allocate(dist);
-    grad_bulk.setContextPtr(ctx);
-    grad_rho.allocate(dist);
-    grad_rho.setContextPtr(ctx);
-
+    lama::DenseVector<ValueType> modelupdate(dist,ctx);
     /* --------------------------------------- */
     /* Adjoint sources:                         */
     /* --------------------------------------- */
@@ -224,8 +218,8 @@ if (config.get<bool>("runForward"))
                 /* --------------------------------------- */
                 /* Adjoint sources:                         */
                 /* --------------------------------------- */
-                std::string FiledSeisName("seismograms/rectangle.true");
-                truedata.readFromFileRaw(FiledSeisName +".It0" + ".shot" + std::to_string(shotNumber) + ".p.mtx", adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData().getRowDistributionPtr(), NULL);
+                std::string fieldSeisName("seismograms/rectangle.true");
+                truedata.readFromFileRaw(fieldSeisName +".It0" + ".shot" + std::to_string(shotNumber) + ".p.mtx", adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData().getRowDistributionPtr(), NULL);
                 synthetic = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P);
 
 
@@ -315,8 +309,10 @@ if (config.get<bool>("runForward"))
             grad_vp *= 1 / grad_vp.max() * (steplength);
       //      grad_rho *= 1 / grad_rho.max() * 50;
 
+
+	    modelupdate=model->getVelocityP()-grad_vp;
             //  temp-=grad_vp;
-            VelocityP -= grad_vp;
+            model->setVelocityP(modelupdate);
           //  Density -= grad_rho;
 
             //  model->getDensity()=grad_rho;
