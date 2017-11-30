@@ -20,6 +20,8 @@
 #include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
 
+#include "Optimization/GradientCalculation.hpp"
+
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
 
@@ -41,9 +43,6 @@ int main(int argc, char *argv[])
     /* Read configuration from file            */
     /* --------------------------------------- */
     Configuration::Configuration config(argv[1]);
-
-    std::string convname("gradients/waveconv");
-    std::string gradname("gradients/grad");
 
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
@@ -80,22 +79,22 @@ int main(int argc, char *argv[])
     end_t = common::Walltime::get();
     HOST_PRINT(comm, "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
 
-    //     /* --------------------------------------- */
-    //     /* Wavefields                              */
-    //     /* --------------------------------------- */
+    /* --------------------------------------- */
+    /* Wavefields                              */
+    /* --------------------------------------- */
     Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(Wavefields::Factory<ValueType>::Create(dimension, equationType));
     wavefields->init(ctx, dist);
-    //
-    //     /* --------------------------------------- */
-    //     /* Acquisition geometry                    */
-    //     /* --------------------------------------- */
+
+    /* --------------------------------------- */
+    /* Acquisition geometry                    */
+    /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receivers(config, ctx, dist);
     Acquisition::Sources<ValueType> sources(config, ctx, dist);
     //  sources.init;
 
-    //     /* --------------------------------------- */
-    //     /* Modelparameter                          */
-    //     /* --------------------------------------- */
+    /* --------------------------------------- */
+    /* Modelparameter                          */
+    /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
     model->init(config, ctx, dist);
 
@@ -107,219 +106,52 @@ int main(int argc, char *argv[])
     ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
     solver->prepareBoundaryConditions(config, *derivatives, dist, ctx);
 
-    /* --------------------------------------- */
-    /* Wavefields and Convulution fiels        */
-    /* --------------------------------------- */
-
-    lama::DenseVector<ValueType> waveconv_v;
-    lama::DenseVector<ValueType> waveconv_p;
-    lama::DenseVector<ValueType> tmp;
-    lama::DenseVector<ValueType> waveconv_v_sum;
-    lama::DenseVector<ValueType> waveconv_p_sum;
-
-    waveconv_v.allocate(dist);
-    waveconv_v.setContextPtr(ctx);
-    waveconv_p.allocate(dist);
-    waveconv_p.setContextPtr(ctx);
-    tmp.allocate(dist);
-    tmp.setContextPtr(ctx);
-    waveconv_v_sum.allocate(dist);
-    waveconv_v_sum.setContextPtr(ctx);
-    waveconv_p_sum.allocate(dist);
-    waveconv_p_sum.setContextPtr(ctx);
-
-    lama::DenseMatrix<ValueType> wavefieldrecordvx;
-    lama::DenseMatrix<ValueType> wavefieldrecordvy;
-    lama::DenseMatrix<ValueType> wavefieldrecordp;
-
     dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
 
-    wavefieldrecordvx.allocate(dist, no_dist_NT);
-    wavefieldrecordvx.setContextPtr(ctx);
-    wavefieldrecordvy.allocate(dist, no_dist_NT);
-    wavefieldrecordvy.setContextPtr(ctx);
-    wavefieldrecordp.allocate(dist, no_dist_NT);
-    wavefieldrecordp.setContextPtr(ctx);
+//     lama::GridVector<ValueType> wavefieldStorage;
+        
+    /* --------------------------------------- */
+    /* Model update                            */
+    /* --------------------------------------- */
 
-   // lama::GridVector<ValueType> wavefieldStorage;
-    
-    lama::Scalar Misfit;
-    lama::Scalar MisfitSum;
-    lama::Scalar MisfitSumTemp;
+    lama::DenseVector<ValueType> modelupdate(dist,ctx);
     
     ValueType steplength=80;
     
     /* --------------------------------------- */
-    /*               Gradients                 */
+    /*        Loop over iterations             */
     /* --------------------------------------- */
-
-    lama::DenseVector<ValueType> grad_bulk(dist,ctx);
-    lama::DenseVector<ValueType> grad_rho(dist,ctx);
-    lama::DenseVector<ValueType> grad_vp(dist,ctx);
-
-    lama::DenseVector<ValueType> modelupdate(dist,ctx);
-    /* --------------------------------------- */
-    /* Adjoint sources:                         */
-    /* --------------------------------------- */
-    Acquisition::Receivers<ValueType> adjoint(config, ctx, dist);
-    Acquisition::Seismogram<ValueType> truedata(adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P));
-    Acquisition::Seismogram<ValueType> synthetic(receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P));
-
-    // =================================== Forward Modelling ==============================================
-
-    /* Start and end counter for time stepping */
-    IndexType t = 0;
-    IndexType tEnd = getNT;
+    
     IndexType maxiterations=10;
-if (config.get<bool>("runForward"))
-    maxiterations=1;
+    if (config.get<bool>("runForward"))
+        maxiterations=1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
-             MisfitSumTemp=0;
-	     model->prepareForModelling(config, ctx, dist, comm);
-	     waveconv_p_sum.assign(0);
-	     
-	     
-        for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
-            /* Update Source */
-            if (!config.get<bool>("runSimultaneousShots")) {
-                sources.init(config, ctx, dist, shotNumber);
-            }
-
-            wavefields->reset();
-            waveconv_p = 0;
-            waveconv_v = 0;
-
-            HOST_PRINT(comm, "\n================Start Forward====================\n");
-            HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
-                                                             << "Total Number of time steps: " << getNT << "\n");
-            start_t = common::Walltime::get();
-            for (t = 0; t < tEnd; t++) {
-
-                solver->run(receivers, sources, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
-
-                // save wavefields in Dense Matrix
-                wavefieldrecordvx.setColumn(wavefields->getVX(), t, scai::common::binary::BinaryOp::COPY);
-                wavefieldrecordvy.setColumn(wavefields->getVY(), t, scai::common::binary::BinaryOp::COPY);
-                wavefieldrecordp.setColumn(wavefields->getP(), t, scai::common::binary::BinaryOp::COPY);
-            }
-            end_t = common::Walltime::get();
-            HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
-
-            if (!config.get<bool>("runSimultaneousShots")) {
-                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") +".It" + std::to_string(iteration) +".shot" + std::to_string(shotNumber));
-            } else {
-                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename"));
-                //wavefieldrecord.writeToFile("wavefields/test.mtx");
-            }
-            // =========================================================================================================
-
-            if (!config.get<bool>("runForward")) {
-
-                /* --------------------------------------- */
-                /* Adjoint sources:                         */
-                /* --------------------------------------- */
-                std::string fieldSeisName("seismograms/rectangle.true");
-                truedata.readFromFileRaw(fieldSeisName +".It0" + ".shot" + std::to_string(shotNumber) + ".p.mtx", adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData().getRowDistributionPtr(), NULL);
-                synthetic = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P);
-
-
-                synthetic -= truedata;
-		Misfit=0.5*synthetic.getData().l2Norm();
-		
-                adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P) = synthetic;
-                //  adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/adjoint.mtx");
-
-                //======================================Backward Modelling==================================
-
-                wavefields->reset();
-
-                HOST_PRINT(comm, "\n================Start Backward====================\n");
-                HOST_PRINT(comm, "Start time stepping\n"
-                                     << "Total Number of time steps: " << getNT << "\n");
-                start_t = common::Walltime::get();
-
-                for (t = tEnd - 1; t >= 0; t--) {
-
-                    solver->run(receivers, adjoint, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
-
-                    /* --------------------------------------- */
-                    /* Convolution:                         */
-                    /* --------------------------------------- */
-
-                    wavefieldrecordp.getColumn(tmp, t);
-                    tmp *= wavefields->getP();
-                    waveconv_p += tmp;
-
-//                     wavefieldrecordvx.getColumn(tmp, t);
-//                     tmp *= wavefields->getVX();
-//                     waveconv_v += tmp;
-//                     wavefieldrecordvy.getColumn(tmp, t);
-//                     tmp *= wavefields->getVY();
-//                     waveconv_v += tmp;
-                }
-                
-                MisfitSumTemp+=Misfit;
-                waveconv_p_sum += waveconv_p;
-        //        waveconv_v_sum += waveconv_v;
-
-                end_t = common::Walltime::get();
-                HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
-
-                //   receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/rec_adjoint.mtx");
-                //
-               //     waveconv_p.writeToFile(convname + ".shot_" + std::to_string(shotNumber)+".mtx");
-                //=========================================================================================================
-            }
-        } //end of loop over shots
         
-              
-        if (!config.get<bool>("runForward")) {
-		HOST_PRINT(comm,"Misfit " << MisfitSumTemp << "iteration " << iteration << "\n\n" );
-	  
-		if ((iteration>0) && (MisfitSumTemp>MisfitSum))
-		{
-			HOST_PRINT(comm,"Misfit is getting higher after iteration: " << iteration << "last_misfit: " << MisfitSum <<"\n\n" );
-		break;	
-		}
-		MisfitSum=MisfitSumTemp;
-            //    Output jacobi
-            waveconv_p_sum.writeToFile(convname + "_p" +".It"+std::to_string(iteration)+ ".mtx");
-//             waveconv_v_sum.writeToFile(convname + "_v" + ".mtx");
-
-            //calculate gradient vp
-            grad_bulk = model->getPWaveModulus();
-            grad_bulk *= grad_bulk;
-            grad_bulk.invert();
-            grad_bulk *= waveconv_p_sum;
-            grad_bulk *= -config.get<ValueType>("DT");
-
-            grad_vp = 2 * grad_bulk;
-            grad_vp *= model->getDensity();
-            grad_vp *= model->getVelocityP();
-
-//             grad_rho = model->getVelocityP();
-//             grad_rho *= model->getVelocityP();
-//             grad_rho *= grad_bulk;
-//             grad_rho -= config.get<ValueType>("DT") * waveconv_v_sum;
-
-            grad_vp.writeToFile(gradname + "_vp" + ".It"+std::to_string(iteration)+ ".mtx");
-    //        grad_rho.writeToFile(gradname + "_rho" + ".It"+std::to_string(iteration)+ ".mtx");
-
+         model->prepareForModelling(config, ctx, dist, comm);  
+         GradientCalculation<ValueType> gradient;                  // should not be created again in every iteration in a later stage!
+         gradient.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, iteration);
+         
+// 		HOST_PRINT(comm,"Misfit " << MisfitSumTemp << "iteration " << iteration << "\n\n" );
+// 	  
+// 		if ((iteration>0) && (MisfitSumTemp>MisfitSum))
+// 		{
+// 			HOST_PRINT(comm,"Misfit is getting higher after iteration: " << iteration << "last_misfit: " << MisfitSum <<"\n\n" );
+// 		break;	
+// 		}
+          
 	    steplength*=0.8;
-            grad_vp *= 1 / grad_vp.max() * (steplength);
-      //      grad_rho *= 1 / grad_rho.max() * 50;
+        gradient.grad_vp *= 1 / gradient.grad_vp.max() * (steplength);
+//        grad_rho *= 1 / grad_rho.max() * 50;
 
+        modelupdate=model->getVelocityP()-gradient.grad_vp;
+        //  temp-=grad_vp;
+        model->setVelocityP(modelupdate);
+        //  Density -= grad_rho;
 
-	    modelupdate=model->getVelocityP()-grad_vp;
-            //  temp-=grad_vp;
-            model->setVelocityP(modelupdate);
-          //  Density -= grad_rho;
+        //  model->getDensity()=grad_rho;
 
-            //  model->getDensity()=grad_rho;
-
-            model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
+        model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 	    
-        }
     } //end of loop over iterations
     return 0;
 }
