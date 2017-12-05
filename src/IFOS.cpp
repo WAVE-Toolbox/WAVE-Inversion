@@ -114,6 +114,9 @@ int main(int argc, char *argv[])
     /* Model update                            */
     /* --------------------------------------- */
 
+    GradientCalculation<ValueType> gradient;                  
+    gradient.allocate(dist, no_dist_NT, comm, ctx);
+    
     lama::DenseVector<ValueType> modelupdate(dist,ctx);
     
     ValueType steplength=80;
@@ -128,7 +131,6 @@ int main(int argc, char *argv[])
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
         
          model->prepareForModelling(config, ctx, dist, comm);  
-         GradientCalculation<ValueType> gradient;                  // should not be created again in every iteration in a later stage!
          gradient.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, iteration);
          
 // 		HOST_PRINT(comm,"Misfit " << MisfitSumTemp << "iteration " << iteration << "\n\n" );

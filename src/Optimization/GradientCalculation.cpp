@@ -3,6 +3,50 @@
 #include "GradientCalculation.hpp"
 
 template <typename ValueType>
+void GradientCalculation<ValueType>::allocate(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr no_dist_NT, scai::dmemo::CommunicatorPtr comm, scai::hmemo::ContextPtr ctx)
+{
+        
+    /* ------------------------------------------- */
+    /* Allocate convolution fields and set context */
+    /* ------------------------------------------- */
+
+    waveconv_v.allocate(dist);
+    waveconv_v.setContextPtr(ctx);
+    waveconv_p.allocate(dist);
+    waveconv_p.setContextPtr(ctx);
+    tmp.allocate(dist);
+    tmp.setContextPtr(ctx);
+    waveconv_v_sum.allocate(dist);
+    waveconv_v_sum.setContextPtr(ctx);
+    waveconv_p_sum.allocate(dist);
+    waveconv_p_sum.setContextPtr(ctx);
+    
+    /* ----------------------------------------- */
+    /* Set distribution and context of gradients */
+    /* ----------------------------------------- */
+    
+    grad_bulk.allocate(dist);
+    grad_bulk.setContextPtr(ctx);
+    grad_rho.allocate(dist);
+    grad_rho.setContextPtr(ctx);
+    grad_vp.allocate(dist);
+    grad_vp.setContextPtr(ctx);
+    
+    /* ------------------------------------------------------- */
+    /* Allocate wavefield record (write a wrapper class later) */
+    /* ------------------------------------------------------- */
+    
+    wavefieldrecordvx.allocate(dist, no_dist_NT);
+    wavefieldrecordvx.setContextPtr(ctx);
+    wavefieldrecordvy.allocate(dist, no_dist_NT);
+    wavefieldrecordvy.setContextPtr(ctx);
+    wavefieldrecordp.allocate(dist, no_dist_NT);
+    wavefieldrecordp.setContextPtr(ctx);
+    
+    
+}
+
+template <typename ValueType>
 void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, IndexType iteration)
 {
     
@@ -18,41 +62,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     scai::dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr();   // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                   // default context, set by environment variable SCAI_CONTEXT   
-    
-    /* ----------------------------- */
-    /* Allocate convolution fields   */
-    /* ----------------------------- */
 
-    scai::lama::DenseVector<ValueType> waveconv_v;
-    scai::lama::DenseVector<ValueType> waveconv_p;
-    scai::lama::DenseVector<ValueType> tmp;
-    scai::lama::DenseVector<ValueType> waveconv_v_sum;
-    scai::lama::DenseVector<ValueType> waveconv_p_sum;
-
-    waveconv_v.allocate(dist);
-    waveconv_v.setContextPtr(ctx);
-    waveconv_p.allocate(dist);
-    waveconv_p.setContextPtr(ctx);
-    tmp.allocate(dist);
-    tmp.setContextPtr(ctx);
-    waveconv_v_sum.allocate(dist);
-    waveconv_v_sum.setContextPtr(ctx);
-    waveconv_p_sum.allocate(dist);
-    waveconv_p_sum.setContextPtr(ctx);
-    
-    waveconv_p_sum.assign(0);
-    
-    /* ----------------------------------------- */
-    /* Set distribution and context of gradients */
-    /* ----------------------------------------- */
-    
-    grad_bulk.allocate(dist);
-    grad_bulk.setContextPtr(ctx);
-    grad_rho.allocate(dist);
-    grad_rho.setContextPtr(ctx);
-    grad_vp.allocate(dist);
-    grad_vp.setContextPtr(ctx);
-    
     std::string convname("gradients/waveconv");
     std::string gradname("gradients/grad");
     
@@ -62,22 +72,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     scai::lama::Scalar MisfitSumTemp;
     
     MisfitSumTemp=0;
-    
-    /* ------------------------------------------------------- */
-    /* Allocate wavefield record (write a wrapper class later) */
-    /* ------------------------------------------------------- */
-    
-    scai::lama::DenseMatrix<ValueType> wavefieldrecordvx;
-    scai::lama::DenseMatrix<ValueType> wavefieldrecordvy;
-    scai::lama::DenseMatrix<ValueType> wavefieldrecordp;
-    
-    wavefieldrecordvx.allocate(dist, no_dist_NT);
-    wavefieldrecordvx.setContextPtr(ctx);
-    wavefieldrecordvy.allocate(dist, no_dist_NT);
-    wavefieldrecordvy.setContextPtr(ctx);
-    wavefieldrecordp.allocate(dist, no_dist_NT);
-    wavefieldrecordp.setContextPtr(ctx);
-    
+     
     /* ------------------------------------------------------ */
     /* Allocate adjoint sources, true data and synthetic data */
     /* ------------------------------------------------------ */
@@ -86,6 +81,8 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     KITGPI::Acquisition::Seismogram<ValueType> truedata(adjoint.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
     KITGPI::Acquisition::Seismogram<ValueType> synthetic(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
         
+    waveconv_p_sum.assign(0);
+    
    for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
        
        /* --------------------------------------------------------------------------- */       

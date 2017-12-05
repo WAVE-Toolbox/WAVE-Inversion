@@ -22,24 +22,26 @@ public:
     GradientCalculation(){};
     ~GradientCalculation(){};
 
+    void allocate(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr no_dist_NT, scai::dmemo::CommunicatorPtr comm, scai::hmemo::ContextPtr ctx);
     /* Calculate gradients */
     void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, IndexType iteration);
     
-    scai::lama::DenseVector<ValueType> grad_bulk;
+    scai::lama::DenseVector<ValueType> grad_bulk;  // make it private and write getter and setter functions
     scai::lama::DenseVector<ValueType> grad_rho;
     scai::lama::DenseVector<ValueType> grad_vp;
     
-// private:
+private:
+    
+    scai::lama::DenseVector<ValueType> waveconv_v;
+    scai::lama::DenseVector<ValueType> waveconv_p;
+    scai::lama::DenseVector<ValueType> tmp;
+    scai::lama::DenseVector<ValueType> waveconv_v_sum;
+    scai::lama::DenseVector<ValueType> waveconv_p_sum;
     
     /* WavefieldRecords (does it make sense here? -> is it used somewhere else or only in calc?, if yes declare a pointer instead of class and call constructor in function?) */ 
-//     scai::lama::DenseMatrix<ValueType> wavefieldrecordvx;
-//     scai::lama::DenseMatrix<ValueType> wavefieldrecordvy;
-//     scai::lama::DenseMatrix<ValueType> wavefieldrecordp;
-    
-    /* Adjoint sources  (does it make sense here? -> is it used somewhere else or only in calc?) */ 
-//     KITGPI::Acquisition::Receivers<ValueType> adjoint;
-//     KITGPI::Acquisition::Seismogram<ValueType> truedata;
-//     KITGPI::Acquisition::Seismogram<ValueType> synthetic;
+    scai::lama::DenseMatrix<ValueType> wavefieldrecordvx;
+    scai::lama::DenseMatrix<ValueType> wavefieldrecordvy;
+    scai::lama::DenseMatrix<ValueType> wavefieldrecordp;
     
 };
     
