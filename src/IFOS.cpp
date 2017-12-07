@@ -21,6 +21,7 @@
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "Optimization/GradientCalculation.hpp"
+#include "Optimization/Misfit.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -114,7 +115,9 @@ int main(int argc, char *argv[])
     /* Model update                            */
     /* --------------------------------------- */
 
-    GradientCalculation<ValueType> gradient;                  
+    GradientCalculation<ValueType> gradient;    
+    Misfit<ValueType> dataMisfit;
+    
     gradient.allocate(dist, no_dist_NT, comm, ctx);
     
     lama::DenseVector<ValueType> modelupdate(dist,ctx);
@@ -125,21 +128,22 @@ int main(int argc, char *argv[])
     /*        Loop over iterations             */
     /* --------------------------------------- */
     
-    IndexType maxiterations=10;
+    IndexType maxiterations=20;
     if (config.get<bool>("runForward"))
         maxiterations=1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
         
-         model->prepareForModelling(config, ctx, dist, comm);  
-         gradient.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, iteration);
+        model->prepareForModelling(config, ctx, dist, comm);  
+        gradient.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, iteration, dataMisfit);
          
-// 		HOST_PRINT(comm,"Misfit " << MisfitSumTemp << "iteration " << iteration << "\n\n" );
-// 	  
-// 		if ((iteration>0) && (MisfitSumTemp>MisfitSum))
-// 		{
-// 			HOST_PRINT(comm,"Misfit is getting higher after iteration: " << iteration << "last_misfit: " << MisfitSum <<"\n\n" );
-// 		break;	
-// 		}
+        HOST_PRINT(comm,"Misfit after iteration " << iteration << ": " << dataMisfit.get(iteration) << "\n\n" );
+         
+//         abortcriterion.check(dataMisfit);
+        if ( (iteration>0) && (dataMisfit.get(iteration) > dataMisfit.get(iteration-1)) )
+        {
+            HOST_PRINT(comm,"Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.get(iteration-1) << "\n\n" );
+            break;
+        }
           
 	    steplength*=0.8;
         gradient.grad_vp *= 1 / gradient.grad_vp.max() * (steplength);
