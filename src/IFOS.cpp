@@ -112,9 +112,9 @@ int main(int argc, char *argv[])
 //     lama::GridVector<ValueType> wavefieldStorage;
         
     /* --------------------------------------- */
-    /* Model update                            */
+    /* Objects for inversion                   */
     /* --------------------------------------- */
-
+    
     GradientCalculation<ValueType> gradient;    
     Misfit<ValueType> dataMisfit;
     
@@ -136,12 +136,12 @@ int main(int argc, char *argv[])
         model->prepareForModelling(config, ctx, dist, comm);  
         gradient.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, iteration, dataMisfit);
          
-        HOST_PRINT(comm,"Misfit after iteration " << iteration << ": " << dataMisfit.get(iteration) << "\n\n" );
+        HOST_PRINT(comm,"Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n" );
          
 //         abortcriterion.check(dataMisfit);
-        if ( (iteration>0) && (dataMisfit.get(iteration) > dataMisfit.get(iteration-1)) )
+        if ( (iteration>0) && (dataMisfit.getMisfitSum(iteration) > dataMisfit.getMisfitSum(iteration-1)) )
         {
-            HOST_PRINT(comm,"Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.get(iteration-1) << "\n\n" );
+            HOST_PRINT(comm,"Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration-1) << "\n\n" );
             break;
         }
           

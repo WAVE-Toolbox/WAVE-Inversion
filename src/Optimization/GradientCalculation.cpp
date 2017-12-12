@@ -66,12 +66,9 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     std::string convname("gradients/waveconv");
     std::string gradname("gradients/grad");
     
-    /* Misfit should not be part of #GradientCalculation in a later stage! */
-    scai::lama::Scalar misfitTemp;
-    scai::lama::Scalar misfitSumTemp;
-    
-    misfitSumTemp=0;
-     
+    /* Should misfit be part of #GradientCalculation in a later stage? */
+    scai::lama::DenseVector<ValueType> misfitTemp(sources.getNumShots(), 0, ctx);
+
     /* ------------------------------------------------------ */
     /* Allocate adjoint sources, true data and synthetic data */
     /* ------------------------------------------------------ */
@@ -119,8 +116,8 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
        synthetic = receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P);
        
        synthetic -= truedata;
-       misfitTemp=0.5*synthetic.getData().l2Norm();  // misfit of one shot
-       misfitSumTemp+=misfitTemp;                    // misfit sum of all shots 
+       misfitTemp.setValue(shotNumber, 0.5*synthetic.getData().l2Norm());  // misfit of one shot
+       
 
        adjoint.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P) = synthetic;
        //  adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/adjoint.mtx");
@@ -172,7 +169,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
 
         } // end loop over shots
                 
-        dataMisfit.add(misfitSumTemp);
+        dataMisfit.add(misfitTemp);
         /* Output jacobi */
         waveconv_p_sum.writeToFile(convname + "_p" +".It"+std::to_string(iteration)+ ".mtx");
 //         waveconv_v_sum.writeToFile(convname + "_v" + ".mtx");

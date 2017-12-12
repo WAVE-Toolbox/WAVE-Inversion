@@ -1,23 +1,23 @@
 #include "Misfit.hpp"
 
 template <typename ValueType>
-scai::lama::Scalar Misfit<ValueType>::get(int element){
-    return this->misfit.at(element);
+scai::lama::Scalar Misfit<ValueType>::getMisfitSum(int iteration){
+    return this->misfitShot.at(iteration).sum();
 }
 
 template <typename ValueType>
-void Misfit<ValueType>::set(int element, scai::lama::Scalar value){
-    this->misfit.at(element) = value;
+scai::lama::Scalar Misfit<ValueType>::getMisfitShot(int iteration, int shotNumber){
+    return this->misfitShot.at(iteration).getValue(shotNumber);
 }
 
 template <typename ValueType>
-void Misfit<ValueType>::add(scai::lama::Scalar value){
-    this->misfit.push_back(value);
+void Misfit<ValueType>::add(scai::lama::DenseVector<ValueType> vector){
+    this->misfitShot.push_back(vector);
 }
+
 
 void l1(){}
 void l2(){}
-
 
 template class Misfit<double>;
 template class Misfit<float>;
