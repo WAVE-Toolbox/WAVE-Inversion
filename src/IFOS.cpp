@@ -22,6 +22,7 @@
 
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit.hpp"
+#include "Optimization/StepLengthSearch.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -116,12 +117,15 @@ int main(int argc, char *argv[])
     
     GradientCalculation<ValueType> gradient;    
     Misfit<ValueType> dataMisfit;
+    StepLengthSearch<ValueType> SLsearch;
+    
+    lama::DenseVector<ValueType> update(dist,ctx);
     
     gradient.allocate(dist, no_dist_NT, comm, ctx);
     
     lama::DenseVector<ValueType> modelupdate(dist,ctx);
     
-    ValueType steplength=80;
+    lama::Scalar steplength_init=0.03;
     
     /* --------------------------------------- */
     /*        Loop over iterations             */
@@ -144,11 +148,18 @@ int main(int argc, char *argv[])
             break;
         }
           
-	    steplength*=0.8;
-        gradient.grad_vp *= 1 / gradient.grad_vp.max() * (steplength);
-//        grad_rho *= 1 / grad_rho.max() * 50;
+//         gradient.grad_vp *= 1 / gradient.grad_vp.max() * (steplength_init);
+//         grad_rho *= 1 / grad_rho.max() * 50;
 
-        modelupdate=model->getVelocityP()-gradient.grad_vp;
+        update = gradient.grad_vp;
+        update *= 1 / gradient.grad_vp.maxNorm();
+        update *= model->getVelocityP().maxNorm();
+        
+        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, update, steplength_init, dataMisfit.getMisfitSum(iteration));
+        
+//         modelupdate = model->getVelocityP() - steplength_init * update;
+        modelupdate = model->getVelocityP() - SLsearch.steplengthOptimum * update;
+        
         //  temp-=grad_vp;
         model->setVelocityP(modelupdate);
         //  Density -= grad_rho;
@@ -157,6 +168,8 @@ int main(int argc, char *argv[])
 
         model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 	    
+        steplength_init*=0.95;
+        
     } //end of loop over iterations
     return 0;
 }
