@@ -56,15 +56,14 @@ int main(int argc, char *argv[])
     common::Settings::setRank(comm->getNodeRank());
     /* execution context */
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
-    /* inter node distribution */
-    // block distribution: i-st processor gets lines [i * N/num_processes] to [(i+1) * N/num_processes - 1] of the matrix
-    IndexType getN = config.get<IndexType>("NZ") * config.get<IndexType>("NX") * config.get<IndexType>("NY");
-    dmemo::DistributionPtr dist(new dmemo::BlockDistribution(getN, comm));
-
-    if (config.get<IndexType>("UseCubePartitioning")) {
-        Partitioning::PartitioningCubes<ValueType> partitioning(config, comm);
-        dist = partitioning.getDist();
-    }
+    // inter node distribution 
+    // define the grid topology by sizes NX, NY, and NZ from configuration  
+    // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
+    
+    common::Grid3D grid(config.get<IndexType>("NZ"), config.get<IndexType>("NY"), config.get<IndexType>("NX") );
+    common::Grid3D procGrid(config.get<IndexType>("ProcNZ"), config.get<IndexType>("ProcNY"), config.get<IndexType>("ProcNX") );
+    // distribute the grid onto available processors, topology can be set by environment variable
+    dmemo::DistributionPtr dist(new dmemo::GridDistribution( grid, comm, procGrid));
 
     HOST_PRINT(comm, "\nIFOS" << dimension << " " << equationType << " - LAMA Version\n\n");
     if (comm->getRank() == MASTERGPI) {
