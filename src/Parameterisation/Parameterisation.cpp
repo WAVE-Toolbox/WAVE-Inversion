@@ -16,7 +16,6 @@ IndexType KITGPI::Parameterisation::Parameterisation<ValueType>::getPartitionedO
     return (PartitionedOut);
 }
 
-
 /*! \brief Getter method for relaxation frequency */
 template <typename ValueType>
 ValueType KITGPI::Parameterisation::Parameterisation<ValueType>::getRelaxationFrequency() const
@@ -29,7 +28,7 @@ ValueType KITGPI::Parameterisation::Parameterisation<ValueType>::getRelaxationFr
 template <typename ValueType>
 void KITGPI::Parameterisation::Parameterisation<ValueType>::setRelaxationFrequency(ValueType const setRelaxationFrequency)
 {
-relaxationFrequency=setRelaxationFrequency;
+    relaxationFrequency = setRelaxationFrequency;
 }
 
 /*! \brief Getter method for number of relaxation mechanisms */
@@ -40,11 +39,11 @@ IndexType KITGPI::Parameterisation::Parameterisation<ValueType>::getNumRelaxatio
 }
 
 /*! \brief Set number of Relaxation Mechanisms
- */ 
+ */
 template <typename ValueType>
 void KITGPI::Parameterisation::Parameterisation<ValueType>::setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms)
 {
-numRelaxationMechanisms=setNumRelaxationMechanisms;
+    numRelaxationMechanisms = setNumRelaxationMechanisms;
 }
 
 /*! \brief Init a single parameter by a constant value
@@ -98,7 +97,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::writeParameterisatio
     switch (partitionedOut) {
     case false:
         vector.writeToFile(filename);
-	HOST_PRINT(vector.getDistributionPtr()->getCommunicatorPtr(), "writing " << filename << "\n");
+        HOST_PRINT(vector.getDistributionPtr()->getCommunicatorPtr(), "writing " << filename << "\n");
         break;
 
     case true:
@@ -143,7 +142,6 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::allocateParameterisa
     vector.allocate(dist);
 };
 
-
 /*! \brief Get const reference to density  parameter
  * 
  */
@@ -167,10 +165,8 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 template <typename ValueType>
 void KITGPI::Parameterisation::Parameterisation<ValueType>::setDensity(scai::lama::Vector const &setDensity)
 {
-density=setDensity;
+    density = setDensity;
 }
-
-
 
 /*! \brief Get const reference to P-wave velocity
  *
@@ -195,7 +191,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 template <typename ValueType>
 void KITGPI::Parameterisation::Parameterisation<ValueType>::setVelocityP(scai::lama::Vector const &setVelocityP)
 {
-velocityP=setVelocityP;
+    velocityP = setVelocityP;
 }
 
 /*! \brief Get const reference to S-wave velocity
@@ -220,7 +216,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 template <typename ValueType>
 void KITGPI::Parameterisation::Parameterisation<ValueType>::setVelocityS(scai::lama::Vector const &setVelocityS)
 {
-velocityS=setVelocityS;
+    velocityS = setVelocityS;
 }
 
 /*! \brief Get const reference to tauP
@@ -245,7 +241,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 template <typename ValueType>
 void KITGPI::Parameterisation::Parameterisation<ValueType>::setTauP(scai::lama::Vector const &setTauP)
 {
-tauP=setTauP;
+    tauP = setTauP;
 }
 
 /*! \brief Get const reference to tauS
@@ -269,7 +265,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 template <typename ValueType>
 void KITGPI::Parameterisation::Parameterisation<ValueType>::setTauS(scai::lama::Vector const &setTauS)
 {
-tauS=setTauS;
+    tauS = setTauS;
 }
 
 /*! \brief Overloading = Operation
@@ -290,8 +286,8 @@ KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation:
 template <typename ValueType>
 KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation::Parameterisation<ValueType>::operator-=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
- 	minusAssign(rhs);
-        return *this;
+    minusAssign(rhs);
+    return *this;
 }
 
 /*! \brief Overloading += Operation
@@ -301,11 +297,9 @@ KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation:
 template <typename ValueType>
 KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation::Parameterisation<ValueType>::operator+=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
-	plusAssign(rhs);
-        return *this;
+    plusAssign(rhs);
+    return *this;
 }
-
-
 
 template class KITGPI::Parameterisation::Parameterisation<float>;
 template class KITGPI::Parameterisation::Parameterisation<double>;

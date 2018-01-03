@@ -44,7 +44,7 @@ namespace KITGPI
         {
           public:
             //! Default constructor.
-            Parameterisation() :  numRelaxationMechanisms(0){};
+            Parameterisation() : numRelaxationMechanisms(0){};
 
             //! Default destructor.
             ~Parameterisation(){};
@@ -67,7 +67,7 @@ namespace KITGPI
              \param dist Distribution
              */
             virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
-	    
+
             /*! \brief Abstract initialisation function
              * Standard initialisation function
              \param config Configuration from configuration file
@@ -110,28 +110,25 @@ namespace KITGPI
             virtual void setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
 
-            virtual void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)=0;
-	    virtual void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)=0;
-	    virtual void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)=0;
-	    
-	    
-	    KITGPI::Parameterisation::Parameterisation<ValueType> &operator=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    KITGPI::Parameterisation::Parameterisation<ValueType> &operator-=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    KITGPI::Parameterisation::Parameterisation<ValueType> &operator+=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    
-          protected:
+            virtual void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
+            virtual void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
+            virtual void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
 
+            KITGPI::Parameterisation::Parameterisation<ValueType> &operator=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            KITGPI::Parameterisation::Parameterisation<ValueType> &operator-=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            KITGPI::Parameterisation::Parameterisation<ValueType> &operator+=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+
+          protected:
             IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
             IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files
 
-            scai::lama::DenseVector<ValueType> density;        //!< Vector storing Density.
+            scai::lama::DenseVector<ValueType> density; //!< Vector storing Density.
 
             scai::lama::DenseVector<ValueType> velocityP; //!< Vector storing P-wave velocity.
             scai::lama::DenseVector<ValueType> velocityS; //!< Vector storing S-wave velocity.
 
             scai::lama::DenseVector<ValueType> tauP; //!< Vector storing tauP for visco-elastic modelling.
             scai::lama::DenseVector<ValueType> tauS; //!< Vector storing tauS for visco-elastic modelling.
-
 
             IndexType numRelaxationMechanisms; //!< Number of relaxation mechanisms
             ValueType relaxationFrequency;     //!< Relaxation Frequency
@@ -141,18 +138,13 @@ namespace KITGPI
 
             void writeParameterisation(scai::lama::Vector const &vector, std::string filename, IndexType partitionedOut) const;
 
-
             IndexType getPartitionedIn();
             IndexType getPartitionedOut();
 
-         
-   
           private:
             void allocateParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             void readParameterisation(scai::lama::Vector &vector, std::string filename, scai::dmemo::DistributionPtr dist, IndexType partitionedIn);
-
-
         };
     }
 }

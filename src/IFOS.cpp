@@ -19,13 +19,11 @@
 #include <ForwardSolver/ForwardSolverFactory.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
 
-
-
 #include <Wavefields/WavefieldsFactory.hpp>
 
-#include "Parameterisation/ParameterisationFactory.hpp"
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit.hpp"
+#include "Parameterisation/ParameterisationFactory.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -60,14 +58,14 @@ int main(int argc, char *argv[])
     common::Settings::setRank(comm->getNodeRank());
     /* execution context */
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
-    // inter node distribution 
-    // define the grid topology by sizes NX, NY, and NZ from configuration  
+    // inter node distribution
+    // define the grid topology by sizes NX, NY, and NZ from configuration
     // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
-    
-    common::Grid3D grid(config.get<IndexType>("NZ"), config.get<IndexType>("NY"), config.get<IndexType>("NX") );
-    common::Grid3D procGrid(config.get<IndexType>("ProcNZ"), config.get<IndexType>("ProcNY"), config.get<IndexType>("ProcNX") );
+
+    common::Grid3D grid(config.get<IndexType>("NZ"), config.get<IndexType>("NY"), config.get<IndexType>("NX"));
+    common::Grid3D procGrid(config.get<IndexType>("ProcNZ"), config.get<IndexType>("ProcNY"), config.get<IndexType>("ProcNX"));
     // distribute the grid onto available processors, topology can be set by environment variable
-    dmemo::DistributionPtr dist(new dmemo::GridDistribution( grid, comm, procGrid));
+    dmemo::DistributionPtr dist(new dmemo::GridDistribution(grid, comm, procGrid));
 
     HOST_PRINT(comm, "\nIFOS" << dimension << " " << equationType << " - LAMA Version\n\n");
     if (comm->getRank() == MASTERGPI) {
@@ -101,12 +99,11 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr fdModel(Modelparameter::Factory<ValueType>::Create(equationType));
 
-
     typename Parameterisation::Parameterisation<ValueType>::ParameterisationPtr model(Parameterisation::Factory<ValueType>::Create(equationType));
-    
+
     // load starting model
     model->init(config, ctx, dist);
-    
+
     /* --------------------------------------- */
     /* Forward solver                          */
     /* --------------------------------------- */
@@ -117,61 +114,59 @@ int main(int argc, char *argv[])
 
     dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
 
-//     lama::GridVector<ValueType> wavefieldStorage;
-        
+    //     lama::GridVector<ValueType> wavefieldStorage;
+
     /* --------------------------------------- */
     /* Objects for inversion                   */
     /* --------------------------------------- */
-    
+
     typename Parameterisation::Parameterisation<ValueType>::ParameterisationPtr gradient(Parameterisation::Factory<ValueType>::Create(equationType));
-     gradient->init(ctx, dist);
-    
-     
-    GradientCalculation<ValueType> gradientCalculation;    
+    gradient->init(ctx, dist);
+
+    GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
-    
+
     gradientCalculation.allocate(dist, no_dist_NT, comm, ctx);
-    
-    lama::DenseVector<ValueType> temp(dist,ctx);
-    
-    ValueType steplength=80;
+
+    lama::DenseVector<ValueType> temp(dist, ctx);
+
+    ValueType steplength = 80;
 
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
-    
-    IndexType maxiterations=20;
+
+    IndexType maxiterations = 20;
     if (config.get<bool>("runForward"))
-        maxiterations=1;
+        maxiterations = 1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
-        
-	 // set model for fd simulation to starting model
-    
+
+        // set model for fd simulation to starting model
+
         fdModel->setVelocityP(model->getVelocityP());
-        fdModel->setDensity(model->getDensity()); 
-        fdModel->prepareForModelling(config, ctx, dist, comm);  
-	
+        fdModel->setDensity(model->getDensity());
+        fdModel->prepareForModelling(config, ctx, dist, comm);
+
         gradientCalculation.calc(*solver, *derivatives, receivers, sources, *fdModel, *wavefields, config, iteration, dataMisfit);
-         
-        HOST_PRINT(comm,"Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n" );
-         
-//         abortcriterion.check(dataMisfit);
-        if ( (iteration>0) && (dataMisfit.getMisfitSum(iteration) >= dataMisfit.getMisfitSum(iteration-1)) )
-        {
-            HOST_PRINT(comm,"Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration-1) << "\n\n" );
+
+        HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n");
+
+        //         abortcriterion.check(dataMisfit);
+        if ((iteration > 0) && (dataMisfit.getMisfitSum(iteration) >= dataMisfit.getMisfitSum(iteration - 1))) {
+            HOST_PRINT(comm, "Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration - 1) << "\n\n");
             break;
         }
-          
-	    steplength*=0.8;
+
+        steplength *= 0.8;
         gradientCalculation.grad_vp *= 1 / gradientCalculation.grad_vp.max() * (steplength);
-//        grad_rho *= 1 / grad_rho.max() * 50;
-	
-	gradient->setVelocityP(gradientCalculation.grad_vp);
+        //        grad_rho *= 1 / grad_rho.max() * 50;
 
-        *model-=*gradient;
+        gradient->setVelocityP(gradientCalculation.grad_vp);
 
-        model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
-	    
+        *model -= *gradient;
+
+        model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
+
     } //end of loop over iterations
     return 0;
 }

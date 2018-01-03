@@ -1,9 +1,6 @@
 #include "Viscoelastic.hpp"
 using namespace scai;
 
-
-
-
 /*! \brief Constructor that is using the Configuration class
  *
  \param config Configuration class
@@ -24,9 +21,8 @@ KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(Configuration::C
 template <typename ValueType>
 void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-        init(ctx,dist,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
-
 
 /*! \brief Initialisation that is using the Configuration class
  *
@@ -52,7 +48,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(Configuration::Conf
 
     if (config.get<IndexType>("ModelWrite")) {
         write(config.get<std::string>("ModelFilename") + ".out", config.get<IndexType>("PartitionedOut"));
-	std::cout << "been here\n\n";
+        std::cout << "been here\n\n";
     }
 }
 
@@ -153,7 +149,6 @@ KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(const Viscoelast
     numRelaxationMechanisms = rhs.numRelaxationMechanisms;
 }
 
-
 /*! \brief Write model to an external file
  *
  \param filename For the P-wave velocity ".vp.mtx" is added, for the S-wave velocity ".vs.mtx", for density ".density.mtx", for tauP ".tauP.mtx"  and for tauS ".tauS.mtx" is added.
@@ -168,16 +163,13 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::write(std::string filena
     std::string filenameTauS = filename + ".tauS.mtx";
     std::string filenameP = filename + ".vp.mtx";
     std::string filenameS = filename + ".vs.mtx";
-    
+
     this->writeParameterisation(density, filenamedensity, partitionedOut);
     this->writeParameterisation(tauP, filenameTauP, partitionedOut);
     this->writeParameterisation(tauS, filenameTauS, partitionedOut);
     this->writeParameterisation(velocityP, filenameP, partitionedOut);
     this->writeParameterisation(velocityS, filenameS, partitionedOut);
-
 };
-
-
 
 /*! \brief Initialisation the relaxation mechanisms
  *
@@ -197,7 +189,6 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::initRelaxationMechanisms
     relaxationFrequency = relaxationFrequency_in;
 }
 
-
 /*! \brief Overloading * Operation
  *
  \param rhs Scalar factor with which the vectors are multiplied.
@@ -207,7 +198,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Visc
 {
     KITGPI::Parameterisation::Viscoelastic<ValueType> result(*this);
     result *= rhs;
-    return result;  
+    return result;
 }
 
 /*! \brief free function to multiply
@@ -231,10 +222,10 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Vis
     density *= rhs;
     tauS *= rhs;
     tauP *= rhs;
-        velocityP *= rhs;
-	velocityS *= rhs;
-	
-        return *this;
+    velocityP *= rhs;
+    velocityS *= rhs;
+
+    return *this;
 }
 
 /*! \brief Overloading + Operation
@@ -246,7 +237,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Visc
 {
     KITGPI::Parameterisation::Viscoelastic<ValueType> result(*this);
     result += rhs;
-    return result;  
+    return result;
 }
 
 /*! \brief Overloading += Operation
@@ -261,9 +252,8 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Vis
     tauP += rhs.tauP;
     velocityP += rhs.velocityP;
     velocityS += rhs.velocityS;
-	
-	
-        return *this;
+
+    return *this;
 }
 
 /*! \brief Overloading - Operation
@@ -275,7 +265,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Visc
 {
     KITGPI::Parameterisation::Viscoelastic<ValueType> result(*this);
     result -= rhs;
-    return result; 
+    return result;
 }
 
 /*! \brief Overloading -= Operation
@@ -288,10 +278,10 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Vis
     density = density -= rhs.density;
     tauS -= rhs.tauS;
     tauP -= rhs.tauP;
-        velocityP -= rhs.velocityP;
-	velocityS -= rhs.velocityS;
-	
-        return *this;
+    velocityP -= rhs.velocityP;
+    velocityS -= rhs.velocityS;
+
+    return *this;
 }
 
 /*! \brief Overloading = Operation
@@ -321,13 +311,13 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Viscoelastic<ValueType>::assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density = rhs.getDensity();
-        velocityP = rhs.getVelocityP();
-	velocityS = rhs.getVelocityS();
-	tauS = rhs.getTauS();
-        tauP = rhs.getTauP();
-        relaxationFrequency = rhs.getRelaxationFrequency();
-        numRelaxationMechanisms = rhs.getNumRelaxationMechanisms();
+    density = rhs.getDensity();
+    velocityP = rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
+    tauS = rhs.getTauS();
+    tauP = rhs.getTauP();
+    relaxationFrequency = rhs.getRelaxationFrequency();
+    numRelaxationMechanisms = rhs.getNumRelaxationMechanisms();
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -338,11 +328,11 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Viscoelastic<ValueType>::minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density -= rhs.getDensity();
-        velocityP -= rhs.getVelocityP();
-	velocityS = rhs.getVelocityS();
-	tauS = rhs.getTauS();
-        tauP = rhs.getTauP();
+    density -= rhs.getDensity();
+    velocityP -= rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
+    tauS = rhs.getTauS();
+    tauP = rhs.getTauP();
 }
 
 /*! \brief function for overloading += Operation (called in base class)
@@ -353,11 +343,11 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Viscoelastic<ValueType>::plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density += rhs.getDensity();
-        velocityP += rhs.getVelocityP();
-	velocityS = rhs.getVelocityS();
-	tauS = rhs.getTauS();
-        tauP = rhs.getTauP();
+    density += rhs.getDensity();
+    velocityP += rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
+    tauS = rhs.getTauS();
+    tauP = rhs.getTauP();
 }
 
 template class KITGPI::Parameterisation::Viscoelastic<float>;

@@ -23,8 +23,8 @@
 
 #include <iostream>
 
-#include <PartitionedInOut/PartitionedInOut.hpp>
 #include "Parameterisation.hpp"
+#include <PartitionedInOut/PartitionedInOut.hpp>
 
 namespace KITGPI
 {
@@ -55,7 +55,7 @@ namespace KITGPI
             Acoustic(const Acoustic &rhs);
 
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus_const, scai::lama::Scalar rho_const);
-	    void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
             void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn) override;
 
@@ -68,7 +68,6 @@ namespace KITGPI
             IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
-
             /* Overloading Operators */
             KITGPI::Parameterisation::Acoustic<ValueType> operator*(scai::lama::Scalar rhs);
             KITGPI::Parameterisation::Acoustic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
@@ -76,17 +75,15 @@ namespace KITGPI
             KITGPI::Parameterisation::Acoustic<ValueType> &operator+=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
             KITGPI::Parameterisation::Acoustic<ValueType> operator-(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
             KITGPI::Parameterisation::Acoustic<ValueType> &operator-=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
-	    KITGPI::Parameterisation::Acoustic<ValueType> &operator=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
-	    
- 	    void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    
-          private:
+            KITGPI::Parameterisation::Acoustic<ValueType> &operator=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
 
+            void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+
+          private:
             using Parameterisation<ValueType>::density;
             using Parameterisation<ValueType>::velocityP;
-
 
             /* Not requiered parameters */
             using Parameterisation<ValueType>::velocityS;
@@ -94,7 +91,6 @@ namespace KITGPI
             using Parameterisation<ValueType>::tauS;
             using Parameterisation<ValueType>::relaxationFrequency;
             using Parameterisation<ValueType>::numRelaxationMechanisms;
-
         };
     }
 }

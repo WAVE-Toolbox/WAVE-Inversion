@@ -23,8 +23,8 @@
 
 #include <iostream>
 
-#include <PartitionedInOut/PartitionedInOut.hpp>
 #include "Parameterisation.hpp"
+#include <PartitionedInOut/PartitionedInOut.hpp>
 
 namespace KITGPI
 {
@@ -55,10 +55,9 @@ namespace KITGPI
             Elastic(const Elastic &rhs);
 
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus, scai::lama::Scalar sWaveModulus, scai::lama::Scalar rho);
-	    void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn) override;
             void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
-
 
             void write(std::string filename, IndexType partitionedOut) const override;
 
@@ -75,14 +74,13 @@ namespace KITGPI
             KITGPI::Parameterisation::Elastic<ValueType> &operator+=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
             KITGPI::Parameterisation::Elastic<ValueType> operator-(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
             KITGPI::Parameterisation::Elastic<ValueType> &operator-=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
-	    KITGPI::Parameterisation::Elastic<ValueType> &operator=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
+            KITGPI::Parameterisation::Elastic<ValueType> &operator=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
 
-	    void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);	    
-	    void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	    
+            void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+
           private:
-
             using Parameterisation<ValueType>::density;
             using Parameterisation<ValueType>::velocityP;
             using Parameterisation<ValueType>::velocityS;
@@ -92,7 +90,6 @@ namespace KITGPI
             using Parameterisation<ValueType>::tauS;
             using Parameterisation<ValueType>::relaxationFrequency;
             using Parameterisation<ValueType>::numRelaxationMechanisms;
-
         };
     }
 }

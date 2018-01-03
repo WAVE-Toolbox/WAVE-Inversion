@@ -2,7 +2,6 @@
 
 using namespace scai;
 
-
 /*! \brief Constructor that is using the Configuration class
  *
  \param config Configuration class
@@ -23,9 +22,8 @@ KITGPI::Parameterisation::Elastic<ValueType>::Elastic(Configuration::Configurati
 template <typename ValueType>
 void KITGPI::Parameterisation::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-        init(ctx,dist,0.0,0.0,0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0);
 }
-
 
 /*! \brief Initialisation that is using the Configuration class
  *
@@ -110,7 +108,7 @@ KITGPI::Parameterisation::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ct
  */
 template <typename ValueType>
 void KITGPI::Parameterisation::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
-{  
+{
     std::string filenameVelocityP = filename + ".vp.mtx";
     std::string filenameVelocityS = filename + ".vs.mtx";
     std::string filenamedensity = filename + ".density.mtx";
@@ -129,7 +127,6 @@ KITGPI::Parameterisation::Elastic<ValueType>::Elastic(const Elastic &rhs)
     density = rhs.density;
 }
 
-
 /*! \brief Write model to an external file
  *
  \param filename For the P-wave modulus ".pWaveModulus.mtx" is added, for the second ".sWaveModulus.mtx" and for density ".density.mtx" is added.
@@ -146,9 +143,6 @@ void KITGPI::Parameterisation::Elastic<ValueType>::write(std::string filename, I
     this->writeParameterisation(velocityP, filenameP, partitionedOut);
     this->writeParameterisation(velocityS, filenameS, partitionedOut);
 };
-
-
-
 
 /*! \brief Get reference to tauP
  *
@@ -185,7 +179,6 @@ IndexType KITGPI::Parameterisation::Elastic<ValueType>::getNumRelaxationMechanis
     return (numRelaxationMechanisms);
 }
 
-
 /*! \brief Overloading * Operation
  *
  \param rhs Scalar factor with which the vectors are multiplied.
@@ -195,7 +188,7 @@ KITGPI::Parameterisation::Elastic<ValueType> KITGPI::Parameterisation::Elastic<V
 {
     KITGPI::Parameterisation::Elastic<ValueType> result(*this);
     result *= rhs;
-    return result;   
+    return result;
 }
 
 /*! \brief free function to multiply
@@ -216,11 +209,11 @@ KITGPI::Parameterisation::Elastic<ValueType> operator*(scai::lama::Scalar lhs, K
 template <typename ValueType>
 KITGPI::Parameterisation::Elastic<ValueType> &KITGPI::Parameterisation::Elastic<ValueType>::operator*=(scai::lama::Scalar const &rhs)
 {
-        density *= rhs;
-        velocityP *= rhs;
-	velocityS *= rhs;
-	
-        return *this;
+    density *= rhs;
+    velocityP *= rhs;
+    velocityS *= rhs;
+
+    return *this;
 }
 
 /*! \brief Overloading + Operation
@@ -232,7 +225,7 @@ KITGPI::Parameterisation::Elastic<ValueType> KITGPI::Parameterisation::Elastic<V
 {
     KITGPI::Parameterisation::Elastic<ValueType> result(*this);
     result += rhs;
-    return result;   
+    return result;
 }
 
 /*! \brief Overloading += Operation
@@ -243,10 +236,10 @@ template <typename ValueType>
 KITGPI::Parameterisation::Elastic<ValueType> &KITGPI::Parameterisation::Elastic<ValueType>::operator+=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs)
 {
     density += rhs.density;
-        velocityP += rhs.velocityP;
-	velocityS += rhs.velocityS;
+    velocityP += rhs.velocityP;
+    velocityS += rhs.velocityS;
 
-        return *this;
+    return *this;
 }
 
 /*! \brief Overloading - Operation
@@ -258,7 +251,7 @@ KITGPI::Parameterisation::Elastic<ValueType> KITGPI::Parameterisation::Elastic<V
 {
     KITGPI::Parameterisation::Elastic<ValueType> result(*this);
     result -= rhs;
-    return result; 
+    return result;
 }
 
 /*! \brief Overloading -= Operation
@@ -269,10 +262,10 @@ template <typename ValueType>
 KITGPI::Parameterisation::Elastic<ValueType> &KITGPI::Parameterisation::Elastic<ValueType>::operator-=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs)
 {
     density = density -= rhs.density;
-        velocityP -= rhs.velocityP;
-	velocityS -= rhs.velocityS;
-	
-        return *this;
+    velocityP -= rhs.velocityP;
+    velocityS -= rhs.velocityS;
+
+    return *this;
 }
 
 /*! \brief Overloading = Operation
@@ -297,9 +290,9 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Elastic<ValueType>::assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density = rhs.getDensity();
-        velocityP = rhs.getVelocityP();
-	velocityS = rhs.getVelocityS();
+    density = rhs.getDensity();
+    velocityP = rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -310,9 +303,9 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Elastic<ValueType>::minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density -= rhs.getDensity();
-        velocityP -= rhs.getVelocityP();
-	velocityS = rhs.getVelocityS();
+    density -= rhs.getDensity();
+    velocityP -= rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
 }
 
 /*! \brief function for overloading += Operation (called in base class)
@@ -323,11 +316,10 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Elastic<ValueType>::plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density += rhs.getDensity();
-        velocityP += rhs.getVelocityP();
-	velocityS = rhs.getVelocityS();
+    density += rhs.getDensity();
+    velocityP += rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
 }
-
 
 template class KITGPI::Parameterisation::Elastic<float>;
 template class KITGPI::Parameterisation::Elastic<double>;

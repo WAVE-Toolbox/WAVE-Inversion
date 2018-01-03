@@ -23,8 +23,8 @@
 
 #include <iostream>
 
-#include <PartitionedInOut/PartitionedInOut.hpp>
 #include "Parameterisation.hpp"
+#include <PartitionedInOut/PartitionedInOut.hpp>
 
 namespace KITGPI
 {
@@ -55,19 +55,18 @@ namespace KITGPI
             Viscoelastic(const Viscoelastic &rhs);
 
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar velocityS_const, scai::lama::Scalar rho_const, scai::lama::Scalar tauP_const, scai::lama::Scalar tauS_const, IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in);
-	    void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
             void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn) override;
 
             void initRelaxationMechanisms(IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in);
 
-
             void write(std::string filename, IndexType partitionedOut) const override;
 
-	 void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	 void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	 void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-	 
+            void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+
             /* Overloading Operators */
             KITGPI::Parameterisation::Viscoelastic<ValueType> operator*(scai::lama::Scalar rhs);
             KITGPI::Parameterisation::Viscoelastic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
@@ -75,10 +74,9 @@ namespace KITGPI
             KITGPI::Parameterisation::Viscoelastic<ValueType> &operator+=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
             KITGPI::Parameterisation::Viscoelastic<ValueType> operator-(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
             KITGPI::Parameterisation::Viscoelastic<ValueType> &operator-=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
-	    KITGPI::Parameterisation::Viscoelastic<ValueType> &operator=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
+            KITGPI::Parameterisation::Viscoelastic<ValueType> &operator=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
 
           private:
-
             using Parameterisation<ValueType>::density;
             using Parameterisation<ValueType>::velocityP;
             using Parameterisation<ValueType>::velocityS;
@@ -87,9 +85,6 @@ namespace KITGPI
             using Parameterisation<ValueType>::tauP;
             using Parameterisation<ValueType>::relaxationFrequency;
             using Parameterisation<ValueType>::numRelaxationMechanisms;
-
-
-
         };
     }
 }

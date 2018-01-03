@@ -3,7 +3,6 @@
 using namespace scai;
 using namespace KITGPI;
 
-
 /*! \brief Constructor that is using the Configuration class
  *
  \param config Configuration class
@@ -16,7 +15,6 @@ KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(Configuration::Configura
     init(config, ctx, dist);
 }
 
-
 /*! \brief Initialisation with zeros
  *
  \param ctx Context for the Calculation
@@ -25,7 +23,7 @@ KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(Configuration::Configura
 template <typename ValueType>
 void KITGPI::Parameterisation::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-        init(ctx,dist,0.0,0.0);
+    init(ctx, dist, 0.0, 0.0);
 }
 
 /*! \brief Initialisation that is using the Configuration class
@@ -41,7 +39,7 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::init(Configuration::Configur
 
         HOST_PRINT(dist->getCommunicatorPtr(), "Reading model parameter from file...\n");
 
-         init(ctx, dist, config.get<std::string>("ModelFilename"), config.get<IndexType>("PartitionedIn"));
+        init(ctx, dist, config.get<std::string>("ModelFilename"), config.get<IndexType>("PartitionedIn"));
 
         HOST_PRINT(dist->getCommunicatorPtr(), "Finished with reading of the model parameter!\n\n");
 
@@ -134,14 +132,10 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::write(std::string filename, 
 {
     std::string filenameP = filename + ".vp.mtx";
     std::string filenamedensity = filename + ".density.mtx";
-    
+
     this->writeParameterisation(density, filenamedensity, partitionedOut);
     this->writeParameterisation(velocityP, filenameP, partitionedOut);
 };
-
-
-
-
 
 /*! \brief Get reference to S-wave velocity
  */
@@ -187,8 +181,6 @@ IndexType KITGPI::Parameterisation::Acoustic<ValueType>::getNumRelaxationMechani
     return (numRelaxationMechanisms);
 }
 
-
-
 /*! \brief Overloading * Operation
  *
  \param rhs Scalar factor with which the vectors are multiplied.
@@ -198,7 +190,7 @@ KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic
 {
     KITGPI::Parameterisation::Acoustic<ValueType> result(*this);
     result *= rhs;
-    return result;   
+    return result;
 }
 
 /*! \brief non-member function to multiply (scalar as left operand)
@@ -221,9 +213,8 @@ KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acousti
 {
     density *= rhs;
     velocityP *= rhs;
-    
-    return *this;
 
+    return *this;
 }
 
 /*! \brief Overloading + Operation
@@ -235,7 +226,7 @@ KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic
 {
     KITGPI::Parameterisation::Acoustic<ValueType> result(*this);
     result += rhs;
-    return result;    
+    return result;
 }
 
 /*! \brief Overloading += Operation
@@ -248,7 +239,7 @@ KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acousti
     density += rhs.density;
     velocityP += rhs.velocityP;
 
-        return *this;
+    return *this;
 }
 
 /*! \brief Overloading - Operation
@@ -260,7 +251,7 @@ KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic
 {
     KITGPI::Parameterisation::Acoustic<ValueType> result(*this);
     result -= rhs;
-    return result; 
+    return result;
 }
 
 /*! \brief Overloading -= Operation
@@ -270,9 +261,9 @@ KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic
 template <typename ValueType>
 KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acoustic<ValueType>::operator-=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
 {
-     density -= rhs.density;
+    density -= rhs.density;
     velocityP -= rhs.velocityP;
-        return *this;
+    return *this;
 }
 
 /*! \brief Overloading = Operation
@@ -282,7 +273,7 @@ KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acousti
 template <typename ValueType>
 KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acoustic<ValueType>::operator=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
 {
-    // why does rhs.density not work (density = protected) 
+    // why does rhs.density not work (density = protected)
     velocityP = rhs.velocityP;
     density = rhs.density;
     return *this;
@@ -296,8 +287,8 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Acoustic<ValueType>::assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density = rhs.getDensity();
-        velocityP = rhs.getVelocityP();
+    density = rhs.getDensity();
+    velocityP = rhs.getVelocityP();
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -308,8 +299,8 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Acoustic<ValueType>::minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density -= rhs.getDensity();
-        velocityP -= rhs.getVelocityP();
+    density -= rhs.getDensity();
+    velocityP -= rhs.getVelocityP();
 }
 
 /*! \brief function for overloading += Operation (called in base class)
@@ -320,10 +311,9 @@ template <typename ValueType>
 void KITGPI::Parameterisation::Acoustic<ValueType>::plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
 {
 
-         density += rhs.getDensity();
-        velocityP += rhs.getVelocityP();
+    density += rhs.getDensity();
+    velocityP += rhs.getVelocityP();
 }
-
 
 template class KITGPI::Parameterisation::Acoustic<double>;
 template class KITGPI::Parameterisation::Acoustic<float>;
