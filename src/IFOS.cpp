@@ -18,8 +18,12 @@
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
 #include <ForwardSolver/ForwardSolverFactory.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
+
+
+
 #include <Wavefields/WavefieldsFactory.hpp>
 
+#include "Parameterisation/ParameterisationFactory.hpp"
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit.hpp"
 
@@ -95,9 +99,14 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Modelparameter                          */
     /* --------------------------------------- */
-    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
-    model->init(config, ctx, dist);
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr fdModel(Modelparameter::Factory<ValueType>::Create(equationType));
 
+
+    typename Parameterisation::Parameterisation<ValueType>::ParameterisationPtr model(Parameterisation::Factory<ValueType>::Create(equationType));
+    
+    // load starting model
+    model->init(config, ctx, dist);
+    
     /* --------------------------------------- */
     /* Forward solver                          */
     /* --------------------------------------- */
@@ -114,15 +123,19 @@ int main(int argc, char *argv[])
     /* Objects for inversion                   */
     /* --------------------------------------- */
     
-    GradientCalculation<ValueType> gradient;    
+    typename Parameterisation::Parameterisation<ValueType>::ParameterisationPtr gradient(Parameterisation::Factory<ValueType>::Create(equationType));
+     gradient->init(ctx, dist);
+    
+     
+    GradientCalculation<ValueType> gradientCalculation;    
     Misfit<ValueType> dataMisfit;
     
-    gradient.allocate(dist, no_dist_NT, comm, ctx);
+    gradientCalculation.allocate(dist, no_dist_NT, comm, ctx);
     
-    lama::DenseVector<ValueType> modelupdate(dist,ctx);
+    lama::DenseVector<ValueType> temp(dist,ctx);
     
     ValueType steplength=80;
-    
+
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
@@ -132,28 +145,30 @@ int main(int argc, char *argv[])
         maxiterations=1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
         
-        model->prepareForModelling(config, ctx, dist, comm);  
-        gradient.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, iteration, dataMisfit);
+	 // set model for fd simulation to starting model
+    
+        fdModel->setVelocityP(model->getVelocityP());
+        fdModel->setDensity(model->getDensity()); 
+        fdModel->prepareForModelling(config, ctx, dist, comm);  
+	
+        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *fdModel, *wavefields, config, iteration, dataMisfit);
          
         HOST_PRINT(comm,"Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n" );
          
 //         abortcriterion.check(dataMisfit);
-        if ( (iteration>0) && (dataMisfit.getMisfitSum(iteration) > dataMisfit.getMisfitSum(iteration-1)) )
+        if ( (iteration>0) && (dataMisfit.getMisfitSum(iteration) >= dataMisfit.getMisfitSum(iteration-1)) )
         {
             HOST_PRINT(comm,"Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration-1) << "\n\n" );
             break;
         }
           
 	    steplength*=0.8;
-        gradient.grad_vp *= 1 / gradient.grad_vp.max() * (steplength);
+        gradientCalculation.grad_vp *= 1 / gradientCalculation.grad_vp.max() * (steplength);
 //        grad_rho *= 1 / grad_rho.max() * 50;
+	
+	gradient->setVelocityP(gradientCalculation.grad_vp);
 
-        modelupdate=model->getVelocityP()-gradient.grad_vp;
-        //  temp-=grad_vp;
-        model->setVelocityP(modelupdate);
-        //  Density -= grad_rho;
-
-        //  model->getDensity()=grad_rho;
+        *model-=*gradient;
 
         model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 	    
