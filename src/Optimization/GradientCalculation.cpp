@@ -3,9 +3,27 @@
 #include "GradientCalculation.hpp"
 
 template <typename ValueType>
-void GradientCalculation<ValueType>::allocate(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr no_dist_NT, scai::dmemo::CommunicatorPtr comm, scai::hmemo::ContextPtr ctx)
+void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config,scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr no_dist_NT, scai::dmemo::CommunicatorPtr comm, scai::hmemo::ContextPtr ctx)
 {
         
+	std::string dimension = config.get<std::string>("dimension");
+        std::string equationType = config.get<std::string>("equationType");
+	IndexType getNT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
+	
+	wavefields=KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+	wavefields->init(ctx, dist);
+	
+    /* ------------------------------------------------------- */
+    /* Allocate wavefield record                               */
+    /* ------------------------------------------------------- */
+	
+        for (IndexType i=0;i<getNT;i++){
+        wavefieldPtr wavefieldsTemp(KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType));
+        wavefieldsTemp->init(ctx, dist);
+    
+        wavefieldrecord.push_back(wavefieldsTemp);
+    }
+	
     /* ------------------------------------------- */
     /* Allocate convolution fields and set context */
     /* ------------------------------------------- */
@@ -32,22 +50,11 @@ void GradientCalculation<ValueType>::allocate(scai::dmemo::DistributionPtr dist,
     grad_vp.allocate(dist);
     grad_vp.setContextPtr(ctx);
     
-    /* ------------------------------------------------------- */
-    /* Allocate wavefield record (write a wrapper class later) */
-    /* ------------------------------------------------------- */
-    
-    wavefieldrecordvx.allocate(dist, no_dist_NT);
-    wavefieldrecordvx.setContextPtr(ctx);
-    wavefieldrecordvy.allocate(dist, no_dist_NT);
-    wavefieldrecordvy.setContextPtr(ctx);
-    wavefieldrecordp.allocate(dist, no_dist_NT);
-    wavefieldrecordp.setContextPtr(ctx);
-    
-    
+
 }
 
 template <typename ValueType>
-void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, IndexType iteration, Misfit<ValueType> &dataMisfit)
+void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Configuration::Configuration config, IndexType iteration, Misfit<ValueType> &dataMisfit)
 {
     
     double start_t, end_t; /* For timing */
@@ -58,7 +65,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
        
-    scai::dmemo::DistributionPtr dist = wavefields.getVX().getDistributionPtr();
+    scai::dmemo::DistributionPtr dist = wavefields->getVX().getDistributionPtr();
     scai::dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr();   // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                   // default context, set by environment variable SCAI_CONTEXT   
@@ -88,18 +95,17 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
        HOST_PRINT(comm, "\n================Start Forward====================\n");
        HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
                                                              << "Total Number of time steps: " << getNT << "\n");
-       wavefields.reset();
+       wavefields->reset();
        sources.init(config, ctx, dist, shotNumber);
        
        start_t = scai::common::Walltime::get();
        for (t = 0; t < getNT; t++) {
 
-           solver.run(receivers, sources, model, wavefields, derivatives, t, t + 1, config.get<ValueType>("DT"));
+           solver.run(receivers, sources, model, *wavefields, derivatives, t, t + 1, config.get<ValueType>("DT"));
 
            // save wavefields in Dense Matrix
-           wavefieldrecordvx.setColumn(wavefields.getVX(), t, scai::common::binary::BinaryOp::COPY);
-           wavefieldrecordvy.setColumn(wavefields.getVY(), t, scai::common::binary::BinaryOp::COPY);
-           wavefieldrecordp.setColumn(wavefields.getP(), t, scai::common::binary::BinaryOp::COPY);
+	   wavefieldrecord[t]->assign(*wavefields);
+
        }
        
        receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") +".It" + std::to_string(iteration) +".shot" + std::to_string(shotNumber));
@@ -130,7 +136,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
        HOST_PRINT(comm, "Start time stepping\n"
                                << "Total Number of time steps: " << getNT << "\n");
        
-       wavefields.reset();
+       wavefields->reset();
        waveconv_p = 0;
        waveconv_v = 0;
        
@@ -138,14 +144,14 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
 
        for (t = getNT - 1; t >= 0; t--) {
 
-           solver.run(receivers, adjoint, model, wavefields, derivatives, t, t + 1, config.get<ValueType>("DT"));
+           solver.run(receivers, adjoint, model, *wavefields, derivatives, t, t + 1, config.get<ValueType>("DT"));
 
            /* --------------------------------------- */
            /*             Convolution                 */
            /* --------------------------------------- */
 
-           wavefieldrecordp.getColumn(tmp, t);
-           tmp *= wavefields.getP();
+	   tmp=wavefieldrecord[t]->getP();
+           tmp *= wavefields->getP();
            waveconv_p += tmp;
 
 //            wavefieldrecordvx.getColumn(tmp, t);

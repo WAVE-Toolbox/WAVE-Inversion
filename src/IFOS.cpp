@@ -22,6 +22,7 @@
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "Optimization/GradientCalculation.hpp"
+#include "test/test.hpp"
 #include "Optimization/Misfit.hpp"
 #include "Parameterisation/ParameterisationFactory.hpp"
 
@@ -81,25 +82,20 @@ int main(int argc, char *argv[])
     end_t = common::Walltime::get();
     HOST_PRINT(comm, "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
 
-    /* --------------------------------------- */
-    /* Wavefields                              */
-    /* --------------------------------------- */
-    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(Wavefields::Factory<ValueType>::Create(dimension, equationType));
-    wavefields->init(ctx, dist);
 
+    
     /* --------------------------------------- */
     /* Acquisition geometry                    */
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receivers(config, ctx, dist);
     Acquisition::Sources<ValueType> sources(config, ctx, dist);
-    //  sources.init;
 
     /* --------------------------------------- */
     /* Modelparameter                          */
     /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr fdModel(Modelparameter::Factory<ValueType>::Create(equationType));
 
-    typename Parameterisation::Parameterisation<ValueType>::ParameterisationPtr model(Parameterisation::Factory<ValueType>::Create(equationType));
+    Parameterisation::Parameterisation<ValueType>::ParameterisationPtr model(Parameterisation::Factory<ValueType>::Create(equationType));
 
     // load starting model
     model->init(config, ctx, dist);
@@ -108,13 +104,11 @@ int main(int argc, char *argv[])
     /* Forward solver                          */
     /* --------------------------------------- */
     IndexType getNT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-
+    
     ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
     solver->prepareBoundaryConditions(config, *derivatives, dist, ctx);
 
     dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
-
-    //     lama::GridVector<ValueType> wavefieldStorage;
 
     /* --------------------------------------- */
     /* Objects for inversion                   */
@@ -126,7 +120,7 @@ int main(int argc, char *argv[])
     GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
 
-    gradientCalculation.allocate(dist, no_dist_NT, comm, ctx);
+    gradientCalculation.allocate(config,dist, no_dist_NT, comm, ctx);
 
     lama::DenseVector<ValueType> temp(dist, ctx);
 
@@ -147,7 +141,7 @@ int main(int argc, char *argv[])
         fdModel->setDensity(model->getDensity());
         fdModel->prepareForModelling(config, ctx, dist, comm);
 
-        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *fdModel, *wavefields, config, iteration, dataMisfit);
+        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *fdModel, config, iteration, dataMisfit);
 
         HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n");
 
@@ -164,7 +158,7 @@ int main(int argc, char *argv[])
         gradient->setVelocityP(gradientCalculation.grad_vp);
 
         *model -= *gradient;
-
+	
         model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 
     } //end of loop over iterations
