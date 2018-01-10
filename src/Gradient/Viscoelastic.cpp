@@ -8,7 +8,7 @@ using namespace scai;
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::Gradient::Viscoelastic<ValueType>::Viscoelastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     init(config, ctx, dist);
 }
@@ -19,7 +19,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(Configuration::C
  \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::Gradient::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     init(ctx, dist, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
@@ -31,7 +31,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(scai::hmemo::Contex
  \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::Gradient::Viscoelastic<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     if (config.get<IndexType>("ModelRead")) {
 
@@ -66,7 +66,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(Configuration::Conf
  \param relaxationFrequency_in Relaxation frequency
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar velocityS_const, scai::lama::Scalar rho_const, scai::lama::Scalar tauP_const, scai::lama::Scalar tauS_const, IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in)
+KITGPI::Gradient::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar velocityS_const, scai::lama::Scalar rho_const, scai::lama::Scalar tauP_const, scai::lama::Scalar tauS_const, IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in)
 {
     init(ctx, dist, velocityP_const, velocityS_const, rho_const, tauP_const, tauS_const, numRelaxationMechanisms_in, relaxationFrequency_in);
     initRelaxationMechanisms(numRelaxationMechanisms_in, relaxationFrequency_in);
@@ -86,7 +86,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::Con
  \param relaxationFrequency_in Relaxation frequency
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar velocityS_const, scai::lama::Scalar rho_const, scai::lama::Scalar tauP_const, scai::lama::Scalar tauS_const, IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in)
+void KITGPI::Gradient::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar velocityS_const, scai::lama::Scalar rho_const, scai::lama::Scalar tauP_const, scai::lama::Scalar tauS_const, IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in)
 {
     initRelaxationMechanisms(numRelaxationMechanisms_in, relaxationFrequency_in);
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
@@ -105,7 +105,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(scai::hmemo::Contex
  \param partitionedIn Partitioned input
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
+KITGPI::Gradient::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
 {
     init(ctx, dist, filename, partitionedIn);
 }
@@ -121,7 +121,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::Con
  *  Calculates pWaveModulus with
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
+void KITGPI::Gradient::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
 {
     std::string filenameVelocityP = filename + ".vp.mtx";
     std::string filenameVelocityS = filename + ".vs.mtx";
@@ -138,7 +138,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::init(scai::hmemo::Contex
 
 //! \brief Copy constructor
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(const Viscoelastic &rhs)
+KITGPI::Gradient::Viscoelastic<ValueType>::Viscoelastic(const Viscoelastic &rhs)
 {
     velocityP = rhs.velocityP;
     velocityS = rhs.velocityS;
@@ -155,7 +155,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType>::Viscoelastic(const Viscoelast
  \param partitionedOut Partitioned output
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::write(std::string filename, IndexType partitionedOut) const
+void KITGPI::Gradient::Viscoelastic<ValueType>::write(std::string filename, IndexType partitionedOut) const
 {
 
     std::string filenamedensity = filename + ".density.mtx";
@@ -177,7 +177,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::write(std::string filena
  \param relaxationFrequency_in Relaxation frequency
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::initRelaxationMechanisms(IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in)
+void KITGPI::Gradient::Viscoelastic<ValueType>::initRelaxationMechanisms(IndexType numRelaxationMechanisms_in, ValueType relaxationFrequency_in)
 {
     if (numRelaxationMechanisms_in < 1) {
         COMMON_THROWEXCEPTION("The number of relaxation mechanisms should be >0 in an visco-elastic simulation")
@@ -194,9 +194,9 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::initRelaxationMechanisms
  \param rhs Scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Viscoelastic<ValueType>::operator*(scai::lama::Scalar rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> KITGPI::Gradient::Viscoelastic<ValueType>::operator*(scai::lama::Scalar rhs)
 {
-    KITGPI::Parameterisation::Viscoelastic<ValueType> result(*this);
+    KITGPI::Gradient::Viscoelastic<ValueType> result(*this);
     result *= rhs;
     return result;
 }
@@ -207,7 +207,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Visc
  \param rhs Vector
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> operator*(scai::lama::Scalar lhs, KITGPI::Parameterisation::Viscoelastic<ValueType> rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> operator*(scai::lama::Scalar lhs, KITGPI::Gradient::Viscoelastic<ValueType> rhs)
 {
     return rhs * lhs;
 }
@@ -217,7 +217,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> operator*(scai::lama::Scalar l
  \param rhs Scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Viscoelastic<ValueType>::operator*=(scai::lama::Scalar const &rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> &KITGPI::Gradient::Viscoelastic<ValueType>::operator*=(scai::lama::Scalar const &rhs)
 {
     density *= rhs;
     tauS *= rhs;
@@ -233,9 +233,9 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Vis
  \param rhs Model which is added.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Viscoelastic<ValueType>::operator+(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> KITGPI::Gradient::Viscoelastic<ValueType>::operator+(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs)
 {
-    KITGPI::Parameterisation::Viscoelastic<ValueType> result(*this);
+    KITGPI::Gradient::Viscoelastic<ValueType> result(*this);
     result += rhs;
     return result;
 }
@@ -245,7 +245,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Visc
  \param rhs Model which is added.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Viscoelastic<ValueType>::operator+=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> &KITGPI::Gradient::Viscoelastic<ValueType>::operator+=(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs)
 {
     density += rhs.density;
     tauS += rhs.tauS;
@@ -261,9 +261,9 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Vis
  \param rhs Model which is subtractet.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Viscoelastic<ValueType>::operator-(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> KITGPI::Gradient::Viscoelastic<ValueType>::operator-(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs)
 {
-    KITGPI::Parameterisation::Viscoelastic<ValueType> result(*this);
+    KITGPI::Gradient::Viscoelastic<ValueType> result(*this);
     result -= rhs;
     return result;
 }
@@ -273,7 +273,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> KITGPI::Parameterisation::Visc
  \param rhs Model which is subtractet.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Viscoelastic<ValueType>::operator-=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> &KITGPI::Gradient::Viscoelastic<ValueType>::operator-=(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs)
 {
     density = density -= rhs.density;
     tauS -= rhs.tauS;
@@ -289,7 +289,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Vis
  \param rhs Model which is copied.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Viscoelastic<ValueType>::operator=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs)
+KITGPI::Gradient::Viscoelastic<ValueType> &KITGPI::Gradient::Viscoelastic<ValueType>::operator=(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs)
 {
 
     velocityP = rhs.velocityP;
@@ -308,7 +308,7 @@ KITGPI::Parameterisation::Viscoelastic<ValueType> &KITGPI::Parameterisation::Vis
  \param rhs Abstract model which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+void KITGPI::Gradient::Viscoelastic<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
 
     density = rhs.getDensity();
@@ -325,7 +325,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::assign(KITGPI::Parameter
  \param rhs Abstract model which is subtractet.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+void KITGPI::Gradient::Viscoelastic<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
 
     density -= rhs.getDensity();
@@ -340,7 +340,7 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::minusAssign(KITGPI::Para
  \param rhs Abstarct model which is subtractet.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+void KITGPI::Gradient::Viscoelastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
 
     density += rhs.getDensity();
@@ -356,8 +356,8 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::plusAssign(KITGPI::Param
  \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Viscoelastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs){
+void KITGPI::Gradient::Viscoelastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){
     COMMON_THROWEXCEPTION("minus Assign is not implemented,yet ")};
 
-template class KITGPI::Parameterisation::Viscoelastic<float>;
-template class KITGPI::Parameterisation::Viscoelastic<double>;
+template class KITGPI::Gradient::Viscoelastic<float>;
+template class KITGPI::Gradient::Viscoelastic<double>;

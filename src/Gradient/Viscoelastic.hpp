@@ -23,22 +23,22 @@
 
 #include <iostream>
 
-#include "Parameterisation.hpp"
+#include "Gradient.hpp"
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
 namespace KITGPI
 {
 
-    //! \brief Parameterisation namespace
-    namespace Parameterisation
+    //! \brief Gradient namespace
+    namespace Gradient
     {
 
-        //! Class for Parameterisation for visco-elastic simulations (Subsurface properties)
+        //! Class for Gradient for visco-elastic simulations (Subsurface properties)
         /*!
          This class handels the modelparameter for the visco-elastic finite-difference simulation.
          */
         template <typename ValueType>
-        class Viscoelastic : public Parameterisation<ValueType>
+        class Viscoelastic : public Gradient<ValueType>
         {
           public:
             //! Default constructor.
@@ -63,29 +63,29 @@ namespace KITGPI
 
             void write(std::string filename, IndexType partitionedOut) const override;
 
-            void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs);
 
             /* Overloading Operators */
-            KITGPI::Parameterisation::Viscoelastic<ValueType> operator*(scai::lama::Scalar rhs);
-            KITGPI::Parameterisation::Viscoelastic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
-            KITGPI::Parameterisation::Viscoelastic<ValueType> operator+(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Viscoelastic<ValueType> &operator+=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Viscoelastic<ValueType> operator-(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Viscoelastic<ValueType> &operator-=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Viscoelastic<ValueType> &operator=(KITGPI::Parameterisation::Viscoelastic<ValueType> const &rhs);
+            KITGPI::Gradient::Viscoelastic<ValueType> operator*(scai::lama::Scalar rhs);
+            KITGPI::Gradient::Viscoelastic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
+            KITGPI::Gradient::Viscoelastic<ValueType> operator+(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs);
+            KITGPI::Gradient::Viscoelastic<ValueType> &operator+=(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs);
+            KITGPI::Gradient::Viscoelastic<ValueType> operator-(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs);
+            KITGPI::Gradient::Viscoelastic<ValueType> &operator-=(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs);
+            KITGPI::Gradient::Viscoelastic<ValueType> &operator=(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs);
 
           private:
-            using Parameterisation<ValueType>::density;
-            using Parameterisation<ValueType>::velocityP;
-            using Parameterisation<ValueType>::velocityS;
+            using Gradient<ValueType>::density;
+            using Gradient<ValueType>::velocityP;
+            using Gradient<ValueType>::velocityS;
 
-            using Parameterisation<ValueType>::tauS;
-            using Parameterisation<ValueType>::tauP;
-            using Parameterisation<ValueType>::relaxationFrequency;
-            using Parameterisation<ValueType>::numRelaxationMechanisms;
+            using Gradient<ValueType>::tauS;
+            using Gradient<ValueType>::tauP;
+            using Gradient<ValueType>::relaxationFrequency;
+            using Gradient<ValueType>::numRelaxationMechanisms;
         };
     }
 }

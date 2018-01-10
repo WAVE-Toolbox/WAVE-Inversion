@@ -1,7 +1,6 @@
-#include "Acoustic.hpp"
-#include <scai/lama/io/FileIO.hpp>
+#include "Elastic.hpp"
+
 using namespace scai;
-using namespace KITGPI;
 
 /*! \brief Constructor that is using the Configuration class
  *
@@ -10,7 +9,7 @@ using namespace KITGPI;
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::Gradient::Elastic<ValueType>::Elastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     init(config, ctx, dist);
 }
@@ -21,9 +20,9 @@ KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(Configuration::Configura
  \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0);
 }
 
 /*! \brief Initialisation that is using the Configuration class
@@ -33,7 +32,7 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::init(scai::hmemo::ContextPtr
  \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::Gradient::Elastic<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     if (config.get<IndexType>("ModelRead")) {
 
@@ -44,7 +43,7 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::init(Configuration::Configur
         HOST_PRINT(dist->getCommunicatorPtr(), "Finished with reading of the model parameter!\n\n");
 
     } else {
-        init(ctx, dist, config.get<ValueType>("velocityP"), config.get<ValueType>("rho"));
+        init(ctx, dist, config.get<ValueType>("velocityP"), config.get<ValueType>("velocityS"), config.get<ValueType>("rho"));
     }
 
     if (config.get<IndexType>("ModelWrite")) {
@@ -58,12 +57,13 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::init(Configuration::Configur
  \param ctx Context
  \param dist Distribution
  \param pWaveModulus_const P-wave modulus given as Scalar
- \param rho_const Density given as Scalar
+ \param sWaveModulus_const S-wave modulus given as Scalar
+ \param rho Density given as Scalar
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus_const, scai::lama::Scalar rho_const)
+KITGPI::Gradient::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus_const, scai::lama::Scalar sWaveModulus_const, scai::lama::Scalar rho)
 {
-    init(ctx, dist, pWaveModulus_const, rho_const);
+    init(ctx, dist, pWaveModulus_const, sWaveModulus_const, rho);
 }
 
 /*! \brief Initialisation that is generating a homogeneous model
@@ -72,13 +72,15 @@ KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr 
  \param ctx Context
  \param dist Distribution
  \param pWaveModulus_const P-wave modulus given as Scalar
- \param rho_const Density given as Scalar
+ \param sWaveModulus_const S-wave modulus given as Scalar
+ \param rho Density given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar rho_const)
+void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar velocityS_const, scai::lama::Scalar rho)
 {
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
-    this->initParameterisation(density, ctx, dist, rho_const);
+    this->initParameterisation(velocityS, ctx, dist, velocityS_const);
+    this->initParameterisation(density, ctx, dist, rho);
 }
 
 /*! \brief Constructor that is reading models from external files
@@ -86,11 +88,11 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::init(scai::hmemo::ContextPtr
  *  Reads a model from an external file.
  \param ctx Context
  \param dist Distribution
- \param filename For the P-wave modulus ".pWaveModulus.mtx" is added and for density ".density.mtx" is added.
+ \param filename For the P-wave modulus ".pWaveModulus.mtx" is added, for the second ".sWaveModulus.mtx" and for density ".density.mtx" is added.
  \param partitionedIn Partitioned input
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
+KITGPI::Gradient::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
 {
     init(ctx, dist, filename, partitionedIn);
 }
@@ -100,57 +102,53 @@ KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr 
  *  Reads a model from an external file.
  \param ctx Context
  \param dist Distribution
- \param filename For the first Velocity-Vector "filename".vp.mtx" is added and for density "filename+".density.mtx" is added.
+ \param filename For the Velocity-Vector "filename".vp.mtx" and "filename".vs.mtx" is added and for density "filename+".density.mtx" is added.
  \param partitionedIn Partitioned input
  *
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
+void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
 {
     std::string filenameVelocityP = filename + ".vp.mtx";
+    std::string filenameVelocityS = filename + ".vs.mtx";
     std::string filenamedensity = filename + ".density.mtx";
 
     this->initParameterisation(velocityP, ctx, dist, filenameVelocityP, partitionedIn);
+    this->initParameterisation(velocityS, ctx, dist, filenameVelocityS, partitionedIn);
     this->initParameterisation(density, ctx, dist, filenamedensity, partitionedIn);
 }
 
 //! \brief Copy constructor
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
+KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
 {
     velocityP = rhs.velocityP;
+    velocityS = rhs.velocityS;
     density = rhs.density;
 }
 
 /*! \brief Write model to an external file
  *
- \param filename For the P-wave modulus ".pWaveModulus.mtx" is added and for density ".density.mtx" is added.
+ \param filename For the P-wave modulus ".pWaveModulus.mtx" is added, for the second ".sWaveModulus.mtx" and for density ".density.mtx" is added.
  \param partitionedOut Partitioned output
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::write(std::string filename, IndexType partitionedOut) const
+void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType partitionedOut) const
 {
     std::string filenameP = filename + ".vp.mtx";
+    std::string filenameS = filename + ".vs.mtx";
     std::string filenamedensity = filename + ".density.mtx";
 
     this->writeParameterisation(density, filenamedensity, partitionedOut);
     this->writeParameterisation(velocityP, filenameP, partitionedOut);
+    this->writeParameterisation(velocityS, filenameS, partitionedOut);
 };
-
-/*! \brief Get reference to S-wave velocity
- */
-template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Acoustic<ValueType>::getVelocityS()
-{
-    COMMON_THROWEXCEPTION("The S-wave velocity is not defined in an acoustic simulation.")
-    return (velocityS);
-}
 
 /*! \brief Get reference to tauP
  *
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Acoustic<ValueType>::getTauP()
+scai::lama::Vector const &KITGPI::Gradient::Elastic<ValueType>::getTauP()
 {
     COMMON_THROWEXCEPTION("There is no tau parameter in an elastic modelling")
     return (tauP);
@@ -159,7 +157,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Acoustic<ValueType>::getTauP
 /*! \brief Get reference to tauS
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Acoustic<ValueType>::getTauS()
+scai::lama::Vector const &KITGPI::Gradient::Elastic<ValueType>::getTauS()
 {
     COMMON_THROWEXCEPTION("There is no tau parameter in an elastic modelling")
     return (tauS);
@@ -167,7 +165,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Acoustic<ValueType>::getTauS
 
 /*! \brief Getter method for relaxation frequency */
 template <typename ValueType>
-ValueType KITGPI::Parameterisation::Acoustic<ValueType>::getRelaxationFrequency() const
+ValueType KITGPI::Gradient::Elastic<ValueType>::getRelaxationFrequency() const
 {
     COMMON_THROWEXCEPTION("There is no relaxationFrequency parameter in an elastic modelling")
     return (relaxationFrequency);
@@ -175,7 +173,7 @@ ValueType KITGPI::Parameterisation::Acoustic<ValueType>::getRelaxationFrequency(
 
 /*! \brief Getter method for number of relaxation mechanisms */
 template <typename ValueType>
-IndexType KITGPI::Parameterisation::Acoustic<ValueType>::getNumRelaxationMechanisms() const
+IndexType KITGPI::Gradient::Elastic<ValueType>::getNumRelaxationMechanisms() const
 {
     COMMON_THROWEXCEPTION("There is no numRelaxationMechanisms parameter in an elastic modelling")
     return (numRelaxationMechanisms);
@@ -186,20 +184,20 @@ IndexType KITGPI::Parameterisation::Acoustic<ValueType>::getNumRelaxationMechani
  \param rhs Scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic<ValueType>::operator*(scai::lama::Scalar rhs)
+KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::operator*(scai::lama::Scalar rhs)
 {
-    KITGPI::Parameterisation::Acoustic<ValueType> result(*this);
+    KITGPI::Gradient::Elastic<ValueType> result(*this);
     result *= rhs;
     return result;
 }
 
-/*! \brief non-member function to multiply (scalar as left operand)
+/*! \brief free function to multiply
  *
  \param lhs Scalar factor with which the vectors are multiplied.
  \param rhs Vector
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> operator*(scai::lama::Scalar lhs, KITGPI::Parameterisation::Acoustic<ValueType> rhs)
+KITGPI::Gradient::Elastic<ValueType> operator*(scai::lama::Scalar lhs, KITGPI::Gradient::Elastic<ValueType> rhs)
 {
     return rhs * lhs;
 }
@@ -209,10 +207,11 @@ KITGPI::Parameterisation::Acoustic<ValueType> operator*(scai::lama::Scalar lhs, 
  \param rhs Scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acoustic<ValueType>::operator*=(scai::lama::Scalar const &rhs)
+KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator*=(scai::lama::Scalar const &rhs)
 {
     density *= rhs;
     velocityP *= rhs;
+    velocityS *= rhs;
 
     return *this;
 }
@@ -222,9 +221,9 @@ KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acousti
  \param rhs Model which is added.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic<ValueType>::operator+(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
+KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::operator+(KITGPI::Gradient::Elastic<ValueType> const &rhs)
 {
-    KITGPI::Parameterisation::Acoustic<ValueType> result(*this);
+    KITGPI::Gradient::Elastic<ValueType> result(*this);
     result += rhs;
     return result;
 }
@@ -234,10 +233,11 @@ KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic
  \param rhs Model which is added.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acoustic<ValueType>::operator+=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
+KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator+=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
 {
     density += rhs.density;
     velocityP += rhs.velocityP;
+    velocityS += rhs.velocityS;
 
     return *this;
 }
@@ -247,9 +247,9 @@ KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acousti
  \param rhs Model which is subtractet.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic<ValueType>::operator-(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
+KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::operator-(KITGPI::Gradient::Elastic<ValueType> const &rhs)
 {
-    KITGPI::Parameterisation::Acoustic<ValueType> result(*this);
+    KITGPI::Gradient::Elastic<ValueType> result(*this);
     result -= rhs;
     return result;
 }
@@ -259,10 +259,12 @@ KITGPI::Parameterisation::Acoustic<ValueType> KITGPI::Parameterisation::Acoustic
  \param rhs Model which is subtractet.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acoustic<ValueType>::operator-=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
+KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator-=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
 {
-    density -= rhs.density;
+    density = density -= rhs.density;
     velocityP -= rhs.velocityP;
+    velocityS -= rhs.velocityS;
+
     return *this;
 }
 
@@ -271,24 +273,26 @@ KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acousti
  \param rhs Model which is copied.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acoustic<ValueType>::operator=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
+KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
 {
-    // why does rhs.density not work (density = protected)
     velocityP = rhs.velocityP;
+    velocityS = rhs.velocityS;
     density = rhs.density;
+
     return *this;
 }
 
-/*! \brief function for overloading = Operation (called in base class)
+/*! \brief function for overloading -= Operation (called in base class)
  *
  \param rhs Abstract model which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
 
     density = rhs.getDensity();
     velocityP = rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -296,11 +300,12 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::assign(KITGPI::Parameterisat
  \param rhs Abstract model which is subtractet.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
 
     density -= rhs.getDensity();
     velocityP -= rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
 }
 
 /*! \brief function for overloading += Operation (called in base class)
@@ -308,11 +313,12 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::minusAssign(KITGPI::Paramete
  \param rhs Abstarct model which is subtractet.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
 
     density += rhs.getDensity();
     velocityP += rhs.getVelocityP();
+    velocityS = rhs.getVelocityS();
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -321,14 +327,8 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::plusAssign(KITGPI::Parameter
  \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
-{
-    scai::lama::DenseVector<ValueType> temp;
-    temp = lhs.getVelocityP() - rhs.getVelocityP();
-    lhs.setVelocityP(temp);
-    temp = lhs.getDensity() - rhs.getDensity();
-    lhs.setDensity(temp);
-};
+void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){
+    COMMON_THROWEXCEPTION("minus Assign is not implemented,yet ")};
 
-template class KITGPI::Parameterisation::Acoustic<double>;
-template class KITGPI::Parameterisation::Acoustic<float>;
+template class KITGPI::Gradient::Elastic<float>;
+template class KITGPI::Gradient::Elastic<double>;

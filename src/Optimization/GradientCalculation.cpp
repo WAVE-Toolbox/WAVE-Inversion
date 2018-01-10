@@ -52,7 +52,7 @@ void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configurati
 }
 
 template <typename ValueType>
-void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Parameterisation::Parameterisation<ValueType> &gradient, KITGPI::Configuration::Configuration config, IndexType iteration, Misfit<ValueType> &dataMisfit)
+void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Configuration::Configuration config, IndexType iteration, Misfit<ValueType> &dataMisfit)
 {
 
     double start_t, end_t; /* For timing */

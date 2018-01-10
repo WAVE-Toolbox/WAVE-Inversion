@@ -23,22 +23,22 @@
 
 #include <iostream>
 
-#include "Parameterisation.hpp"
+#include "Gradient.hpp"
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
 namespace KITGPI
 {
 
-    //! \brief Parameterisation namespace
-    namespace Parameterisation
+    //! \brief Gradient namespace
+    namespace Gradient
     {
 
-        //! Class for Parameterisation for elastic simulations (Subsurface properties)
+        //! Class for Gradient for elastic simulations (Subsurface properties)
         /*!
          This class handels the modelparameter for the elastic finite-difference simulation.
          */
         template <typename ValueType>
-        class Elastic : public Parameterisation<ValueType>
+        class Elastic : public Gradient<ValueType>
         {
           public:
             //! Default constructor.
@@ -68,29 +68,29 @@ namespace KITGPI
             ValueType getRelaxationFrequency() const override;
 
             /* Overloading Operators */
-            KITGPI::Parameterisation::Elastic<ValueType> operator*(scai::lama::Scalar rhs);
-            KITGPI::Parameterisation::Elastic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
-            KITGPI::Parameterisation::Elastic<ValueType> operator+(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Elastic<ValueType> &operator+=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Elastic<ValueType> operator-(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Elastic<ValueType> &operator-=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
-            KITGPI::Parameterisation::Elastic<ValueType> &operator=(KITGPI::Parameterisation::Elastic<ValueType> const &rhs);
+            KITGPI::Gradient::Elastic<ValueType> operator*(scai::lama::Scalar rhs);
+            KITGPI::Gradient::Elastic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
+            KITGPI::Gradient::Elastic<ValueType> operator+(KITGPI::Gradient::Elastic<ValueType> const &rhs);
+            KITGPI::Gradient::Elastic<ValueType> &operator+=(KITGPI::Gradient::Elastic<ValueType> const &rhs);
+            KITGPI::Gradient::Elastic<ValueType> operator-(KITGPI::Gradient::Elastic<ValueType> const &rhs);
+            KITGPI::Gradient::Elastic<ValueType> &operator-=(KITGPI::Gradient::Elastic<ValueType> const &rhs);
+            KITGPI::Gradient::Elastic<ValueType> &operator=(KITGPI::Gradient::Elastic<ValueType> const &rhs);
 
-            void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs);
 
           private:
-            using Parameterisation<ValueType>::density;
-            using Parameterisation<ValueType>::velocityP;
-            using Parameterisation<ValueType>::velocityS;
+            using Gradient<ValueType>::density;
+            using Gradient<ValueType>::velocityP;
+            using Gradient<ValueType>::velocityS;
 
             /* Not requiered parameters */
-            using Parameterisation<ValueType>::tauP;
-            using Parameterisation<ValueType>::tauS;
-            using Parameterisation<ValueType>::relaxationFrequency;
-            using Parameterisation<ValueType>::numRelaxationMechanisms;
+            using Gradient<ValueType>::tauP;
+            using Gradient<ValueType>::tauS;
+            using Gradient<ValueType>::relaxationFrequency;
+            using Gradient<ValueType>::numRelaxationMechanisms;
         };
     }
 }

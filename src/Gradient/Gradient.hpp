@@ -32,26 +32,26 @@
 namespace KITGPI
 {
 
-    //! \brief Parameterisation namespace
-    namespace Parameterisation
+    //! \brief Gradient namespace
+    namespace Gradient
     {
 
-        //! \brief Abstract class for a single Parameterisation (Subsurface properties)
+        //! \brief Abstract class for a single Gradient (Subsurface properties)
         /*!
          * As this class is an abstract class, all constructors are protected.
          */
         template <typename ValueType>
-        class Parameterisation
+        class Gradient
         {
           public:
             //! Default constructor.
-            Parameterisation() : numRelaxationMechanisms(0){};
+            Gradient() : numRelaxationMechanisms(0){};
 
             //! Default destructor.
-            ~Parameterisation(){};
+            ~Gradient(){};
 
-            //! \brief Parameterisation pointer
-            typedef std::shared_ptr<Parameterisation<ValueType>> ParameterisationPtr;
+            //! \brief Gradient pointer
+            typedef std::shared_ptr<Gradient<ValueType>> GradientPtr;
 
             /*! \brief Abstract initialization function
              * Standard initialisation function
@@ -111,24 +111,24 @@ namespace KITGPI
             virtual void setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
 
-            virtual void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
-            virtual void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
-            virtual void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
+            virtual void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
+            virtual void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
+            virtual void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
 
             /* Operator overloading */
             /*lhs Base rhs Base */
-            KITGPI::Parameterisation::Parameterisation<ValueType> &operator=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            KITGPI::Parameterisation::Parameterisation<ValueType> &operator-=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
-            KITGPI::Parameterisation::Parameterisation<ValueType> &operator+=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            KITGPI::Gradient::Gradient<ValueType> &operator=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            KITGPI::Gradient::Gradient<ValueType> &operator-=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            KITGPI::Gradient::Gradient<ValueType> &operator+=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
 
             /*lhs: fd-Model-Base rhs: gradient Base */
-            friend KITGPI::Modelparameter::Modelparameter<ValueType> &operator-=(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> &rhs)
+            friend KITGPI::Modelparameter::Modelparameter<ValueType> &operator-=(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> &rhs)
             {
                 rhs.minusAssign(lhs, rhs);
                 return lhs;
             };
 
-            virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs){};
+            virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){};
 
           protected:
             IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files

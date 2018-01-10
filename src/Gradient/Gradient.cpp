@@ -1,24 +1,24 @@
-#include "Parameterisation.hpp"
+#include "Gradient.hpp"
 using namespace scai;
 using namespace KITGPI;
 
 /*! \brief Getter method for partitionedIn */
 template <typename ValueType>
-IndexType KITGPI::Parameterisation::Parameterisation<ValueType>::getPartitionedIn()
+IndexType KITGPI::Gradient::Gradient<ValueType>::getPartitionedIn()
 {
     return (PartitionedIn);
 }
 
 /*! \brief Getter method for partitionedOut */
 template <typename ValueType>
-IndexType KITGPI::Parameterisation::Parameterisation<ValueType>::getPartitionedOut()
+IndexType KITGPI::Gradient::Gradient<ValueType>::getPartitionedOut()
 {
     return (PartitionedOut);
 }
 
 /*! \brief Getter method for relaxation frequency */
 template <typename ValueType>
-ValueType KITGPI::Parameterisation::Parameterisation<ValueType>::getRelaxationFrequency() const
+ValueType KITGPI::Gradient::Gradient<ValueType>::getRelaxationFrequency() const
 {
     return (relaxationFrequency);
 }
@@ -26,14 +26,14 @@ ValueType KITGPI::Parameterisation::Parameterisation<ValueType>::getRelaxationFr
 /*! \brief Set relaxation frequency
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::setRelaxationFrequency(ValueType const setRelaxationFrequency)
+void KITGPI::Gradient::Gradient<ValueType>::setRelaxationFrequency(ValueType const setRelaxationFrequency)
 {
     relaxationFrequency = setRelaxationFrequency;
 }
 
 /*! \brief Getter method for number of relaxation mechanisms */
 template <typename ValueType>
-IndexType KITGPI::Parameterisation::Parameterisation<ValueType>::getNumRelaxationMechanisms() const
+IndexType KITGPI::Gradient::Gradient<ValueType>::getNumRelaxationMechanisms() const
 {
     return (numRelaxationMechanisms);
 }
@@ -41,7 +41,7 @@ IndexType KITGPI::Parameterisation::Parameterisation<ValueType>::getNumRelaxatio
 /*! \brief Set number of Relaxation Mechanisms
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms)
+void KITGPI::Gradient::Gradient<ValueType>::setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms)
 {
     numRelaxationMechanisms = setNumRelaxationMechanisms;
 }
@@ -54,7 +54,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::setNumRelaxationMech
  \param value Value which will be used to initialize the single parameter to a homogenoeus parameter vector
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::initParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar value)
+void KITGPI::Gradient::Gradient<ValueType>::initParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar value)
 {
 
     allocateParameterisation(vector, ctx, dist);
@@ -72,7 +72,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::initParameterisation
  \param partitionedIn Partitioned input
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::initParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
+void KITGPI::Gradient::Gradient<ValueType>::initParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
 {
 
     allocateParameterisation(vector, ctx, dist);
@@ -90,7 +90,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::initParameterisation
  \param partitionedOut Partitioned output
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::writeParameterisation(scai::lama::Vector const &vector, std::string filename, IndexType partitionedOut) const
+void KITGPI::Gradient::Gradient<ValueType>::writeParameterisation(scai::lama::Vector const &vector, std::string filename, IndexType partitionedOut) const
 {
     PartitionedInOut::PartitionedInOut<ValueType> partitionOut;
 
@@ -113,7 +113,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::writeParameterisatio
 /*! \brief Read a parameter from file
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::readParameterisation(scai::lama::Vector &vector, std::string filename, scai::dmemo::DistributionPtr dist, IndexType partitionedIn)
+void KITGPI::Gradient::Gradient<ValueType>::readParameterisation(scai::lama::Vector &vector, std::string filename, scai::dmemo::DistributionPtr dist, IndexType partitionedIn)
 {
 
     PartitionedInOut::PartitionedInOut<ValueType> partitionIn;
@@ -136,7 +136,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::readParameterisation
 /*! \brief Allocate a single parameter
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::allocateParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     vector.setContextPtr(ctx);
     vector.allocate(dist);
@@ -146,7 +146,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::allocateParameterisa
  * 
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getDensity()
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getDensity()
 {
 
     return (density);
@@ -155,7 +155,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Get const reference to density  parameter
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getDensity() const
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getDensity() const
 {
     return (density);
 }
@@ -163,7 +163,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Set density  parameter
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::setDensity(scai::lama::Vector const &setDensity)
+void KITGPI::Gradient::Gradient<ValueType>::setDensity(scai::lama::Vector const &setDensity)
 {
     density = setDensity;
 }
@@ -172,7 +172,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::setDensity(scai::lam
  *
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getVelocityP()
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getVelocityP()
 {
     return (velocityP);
 }
@@ -181,7 +181,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
  *
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getVelocityP() const
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getVelocityP() const
 {
     return (velocityP);
 }
@@ -189,7 +189,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Set P-wave velocity  parameter
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::setVelocityP(scai::lama::Vector const &setVelocityP)
+void KITGPI::Gradient::Gradient<ValueType>::setVelocityP(scai::lama::Vector const &setVelocityP)
 {
     velocityP = setVelocityP;
 }
@@ -198,7 +198,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::setVelocityP(scai::l
  * 
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getVelocityS()
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getVelocityS()
 {
     return (velocityS);
 }
@@ -206,7 +206,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Get const reference to S-wave velocity
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getVelocityS() const
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getVelocityS() const
 {
     return (velocityS);
 }
@@ -214,7 +214,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Set S-wave velocity  parameter
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::setVelocityS(scai::lama::Vector const &setVelocityS)
+void KITGPI::Gradient::Gradient<ValueType>::setVelocityS(scai::lama::Vector const &setVelocityS)
 {
     velocityS = setVelocityS;
 }
@@ -222,7 +222,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::setVelocityS(scai::l
 /*! \brief Get const reference to tauP
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getTauP()
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getTauP()
 {
     return (tauP);
 }
@@ -231,7 +231,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
  *
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getTauP() const
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getTauP() const
 {
     return (tauP);
 }
@@ -239,7 +239,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Set tauP velocity  parameter
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::setTauP(scai::lama::Vector const &setTauP)
+void KITGPI::Gradient::Gradient<ValueType>::setTauP(scai::lama::Vector const &setTauP)
 {
     tauP = setTauP;
 }
@@ -247,7 +247,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::setTauP(scai::lama::
 /*! \brief Get const reference to tauS
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getTauS()
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getTauS()
 {
     return (tauS);
 }
@@ -255,7 +255,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Get const reference to tauS
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>::getTauS() const
+scai::lama::Vector const &KITGPI::Gradient::Gradient<ValueType>::getTauS() const
 {
     return (tauS);
 }
@@ -263,7 +263,7 @@ scai::lama::Vector const &KITGPI::Parameterisation::Parameterisation<ValueType>:
 /*! \brief Set tauS velocity  parameter
  */
 template <typename ValueType>
-void KITGPI::Parameterisation::Parameterisation<ValueType>::setTauS(scai::lama::Vector const &setTauS)
+void KITGPI::Gradient::Gradient<ValueType>::setTauS(scai::lama::Vector const &setTauS)
 {
     tauS = setTauS;
 }
@@ -273,7 +273,7 @@ void KITGPI::Parameterisation::Parameterisation<ValueType>::setTauS(scai::lama::
  \param rhs Model which is copied.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation::Parameterisation<ValueType>::operator=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator=(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
     assign(rhs);
     return *this;
@@ -284,7 +284,7 @@ KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation:
  \param rhs Model which is subtractet.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation::Parameterisation<ValueType>::operator-=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator-=(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
     minusAssign(rhs);
     return *this;
@@ -295,11 +295,11 @@ KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation:
  \param rhs Model which is subtractet.
  */
 template <typename ValueType>
-KITGPI::Parameterisation::Parameterisation<ValueType> &KITGPI::Parameterisation::Parameterisation<ValueType>::operator+=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator+=(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
     plusAssign(rhs);
     return *this;
 }
 
-template class KITGPI::Parameterisation::Parameterisation<float>;
-template class KITGPI::Parameterisation::Parameterisation<double>;
+template class KITGPI::Gradient::Gradient<float>;
+template class KITGPI::Gradient::Gradient<double>;

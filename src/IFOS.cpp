@@ -23,7 +23,7 @@
 
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit.hpp"
-#include "Parameterisation/ParameterisationFactory.hpp"
+#include "Gradient/GradientFactory.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     /* Objects for inversion                   */
     /* --------------------------------------- */
 
-    Parameterisation::Parameterisation<ValueType>::ParameterisationPtr gradient(Parameterisation::Factory<ValueType>::Create(equationType));
+    Gradient::Gradient<ValueType>::GradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
     gradient->init(ctx, dist);
 
     GradientCalculation<ValueType> gradientCalculation;

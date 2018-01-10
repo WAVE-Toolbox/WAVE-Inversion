@@ -4,14 +4,14 @@
 
 #include "Acoustic.hpp"
 #include "Elastic.hpp"
-#include "Parameterisation.hpp"
+#include "Gradient.hpp"
 #include "Viscoelastic.hpp"
 #include <string>
 
 namespace KITGPI
 {
 
-    namespace Parameterisation
+    namespace Gradient
     {
 
         //! \brief Factory class.
@@ -20,8 +20,8 @@ namespace KITGPI
         {
 
           public:
-            //! \brief Declare Parameterisation pointer
-            typedef typename Parameterisation<ValueType>::ParameterisationPtr ParameterisationPtr;
+            //! \brief Declare Gradient pointer
+            typedef typename Gradient<ValueType>::GradientPtr GradientPtr;
 
             Factory() = delete;
             Factory(Factory const &) = delete;
@@ -31,7 +31,7 @@ namespace KITGPI
              *
              \param type Simmulation type (acoustic, elsstic, viscoelastic)
              */
-            static ParameterisationPtr Create(std::string type);
+            static GradientPtr Create(std::string type);
         };
     }
 }
