@@ -279,7 +279,7 @@ KITGPI::Parameterisation::Acoustic<ValueType> &KITGPI::Parameterisation::Acousti
     return *this;
 }
 
-/*! \brief function for overloading -= Operation (called in base class)
+/*! \brief function for overloading = Operation (called in base class)
  *
  \param rhs Abstract model which is assigned.
  */
@@ -314,6 +314,21 @@ void KITGPI::Parameterisation::Acoustic<ValueType>::plusAssign(KITGPI::Parameter
     density += rhs.getDensity();
     velocityP += rhs.getVelocityP();
 }
+
+/*! \brief function for overloading -= Operation (called in base class)
+ *
+ \param lhs Abstract model.
+ \param rhs Abstract gradient which is assigned.
+ */
+template <typename ValueType>
+void KITGPI::Parameterisation::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs)
+{
+    scai::lama::DenseVector<ValueType> temp;
+    temp = lhs.getVelocityP() - rhs.getVelocityP();
+    lhs.setVelocityP(temp);
+    temp = lhs.getDensity() - rhs.getDensity();
+    lhs.setDensity(temp);
+};
 
 template class KITGPI::Parameterisation::Acoustic<double>;
 template class KITGPI::Parameterisation::Acoustic<float>;

@@ -350,5 +350,14 @@ void KITGPI::Parameterisation::Viscoelastic<ValueType>::plusAssign(KITGPI::Param
     tauP = rhs.getTauP();
 }
 
+/*! \brief function for overloading -= Operation (called in base class)
+ *
+ \param lhs Abstract model.
+ \param rhs Abstract gradient which is assigned.
+ */
+template <typename ValueType>
+void KITGPI::Parameterisation::Viscoelastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs){
+    COMMON_THROWEXCEPTION("minus Assign is not implemented,yet ")};
+
 template class KITGPI::Parameterisation::Viscoelastic<float>;
 template class KITGPI::Parameterisation::Viscoelastic<double>;

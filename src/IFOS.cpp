@@ -22,7 +22,6 @@
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "Optimization/GradientCalculation.hpp"
-#include "test/test.hpp"
 #include "Optimization/Misfit.hpp"
 #include "Parameterisation/ParameterisationFactory.hpp"
 
@@ -82,8 +81,6 @@ int main(int argc, char *argv[])
     end_t = common::Walltime::get();
     HOST_PRINT(comm, "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
 
-
-    
     /* --------------------------------------- */
     /* Acquisition geometry                    */
     /* --------------------------------------- */
@@ -93,10 +90,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Modelparameter                          */
     /* --------------------------------------- */
-    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr fdModel(Modelparameter::Factory<ValueType>::Create(equationType));
-
-    Parameterisation::Parameterisation<ValueType>::ParameterisationPtr model(Parameterisation::Factory<ValueType>::Create(equationType));
-
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
     // load starting model
     model->init(config, ctx, dist);
 
@@ -104,7 +98,7 @@ int main(int argc, char *argv[])
     /* Forward solver                          */
     /* --------------------------------------- */
     IndexType getNT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-    
+
     ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
     solver->prepareBoundaryConditions(config, *derivatives, dist, ctx);
 
@@ -114,13 +108,13 @@ int main(int argc, char *argv[])
     /* Objects for inversion                   */
     /* --------------------------------------- */
 
-    typename Parameterisation::Parameterisation<ValueType>::ParameterisationPtr gradient(Parameterisation::Factory<ValueType>::Create(equationType));
+    Parameterisation::Parameterisation<ValueType>::ParameterisationPtr gradient(Parameterisation::Factory<ValueType>::Create(equationType));
     gradient->init(ctx, dist);
 
     GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
 
-    gradientCalculation.allocate(config,dist, no_dist_NT, comm, ctx);
+    gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
 
     lama::DenseVector<ValueType> temp(dist, ctx);
 
@@ -129,19 +123,17 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
+    std::string gradname("gradients/grad");
 
     IndexType maxiterations = 20;
     if (config.get<bool>("runForward"))
         maxiterations = 1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
 
-        // set model for fd simulation to starting model
+        // update model for fd simulation (averaging, inverse Density ...
+        model->prepareForModelling(config, ctx, dist, comm);
 
-        fdModel->setVelocityP(model->getVelocityP());
-        fdModel->setDensity(model->getDensity());
-        fdModel->prepareForModelling(config, ctx, dist, comm);
-
-        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *fdModel, config, iteration, dataMisfit);
+        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *model, *gradient, config, iteration, dataMisfit);
 
         HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n");
 
@@ -152,13 +144,15 @@ int main(int argc, char *argv[])
         }
 
         steplength *= 0.8;
-        gradientCalculation.grad_vp *= 1 / gradientCalculation.grad_vp.max() * (steplength);
+        // gradientCalculation.grad_vp *= 1 / gradientCalculation.grad_vp.max() * (steplength);
+        lama::DenseVector<ValueType> temp;
+        temp = gradient->getVelocityP();
+        temp *= 1 / gradient->getVelocityP().max() * (steplength);
+        gradient->setVelocityP(temp);
         //        grad_rho *= 1 / grad_rho.max() * 50;
 
-        gradient->setVelocityP(gradientCalculation.grad_vp);
-
         *model -= *gradient;
-	
+
         model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 
     } //end of loop over iterations

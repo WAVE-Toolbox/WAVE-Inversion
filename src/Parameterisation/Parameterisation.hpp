@@ -28,6 +28,7 @@
 #include <Configuration/Configuration.hpp>
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
+#include <Modelparameter/Modelparameter.hpp>
 namespace KITGPI
 {
 
@@ -114,9 +115,20 @@ namespace KITGPI
             virtual void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
             virtual void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs) = 0;
 
+            /* Operator overloading */
+            /*lhs Base rhs Base */
             KITGPI::Parameterisation::Parameterisation<ValueType> &operator=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
             KITGPI::Parameterisation::Parameterisation<ValueType> &operator-=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
             KITGPI::Parameterisation::Parameterisation<ValueType> &operator+=(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+
+            /*lhs: fd-Model-Base rhs: gradient Base */
+            friend KITGPI::Modelparameter::Modelparameter<ValueType> &operator-=(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> &rhs)
+            {
+                rhs.minusAssign(lhs, rhs);
+                return lhs;
+            };
+
+            virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs){};
 
           protected:
             IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files

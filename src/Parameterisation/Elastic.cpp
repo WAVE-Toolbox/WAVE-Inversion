@@ -321,5 +321,14 @@ void KITGPI::Parameterisation::Elastic<ValueType>::plusAssign(KITGPI::Parameteri
     velocityS = rhs.getVelocityS();
 }
 
+/*! \brief function for overloading -= Operation (called in base class)
+ *
+ \param lhs Abstract model.
+ \param rhs Abstract gradient which is assigned.
+ */
+template <typename ValueType>
+void KITGPI::Parameterisation::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs){
+    COMMON_THROWEXCEPTION("minus Assign is not implemented,yet ")};
+
 template class KITGPI::Parameterisation::Elastic<float>;
 template class KITGPI::Parameterisation::Elastic<double>;

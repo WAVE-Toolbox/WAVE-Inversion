@@ -11,7 +11,7 @@
 #include <Acquisition/Sources.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
-
+#include "../Parameterisation/ParameterisationFactory.hpp"
 #include "Misfit.hpp"
 
 
@@ -26,7 +26,7 @@ public:
 
     void allocate(KITGPI::Configuration::Configuration config,scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr no_dist_NT, scai::dmemo::CommunicatorPtr comm, scai::hmemo::ContextPtr ctx);
     /* Calculate gradients */
-    void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Configuration::Configuration config, IndexType iteration, Misfit<ValueType> &dataMisfit);
+    void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model,KITGPI::Parameterisation::Parameterisation<ValueType> &gradient, KITGPI::Configuration::Configuration config, IndexType iteration, Misfit<ValueType> &dataMisfit);
     
     scai::lama::DenseVector<ValueType> grad_bulk;  // make it private and write getter and setter functions
     scai::lama::DenseVector<ValueType> grad_rho;

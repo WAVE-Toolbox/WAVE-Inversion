@@ -66,6 +66,7 @@ namespace KITGPI
             void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
             void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
             void assign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
+            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
 
             /* Overloading Operators */
             KITGPI::Parameterisation::Viscoelastic<ValueType> operator*(scai::lama::Scalar rhs);

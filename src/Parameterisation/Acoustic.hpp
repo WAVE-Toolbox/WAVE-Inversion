@@ -26,6 +26,8 @@
 #include "Parameterisation.hpp"
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
+#include <Modelparameter/Acoustic.hpp>
+
 namespace KITGPI
 {
 
@@ -76,6 +78,25 @@ namespace KITGPI
             KITGPI::Parameterisation::Acoustic<ValueType> operator-(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
             KITGPI::Parameterisation::Acoustic<ValueType> &operator-=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
             KITGPI::Parameterisation::Acoustic<ValueType> &operator=(KITGPI::Parameterisation::Acoustic<ValueType> const &rhs);
+
+            friend KITGPI::Modelparameter::Acoustic<ValueType> operator-(KITGPI::Modelparameter::Acoustic<ValueType> const &lhs, KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
+            {
+                KITGPI::Modelparameter::Acoustic<ValueType> result(lhs);
+                result -= rhs;
+                return result;
+            };
+
+            friend KITGPI::Modelparameter::Acoustic<ValueType> const &operator-=(KITGPI::Modelparameter::Acoustic<ValueType> &lhs, KITGPI::Parameterisation::Acoustic<ValueType> const &rhs)
+            {
+                scai::lama::DenseVector<ValueType> temp;
+                temp = lhs.getVelocityP() - rhs.velocityP;
+                lhs.setVelocityP(temp);
+                temp = lhs.getDensity() - rhs.density;
+                lhs.setDensity(temp);
+                return lhs;
+            };
+
+            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
 
             void minusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
             void plusAssign(KITGPI::Parameterisation::Parameterisation<ValueType> const &rhs);
