@@ -111,15 +111,19 @@ namespace KITGPI
             virtual void setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
 
+            virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model) = 0;
+
             virtual void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
+            virtual void timesAssign(scai::lama::Scalar const &rhs) = 0;
 
             /* Operator overloading */
             /*lhs Base rhs Base */
             KITGPI::Gradient::Gradient<ValueType> &operator=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator-=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator+=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            KITGPI::Gradient::Gradient<ValueType> &operator*=(scai::lama::Scalar const &rhs);
 
             /*lhs: fd-Model-Base rhs: gradient Base */
             friend KITGPI::Modelparameter::Modelparameter<ValueType> &operator-=(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> &rhs)
@@ -128,9 +132,13 @@ namespace KITGPI
                 return lhs;
             };
 
-            virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){};
+            virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
 
           protected:
+            bool invertForVp = true;
+            bool invertForVs = false;
+            bool invertForDensity = false;
+
             IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
             IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files
 

@@ -321,6 +321,16 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
     velocityS = rhs.getVelocityS();
 }
 
+/*! \brief function for overloading *= Operation (called in base class)
+ *
+ \param rhs Abstarct model which is subtractet.
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const &rhs)
+{
+    COMMON_THROWEXCEPTION("elastic times Assign is not implemented,yet ");
+}
+
 /*! \brief function for overloading -= Operation (called in base class)
  *
  \param lhs Abstract model.
@@ -328,7 +338,17 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
  */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){
-    COMMON_THROWEXCEPTION("minus Assign is not implemented,yet ")};
+    COMMON_THROWEXCEPTION("elastic minus Assign is not implemented,yet ")};
+
+/*! \brief function for scaling the gradients with the model parameter 
+ *
+ \param model Abstract model.
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{
+    COMMON_THROWEXCEPTION("scale is not implemented for elastic gradients,yet ");
+}
 
 template class KITGPI::Gradient::Elastic<float>;
 template class KITGPI::Gradient::Elastic<double>;

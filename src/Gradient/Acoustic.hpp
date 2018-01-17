@@ -70,6 +70,8 @@ namespace KITGPI
             IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
+            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+
             /* Overloading Operators */
             KITGPI::Gradient::Acoustic<ValueType> operator*(scai::lama::Scalar rhs);
             KITGPI::Gradient::Acoustic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
@@ -97,12 +99,15 @@ namespace KITGPI
             };
 
             void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs);
-
             void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void timesAssign(scai::lama::Scalar const &rhs);
 
           private:
+            using Gradient<ValueType>::invertForVp;
+            using Gradient<ValueType>::invertForDensity;
+
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;
 

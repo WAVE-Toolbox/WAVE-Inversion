@@ -350,14 +350,36 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::plusAssign(KITGPI::Gradient::Gra
     tauP = rhs.getTauP();
 }
 
+/*! \brief function for overloading *= Operation (called in base class)
+ *
+ \param rhs Abstarct model which is subtractet.
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Viscoelastic<ValueType>::timesAssign(scai::lama::Scalar const &rhs)
+{
+    COMMON_THROWEXCEPTION("visco times Assign is not implemented,yet ");
+}
+
 /*! \brief function for overloading -= Operation (called in base class)
  *
  \param lhs Abstract model.
  \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Viscoelastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){
-    COMMON_THROWEXCEPTION("minus Assign is not implemented,yet ")};
+void KITGPI::Gradient::Viscoelastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs)
+{
+    COMMON_THROWEXCEPTION("visco minus Assign is not implemented,yet ")
+}
+
+/*! \brief function for scaling the gradients with the model parameter 
+ *
+ \param model Abstract model.
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Viscoelastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{
+    COMMON_THROWEXCEPTION("scale is not implemented for viscoelastic gradients,yet ")
+}
 
 template class KITGPI::Gradient::Viscoelastic<float>;
 template class KITGPI::Gradient::Viscoelastic<double>;

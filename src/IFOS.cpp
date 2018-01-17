@@ -116,10 +116,10 @@ int main(int argc, char *argv[])
 
     gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
 
-    lama::DenseVector<ValueType> temp(dist, ctx);
+    
 
-    ValueType steplength = 80;
-
+    lama::Scalar steplength = 0.03;
+    std::cout << steplength << std::endl;
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
@@ -143,16 +143,13 @@ int main(int argc, char *argv[])
             break;
         }
 
-        steplength *= 0.8;
-        // gradientCalculation.grad_vp *= 1 / gradientCalculation.grad_vp.max() * (steplength);
-        lama::DenseVector<ValueType> temp;
-        temp = gradient->getVelocityP();
-        temp *= 1 / gradient->getVelocityP().max() * (steplength);
-        gradient->setVelocityP(temp);
-        //        grad_rho *= 1 / grad_rho.max() * 50;
-
-        *model -= *gradient;
-
+        steplength *= 0.95;
+	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+	 gradient->scale(*model);
+         *gradient *=steplength;
+	 *model -= *gradient;
+       
+	
         model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 
     } //end of loop over iterations

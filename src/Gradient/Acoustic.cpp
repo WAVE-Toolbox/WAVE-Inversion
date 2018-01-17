@@ -315,6 +315,17 @@ void KITGPI::Gradient::Acoustic<ValueType>::plusAssign(KITGPI::Gradient::Gradien
     velocityP += rhs.getVelocityP();
 }
 
+/*! \brief function for overloading *= Operation (called in base class)
+ *
+ \param rhs Abstarct model which is subtractet.
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Scalar const &rhs)
+{
+    density *= rhs;
+    velocityP *= rhs;
+}
+
 /*! \brief function for overloading -= Operation (called in base class)
  *
  \param lhs Abstract model.
@@ -329,6 +340,22 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::
     temp = lhs.getDensity() - rhs.getDensity();
     lhs.setDensity(temp);
 };
+
+/*! \brief function for scaling the gradients with the model parameter 
+ *
+ \param model Abstract model.
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{
+    if (invertForVp) {
+        velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
+    }
+    if (invertForDensity) {
+        // gradientCalculation.grad_vp *= 1 / gradientCalculation.grad_vp.max()
+        density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
+    }
+}
 
 template class KITGPI::Gradient::Acoustic<double>;
 template class KITGPI::Gradient::Acoustic<float>;

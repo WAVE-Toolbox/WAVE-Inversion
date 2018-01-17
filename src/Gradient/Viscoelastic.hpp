@@ -63,10 +63,13 @@ namespace KITGPI
 
             void write(std::string filename, IndexType partitionedOut) const override;
 
+            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+
             void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void timesAssign(scai::lama::Scalar const &rhs);
 
             /* Overloading Operators */
             KITGPI::Gradient::Viscoelastic<ValueType> operator*(scai::lama::Scalar rhs);
@@ -78,6 +81,10 @@ namespace KITGPI
             KITGPI::Gradient::Viscoelastic<ValueType> &operator=(KITGPI::Gradient::Viscoelastic<ValueType> const &rhs);
 
           private:
+            using Gradient<ValueType>::invertForVp;
+            using Gradient<ValueType>::invertForVs;
+            using Gradient<ValueType>::invertForDensity;
+
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;
             using Gradient<ValueType>::velocityS;

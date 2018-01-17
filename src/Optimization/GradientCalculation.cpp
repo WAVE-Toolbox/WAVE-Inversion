@@ -196,7 +196,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     //         grad_rho *= grad_bulk;
     //         grad_rho -= config.get<ValueType>("DT") * waveconv_v_sum;
 
-    grad_vp.writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+  //  grad_vp.writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
     //         grad_rho.writeToFile(gradname + "_rho" + ".It"+std::to_string(iteration)+ ".mtx");
 }
 
