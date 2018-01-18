@@ -18,12 +18,12 @@
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
 #include <ForwardSolver/ForwardSolverFactory.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
-
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit.hpp"
 #include "Gradient/GradientFactory.hpp"
+#include "Optimization/StepLengthSearch.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -104,6 +104,8 @@ int main(int argc, char *argv[])
 
     dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
 
+//     lama::GridVector<ValueType> wavefieldStorage;
+        
     /* --------------------------------------- */
     /* Objects for inversion                   */
     /* --------------------------------------- */
@@ -113,13 +115,12 @@ int main(int argc, char *argv[])
 
     GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
-
-    gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
-
+    StepLengthSearch<ValueType> SLsearch;
     
-
-    lama::Scalar steplength = 0.03;
-    std::cout << steplength << std::endl;
+    gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
+    
+    lama::Scalar steplength_init = 0.03;
+    
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
@@ -129,29 +130,33 @@ int main(int argc, char *argv[])
     if (config.get<bool>("runForward"))
         maxiterations = 1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
-
-        // update model for fd simulation (averaging, inverse Density ...
-        model->prepareForModelling(config, ctx, dist, comm);
+        
+	// update model for fd simulation (averaging, inverse Density ...
+        model->prepareForModelling(config, ctx, dist, comm);  
 
         gradientCalculation.calc(*solver, *derivatives, receivers, sources, *model, *gradient, config, iteration, dataMisfit);
-
-        HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n");
-
-        //         abortcriterion.check(dataMisfit);
-        if ((iteration > 0) && (dataMisfit.getMisfitSum(iteration) >= dataMisfit.getMisfitSum(iteration - 1))) {
-            HOST_PRINT(comm, "Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration - 1) << "\n\n");
+         
+        HOST_PRINT(comm,"Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n" );
+         
+//         abortcriterion.check(dataMisfit);
+        if ( (iteration > 0) && (dataMisfit.getMisfitSum(iteration) >= dataMisfit.getMisfitSum(iteration-1)) )
+        {
+            HOST_PRINT(comm,"Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration-1) << "\n\n" );
             break;
-        }
+        }         
 
-        steplength *= 0.95;
-	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
-	 gradient->scale(*model);
-         *gradient *=steplength;
-	 *model -= *gradient;
-       
-	
-        model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
+        gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+        gradient->scale(*model);
+        
+        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, dist, config, *gradient, steplength_init, dataMisfit.getMisfitSum(iteration));
+        
+        *gradient *=SLsearch.getSteplength();
+        *model -= *gradient;
 
+        model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
+
+        steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
+        
     } //end of loop over iterations
     return 0;
 }
