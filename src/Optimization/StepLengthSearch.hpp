@@ -21,7 +21,7 @@ public:
     
     void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, scai::lama::DenseVector<ValueType> const &update, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit);
     
-     scai::lama::Scalar steplengthOptimum; // only for test
+    scai::lama::Scalar const &getSteplength();
     
 private:
     
@@ -30,14 +30,8 @@ private:
     
     scai::lama::DenseVector<ValueType> steplengthParabola;
     scai::lama::DenseVector<ValueType> misfitParabola;
-//     scai::lama::Scalar steplengthParabola1;
-//     scai::lama::Scalar steplengthParabola2;
-//     scai::lama::Scalar steplengthParabola3;
-//     scai::lama::Scalar misfitParabola1;
-//     scai::lama::Scalar misfitParabola2;
-//     scai::lama::Scalar misfitParabola3;
     scai::lama::Scalar steplengthExtremum;
-//     scai::lama::Scalar steplengthOptimum;
+    scai::lama::Scalar steplengthOptimum;
     scai::lama::Scalar steplengthMin;
     scai::lama::Scalar steplengthMax;
     bool step2ok;

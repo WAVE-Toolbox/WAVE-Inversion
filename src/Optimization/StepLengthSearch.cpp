@@ -20,11 +20,9 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     int maxStepCalc = 4;      // maximum number of calculations to find a proper (steplength, misfit) pair 
     int stepCalcCount = 0;    // number of calculations to find a proper (steplength, misfit) pair
     scai::lama::Scalar scalingFactor = 2;
-    scai::lama::Scalar steplengthMin = 0.005; 
-    scai::lama::Scalar steplengthMax = 0.1;
-    
-    steplength = steplength_init;
-    
+    scai::lama::Scalar steplengthMin = 0.001; 
+    scai::lama::Scalar steplengthMax = 0.1; // 0.1 shows minimum msifit of ~97
+        
     /* Save three pairs (steplength, misfit) for the parabolic fit */
     steplengthParabola.allocate(3);
     misfitParabola.allocate(3);
@@ -40,95 +38,151 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
        1) misfit 2 < misfit 1 AND misfit 3 > misfit 2: SL = minimum of parabola or SL = SLmax
        2) misfit 2 < misfit 1 AND misfit 3 < misfit 2: SL = SL3 or SL = SLmax 
        3) misfit 2 > misfit 1 AND misfit 3 < misfit 2 AND misfit 3 < misfit 1: SL = SL3 
-       4) misfit 2 > misfit 1 AND misfit 3 < misfit 2 AND misfit 3 > misfit 1: SL = very small SL
+       4) misfit 2 > misfit 1 AND misfit 3 < misfit 2 AND misfit 3 > misfit 1: SL = very small SL -> not used
        5) misfit 2 > misfit 1 AND misfit 3 > misfit 2: SL = very small SL */
     /* ------------------------------------------------------------------------------------------------------ */
     
     HOST_PRINT(comm,"Start step length search\n\n" );
     
-    /* Both state variables are only true if the second step length decreased the misfit AND the third step length increases the misfit again */
-    step2ok = false;
-    step3ok = false;
+    step2ok = false; // true if second step length decreases the misfit
+    step3ok = false; // true if second step length decreases the misfit AND third step length increases the misfit relative to second step length */
+   
+    /* --- Save first step length in any case --- */
+    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength_init);
+    steplengthParabola.setValue(1, steplength_init); 
+    misfitParabola.setValue(1, misfitTestSum);  
+    if ( misfitParabola.getValue(0) > misfitParabola.getValue(1) ){
+        step2ok= true;}
+    
+    /* --- Search for a second step length - case: misfit was DECREASED --- */
+    steplength = steplength_init;
+    while( step2ok == true && stepCalcCount < maxStepCalc ){
+        steplength *= scalingFactor;
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+        steplengthParabola.setValue(2, steplength); 
+        misfitParabola.setValue(2, misfitTestSum);
+        if( misfitTestSum > misfitParabola.getValue(1)){
+            step3ok= true;
+            break;}
+        else{
+            stepCalcCount += 1;}
+    }
+    
+    /* --- Search for a second step length - case: misfit was INCREASED  --- */
+    steplength = steplength_init;
+    while( step2ok == false && stepCalcCount < maxStepCalc ){
+        steplength /= scalingFactor;
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+        steplengthParabola.setValue(2, steplength); 
+        misfitParabola.setValue(2, misfitTestSum);
+        if( misfitTestSum < misfitParabola.getValue(0)){
+            step3ok= true;
+            break;}
+        else{
+            stepCalcCount += 1;}
+    }
+    
+    /* Set optimum step length */
+    if( step2ok == true && step3ok == true ){
+        HOST_PRINT(comm,"Apply parabolic fit\n\n" );
+        this->parabolicFit();
+        steplengthOptimum = steplengthExtremum;}
+    else if( step2ok == true && step3ok == false ){
+        steplengthOptimum = steplengthParabola.getValue(2);}
+    else if( step2ok == false && step3ok == true ){
+        steplengthOptimum = steplengthParabola.getValue(2);}
+    else if( step2ok == false && step3ok == false ){
+        steplengthOptimum = steplengthMin;}
+        
+        
+    /* Check if accepted step length is smaller than maximally allowed step length */
+    if ( steplengthOptimum > steplengthMax){
+        steplengthOptimum = steplengthMax;}
+    
+    HOST_PRINT(comm,"Finished step length search\n\n" );
+    for (int i = 0; i < 3; i++) {
+        HOST_PRINT(comm,"Steplength " << i << ": "<<  steplengthParabola.getValue(i) << ", Corresponding misfit: " << misfitParabola.getValue(i) << std::endl);
+    }
+    HOST_PRINT(comm,"Accepted step length: " << steplengthOptimum << ", Corresponding misfit: " << misfitTestSum << std::endl);
     
     /* -------------------------------------- */
     /* Find second step length (out of three) */
     /* -------------------------------------- */
-    while( step2ok == false ){
-        
-        if(stepCalcCount >= maxStepCalc)
-            break;
-        
-        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
-        misfitParabola.setValue(1, misfitTestSum);
-        steplengthParabola.setValue(1, steplength);
-        if(misfitTestSum < currentMisfit){
-            step2ok = true; // use set method?
-            steplength = scalingFactor * steplength;}
-        else {
-            steplength /= scalingFactor;
-            stepCalcCount += 1;}
-    }
+//     while( step2ok == false ){
+//         
+//         if(stepCalcCount >= maxStepCalc)
+//             break;
+//         
+//         misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+//         misfitParabola.setValue(1, misfitTestSum);
+//         steplengthParabola.setValue(1, steplength);
+//         if(misfitTestSum < currentMisfit){
+//             step2ok = true; // use set method?
+//             steplength = scalingFactor * steplength;}
+//         else {
+//             steplength /= scalingFactor;
+//             stepCalcCount += 1;}
+//     }
     
     /* ----------------------------------------------------------------------------------- */
     /* Find third step length in case that the second step length DOES decrease the misfit */
     /* ----------------------------------------------------------------------------------- */
-    stepCalcCount = 0;
-    
-    if( step2ok == true ){
-        
-        while( step3ok == false ){
-            if(stepCalcCount >= maxStepCalc){
-                if( steplength > steplengthMax){
-                    steplengthOptimum = steplengthMax;
-                    return;}
-                break;} 
-        
-            misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
-            misfitParabola.setValue(2, misfitTestSum);
-            steplengthParabola.setValue(2, steplength);
-            if(misfitTestSum > misfitParabola.getValue(1)){
-                step3ok = true; // use set method?
-                stepCalcCount = 0;}  // do not set stepCalcCount to zero??
-            else if( misfitTestSum < misfitParabola.getValue(1) ){
-                steplength = scalingFactor * steplength;
-                stepCalcCount += 1;}
-        }
-    }
-    
-    /* Fit parabola */
-    if( step2ok == true && step3ok == true ){
-        this->parabolicFit();
-        steplengthOptimum = steplengthExtremum;
-        return;
-    }
+//     stepCalcCount = 0;
+//     
+//     if( step2ok == true ){
+//         
+//         while( step3ok == false ){
+//             if(stepCalcCount >= maxStepCalc){
+//                 if( steplength > steplengthMax){
+//                     steplengthOptimum = steplengthMax;
+//                     return;}
+//                 break;} 
+//         
+//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+//             misfitParabola.setValue(2, misfitTestSum);
+//             steplengthParabola.setValue(2, steplength);
+//             if(misfitTestSum > misfitParabola.getValue(1)){
+//                 step3ok = true; // use set method?
+//                 stepCalcCount = 0;}  // do not set stepCalcCount to zero??
+//             else if( misfitTestSum < misfitParabola.getValue(1) ){
+//                 steplength = scalingFactor * steplength;
+//                 stepCalcCount += 1;}
+//         }
+//     }
+//     
+//     /* Fit parabola */
+//     if( step2ok == true && step3ok == true ){
+//         this->parabolicFit();
+//         steplengthOptimum = steplengthExtremum;
+//         return;
+//     }
     
     /* --------------------------------------------------------------------------------------- */
     /* Find third step length in case that the second step length DOES NOT decrease the misfit */
     /* --------------------------------------------------------------------------------------- */
-    stepCalcCount = 0;
-    steplength = steplength_init;
+//     stepCalcCount = 0;
+//     steplength = steplength_init;
+//     
+//     if( step2ok == false ){
+//         
+//         while(stepCalcCount < maxStepCalc){
+//             
+//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+//             misfitParabola.setValue(2, misfitTestSum);
+//             steplengthParabola.setValue(2, steplength);
+//             if(misfitTestSum < misfitParabola.getValue(0)){
+//                 stepCalcCount = 0;
+//                 steplengthOptimum = steplength; // set condition with steplengthMax?
+//                 return;}
+//             else{
+//                 steplength = scalingFactor * steplength;
+//                 }
+//         }
+//         
+//         steplengthOptimum = steplengthMin;
+//         return;
+//     }
     
-    if( step2ok == false ){
-        
-        while(stepCalcCount < maxStepCalc){
-            
-            misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
-            misfitParabola.setValue(2, misfitTestSum);
-            steplengthParabola.setValue(2, steplength);
-            if(misfitTestSum < misfitParabola.getValue(0)){
-                stepCalcCount = 0;
-                steplengthOptimum = steplength; // set condition with steplengthMax?
-                return;}
-            else{
-                steplength = scalingFactor * steplength;
-                }
-        }
-        
-        steplengthOptimum = steplengthMin;
-        return;
-    }
-    
-    HOST_PRINT(comm,"Finish step length search\n\n" );
     
 }
 
@@ -168,6 +222,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     double start_t, end_t; /* For timing */
     IndexType tStart = 0;
     IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5); 
+    std::string equationType = config.get<std::string>("equationType");
 
     KITGPI::Acquisition::Seismogram<ValueType> truedata(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
     KITGPI::Acquisition::Seismogram<ValueType> synthetic(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
@@ -175,26 +230,30 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     scai::lama::Scalar misfitTestShot;
     scai::lama::Scalar misfitTestSum;
     
-    scai::lama::DenseVector<ValueType> modelupdate(dist,ctx);
-    scai::lama::DenseVector<ValueType> testmodel(dist,ctx);
-    testmodel = model.getVelocityP();
-         
+    scai::lama::DenseVector<ValueType> testmodelVP(dist,ctx);
+    testmodelVP = model.getVelocityP();
+    
+    typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodel(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
+    testmodel->init(config, ctx, dist);
+    
     /* Update model */
-    modelupdate = testmodel - steplength * update;
-    testmodel = modelupdate;
+    testmodelVP -= steplength * update;
+    testmodel->setVelocityP(testmodelVP);
+    testmodel->prepareForModelling(config, ctx, dist, comm); 
     
     misfitTestSum = 0;
     
     std::string fieldSeisName("seismograms/rectangle.true");
-
+    
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
         
+        misfitTestShot = 0;
         wavefields.reset();
         sources.init(config, ctx, dist, shotNumber);
         
         start_t = scai::common::Walltime::get();
-        solver.run(receivers, sources, model, wavefields, derivatives, tStart, tEnd, config.get<ValueType>("DT"));
+        solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStart, tEnd, config.get<ValueType>("DT"));
         end_t = scai::common::Walltime::get();
         HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
         
@@ -211,6 +270,11 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
             
 }
 
+template <typename ValueType>
+scai::lama::Scalar const &StepLengthSearch<ValueType>::getSteplength()
+{
+    return (steplengthOptimum);
+}
 
 
 template class StepLengthSearch<double>;

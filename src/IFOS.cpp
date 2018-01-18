@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
         SLsearch.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, update, steplength_init, dataMisfit.getMisfitSum(iteration));
         
 //         modelupdate = model->getVelocityP() - steplength_init * update;
-        modelupdate = model->getVelocityP() - SLsearch.steplengthOptimum * update;
+        modelupdate = model->getVelocityP() - SLsearch.getSteplength() * update;
         
         //  temp-=grad_vp;
         model->setVelocityP(modelupdate);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
 
         model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 	    
-        steplength_init*=0.95;
+        steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
     } //end of loop over iterations
     return 0;
