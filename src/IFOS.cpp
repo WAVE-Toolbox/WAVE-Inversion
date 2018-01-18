@@ -22,6 +22,7 @@
 
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit.hpp"
+#include "Gradient/GradientFactory.hpp"
 #include "Optimization/StepLengthSearch.hpp"
 
 #include <Common/HostPrint.hpp>
@@ -57,14 +58,14 @@ int main(int argc, char *argv[])
     common::Settings::setRank(comm->getNodeRank());
     /* execution context */
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
-    // inter node distribution 
-    // define the grid topology by sizes NX, NY, and NZ from configuration  
+    // inter node distribution
+    // define the grid topology by sizes NX, NY, and NZ from configuration
     // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
-    
-    common::Grid3D grid(config.get<IndexType>("NZ"), config.get<IndexType>("NY"), config.get<IndexType>("NX") );
-    common::Grid3D procGrid(config.get<IndexType>("ProcNZ"), config.get<IndexType>("ProcNY"), config.get<IndexType>("ProcNX") );
+
+    common::Grid3D grid(config.get<IndexType>("NZ"), config.get<IndexType>("NY"), config.get<IndexType>("NX"));
+    common::Grid3D procGrid(config.get<IndexType>("ProcNZ"), config.get<IndexType>("ProcNY"), config.get<IndexType>("ProcNX"));
     // distribute the grid onto available processors, topology can be set by environment variable
-    dmemo::DistributionPtr dist(new dmemo::GridDistribution( grid, comm, procGrid));
+    dmemo::DistributionPtr dist(new dmemo::GridDistribution(grid, comm, procGrid));
 
     HOST_PRINT(comm, "\nIFOS" << dimension << " " << equationType << " - LAMA Version\n\n");
     if (comm->getRank() == MASTERGPI) {
@@ -81,22 +82,16 @@ int main(int argc, char *argv[])
     HOST_PRINT(comm, "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
 
     /* --------------------------------------- */
-    /* Wavefields                              */
-    /* --------------------------------------- */
-    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(Wavefields::Factory<ValueType>::Create(dimension, equationType));
-    wavefields->init(ctx, dist);
-
-    /* --------------------------------------- */
     /* Acquisition geometry                    */
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receivers(config, ctx, dist);
     Acquisition::Sources<ValueType> sources(config, ctx, dist);
-    //  sources.init;
 
     /* --------------------------------------- */
     /* Modelparameter                          */
     /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
+    // load starting model
     model->init(config, ctx, dist);
 
     /* --------------------------------------- */
@@ -114,57 +109,49 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Objects for inversion                   */
     /* --------------------------------------- */
-    
-    GradientCalculation<ValueType> gradient;    
+
+    Gradient::Gradient<ValueType>::GradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
+    gradient->init(ctx, dist);
+
+    GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
     StepLengthSearch<ValueType> SLsearch;
     
-    lama::DenseVector<ValueType> update(dist,ctx);
+    gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
     
-    gradient.allocate(dist, no_dist_NT, comm, ctx);
-    
-    lama::DenseVector<ValueType> modelupdate(dist,ctx);
-    
-    lama::Scalar steplength_init=0.03;
+    lama::Scalar steplength_init = 0.03;
     
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
-    
-    IndexType maxiterations=20;
+    std::string gradname("gradients/grad");
+
+    IndexType maxiterations = 20;
     if (config.get<bool>("runForward"))
-        maxiterations=1;
+        maxiterations = 1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
         
+	// update model for fd simulation (averaging, inverse Density ...
         model->prepareForModelling(config, ctx, dist, comm);  
-        gradient.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, iteration, dataMisfit);
+
+        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *model, *gradient, config, iteration, dataMisfit);
          
         HOST_PRINT(comm,"Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n" );
          
 //         abortcriterion.check(dataMisfit);
-        if ( (iteration>0) && (dataMisfit.getMisfitSum(iteration) > dataMisfit.getMisfitSum(iteration-1)) )
+        if ( (iteration > 0) && (dataMisfit.getMisfitSum(iteration) >= dataMisfit.getMisfitSum(iteration-1)) )
         {
             HOST_PRINT(comm,"Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration-1) << "\n\n" );
             break;
-        }
-          
-//         gradient.grad_vp *= 1 / gradient.grad_vp.max() * (steplength_init);
-//         grad_rho *= 1 / grad_rho.max() * 50;
+        }         
 
-        update = gradient.grad_vp;
-        update *= 1 / gradient.grad_vp.maxNorm();
-        update *= model->getVelocityP().maxNorm();
+	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+	gradient->scale(*model);
         
-        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, update, steplength_init, dataMisfit.getMisfitSum(iteration));
+        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, *gradient, steplength_init, dataMisfit.getMisfitSum(iteration));
         
-//         modelupdate = model->getVelocityP() - steplength_init * update;
-        modelupdate = model->getVelocityP() - SLsearch.getSteplength() * update;
-        
-        //  temp-=grad_vp;
-        model->setVelocityP(modelupdate);
-        //  Density -= grad_rho;
-
-        //  model->getDensity()=grad_rho;
+         *gradient *=SLsearch.getSteplength();
+	 *model -= *gradient;
 
         model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 	    
