@@ -145,16 +145,16 @@ int main(int argc, char *argv[])
             break;
         }         
 
-	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
-	gradient->scale(*model);
+        gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+        gradient->scale(*model);
         
-        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, *wavefields, config, *gradient, steplength_init, dataMisfit.getMisfitSum(iteration));
+        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, dist, config, *gradient, steplength_init, dataMisfit.getMisfitSum(iteration));
         
-         *gradient *=SLsearch.getSteplength();
-	 *model -= *gradient;
+        *gradient *=SLsearch.getSteplength();
+        *model -= *gradient;
 
         model->write((config.get<std::string>("ModelFilename") + ".It"+std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
-	    
+
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
     } //end of loop over iterations

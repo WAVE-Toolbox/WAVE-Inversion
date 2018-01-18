@@ -1,16 +1,20 @@
 #include "StepLengthSearch.hpp"
 
 template <typename ValueType>
-void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, scai::lama::DenseVector<ValueType> const &update, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
+void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
 {
     
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
-    scai::dmemo::DistributionPtr dist = wavefields.getVX().getDistributionPtr();
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr();   // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                   // default context, set by environment variable SCAI_CONTEXT   
-
+    std::string dimension = config.get<std::string>("dimension");
+    std::string equationType = config.get<std::string>("equationType");
+    
+    wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+    wavefields->init(ctx, dist);
+    
     KITGPI::Acquisition::Seismogram<ValueType> truedata(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
     KITGPI::Acquisition::Seismogram<ValueType> synthetic(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
     
@@ -48,7 +52,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     step3ok = false; // true if second step length decreases the misfit AND third step length increases the misfit relative to second step length */
    
     /* --- Save first step length in any case --- */
-    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength_init);
+    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength_init);
     steplengthParabola.setValue(1, steplength_init); 
     misfitParabola.setValue(1, misfitTestSum);  
     if ( misfitParabola.getValue(0) > misfitParabola.getValue(1) ){
@@ -58,7 +62,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     steplength = steplength_init;
     while( step2ok == true && stepCalcCount < maxStepCalc ){
         steplength *= scalingFactor;
-        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
         steplengthParabola.setValue(2, steplength); 
         misfitParabola.setValue(2, misfitTestSum);
         if( misfitTestSum > misfitParabola.getValue(1)){
@@ -72,7 +76,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     steplength = steplength_init;
     while( step2ok == false && stepCalcCount < maxStepCalc ){
         steplength /= scalingFactor;
-        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
         steplengthParabola.setValue(2, steplength); 
         misfitParabola.setValue(2, misfitTestSum);
         if( misfitTestSum < misfitParabola.getValue(0)){
@@ -113,7 +117,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
 //         if(stepCalcCount >= maxStepCalc)
 //             break;
 //         
-//         misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+//         misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
 //         misfitParabola.setValue(1, misfitTestSum);
 //         steplengthParabola.setValue(1, steplength);
 //         if(misfitTestSum < currentMisfit){
@@ -138,7 +142,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
 //                     return;}
 //                 break;} 
 //         
-//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
 //             misfitParabola.setValue(2, misfitTestSum);
 //             steplengthParabola.setValue(2, steplength);
 //             if(misfitTestSum > misfitParabola.getValue(1)){
@@ -167,7 +171,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
 //         
 //         while(stepCalcCount < maxStepCalc){
 //             
-//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, wavefields, config, update, steplength);
+//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
 //             misfitParabola.setValue(2, misfitTestSum);
 //             steplengthParabola.setValue(2, steplength);
 //             if(misfitTestSum < misfitParabola.getValue(0)){
@@ -209,13 +213,13 @@ void StepLengthSearch<ValueType>::parabolicFit(){
 
 
 template <typename ValueType>
-scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, scai::lama::DenseVector<ValueType> const &update, scai::lama::Scalar steplength)
+scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength)
 {
     
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
-    scai::dmemo::DistributionPtr dist = wavefields.getVX().getDistributionPtr();
+    scai::dmemo::DistributionPtr dist = wavefields.getRefVX().getDistributionPtr();
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr();   // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                   // default context, set by environment variable SCAI_CONTEXT   
         
@@ -230,15 +234,18 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     scai::lama::Scalar misfitTestShot;
     scai::lama::Scalar misfitTestSum;
     
-    scai::lama::DenseVector<ValueType> testmodelVP(dist,ctx);
-    testmodelVP = model.getVelocityP();
-    
+    // Implement a (virtual) copy constructor in the abstract base class to simplify/generalize the following code -> virtual constructor idiom!
     typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodel(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
     testmodel->init(config, ctx, dist);
-    
-    /* Update model */
-    testmodelVP -= steplength * update;
-    testmodel->setVelocityP(testmodelVP);
+    testmodel->setVelocityP(model.getVelocityP());
+    typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));
+    testgradient->init(ctx, dist);
+    testgradient->setVelocityP(scaledGradient.getVelocityP());
+
+    /* Update model */   
+    *testgradient *= steplength;
+    *testmodel -= *testgradient;
+        
     testmodel->prepareForModelling(config, ctx, dist, comm); 
     
     misfitTestSum = 0;
