@@ -63,7 +63,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
 
-    scai::dmemo::DistributionPtr dist = wavefields->getVX().getDistributionPtr();
+    scai::dmemo::DistributionPtr dist = wavefields->getRefVX().getDistributionPtr();
     scai::dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
@@ -146,15 +146,15 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
             /*             Convolution                 */
             /* --------------------------------------- */
 
-            tmp = wavefieldrecord[t]->getP();
-            tmp *= wavefields->getP();
+            tmp = wavefieldrecord[t]->getRefP();
+            tmp *= wavefields->getRefP();
             waveconv_p += tmp;
 
             //            wavefieldrecordvx.getColumn(tmp, t);
-            //            tmp *= wavefields->getVX();
+            //            tmp *= wavefields->getRefVX();
             //            waveconv_v += tmp;
             //            wavefieldrecordvy.getColumn(tmp, t);
-            //            tmp *= wavefields->getVY();
+            //            tmp *= wavefields->getRefVY();
             //            waveconv_v += tmp;
         }
 
