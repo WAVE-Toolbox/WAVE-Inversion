@@ -21,9 +21,9 @@
 
 #include <Wavefields/WavefieldsFactory.hpp>
 
+#include "Gradient/GradientFactory.hpp"
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit.hpp"
-#include "Gradient/GradientFactory.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -116,8 +116,6 @@ int main(int argc, char *argv[])
 
     gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
 
-    
-
     lama::Scalar steplength = 0.03;
     std::cout << steplength << std::endl;
     /* --------------------------------------- */
@@ -144,12 +142,11 @@ int main(int argc, char *argv[])
         }
 
         steplength *= 0.95;
-	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
-	 gradient->scale(*model);
-         *gradient *=steplength;
-	 *model -= *gradient;
-       
-	
+        gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+        gradient->scale(*model);
+        *gradient *= steplength;
+        *model -= *gradient;
+
         model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 
     } //end of loop over iterations

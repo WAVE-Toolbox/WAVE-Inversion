@@ -61,6 +61,14 @@ namespace KITGPI
             void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn) override;
 
+            /*! \brief Set all wavefields to zero.
+             */
+            void reset()
+            {
+                this->resetParameter(velocityP);
+                this->resetParameter(density);
+            };
+
             void write(std::string filename, IndexType partitionedOut) const override;
 
             /* Getter methods for not requiered parameters */
@@ -70,6 +78,7 @@ namespace KITGPI
             IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
+            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT) override;
             void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
 
             /* Overloading Operators */

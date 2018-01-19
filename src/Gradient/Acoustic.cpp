@@ -352,8 +352,30 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
         velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
     }
     if (invertForDensity) {
-        // gradientCalculation.grad_vp *= 1 / gradientCalculation.grad_vp.max()
         density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
+    }
+}
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT)
+{
+    scai::lama::DenseVector<ValueType> grad_bulk;
+    grad_bulk = model.getPWaveModulus();
+    grad_bulk *= grad_bulk;
+    grad_bulk.invert();
+    grad_bulk *= correlatedWavefields.getP();
+    grad_bulk *= -DT;
+
+    if (invertForVp) {
+        velocityP = 2 * grad_bulk;
+        velocityP *= model.getDensity();
+        velocityP *= model.getVelocityP();
+    }
+
+    if (invertForDensity) {
+        density = model.getVelocityP();
+        density *= model.getVelocityP();
+        density *= grad_bulk;
+        density -= DT * correlatedWavefields.getVSum();
     }
 }
 

@@ -28,7 +28,9 @@
 #include <Configuration/Configuration.hpp>
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
+#include "../Optimization/ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
 #include <Modelparameter/Modelparameter.hpp>
+
 namespace KITGPI
 {
 
@@ -76,6 +78,10 @@ namespace KITGPI
              \param dist Distribution
              */
             virtual void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
+
+            virtual void reset() = 0;
+
+            virtual void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT) = 0;
 
             /*! \brief Abstract write function
              *
@@ -138,6 +144,8 @@ namespace KITGPI
             bool invertForVp = true;
             bool invertForVs = false;
             bool invertForDensity = false;
+
+            void resetParameter(scai::lama::DenseVector<ValueType> &vector) { vector.assign(0.0); }
 
             IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
             IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files

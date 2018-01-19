@@ -17,7 +17,8 @@ typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr KITGPI::Gradient::Fa
         return GradientPtr(new Elastic<ValueType>);
     }
     if (type.compare("visco") == 0) {
-        return GradientPtr(new Viscoelastic<ValueType>);
+        //     return GradientPtr(new Viscoelastic<ValueType>);
+        COMMON_THROWEXCEPTION("No viscoelastic gradients implemented");
     }
 
     COMMON_THROWEXCEPTION("Reached end of factory without match");
