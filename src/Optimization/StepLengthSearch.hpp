@@ -3,6 +3,8 @@
 #include <scai/lama.hpp>
 #include <scai/common/Walltime.hpp>
 
+#include <iostream>
+
 #include <Configuration/Configuration.hpp>
 #include <ForwardSolver/ForwardSolver.hpp>
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
@@ -23,6 +25,9 @@ public:
     
     void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit);
     
+    void initLogFile(scai::dmemo::CommunicatorPtr comm);
+    void appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration);
+    
     scai::lama::Scalar const &getSteplength();
     
 private:
@@ -41,5 +46,8 @@ private:
     
     typedef typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
     wavefieldPtr wavefields;
+    
+    std::ofstream logFile;
+
     
 };

@@ -1,4 +1,5 @@
 #include "StepLengthSearch.hpp"
+#include <string>
 
 template <typename ValueType>
 void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
@@ -275,6 +276,34 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     
     return misfitTestSum;
             
+}
+
+template <typename ValueType>
+void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm)
+{
+    int myRank = comm->getRank(); 
+    if (myRank == MASTERGPI) {
+        std::string filename("steplengthSearch.log");
+        logFile.open(filename);
+        logFile << "Step length log file  \n";
+        logFile << "Misfit type = " << "L2 norm" << "\n";
+        logFile << "Iteration\t optimum step length\t #Forward\t step length guess 1\t step length guess 2\t step length guess 3\t misfit of slg1\t misfit of slg2\t misfit of slg3\t final misfit of all shots\n";
+        logFile.close();
+    } 
+
+}
+
+template <typename ValueType>
+void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration)
+{
+    int myRank = comm->getRank(); 
+    if (myRank == MASTERGPI) {
+        std::string filename("steplengthSearch.log");
+        logFile.open(filename, std::ios_base::app);
+        logFile <<  std::scientific ;
+        logFile << iteration << "\t" << steplengthOptimum << "\t n/a"<< "\t" << steplengthParabola.getValue(0) << "\t" << steplengthParabola.getValue(1) << "\t" << steplengthParabola.getValue(2) << "\t" << misfitParabola.getValue(0) << "\t" << misfitParabola.getValue(1) << "\t" << misfitParabola.getValue(2) << "\t n/a" << "\n" ;
+        logFile.close();
+    }                             
 }
 
 template <typename ValueType>

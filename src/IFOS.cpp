@@ -114,10 +114,10 @@ int main(int argc, char *argv[])
     gradient->init(ctx, dist);
 
     GradientCalculation<ValueType> gradientCalculation;
+    gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
     Misfit<ValueType> dataMisfit;
     StepLengthSearch<ValueType> SLsearch;
-    
-    gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
+    SLsearch.initLogFile(comm);
     
     lama::Scalar steplength_init = 0.03;
     
@@ -157,6 +157,9 @@ int main(int argc, char *argv[])
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
+        SLsearch.appendToLogFile(comm, iteration);
+ 
     } //end of loop over iterations
+    
     return 0;
 }
