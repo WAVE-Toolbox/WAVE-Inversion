@@ -235,13 +235,11 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     scai::lama::Scalar misfitTestShot;
     scai::lama::Scalar misfitTestSum;
     
-    // Implement a (virtual) copy constructor in the abstract base class to simplify/generalize the following code -> virtual constructor idiom!
+    // Implement a (virtual) copy constructor in the abstract base class to simplify the following code -> virtual constructor idiom!
     typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodel(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
-    testmodel->init(config, ctx, dist);
-    testmodel->setVelocityP(model.getVelocityP());
+    *testmodel = model;
     typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));
-    testgradient->init(ctx, dist);
-    testgradient->setVelocityP(scaledGradient.getVelocityP());
+    *testgradient = scaledGradient;
 
     /* Update model */   
     *testgradient *= steplength;
