@@ -43,6 +43,8 @@ namespace KITGPI
             void writeSnapshot(IndexType t);
 
           private:
+            using ZeroLagXcorr<ValueType>::invertForVp;
+            using ZeroLagXcorr<ValueType>::invertForDensity;
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::VSum;
             using ZeroLagXcorr<ValueType>::P;

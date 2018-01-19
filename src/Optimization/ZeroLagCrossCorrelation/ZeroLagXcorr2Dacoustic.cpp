@@ -69,9 +69,19 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield)
 {
     lama::DenseVector<ValueType> temp;
-    temp = forwardWavefield.getRefP();
-    temp *= adjointWavefield.getRefP();
-    P += temp;
+    if (invertForVp) {
+        temp = forwardWavefield.getRefP();
+        temp *= adjointWavefield.getRefP();
+        P += temp;
+    }
+    if (invertForDensity) {
+        temp = forwardWavefield.getRefVX();
+        temp *= adjointWavefield.getRefVX();
+        VSum += temp;
+        temp = forwardWavefield.getRefVY();
+        temp *= adjointWavefield.getRefVY();
+        VSum += temp;
+    }
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<double>;

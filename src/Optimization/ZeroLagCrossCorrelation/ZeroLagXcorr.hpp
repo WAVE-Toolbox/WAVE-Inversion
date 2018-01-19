@@ -50,6 +50,10 @@ namespace KITGPI
             virtual void write(std::string type, IndexType t) = 0;
 
           protected:
+            bool invertForVp = true;
+            bool invertForVs = false;
+            bool invertForDensity = false;
+
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);
             void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
             void writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, IndexType t);
