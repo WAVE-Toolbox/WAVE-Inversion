@@ -6,7 +6,7 @@ gcc:
   stage: build
   before_script:
     - SCAI_ROOT=/data14/software/scai_lama_dev/build
-    - GPI_ROOT=/data14/AG-users/tmetz/IFOS++_Data
+    - GPI_ROOT=/data14/software/SOFI++_dev
     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
     - echo "g++ Version:" && g++ --version
