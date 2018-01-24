@@ -1,5 +1,6 @@
 stages:
     - build
+    - simulation
 
 gcc:
   stage: build
@@ -7,4 +8,17 @@ gcc:
     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
     - echo "g++ Version:" && g++ --version
+    
+acoustic2D-gcc:
+  stage: simulation
+  dependencies:
+    - gcc
+  script:
+    - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${DYLD_LIBRARY_PATH}
+    - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${LD_LIBRARY_PATH}
+    - OMP_NUM_THREADS=2
+    - cd par/
+    - mpirun -np 4 ./../bin/IFOS "ci/configuration_ci.2D.acoustic.txt"
+    - ./../bin/Tests/Test_CompareSeismogram "ci/configuration_ci.2D.acoustic.txt"
+
 
