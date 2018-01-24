@@ -10,7 +10,7 @@ gcc:
     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
     - echo "g++ Version:" && g++ --version
-    - cd src/ && make all CC=g++ CFLAGS="-std=c++11 -fopenmp -Wall -Wextra -Werror"
+    - cd src/ && make all CC=g++ CFLAGS="-std=c++11 -fopenmp -Wall -Wextra"
   artifacts:
     when: on_success
     expire_in: 30 min
