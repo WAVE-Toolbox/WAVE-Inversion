@@ -1,11 +1,12 @@
 stages:
     - build
-    - simulation
+    - inversion
 
 gcc:
   stage: build
   before_script:
     - SCAI_ROOT=/data14/software/scai_lama_dev/build
+    - GPI_ROOT=/data14/AG-users/tmetz/IFOS++_Data
     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
     - echo "g++ Version:" && g++ --version
@@ -18,7 +19,7 @@ gcc:
 
     
 acoustic2D-gcc:
-  stage: simulation
+  stage: inversion
   dependencies:
     - gcc
   script:
