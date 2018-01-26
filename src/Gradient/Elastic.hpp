@@ -76,7 +76,7 @@ namespace KITGPI
             IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
-            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT) override
+            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &/*correlatedWavefields*/, KITGPI::Modelparameter::Modelparameter<ValueType> const &/*model*/, ValueType /*DT*/) override
             {
                 COMMON_THROWEXCEPTION("estimate is not implemented for viscoelastic gradients,yet ");
             };

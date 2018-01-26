@@ -10,7 +10,7 @@ gcc:
     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
     - echo "g++ Version:" && g++ --version
-    - cd src/ && make all CC=g++ CFLAGS="-std=c++11 -fopenmp -Wall -Wextra"
+    - cd src/ && make all CC=g++ CFLAGS="-std=c++11 -fopenmp -Wall -Wextra -Werror"
   artifacts:
     when: on_success
     expire_in: 30 min
@@ -29,6 +29,5 @@ acoustic2D-gcc:
     - OMP_NUM_THREADS=1
     - cd par/
     - mpirun -np 4 ./../bin/IFOS "ci/configuration_ci.2D.acoustic.txt"
-    - ./../bin/Tests/Test_CompareSeismogram "ci/configuration_ci.2D.acoustic.txt"
 
 

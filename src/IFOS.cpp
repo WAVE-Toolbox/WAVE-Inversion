@@ -99,12 +99,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Forward solver                          */
     /* --------------------------------------- */
-    IndexType getNT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-
     ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
     solver->prepareBoundaryConditions(config, *derivatives, dist, ctx);
 
-    dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
 
     /* --------------------------------------- */
     /* Objects for inversion                   */
@@ -118,7 +115,7 @@ int main(int argc, char *argv[])
     StepLengthSearch<ValueType> SLsearch;
     SLsearch.initLogFile(comm);
 
-    gradientCalculation.allocate(config, dist, no_dist_NT, comm, ctx);
+    gradientCalculation.allocate(config, dist, ctx);
 
 
    lama::Scalar steplength_init = 0.03;

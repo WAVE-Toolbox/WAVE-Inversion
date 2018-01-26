@@ -3,7 +3,7 @@
 #include "GradientCalculation.hpp"
 
 template <typename ValueType>
-void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr no_dist_NT, scai::dmemo::CommunicatorPtr comm, scai::hmemo::ContextPtr ctx)
+void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist,  scai::hmemo::ContextPtr ctx)
 {
 
     std::string dimension = config.get<std::string>("dimension");
@@ -43,12 +43,8 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     /* ------------------------------------------- */
 
     scai::dmemo::DistributionPtr dist = wavefields->getRefVX().getDistributionPtr();
-    scai::dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(getNT));
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
-
-    //     std::string convname("gradients/waveconv");
-    //     std::string gradname("gradients/grad");
 
     /* Should misfit be part of #GradientCalculation in a later stage? */
     scai::lama::DenseVector<ValueType> misfitTemp(sources.getNumShots(), 0, ctx);
