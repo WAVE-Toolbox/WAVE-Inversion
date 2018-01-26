@@ -249,7 +249,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     
     misfitTestSum = 0;
     
-    std::string fieldSeisName("seismograms/rectangle.true");
+    std::string fieldSeisName("ci/rectangle.true");
     
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
