@@ -26,7 +26,6 @@ acoustic2D-gcc:
     - SCAI_ROOT=/data14/software/scai_lama_dev/build
     - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${DYLD_LIBRARY_PATH}
     - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${LD_LIBRARY_PATH}
-    - OMP_NUM_THREADS=1
     - cd par/
     - mpirun -np 4 ./../bin/IFOS "ci/configuration_ci.2D.acoustic.txt"
 
