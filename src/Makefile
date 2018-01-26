@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11 -fopenmp -Wall  
+CFLAGS=-std=c++11 -fopenmp -Wall -Wextra -Werror 
 IFLAGS=-I${GPI_ROOT}/src/ -I${SCAI_ROOT}/include  -DSCAI_ASSERT_LEVEL_DEBUG -DSCAI_LOG_LEVEL_DEBUG -DSCAI_TRACE_OFF 
 #-I../SOFI/src
 LDFLAGS=-L${GPI_ROOT}/bin -lSOFI -L${SCAI_ROOT}/lib  -lscai_lama -lscai_solver -lscai_dmemo -lscai_sparsekernel -lscai_utilskernel -lscai_blaskernel -lscai_kregistry -lscai_hmemo -lscai_tasking -lscai_tracing -lscai_logging -lscai_common 
