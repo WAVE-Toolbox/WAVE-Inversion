@@ -6,9 +6,9 @@ LDFLAGS=-L${GPI_ROOT}/bin -lSOFI -L${SCAI_ROOT}/lib  -lscai_lama -lscai_solver -
 #LDFLAGS= -L${SCAI_ROOT}/lib -lscai_lama -lscai_solver -lscai_dmemo -lscai_sparsekernel -lscai_utilskernel -lscai_blaskernel -lscai_kregistry -lscai_hmemo -lscai_tasking -lscai_tracing -lscai_logging -lscai_common -L ~/projects/FDSimulation_LAMA/bin -lSOFI
 
 # Flags for googletest framework used for unit tests
-#IFLAGSTEST = -I${GTEST_DIR}/include
-#LDFLAGSTEST = -L${GTEST_DIR}/ -lgtest -lgtest_main
-#CFLAGSTEST = -isystem -pthread 
+IFLAGSTEST = -I${GTEST_DIR}/include
+LDFLAGSTEST = -L${GTEST_DIR}/ -lgtest -lgtest_main
+CFLAGSTEST = -isystem -pthread 
 
 ######################
 # Install directory
@@ -17,7 +17,7 @@ BINDIR=../bin
 
 LIB_TARGET=$(BINDIR)/libIFOS.a
 IFOS_TARGET=$(BINDIR)/IFOS
-#IFOS_UNITTEST_TARGET=$(BINDIR)/Tests/Test_unit
+IFOS_UNITTEST_TARGET=$(BINDIR)/Tests/Test_unit
 #IFOS_INTEGRATIONTEST_TARGET=$(BINDIR)/Tests/Test_CompareSeismogram
 
 ################################################################
@@ -29,17 +29,18 @@ IFOS_TARGET=$(BINDIR)/IFOS
 ######################
 # General targets
 ######################
-all: ifos #tests
+all: ifos tests
 
 install: clean ifos 
 
+tests: unitTest
 #tests: integrationTest unitTest
 
 lib: $(LIB_TARGET)
 
 ifos: $(IFOS_TARGET)
 
-#unitTest: $(IFOS_UNITTEST_TARGET)
+unitTest: $(IFOS_UNITTEST_TARGET)
 
 #integrationTest: $(IFOS_INTEGRATIONTEST_TARGET)
 
@@ -58,7 +59,7 @@ SUBDIRS := $(wildcard */)
 # Locate CPP files for compilation
 ######################
 IFOS_LIB_CPP := $(wildcard $(addsuffix */*.cpp,$(SUBDIRS))) $(wildcard **/*.cpp)
-#IFOS_UNITTEST_CPP := $(wildcard $(addsuffix */*UnitTest.cpp,$(SUBDIRS))) $(wildcard */*UnitTest.cpp)
+IFOS_UNITTEST_CPP := $(wildcard $(addsuffix */*UnitTest.cpp,$(SUBDIRS))) $(wildcard */*UnitTest.cpp)
 #IFOS_INTEGRATIONTEST_CPP := $(wildcard **/*Test_CompareSeismogram.cpp)
 
 ######################
@@ -83,14 +84,14 @@ $(IFOS_TARGET): $(IFOS_MAIN_OBJ) $(LIB_TARGET)
 ######################
 # Unit tests
 ######################
-#IFOS_UNITTEST_OBJ = $(IFOS_UNITTEST_CPP:%.cpp=%.o)
-#$(IFOS_UNITTEST_OBJ): CFLAGS+=$(CFLAGSTEST)
-#$(IFOS_UNITTEST_OBJ): LDFLAGS +=$(LDFLAGSTEST)
-#$(IFOS_UNITTEST_OBJ): IFLAGS +=$(IFLAGSTEST)
+IFOS_UNITTEST_OBJ = $(IFOS_UNITTEST_CPP:%.cpp=%.o)
+$(IFOS_UNITTEST_OBJ): CFLAGS+=$(CFLAGSTEST)
+$(IFOS_UNITTEST_OBJ): LDFLAGS +=$(LDFLAGSTEST)
+$(IFOS_UNITTEST_OBJ): IFLAGS +=$(IFLAGSTEST)
 
-#$(IFOS_UNITTEST_TARGET): $(IFOS_UNITTEST_OBJ) $(LIB_TARGET)
-#	mkdir -p $(BINDIR)/Tests/
-#	$(CC) $(CFLAGS) $(CFLAGSTEST) $^ -o $@ $(IFLAGS) $(IFLAGSTEST) $(LDFLAGS) $(LDFLAGSTEST)
+$(IFOS_UNITTEST_TARGET): $(IFOS_UNITTEST_OBJ) $(LIB_TARGET)
+	mkdir -p $(BINDIR)/Tests/
+	$(CC) $(CFLAGS) $(CFLAGSTEST) $^ -o $@ $(IFLAGS) $(IFLAGSTEST) $(LDFLAGS) $(LDFLAGSTEST)
 
 ######################
 # Integration tests

@@ -90,8 +90,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     /* Set optimum step length */
     if( step2ok == true && step3ok == true ){
         HOST_PRINT(comm,"Apply parabolic fit\n\n" );
-        this->parabolicFit();
-        steplengthOptimum = steplengthExtremum;}
+        steplengthOptimum = parabolicFit(steplengthParabola,misfitParabola);}
     else if( step2ok == true && step3ok == false ){
         steplengthOptimum = steplengthParabola.getValue(2);}
     else if( step2ok == false && step3ok == true ){
@@ -193,23 +192,27 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
 
 
 template <typename ValueType>
-void StepLengthSearch<ValueType>::parabolicFit(){
-      
+scai::lama::Scalar StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVector<ValueType> const &xValues,scai::lama::DenseVector<ValueType> const &yValues){
+	
+    SCAI_ASSERT(xValues.size() == 3, "xvalues must contain 3 values!");
+    SCAI_ASSERT(yValues.size() == 3, "yvalues must contain 3 values!");
+    scai::lama::Scalar steplengthExtremum;
     scai::lama::DenseMatrix<ValueType> A(3,3);
     scai::lama::DenseMatrix<ValueType> invA;
-    scai::lama::DenseVector<ValueType> coeffParabola; // does the size need to be specified?
+    scai::lama::DenseVector<ValueType> coeff; // does the size need to be specified?
     scai::lama::DenseVector<ValueType> vectorOnes(3,1,scai::hmemo::Context::getContextPtr());
-    scai::lama::DenseVector<ValueType> steplengthParabolaPow2 = steplengthParabola;
-    steplengthParabolaPow2 *= steplengthParabola;
+    scai::lama::DenseVector<ValueType> xValuesPow2 = xValues;
+    xValuesPow2 *= xValues;
     
-    A.setColumn(steplengthParabolaPow2, 0, scai::common::binary::BinaryOp::COPY);
-    A.setColumn(steplengthParabola, 1, scai::common::binary::BinaryOp::COPY);
+    A.setColumn(xValuesPow2, 0, scai::common::binary::BinaryOp::COPY);
+    A.setColumn(xValues, 1, scai::common::binary::BinaryOp::COPY);
     A.setColumn(vectorOnes, 2, scai::common::binary::BinaryOp::COPY);
     invA.invert(A); 
     
-    coeffParabola = invA * misfitParabola;       
-    steplengthExtremum = - coeffParabola.getValue(1) / (2*coeffParabola.getValue(0));
+    coeff = invA * yValues;       
+    steplengthExtremum = - coeff.getValue(1) / (2*coeff.getValue(0));
     
+    return steplengthExtremum;
 }
 
 

@@ -1,5 +1,6 @@
 stages:
     - build
+    - unittest
     - inversion
 
 gcc:
@@ -16,6 +17,17 @@ gcc:
     expire_in: 30 min
     paths:
       - bin/
+
+unittest-gcc:
+  stage: unittest
+  dependencies:
+     - gcc
+  script:
+    - SCAI_ROOT=/data14/software/scai_lama_dev/build
+    - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${GTEST_DIR}:${DYLD_LIBRARY_PATH}
+    - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${GTEST_DIR}:${LD_LIBRARY_PATH}
+    - cd par/     - ./../bin/Tests/Test_unit
+    - ./../bin/Tests/Test_unit
 
     
 acoustic2D-gcc:
