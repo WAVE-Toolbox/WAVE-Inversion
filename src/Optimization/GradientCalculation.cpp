@@ -90,7 +90,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
         /* Calculate misfit and set seismograms of adjoint sources to residuals */
         /* -------------------------------------------------------------------- */
 
-        std::string fieldSeisName("seismograms/rectangle.true");
+        std::string fieldSeisName("ci/rectangle.true");
         truedata.readFromFileRaw(fieldSeisName + ".It0" + ".shot" + std::to_string(shotNumber) + ".p.mtx", adjoint.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P).getData().getRowDistributionPtr(), NULL);
         synthetic = receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P);
 
