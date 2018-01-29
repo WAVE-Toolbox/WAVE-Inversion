@@ -6,7 +6,7 @@ stages:
 gcc:
   stage: build
   before_script:
-    - SCAI_ROOT=/data14/software/scai_lama_dev/build
+    - SCAI_ROOT=/data14/software/scai_lama/build_dev
     - GPI_ROOT=/data14/software/SOFI++_dev
     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
@@ -22,8 +22,10 @@ unittest-gcc:
   stage: unittest
   dependencies:
      - gcc
+  before_script:
+     - SCAI_ROOT=/data14/software/scai_lama/build_dev
+     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
-    - SCAI_ROOT=/data14/software/scai_lama_dev/build
     - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${GTEST_DIR}:${DYLD_LIBRARY_PATH}
     - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${GTEST_DIR}:${LD_LIBRARY_PATH}
     - cd par/     - ./../bin/Tests/Test_unit
@@ -34,8 +36,10 @@ acoustic2D-gcc:
   stage: inversion
   dependencies:
     - gcc
+  before_script:
+     - SCAI_ROOT=/data14/software/scai_lama/build_dev
+     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
   script:
-    - SCAI_ROOT=/data14/software/scai_lama_dev/build
     - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${DYLD_LIBRARY_PATH}
     - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${LD_LIBRARY_PATH}
     - OMP_NUM_THREADS=1
