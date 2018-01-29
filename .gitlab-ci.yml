@@ -8,7 +8,7 @@ gcc:
   before_script:
     - SCAI_ROOT=/data14/software/scai_lama/build_dev
     - GPI_ROOT=/data14/software/SOFI++_dev
-#    - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
+    - echo "LAMA Version:" && file ${SCAI_ROOT}/lib/libscai_lama.so | sed 's/.*libscai_lama\.so\.\([0-9]*\.[0-9]*\.[0.9]*\).*/\1/g'
   script:
     - echo "g++ Version:" && g++ --version
     - cd src/ && make all CC=g++ CFLAGS="-std=c++11 -fopenmp -Wall -Wextra -Werror"
@@ -16,15 +16,15 @@ gcc:
     when: on_success
     expire_in: 30 min
     paths:
-      - bin/
+    - bin/
 
 unittest-gcc:
   stage: unittest
   dependencies:
-     - gcc
+    - gcc
   before_script:
-     - SCAI_ROOT=/data14/software/scai_lama/build_dev
-#     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
+    - SCAI_ROOT=/data14/software/scai_lama/build_dev
+    - echo "LAMA Version:" && file ${SCAI_ROOT}/lib/libscai_lama.so | sed 's/.*libscai_lama\.so\.\([0-9]*\.[0-9]*\.[0.9]*\).*/\1/g'
   script:
     - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${GTEST_DIR}:${DYLD_LIBRARY_PATH}
     - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${GTEST_DIR}:${LD_LIBRARY_PATH}
@@ -37,8 +37,8 @@ acoustic2D-gcc:
   dependencies:
     - gcc
   before_script:
-     - SCAI_ROOT=/data14/software/scai_lama/build_dev
-#     - echo "LAMA Version:" && expr `git --git-dir=${SCAI_ROOT}/../.git/ log -1 --pretty=%h`
+    - SCAI_ROOT=/data14/software/scai_lama/build_dev
+    - echo "LAMA Version:" && file ${SCAI_ROOT}/lib/libscai_lama.so | sed 's/.*libscai_lama\.so\.\([0-9]*\.[0-9]*\.[0.9]*\).*/\1/g'
   script:
     - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${DYLD_LIBRARY_PATH}
     - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${LD_LIBRARY_PATH}
