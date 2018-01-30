@@ -286,9 +286,9 @@ void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm)
     if (myRank == MASTERGPI) {
         std::string filename("steplengthSearch.log");
         logFile.open(filename);
-        logFile << "Step length log file  \n";
-        logFile << "Misfit type = " << "L2 norm" << "\n";
-        logFile << "Iteration\t optimum step length\t #Forward\t step length guess 1\t step length guess 2\t step length guess 3\t misfit of slg1\t misfit of slg2\t misfit of slg3\t final misfit of all shots\n";
+        logFile << "# Step length log file  \n";
+        logFile << "# Misfit type = " << "L2 norm" << "\n";
+        logFile << "# Iteration\t optimum step length\t #Forward\t step length guess 1\t step length guess 2\t step length guess 3\t misfit of slg1\t misfit of slg2\t misfit of slg3\t final misfit of all shots\n";
         logFile.close();
     } 
 
