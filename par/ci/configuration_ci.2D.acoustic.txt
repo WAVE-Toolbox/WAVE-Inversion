@@ -69,3 +69,6 @@ SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
 runForward=0
+
+# Log
+LogFilename=steplengthSearch.log
