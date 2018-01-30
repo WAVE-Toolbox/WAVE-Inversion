@@ -7,16 +7,16 @@ gcc:
   stage: build
   before_script:
     - SCAI_ROOT=/data14/software/scai_lama/build_dev
-    - GPI_ROOT=/data14/software/SOFI++_dev
+    - GPI_ROOT=/data14/software/SOFI++/build_dev
     - echo "LAMA Version:" && file ${SCAI_ROOT}/lib/libscai_lama.so | sed 's/.*libscai_lama\.so\.\([0-9]*\.[0-9]*\.[0.9]*\).*/\1/g'
   script:
     - echo "g++ Version:" && g++ --version
-    - cd src/ && make all CC=g++ CFLAGS="-std=c++11 -fopenmp -Wall -Wextra -Werror"
+    - cd src/ && make prog && make utest
   artifacts:
     when: on_success
     expire_in: 30 min
     paths:
-    - bin/
+    - build/bin/
 
 unittest-gcc:
   stage: unittest
@@ -28,8 +28,8 @@ unittest-gcc:
   script:
     - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${GTEST_DIR}:${DYLD_LIBRARY_PATH}
     - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${GTEST_DIR}:${LD_LIBRARY_PATH}
-    - cd par/     - ./../bin/Tests/Test_unit
-    - ./../bin/Tests/Test_unit
+    - cd par/     - ./../build/bin/Test_unit
+    - ./../build/bin/Test_unit
 
     
 acoustic2D-gcc:
@@ -44,6 +44,6 @@ acoustic2D-gcc:
     - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${LD_LIBRARY_PATH}
     - OMP_NUM_THREADS=1
     - cd par/
-    - mpirun -np 4 ./../bin/IFOS "ci/configuration_ci.2D.acoustic.txt"
+    - mpirun -np 4 ./../build/bin/IFOS "ci/configuration_ci.2D.acoustic.txt"
 
 
