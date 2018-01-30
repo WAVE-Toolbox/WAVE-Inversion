@@ -9,7 +9,7 @@ SRCTREE  := ../
 EXENAME  := IFOS
 LIBNAME  := IFOS
 UTSTNAME := Test_unit
-#ITSTNAME := Test_CompareSeismogram
+ITSTNAME := Test_CompareMisfit
 
 GPI_ROOT_DEFAULT  := /data14/software/SOFI++/build_dev
 SCAI_ROOT_DEFAULT := /data14/software/scai_lama/build_dev
@@ -95,7 +95,7 @@ endif
 wave.srcsubdirs := $(dir $(wildcard $(wave.srcdir)/*/.))
 wave.liballsrc  := $(wildcard $(addsuffix */*.cpp,$(wave.srcsubdirs))) $(wildcard $(addsuffix *.cpp,$(wave.srcsubdirs)))
 wave.unitsrc    := $(wildcard $(addsuffix */*UnitTest.cpp,$(wave.srcsubdirs))) $(wildcard $(addsuffix *UnitTest.cpp,$(wave.srcsubdirs)))
-#wave.integsrc   :=  $(wildcard $(addsuffix *Test_CompareSeismogram.cpp,$(wave.srcsubdirs)))
+wave.integsrc   :=  $(wildcard $(addsuffix *Test_CompareMisfit.cpp,$(wave.srcsubdirs)))
 wave.libsrc     := $(filter-out $(wave.unitsrc) $(wave.integsrc),$(wave.liballsrc))
 wave.mainsrc    := $(wave.srcdir)/IFOS.cpp
 
@@ -118,7 +118,7 @@ AR       := ar
 ARFLAGS  := cr
 RM       := rm -f --preserve-root
 
-.PHONY: help all clean distclean vinfo utest lib prog #doc doxygen theory itest
+.PHONY: help all clean distclean vinfo utest itest lib prog #doc doxygen theory
 
 help:
 	@echo
@@ -131,7 +131,7 @@ help:
 	@echo "   prog      :: build executable $(wave.exe) (and, implicitly, lib)"
 	#@echo "   doc       :: build html (make doxygen) and pdf (make theory) documentation"
 	@echo "   utest     :: build unit tests"
-	#@echo "   itest     :: build integration tests"
+	@echo "   itest     :: build integration tests"
 	@echo "   clean     :: remove object files"
 	@echo "   distclean :: clean up entire build directory"
 	@echo "   vinfo     :: print version information stored in executable"
@@ -150,7 +150,7 @@ ifeq "$(origin GTEST_DIR)" 'environment'
 endif
 	@echo
 
-all: lib prog utest #doc itest
+all: lib prog utest itest #doc 
 
 prog: $(wave.bindir)/$(wave.exe)
 
