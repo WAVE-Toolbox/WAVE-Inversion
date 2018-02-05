@@ -10,18 +10,14 @@ UNITTEST_EXE="./../build/bin/Test_unit"
 INTEGRATIONTEST_EXE="./../build/bin/Test_CompareMisfit"
 
 
-<<<<<<< HEAD
- Run unit tests
-=======
 # Run unit tests
->>>>>>> 0835a7741efed2d8703b9b5e977e06f586383790
 ${UNITTEST_EXE}
 if [ "$?" != "0" ]; then
 	echo "Test failed ! "
 	exit 1
 fi
 
- Run simulation tests
+# Run simulation tests
 rm -rf ci/*.ci.*
 
 mpirun -np ${NUM_MPI_PROCESSES} ${IFOS_EXE} ./ci/configuration_ci.2D.acoustic.txt
