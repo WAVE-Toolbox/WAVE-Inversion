@@ -10,12 +10,12 @@ UNITTEST_EXE="./../build/bin/Test_unit"
 INTEGRATIONTEST_EXE="./../build/bin/Test_CompareMisfit"
 
 
-# Run unit tests
-#${UNITTEST_EXE}
-#if [ "$?" != "0" ]; then
-#	echo "Test failed ! "
-#	exit 1
-#fi
+ Run unit tests
+${UNITTEST_EXE}
+if [ "$?" != "0" ]; then
+	echo "Test failed ! "
+	exit 1
+fi
 
  Run simulation tests
 rm -rf ci/*.ci.*
