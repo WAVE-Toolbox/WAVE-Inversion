@@ -70,5 +70,10 @@ NormalizeTraces=0                              # 1=Normalize Traces of the Seism
 runSimultaneousShots=0
 runForward=0
 
-# Log
-LogFilename=steplengthSearch.log
+# Inversion
+FieldSeisName=ci/rectangle.true        # location/basename of input seismograms
+GradientFilename=gradients/grad        # location/basename of output gradients
+LogFilename=logs/steplengthSearch.log  # target location of log file
+SteplengthInit=0.03                    # starting steplength
+MaxIterations=20                       # maximum number of inversion itertions
+MaxStepCalc=4                          # maximum number of calculations to find a proper (steplength, misfit) pair

@@ -113,18 +113,18 @@ int main(int argc, char *argv[])
     GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
     StepLengthSearch<ValueType> SLsearch;
-    SLsearch.initLogFile(comm);
+    SLsearch.initLogFile(comm, config);
 
     gradientCalculation.allocate(config, dist, ctx);
 
 
-   lama::Scalar steplength_init = 0.03;
+   lama::Scalar steplength_init = config.get<ValueType>("SteplengthInit");
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
-    std::string gradname("gradients/grad");
+    std::string gradname(config.get<std::string>("GradientFilename"));
 
-    IndexType maxiterations = 20;
+    IndexType maxiterations = config.get<IndexType>("MaxIterations");
     if (config.get<bool>("runForward"))
         maxiterations = 1;
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
-        SLsearch.appendToLogFile(comm, iteration);
+        SLsearch.appendToLogFile(comm, iteration, config);
  
     } //end of loop over iterations
     return 0;
