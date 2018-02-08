@@ -70,10 +70,19 @@ NormalizeTraces=0                              # 1=Normalize Traces of the Seism
 runSimultaneousShots=0
 runForward=0
 
-# Inversion
+#----------------------#
+# Inversion Parameters #
+#----------------------#
 FieldSeisName=ci/rectangle.true        # location/basename of input seismograms
+WriteGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
 GradientFilename=gradients/grad        # location/basename of output gradients
 LogFilename=logs/steplengthSearch.log  # target location of log file
-SteplengthInit=0.03                    # starting steplength
+#
 MaxIterations=20                       # maximum number of inversion itertions
+
+SteplengthInit=0.03                    # starting steplength
 MaxStepCalc=4                          # maximum number of calculations to find a proper (steplength, misfit) pair
+
+# Tapers
+SourceTaperRadius=20                   # Circular source taper: Radius in gridpoints
+ReceiverTaperRadius=20                 # Circular receiver taper: Radius in gridpoints

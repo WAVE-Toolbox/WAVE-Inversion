@@ -129,12 +129,21 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
         /* ---------------------------------- */
         /*       Calculate gradients          */
         /* ---------------------------------- */
+
+
         GradientPerShot->estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"));
+        SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("SourceTaperRadius"));
+        SourceTaper.apply(*GradientPerShot);
+
+	if(config.get<IndexType>("WriteGradientPerShot"))
+        GradientPerShot->getVelocityP().writeToFile(config.get<std::string>("GradientFilename") + "_vp" + ".It" + std::to_string(iteration) + ".Shot" + std::to_string(shotNumber)+ ".mtx");
+
         gradient += *GradientPerShot;
 
         //   receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/rec_adjoint.mtx");
 
     } // end loop over shots
+
 
     dataMisfit.add(misfitTemp);
 }
