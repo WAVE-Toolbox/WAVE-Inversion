@@ -22,7 +22,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     scai::lama::Scalar misfitTestSum;
     scai::lama::Scalar steplength;
     
-    int maxStepCalc = 4;      // maximum number of calculations to find a proper (steplength, misfit) pair 
+    int maxStepCalc = config.get<int>("MaxStepCalc");      // maximum number of calculations to find a proper (steplength, misfit) pair 
     int stepCalcCount = 0;    // number of calculations to find a proper (steplength, misfit) pair
     scai::lama::Scalar scalingFactor = 2;
     scai::lama::Scalar steplengthMin = 0.001; 
@@ -252,7 +252,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     
     misfitTestSum = 0;
     
-    std::string fieldSeisName("ci/rectangle.true");
+    std::string fieldSeisName(config.get<std::string>("FieldSeisName"));
     
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
@@ -280,11 +280,11 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
 }
 
 template <typename ValueType>
-void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm)
+void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, KITGPI::Configuration::Configuration config)
 {
     int myRank = comm->getRank(); 
     if (myRank == MASTERGPI) {
-        std::string filename("steplengthSearch.log");
+        std::string filename(config.get<std::string>("LogFilename"));
         logFile.open(filename);
         logFile << "# Step length log file  \n";
         logFile << "# Misfit type = " << "L2 norm" << "\n";
@@ -295,11 +295,11 @@ void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm)
 }
 
 template <typename ValueType>
-void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration)
+void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, KITGPI::Configuration::Configuration config)
 {
     int myRank = comm->getRank(); 
     if (myRank == MASTERGPI) {
-        std::string filename("steplengthSearch.log");
+        std::string filename(config.get<std::string>("LogFilename"));
         logFile.open(filename, std::ios_base::app);
         logFile <<  std::scientific ;
         logFile << iteration << "\t" << steplengthOptimum << "\t n/a"<< "\t" << steplengthParabola.getValue(0) << "\t" << steplengthParabola.getValue(1) << "\t" << steplengthParabola.getValue(2) << "\t" << misfitParabola.getValue(0) << "\t" << misfitParabola.getValue(1) << "\t" << misfitParabola.getValue(2) << "\t n/a" << "\n" ;
