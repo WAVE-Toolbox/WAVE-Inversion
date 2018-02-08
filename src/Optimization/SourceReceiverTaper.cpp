@@ -55,6 +55,7 @@ void SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, sca
 
         hmemo::ReadAccess<IndexType> read_globalIndices(globalIndices); // Get read access to localy stored global indices
 
+	if(radius>0){
         //loop over all gridpoint -> this is costly maybe there is a better alternative because the size of the taper is known
         for (IndexType i = 0; i < numLocalIndices; i++) {
 
@@ -82,7 +83,7 @@ void SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, sca
             }
         }
     }
-
+    }
     write_taperValues.release();
     taperTmp.setDenseValues(taperValues);
 

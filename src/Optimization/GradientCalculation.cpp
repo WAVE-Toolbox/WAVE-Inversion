@@ -59,7 +59,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
 
     //reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
     gradient.reset();
-    std::string gradname("gradients/grad");
+
     for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
 
         /* --------------------------------------------------------------------------- */
@@ -131,10 +131,11 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
 
 
         GradientPerShot->estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"));
-        SourceTaper.init(dist,ctx,sources,config,20);
+        SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("SourceTaperRadius"));
         SourceTaper.apply(*GradientPerShot);
 
-        GradientPerShot->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".Shot" + std::to_string(shotNumber)+ ".mtx");
+	if(config.get<IndexType>("WriteGradientPerShot"))
+        GradientPerShot->getVelocityP().writeToFile(config.get<std::string>("GradientFilename") + "_vp" + ".It" + std::to_string(iteration) + ".Shot" + std::to_string(shotNumber)+ ".mtx");
 
         gradient += *GradientPerShot;
 

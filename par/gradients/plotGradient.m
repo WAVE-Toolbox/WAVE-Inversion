@@ -15,8 +15,9 @@ Y=0:DH:(NY*DH-DH);
 
 %% Plot
 figure
-imagesc(X,Y,gradient(:,:,LAYER)/max(max(gradient)))
+imagesc(X,Y,gradient(:,:,LAYER)/max(max(abs(gradient))))
 colorbar
+caxis([-1 1])
 xlabel('X in meter')
 ylabel('Y in meter')
 title('gradient')

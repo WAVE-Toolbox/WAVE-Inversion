@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
     gradientCalculation.allocate(config, dist, ctx);
     SourceReceiverTaper<ValueType> ReceiverTaper;
-    ReceiverTaper.init(dist,ctx,receivers,config,20);
+    ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("SourceTaperRadius"));
 
 
    lama::Scalar steplength_init = config.get<ValueType>("SteplengthInit");
@@ -144,6 +144,7 @@ int main(int argc, char *argv[])
             break;
         }
 
+        //apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1)
         ReceiverTaper.apply(*gradient);
 	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
 	 gradient->scale(*model);
