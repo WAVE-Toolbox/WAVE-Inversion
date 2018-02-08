@@ -7,6 +7,7 @@
 #include "../Gradient/GradientFactory.hpp"
 #include "./ZeroLagCrossCorrelation/ZeroLagXcorrFactory.hpp"
 #include "Misfit.hpp"
+#include "SourceReceiverTaper.hpp"
 #include <Acquisition/Receivers.hpp>
 #include <Acquisition/Sources.hpp>
 #include <Configuration/Configuration.hpp>
@@ -14,6 +15,7 @@
 #include <ForwardSolver/ForwardSolver.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
+
 
 template <typename ValueType>
 class GradientCalculation
@@ -37,6 +39,8 @@ class GradientCalculation
 
     typedef typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
     wavefieldPtr wavefields;
+
+    SourceReceiverTaper <ValueType> SourceTaper;
 
     std::vector<wavefieldPtr> wavefieldrecord;
 };
