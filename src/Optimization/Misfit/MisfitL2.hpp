@@ -2,6 +2,7 @@
 
 #include <scai/lama.hpp>
 #include <Acquisition/Acquisition.hpp>
+#include <Acquisition/Receivers.hpp>
 #include <Acquisition/Seismogram.hpp>
 #include "Misfit.hpp"
 
@@ -23,8 +24,9 @@ namespace KITGPI
             MisfitL2(){};
             ~MisfitL2(){};
             
-            void calc();
-//             void calc(KITGPI::Acquisition::Seismogram<ValueType> const &seismogram1, KITGPI::Acquisition::Seismogram<ValueType> const &seismogram2);
+            scai::lama::Scalar calc(KITGPI::Acquisition::Receivers<ValueType> const &receivers1, KITGPI::Acquisition::Receivers<ValueType> const &receivers2);
+            scai::lama::Scalar calc(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismoHandler1, KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismoHandler2);
+            scai::lama::Scalar calc(KITGPI::Acquisition::Seismogram<ValueType> &seismogram1, KITGPI::Acquisition::Seismogram<ValueType> &seismogram2);
 
         private:
             

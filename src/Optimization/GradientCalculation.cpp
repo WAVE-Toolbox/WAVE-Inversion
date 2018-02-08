@@ -94,8 +94,9 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
         truedata.readFromFileRaw(fieldSeisName + ".It0" + ".shot" + std::to_string(shotNumber) + ".p.mtx", adjoint.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P).getData().getRowDistributionPtr(), NULL);
         synthetic = receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P);
 
+        misfitTemp.setValue(shotNumber, dataMisfit.calc(synthetic, truedata)); // misfit of one shot
+        
         synthetic -= truedata;
-        misfitTemp.setValue(shotNumber, 0.5 * synthetic.getData().l2Norm()); // misfit of one shot
 
         adjoint.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P) = synthetic;
         //  adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/adjoint.mtx");

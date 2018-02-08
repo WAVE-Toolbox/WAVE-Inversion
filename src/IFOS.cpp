@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     gradientCalculation.allocate(config, dist, ctx);
 
 
-   lama::Scalar steplength_init = config.get<ValueType>("SteplengthInit");
+    lama::Scalar steplength_init = config.get<ValueType>("SteplengthInit");
     /* --------------------------------------- */
     /*        Loop over iterations             */
     /* --------------------------------------- */
