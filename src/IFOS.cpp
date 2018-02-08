@@ -116,8 +116,9 @@ int main(int argc, char *argv[])
     SLsearch.initLogFile(comm);
 
     gradientCalculation.allocate(config, dist, ctx);
-
-
+    SourceReceiverTaper<ValueType> ReceiverTaper;
+    ReceiverTaper.init(dist,ctx,receivers,config,20);
+    
    lama::Scalar steplength_init = 0.03;
     /* --------------------------------------- */
     /*        Loop over iterations             */
@@ -142,9 +143,9 @@ int main(int argc, char *argv[])
             break;
         }
 
-      
+        ReceiverTaper.apply(*gradient);
 	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
-	 gradient->scale(*model);
+	gradient->scale(*model);
         
         SLsearch.calc(*solver, *derivatives, receivers, sources, *model, dist, config, *gradient, steplength_init, dataMisfit.getMisfitSum(iteration));
         
