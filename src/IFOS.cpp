@@ -23,7 +23,8 @@
 
 #include "Gradient/GradientFactory.hpp"
 #include "Optimization/GradientCalculation.hpp"
-#include "Optimization/Misfit.hpp"
+#include "Optimization/Misfit/Misfit.hpp"
+#include "Optimization/Misfit/MisfitFactory.hpp"
 #include "Gradient/GradientFactory.hpp"
 #include "Optimization/StepLengthSearch.hpp"
 
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
 
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
+    std::string misfitType = config.get<std::string>("misfitType");
 
     /* --------------------------------------- */
     /* Context and Distribution                */
@@ -111,7 +113,7 @@ int main(int argc, char *argv[])
     gradient->init(ctx, dist);
 
     GradientCalculation<ValueType> gradientCalculation;
-    Misfit<ValueType> dataMisfit;
+    Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(Misfit::Factory<ValueType>::Create(misfitType));
     StepLengthSearch<ValueType> SLsearch;
     SLsearch.initLogFile(comm, config);
 
@@ -132,24 +134,24 @@ int main(int argc, char *argv[])
         // update model for fd simulation (averaging, inverse Density ...
         model->prepareForModelling(config, ctx, dist, comm);
 
-        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *model, *gradient, config, iteration, dataMisfit);
+        gradientCalculation.calc(*solver, *derivatives, receivers, sources, *model, *gradient, config, iteration, *dataMisfit);
 
-        HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit.getMisfitSum(iteration) << "\n\n");
+        HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n\n");
 
         //         abortcriterion.check(dataMisfit);
-        if ((iteration > 0) && (dataMisfit.getMisfitSum(iteration) >= dataMisfit.getMisfitSum(iteration - 1))) {
-            HOST_PRINT(comm, "Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit.getMisfitSum(iteration - 1) << "\n\n");
+        if ((iteration > 0) && (dataMisfit->getMisfitSum(iteration) >= dataMisfit->getMisfitSum(iteration - 1))) {
+            HOST_PRINT(comm, "Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit->getMisfitSum(iteration - 1) << "\n\n");
             break;
         }
 
       
-	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
-	 gradient->scale(*model);
+        gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+        gradient->scale(*model);
         
-        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, dist, config, *gradient, steplength_init, dataMisfit.getMisfitSum(iteration));
+        SLsearch.calc(*solver, *derivatives, receivers, sources, *model, dist, config, *gradient, steplength_init, dataMisfit->getMisfitSum(iteration));
         
         *gradient *=SLsearch.getSteplength();
-	 *model -= *gradient;
+        *model -= *gradient;
        
 	
         model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));

@@ -6,7 +6,7 @@
 
 #include "../Gradient/GradientFactory.hpp"
 #include "./ZeroLagCrossCorrelation/ZeroLagXcorrFactory.hpp"
-#include "Misfit.hpp"
+#include "Misfit/Misfit.hpp"
 #include <Acquisition/Receivers.hpp>
 #include <Acquisition/Sources.hpp>
 #include <Configuration/Configuration.hpp>
@@ -26,7 +26,7 @@ class GradientCalculation
 
     void allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx);
     /* Calculate gradients */
-    void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Configuration::Configuration config, IndexType iteration, Misfit<ValueType> &dataMisfit);
+    void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Configuration::Configuration config, IndexType iteration, KITGPI::Misfit::Misfit<ValueType> &dataMisfit);
 
   private:
     typedef typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr GradientPtr;

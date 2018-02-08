@@ -77,3 +77,4 @@ LogFilename=logs/steplengthSearch.log  # target location of log file
 SteplengthInit=0.03                    # starting steplength
 MaxIterations=20                       # maximum number of inversion itertions
 MaxStepCalc=4                          # maximum number of calculations to find a proper (steplength, misfit) pair
+misfitType=L2                          # type of misfit (L2, etc.) 
