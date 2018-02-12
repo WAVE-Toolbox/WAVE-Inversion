@@ -16,6 +16,10 @@
 #include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
 
+
+/*! \brief The class GradientCalculation holds the gradients for inversion
+ *
+ */
 template <typename ValueType>
 class GradientCalculation
 {

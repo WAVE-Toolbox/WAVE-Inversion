@@ -2,6 +2,13 @@
 
 #include "GradientCalculation.hpp"
 
+/*! \brief Allocation of wavefields, zero-lag crosscorrelation and gradients
+ *
+ *
+ \param config Configuration
+ \param dist Distribution of the wave fields
+ \param ctx Context
+ */
 template <typename ValueType>
 void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist,  scai::hmemo::ContextPtr ctx)
 {
@@ -30,6 +37,19 @@ void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configurati
     }
 }
 
+/*! \brief Initialitation of the boundary conditions
+ *
+ *
+ \param solver Forward solver
+ \param derivatives Derivatives matrices
+ \param receivers Receivers
+ \param sources Sources 
+ \param model Model for the finite-difference simulation
+ \param gradient Gradient for simulations
+ \param config Configuration
+ \param iteration Current iteration count
+ \param dataMisfit Misfit
+ */
 template <typename ValueType>
 void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Configuration::Configuration config, IndexType iteration, KITGPI::Misfit::Misfit<ValueType> &dataMisfit)
 {
