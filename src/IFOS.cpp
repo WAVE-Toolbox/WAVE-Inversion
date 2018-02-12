@@ -113,7 +113,8 @@ int main(int argc, char *argv[])
     GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
     StepLengthSearch<ValueType> SLsearch;
-    SLsearch.initLogFile(comm, config);
+    std::string logFilename = config.get<std::string>("LogFilename");
+    SLsearch.initLogFile(comm, logFilename);
 
     gradientCalculation.allocate(config, dist, ctx);
     SourceReceiverTaper<ValueType> ReceiverTaper;
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
-        SLsearch.appendToLogFile(comm, iteration, config);
+        SLsearch.appendToLogFile(comm, iteration, logFilename);
  
     } //end of loop over iterations
     return 0;
