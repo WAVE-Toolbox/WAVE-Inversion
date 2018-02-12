@@ -113,9 +113,12 @@ int main(int argc, char *argv[])
     GradientCalculation<ValueType> gradientCalculation;
     Misfit<ValueType> dataMisfit;
     StepLengthSearch<ValueType> SLsearch;
-    SLsearch.initLogFile(comm, config);
+    std::string logFilename = config.get<std::string>("LogFilename");
+    SLsearch.initLogFile(comm, logFilename);
 
     gradientCalculation.allocate(config, dist, ctx);
+    SourceReceiverTaper<ValueType> ReceiverTaper;
+    ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("SourceTaperRadius"));
 
 
    lama::Scalar steplength_init = config.get<ValueType>("SteplengthInit");
@@ -142,7 +145,8 @@ int main(int argc, char *argv[])
             break;
         }
 
-      
+        //apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1)
+        ReceiverTaper.apply(*gradient);
 	gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
 	 gradient->scale(*model);
         
@@ -156,7 +160,7 @@ int main(int argc, char *argv[])
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
-        SLsearch.appendToLogFile(comm, iteration, config);
+        SLsearch.appendToLogFile(comm, iteration, logFilename);
  
     } //end of loop over iterations
     return 0;
