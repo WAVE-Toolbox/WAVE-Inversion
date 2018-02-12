@@ -3,6 +3,9 @@
 #include <scai/lama.hpp>
 #include <vector>
 
+/*! \brief The class Misfit holds the misfits for inversion
+ *
+ */
 // Does it need to be a template class?
 template <typename ValueType>
 class Misfit

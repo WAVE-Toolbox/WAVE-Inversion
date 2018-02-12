@@ -15,6 +15,9 @@
 
 #include "../Gradient/GradientFactory.hpp"
 
+/*! \brief The class StepLengthSearch searches for the optimal steplength for model update
+ *
+ */
 template <typename ValueType>
 class StepLengthSearch{
     
