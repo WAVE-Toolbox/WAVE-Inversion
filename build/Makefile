@@ -80,9 +80,9 @@ endif
 wave.libdir := ./lib
 wave.bindir := ./bin
 wave.objdir := ./obj
-#wave.docdir := ./doc
+wave.docdir := ./doc
 dummy := $(shell mkdir -p $(wave.libdir) $(wave.bindir) $(wave.objdir))
-#dummy := $(shell mkdir -p $(wave.libdir) $(wave.bindir) $(wave.objdir) $(wave.docdir))
+dummy := $(shell mkdir -p $(wave.libdir) $(wave.bindir) $(wave.objdir) $(wave.docdir))
 
 wave.deps := $(wildcard .dep*)
 
@@ -118,7 +118,7 @@ AR       := ar
 ARFLAGS  := cr
 RM       := rm -f --preserve-root
 
-.PHONY: help all clean distclean vinfo utest itest lib prog #doc doxygen theory
+.PHONY: help all clean distclean vinfo utest itest lib prog doc doxygen #theory
 
 help:
 	@echo
@@ -129,7 +129,7 @@ help:
 	@echo "   all       :: equivalent to \"$(MAKE) lib prog doc utest itest\""
 	@echo "   lib       :: build archive lib$(wave.lib).a"
 	@echo "   prog      :: build executable $(wave.exe) (and, implicitly, lib)"
-	#@echo "   doc       :: build html (make doxygen) and pdf (make theory) documentation"
+	@echo "   doc       :: build html (make doxygen) and pdf (make theory) documentation"
 	@echo "   utest     :: build unit tests"
 	@echo "   itest     :: build integration tests"
 	@echo "   clean     :: remove object files"
@@ -150,7 +150,7 @@ ifeq "$(origin GTEST_DIR)" 'environment'
 endif
 	@echo
 
-all: lib prog utest itest #doc 
+all: lib prog utest itest doc 
 
 prog: $(wave.bindir)/$(wave.exe)
 
@@ -189,18 +189,18 @@ distclean: clean
 vinfo: prog
 	$(Q)strings $(wave.bindir)/$(wave.exe) | grep _KITGPI_LINK_
 
-#doc: doxygen theory
-#doxygen: $(wave.docdir)/doxygen/html/index.html
+doc: doxygen #theory
+doxygen: $(wave.docdir)/doxygen/html/index.html
 #theory: $(wave.docdir)/theory/WAVE_guide_EN.pdf
 
-# $(wave.docdir)/doxygen/html/index.html: $(wave.dir)/doc/doxygen/Doxyfile $(wave.liballsrc)
-# 	@echo "   [DOC]   $@"
-# 	$(Q)mkdir -p $(wave.docdir)/doxygen && cd  $(wave.docdir)/doxygen && \
-# 	sed -e 's#\(^INPUT[[:space:]]*=\).*$$#\1 $(wave.srcdir) $(wave.dir)/README.md#g' \
-#             -e 's#\(^USE_MDFILE_AS_MAINPAGE[[:space:]]*=\).*$$#\1 $(wave.dir)/README.md#g' $< > Doxyfile && \
-# 	doxygen Doxyfile &> log 
-# 	@echo "   [DOC]   doxygen log file: $(wave.docdir)/doxygen/log"
-# 
+$(wave.docdir)/doxygen/html/index.html: $(wave.dir)/doc/doxygen/Doxyfile $(wave.liballsrc)
+	@echo "   [DOC]   $@"
+	$(Q)mkdir -p $(wave.docdir)/doxygen && cd  $(wave.docdir)/doxygen && \
+	sed -e 's#\(^INPUT[[:space:]]*=\).*$$#\1 $(wave.srcdir) $(wave.dir)/README.md#g' \
+            -e 's#\(^USE_MDFILE_AS_MAINPAGE[[:space:]]*=\).*$$#\1 $(wave.dir)/README.md#g' $< > Doxyfile && \
+	doxygen Doxyfile &> log 
+	@echo "   [DOC]   doxygen log file: $(wave.docdir)/doxygen/log"
+
 # $(wave.docdir)/theory/WAVE_guide_EN.pdf: $(wave.dir)/doc/theory/WAVE_guide_EN.tex
 # 	@echo "   [DOC]   $@"
 # 	$(Q)mkdir -p $(wave.docdir)/theory && cd  $(wave.docdir)/theory && \

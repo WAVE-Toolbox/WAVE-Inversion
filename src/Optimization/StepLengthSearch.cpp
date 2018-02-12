@@ -1,6 +1,20 @@
 #include "StepLengthSearch.hpp"
 #include <string>
 
+/*! \brief Find the optimal steplength
+ *
+ *
+ \param solver Forward solver
+ \param derivatives Derivatives matrices
+ \param receivers Receivers
+ \param sources Sources 
+ \param model Model for the finite-difference simulation
+ \param dist Distribution
+ \param config Configuration
+ \param scaledGradient Misfit gradient 
+ \param steplength_init Initial steplength
+ \param currentMisfit Current misfit
+ */
 template <typename ValueType>
 void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
 {
