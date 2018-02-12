@@ -22,12 +22,15 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     scai::lama::Scalar misfitTestSum;
     scai::lama::Scalar steplength;
     
-    int maxStepCalc = config.get<int>("MaxStepCalc");      // maximum number of calculations to find a proper (steplength, misfit) pair 
-    int stepCalcCount = 0;    // number of calculations to find a proper (steplength, misfit) pair
-    scai::lama::Scalar scalingFactor = 2;
-    scai::lama::Scalar steplengthMin = 0.001; 
-    scai::lama::Scalar steplengthMax = 0.1; // 0.1 shows minimum msifit of ~97
-        
+    /* ------------------------------------------- */
+    /* Set values for step length search           */
+    /* ------------------------------------------- */
+    int stepCalcCount = 0;                                                       // number of calculations to find a proper (steplength, misfit) pair
+    int maxStepCalc = config.get<int>("MaxStepCalc");                            // maximum number of calculations to find a proper (steplength, misfit) pair 
+    scai::lama::Scalar scalingFactor = config.get<ValueType>("scalingFactor");
+    scai::lama::Scalar steplengthMin = config.get<ValueType>("steplengthMin");
+    scai::lama::Scalar steplengthMax = config.get<ValueType>("steplengthMax");
+    
     /* Save three pairs (steplength, misfit) for the parabolic fit */
     steplengthParabola.allocate(3);
     misfitParabola.allocate(3);
