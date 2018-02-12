@@ -2,6 +2,10 @@
 # The format has to be name=value (without any white spaces)
 # Use the hashtag "#" for comments
 
+#---------------------------------------------------------#
+#             Forward modelling parameters                #
+#---------------------------------------------------------#
+
 # Type of forward simulation
 dimension=2D              # Dimension: 2D or 3D
 equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
@@ -70,18 +74,26 @@ NormalizeTraces=0                              # 1=Normalize Traces of the Seism
 runSimultaneousShots=0
 runForward=0
 
-#----------------------#
-# Inversion Parameters #
-#----------------------#
+#---------------------------------------------------------#
+#                Inversion Parameters                     #
+#---------------------------------------------------------#
+
+# Input/Output
 FieldSeisName=ci/rectangle.true        # location/basename of input seismograms
 WriteGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
 GradientFilename=gradients/grad        # location/basename of output gradients
 LogFilename=logs/steplengthSearch.log  # target location of log file
-#
-MaxIterations=20                       # maximum number of inversion itertions
 
+# General settings
+MaxIterations=20                       # maximum number of inversion itertions
+misfitType=L2                          # type of misfit (L2, etc.)
+
+# Step length search
 SteplengthInit=0.03                    # starting steplength
 MaxStepCalc=4                          # maximum number of calculations to find a proper (steplength, misfit) pair
+scalingFactor=2                        # factor for multiplication or division of test step length
+steplengthMin=0.001                    # minimum step length
+steplengthMax=0.1                      # maximum step length
 
 # Tapers
 SourceTaperRadius=20                   # Circular source taper: Radius in gridpoints

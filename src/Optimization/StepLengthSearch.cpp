@@ -22,12 +22,15 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     scai::lama::Scalar misfitTestSum;
     scai::lama::Scalar steplength;
     
-    int maxStepCalc = config.get<int>("MaxStepCalc");      // maximum number of calculations to find a proper (steplength, misfit) pair 
-    int stepCalcCount = 0;    // number of calculations to find a proper (steplength, misfit) pair
-    scai::lama::Scalar scalingFactor = 2;
-    scai::lama::Scalar steplengthMin = 0.001; 
-    scai::lama::Scalar steplengthMax = 0.1; // 0.1 shows minimum msifit of ~97
-        
+    /* ------------------------------------------- */
+    /* Set values for step length search           */
+    /* ------------------------------------------- */
+    int stepCalcCount = 0;                                                       // number of calculations to find a proper (steplength, misfit) pair
+    int maxStepCalc = config.get<int>("MaxStepCalc");                            // maximum number of calculations to find a proper (steplength, misfit) pair 
+    scai::lama::Scalar scalingFactor = config.get<ValueType>("scalingFactor");
+    scai::lama::Scalar steplengthMin = config.get<ValueType>("steplengthMin");
+    scai::lama::Scalar steplengthMax = config.get<ValueType>("steplengthMax");
+    
     /* Save three pairs (steplength, misfit) for the parabolic fit */
     steplengthParabola.allocate(3);
     misfitParabola.allocate(3);
@@ -280,12 +283,11 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
 }
 
 template <typename ValueType>
-void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, KITGPI::Configuration::Configuration config)
+void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename)
 {
     int myRank = comm->getRank(); 
     if (myRank == MASTERGPI) {
-        std::string filename(config.get<std::string>("LogFilename"));
-        logFile.open(filename);
+        logFile.open(logFilename);
         logFile << "# Step length log file  \n";
         logFile << "# Misfit type = " << "L2 norm" << "\n";
         logFile << "# Iteration\t optimum step length\t #Forward\t step length guess 1\t step length guess 2\t step length guess 3\t misfit of slg1\t misfit of slg2\t misfit of slg3\t final misfit of all shots\n";
@@ -295,11 +297,11 @@ void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm,
 }
 
 template <typename ValueType>
-void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, KITGPI::Configuration::Configuration config)
+void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename)
 {
     int myRank = comm->getRank(); 
     if (myRank == MASTERGPI) {
-        std::string filename(config.get<std::string>("LogFilename"));
+        std::string filename(logFilename);
         logFile.open(filename, std::ios_base::app);
         logFile <<  std::scientific ;
         logFile << iteration << "\t" << steplengthOptimum << "\t n/a"<< "\t" << steplengthParabola.getValue(0) << "\t" << steplengthParabola.getValue(1) << "\t" << steplengthParabola.getValue(2) << "\t" << misfitParabola.getValue(0) << "\t" << misfitParabola.getValue(1) << "\t" << misfitParabola.getValue(2) << "\t n/a" << "\n" ;
