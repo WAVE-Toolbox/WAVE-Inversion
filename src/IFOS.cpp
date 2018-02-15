@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
-//         SLsearch.appendToLogFile(comm, iteration, logFilename);
+        SLsearch.appendToLogFile(comm, iteration, logFilename);
  
     } //end of loop over iterations
     return 0;
