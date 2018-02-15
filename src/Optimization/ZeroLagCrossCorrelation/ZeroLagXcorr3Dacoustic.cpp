@@ -14,8 +14,8 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>:
  *
  * Initialisation of 3D acoustic wavefields
  *
- /param ctx Context
- /param dist Distribution
+ \param ctx Context
+ \param dist Distribution
  */
 template <typename ValueType>
 KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::ZeroLagXcorr3Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
@@ -33,8 +33,8 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::init(scai::hmemo::
 /*! \brief override Methode tor write Wavefield Snapshot to file
  *
  *
- /param type Type of the Seismogram
- /param t Current Timestep
+ \param type Type of the Seismogram
+ \param t Current Timestep
  */
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::write(std::string type, IndexType t)
@@ -46,7 +46,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::write(std::string 
 /*! \brief Wrapper Function to Write Snapshot of the Wavefield
  *
  *
- /param t Current Timestep
+ \param t Current Timestep
  */
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::writeSnapshot(IndexType t)

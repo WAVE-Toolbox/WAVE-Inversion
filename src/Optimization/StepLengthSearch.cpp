@@ -1,6 +1,20 @@
 #include "StepLengthSearch.hpp"
 #include <string>
 
+/*! \brief Find the optimal steplength
+ *
+ *
+ \param solver Forward solver
+ \param derivatives Derivatives matrices
+ \param receivers Receivers
+ \param sources Sources 
+ \param model Model for the finite-difference simulation
+ \param dist Distribution
+ \param config Configuration
+ \param scaledGradient Misfit gradient 
+ \param steplength_init Initial steplength
+ \param currentMisfit Current misfit
+ */
 template <typename ValueType>
 void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
 {
@@ -113,7 +127,12 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     
 }
 
-
+/*! \brief Parabolic fit
+ *
+ *
+ \param xValues Vector of three values on the x-axis
+ \param xValues Vector of three values on the y-axis
+ */
 template <typename ValueType>
 scai::lama::Scalar StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVector<ValueType> const &xValues,scai::lama::DenseVector<ValueType> const &yValues){
 	
@@ -138,7 +157,19 @@ scai::lama::Scalar StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVe
     return steplengthExtremum;
 }
 
-
+/*! \brief Calculate misfit 
+ *
+ *
+ \param solver Forward solver
+ \param derivatives Derivatives matrices
+ \param receivers Receivers
+ \param sources Sources 
+ \param model Model for the finite-difference simulation
+ \param wavefields Wavefields
+ \param config Configuration
+ \param scaledGradient Misfit gradient 
+ \param steplength Steplength
+ */
 template <typename ValueType>
 scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength)
 {
@@ -202,6 +233,12 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
             
 }
 
+/*! \brief Initialize log-file
+ *
+ *
+ \param comm Communicator
+ \param logFilename Name of log-file
+ */
 template <typename ValueType>
 void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename)
 {
@@ -216,6 +253,12 @@ void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm,
 
 }
 
+/*! \brief Append results of steplength search to log-file
+ *
+ *
+ \param comm Communicator
+ \param iteration Iteration count
+ */
 template <typename ValueType>
 void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename)
 {
@@ -229,6 +272,10 @@ void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr c
     }                             
 }
 
+/*! \brief Get optimum steplength
+ *
+ *
+ */
 template <typename ValueType>
 scai::lama::Scalar const &StepLengthSearch<ValueType>::getSteplength()
 {
