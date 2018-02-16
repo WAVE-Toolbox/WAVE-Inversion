@@ -30,7 +30,7 @@ namespace KITGPI
 
         private:
             
-            using Misfit<ValueType>::misfitShot;
+            using Misfit<ValueType>::misfitStorage;
         
         };
         

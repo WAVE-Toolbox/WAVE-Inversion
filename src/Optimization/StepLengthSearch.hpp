@@ -14,6 +14,8 @@
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "../Gradient/GradientFactory.hpp"
+#include "Misfit/Misfit.hpp"
+#include "Misfit/MisfitFactory.hpp"
 
 /*! \brief The class StepLengthSearch searches for the optimal steplength for model update
  *
@@ -36,7 +38,7 @@ public:
     
 private:
     
-    scai::lama::Scalar calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength);
+    scai::lama::Scalar calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, scai::lama::Scalar steplength);
     
     scai::lama::DenseVector<ValueType> steplengthParabola;
     scai::lama::DenseVector<ValueType> misfitParabola;
