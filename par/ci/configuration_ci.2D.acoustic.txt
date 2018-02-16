@@ -80,6 +80,7 @@ runForward=0
 
 # Input/Output
 FieldSeisName=ci/rectangle.true        # location/basename of input seismograms
+WriteGradient=1                        # 1=Gradient will be written to disk, 0=not
 WriteGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
 GradientFilename=gradients/grad        # location/basename of output gradients
 LogFilename=logs/steplengthSearch.log  # target location of log file

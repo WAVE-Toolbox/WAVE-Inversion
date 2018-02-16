@@ -270,7 +270,7 @@ void KITGPI::Gradient::Gradient<ValueType>::setTauS(scai::lama::Vector const &se
 
 /*! \brief Overloading = Operation
  *
- \param rhs Model which is copied.
+ \param rhs Gradient which is copied.
  */
 template <typename ValueType>
 KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator=(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -281,7 +281,7 @@ KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::op
 
 /*! \brief Overloading -= Operation
  *
- \param rhs Model which is subtractet.
+ \param rhs Gradient which is subtracted.
  */
 template <typename ValueType>
 KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator-=(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -292,7 +292,7 @@ KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::op
 
 /*! \brief Overloading += Operation
  *
- \param rhs Model which is subtractet.
+ \param rhs Gradient which is subtracted.
  */
 template <typename ValueType>
 KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator+=(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -303,7 +303,7 @@ KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::op
 
 /*! \brief Overloading *= Operation
  *
- \param rhs Model which is subtractet.
+ \param rhs Gradient which is subtracted.
  */
 template <typename ValueType>
 KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator*=(scai::lama::Scalar const &rhs)

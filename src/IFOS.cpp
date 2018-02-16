@@ -238,7 +238,11 @@ int main(int argc, char *argv[])
         
         /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
         ReceiverTaper.apply(*gradient);
-        gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+        
+        /* Output of gradient */
+        if(config.get<IndexType>("WriteGradient"))
+            gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+       
         gradient->scale(*model);
         
         SLsearch.calc(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplength_init, dataMisfit->getMisfitSum(iteration));
