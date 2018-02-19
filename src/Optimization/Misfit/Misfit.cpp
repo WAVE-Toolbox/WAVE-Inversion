@@ -13,7 +13,7 @@ scai::lama::Scalar KITGPI::Misfit::Misfit<ValueType>::getMisfitShot(int iteratio
 }
 
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::add(scai::lama::DenseVector<ValueType> vector)
+void KITGPI::Misfit::Misfit<ValueType>::addToStorage(scai::lama::DenseVector<ValueType> vector)
 {
     this->misfitStorage.push_back(vector);
 }

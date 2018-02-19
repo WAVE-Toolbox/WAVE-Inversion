@@ -38,7 +38,7 @@ void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configurati
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType iteration, int shotNumber)
+void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType iteration, int shotNumber)
 {
 
     double start_t, end_t; /* For timing */
@@ -52,26 +52,6 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
     scai::dmemo::DistributionPtr dist = wavefields->getRefVX().getDistributionPtr();
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
-
-    /* ------------------------------------------------------ */
-    /* Allocate adjoint sources, true data and synthetic data */
-    /* ------------------------------------------------------ */
-
-    KITGPI::Acquisition::Receivers<ValueType> adjoint(config, ctx, dist);
-    KITGPI::Acquisition::Seismogram<ValueType> truedata(receiversTrue.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
-    KITGPI::Acquisition::Seismogram<ValueType> synthetic(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
-
-    /* -------------------------------------------------------------------- */
-    /* Calculate adjoint sources to residuals */
-    /* -------------------------------------------------------------------- */
-
-    truedata = receiversTrue.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P);
-    synthetic = receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P);
-    
-    synthetic -= truedata;
-
-    adjoint.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P) = synthetic;
-    //  adjoint.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/adjoint.mtx");
 
     /* ------------------------------------------------------ */
     /*                Backward Modelling                      */
@@ -88,7 +68,7 @@ void GradientCalculation<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<V
 
     for (t = tEnd - 1; t >= 0; t--) {
 
-        solver.run(receivers, adjoint, model, *wavefields, derivatives, t, t + 1, config.get<ValueType>("DT"));
+        solver.run(receivers, adjointSources, model, *wavefields, derivatives, t, t + 1, config.get<ValueType>("DT"));
 
         /* --------------------------------------- */
         /*             Convolution                 */

@@ -114,21 +114,43 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Wavefields                              */
     /* --------------------------------------- */
-    KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields = Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefields->init(ctx, dist);
     
     /* --------------------------------------- */
     /* Wavefield record                        */
     /* --------------------------------------- */
-    typedef typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
+    typedef typename Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
     std::vector<wavefieldPtr> wavefieldrecord;
     
     for (IndexType i = 0; i < tEnd; i++) {
-        wavefieldPtr wavefieldsTemp(KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType));
+        wavefieldPtr wavefieldsTemp(Wavefields::Factory<ValueType>::Create(dimension, equationType));
         wavefieldsTemp->init(ctx, dist);
 
         wavefieldrecord.push_back(wavefieldsTemp);
     }
+    
+    /* --------------------------------------- */
+    /* True data                               */
+    /* --------------------------------------- */
+    Acquisition::Receivers<ValueType> receiversTrue(config, ctx, dist);
+    
+    /* --------------------------------------- */
+    /* Misfit                                  */
+    /* --------------------------------------- */
+    Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(Misfit::Factory<ValueType>::Create(misfitType));
+    lama::DenseVector<ValueType> misfitPerIt(sources.getNumShots(), 0, ctx);
+    
+    /* --------------------------------------- */
+    /* Adjoint sources                         */
+    /* --------------------------------------- */
+    Acquisition::Receivers<ValueType> adjointSources(config, ctx, dist);
+    
+    /* --------------------------------------- */
+    /* Step length search                      */
+    /* --------------------------------------- */
+    StepLengthSearch<ValueType> SLsearch;
+    SLsearch.initLogFile(comm, logFilename);
     
     /* --------------------------------------- */
     /* Gradients                               */
@@ -146,27 +168,10 @@ int main(int argc, char *argv[])
     gradientCalculation.allocate(config, dist, ctx);
     
     /* --------------------------------------- */
-    /* Misfit                                  */
-    /* --------------------------------------- */
-    Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(Misfit::Factory<ValueType>::Create(misfitType));
-    scai::lama::DenseVector<ValueType> misfitPerIt(sources.getNumShots(), 0, ctx);
-    
-    /* --------------------------------------- */
-    /* Step length search                      */
-    /* --------------------------------------- */
-    StepLengthSearch<ValueType> SLsearch;
-    SLsearch.initLogFile(comm, logFilename);
-
-    /* --------------------------------------- */
     /* Gradient taper                          */
     /* --------------------------------------- */
     SourceReceiverTaper<ValueType> ReceiverTaper;
     ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("SourceTaperRadius"));
-
-    /* --------------------------------------- */
-    /* True data                               */
-    /* --------------------------------------- */
-    KITGPI::Acquisition::Receivers<ValueType> receiversTrue(config, ctx, dist);
     
     
     /* --------------------------------------- */
@@ -202,7 +207,7 @@ int main(int argc, char *argv[])
             wavefields->reset();
             sources.init(config, ctx, dist, shotNumber);
 
-            start_t = scai::common::Walltime::get();
+            start_t = common::Walltime::get();
             for (t = 0; t < tEnd; t++) {
 
                 solver->run(receivers, sources, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
@@ -213,21 +218,22 @@ int main(int argc, char *argv[])
 
             receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It" + std::to_string(iteration) + ".shot" + std::to_string(shotNumber));
 
-            end_t = scai::common::Walltime::get();
+            end_t = common::Walltime::get();
             HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
             
             /* Calculate misfit of one shot */
             misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));          
             
             /* Calculate adjoint sources */
- 
+            dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
+            
             /* Calculate gradient */
-            gradientCalculation.calc(*solver, *derivatives, receivers, sources, receiversTrue, *model, *gradientPerShot, wavefieldrecord, config, iteration, shotNumber);
+            gradientCalculation.calc(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, iteration, shotNumber);
             *gradient += *gradientPerShot; 
         
         } //end of loop over shots
         
-        dataMisfit->add(misfitPerIt);
+        dataMisfit->addToStorage(misfitPerIt);
         
         HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n\n");
 
