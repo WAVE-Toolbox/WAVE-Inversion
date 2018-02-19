@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
             dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
             
             /* Calculate gradient */
-            gradientCalculation.calc(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, iteration, shotNumber);
+            gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, iteration, shotNumber);
             *gradient += *gradientPerShot; 
         
         } //end of loop over shots
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
        
         gradient->scale(*model);
         
-        SLsearch.calc(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplength_init, dataMisfit->getMisfitSum(iteration));
+        SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplength_init, dataMisfit->getMisfitSum(iteration));
         
         *gradient *= SLsearch.getSteplength();
         *model -= *gradient;
