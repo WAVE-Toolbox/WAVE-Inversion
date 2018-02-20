@@ -79,6 +79,7 @@ runSimultaneousShots=0
 
 # Input/Output
 FieldSeisName=../seismograms/ToyExample.true        # location/basename of input seismograms
+WriteGradient=1                        # 1=Gradient will be written to disk, 0=not
 WriteGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
 GradientFilename=../gradients/ToyExample.grad        # location/basename of output gradients
 LogFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
@@ -98,4 +99,3 @@ steplengthMax=0.1                      # maximum step length
 SourceTaperRadius=20    # Circular source taper: Radius in gridpoints
 ReceiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
 
-runForward=0

@@ -1,7 +1,7 @@
 clearvars; close all;
 
 %% Define input parameter
-filename='grad_vp.It2.mtx'; % File name of the gradient
+filename='grad.It_0.vp.mtx'; % File name of the gradient
 NX=100;  % Number of grid points in X
 NY=100;  % Number of grid points in Y
 NZ=1;  % Number of grid points in Z

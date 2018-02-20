@@ -24,8 +24,15 @@ int main(int argc, char *argv[])
         return (2);
     }
 
-    int width=40;
-    int height=40;	
+    // box
+    int width=20;
+    int height=20;	
+
+    // permutations in box
+    ValueType topLeftVal=1.1;
+    ValueType topRightVal=0.95;
+    ValueType bottomLeftVal=0.9;
+    ValueType bottomRightVal=1.05;
 
     // read configuration parameter from file
     KITGPI::Configuration::Configuration config(argv[1]);
@@ -50,28 +57,28 @@ int main(int argc, char *argv[])
    //top-left
   for (IndexType x = NX/2-width/2; x <= NX/2; ++x) {
     for (IndexType y = NY/2-height/2; y <= NY/2; ++y) {
-        vp(lama::Range(), y, x) *= 1.1;
+        vp(lama::Range(), y, x) *= topLeftVal;
     }
    }
 
     //top-right
   for (IndexType x = NX/2+1; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2-height/2; y <= NY/2; ++y) {
-        vp(lama::Range(), y, x) *= 0.95;
+        vp(lama::Range(), y, x) *= topRightVal;
     }
    }      
 
  //bottom left        
  for (IndexType x = NX/2-width/2; x <= NX/2; ++x) {
   for (IndexType y = NY/2+1; y < NY/2+width/2; ++y) {
-      vp(lama::Range(), y, x) *= 0.9;
+      vp(lama::Range(), y, x) *= bottomLeftVal;
   }                                                               
  }
 
     //bottom right
   for (IndexType x = NX/2+1; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2+1; y < NY/2+width/2; ++y) {
-        vp(lama::Range(), y, x) *= 1.05;
+        vp(lama::Range(), y, x) *= bottomRightVal;
     }
    }      
 

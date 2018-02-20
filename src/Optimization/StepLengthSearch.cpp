@@ -213,7 +213,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
         end_t = scai::common::Walltime::get();
         HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
         
-        receiversTrue.getSeismogramHandler().readFromFileRaw(config.get<std::string>("FieldSeisName") + ".It0" + ".shot" + std::to_string(shotNumber) + ".mtx", 1);
+        receiversTrue.getSeismogramHandler().readFromFileRaw(config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
         
         misfitTest.setValue(shotNumber, dataMisfit.calc(receivers, receiversTrue));
         
