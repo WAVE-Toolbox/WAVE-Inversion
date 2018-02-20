@@ -11,7 +11,8 @@ sources=spconvert(sources(2:end,:));
 load '../acquisition/receiver.mtx';
 receiver=spconvert(receiver(2:end,:));
 
-
+trueModel='model_true';
+inversionModel='model';
 
 %% Define input parameter
 
@@ -21,8 +22,9 @@ NZ=1;  % Number of grid points in Z
 DH=50;   % Spatial grid sampling
 LAYER=1; % Define layer of 3D model to display as 2D slice
 
-filename=['model.It' num2str(iteration) '.' parameter '.mtx']; % File name of the model
+
 %% Read model
+filename=[inversionModel '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
 X=0:DH:(NX*DH-DH);
 Y=0:DH:(NY*DH-DH);
@@ -36,16 +38,13 @@ colorbar('location','southoutside');
 xlabel('X in meter')
 ylabel('Y in meter')
 title([parameter ' model at iteration ' num2str(iteration)])
-% 
-%% Define input parameter
-filename=['model.' parameter '.mtx']; % File name of the model
+
+
 
 
 %% Read model
+filename=[inversionModel '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
-X=0:DH:(NX*DH-DH);
-Y=0:DH:(NY*DH-DH);
-
 
 %% Plot
 
@@ -60,13 +59,10 @@ plot(sources(:,1)*DH,sources(:,2)*DH,'*')
 plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' starting model'])
 
-%% Define input parameter
-filename=['model_true.' parameter '.mtx']; % File name of the model
 
 %% Read model
+filename=[trueModel '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
-X=0:DH:(NX*DH-DH);
-Y=0:DH:(NY*DH-DH);
 
 %% Plot
 subplot(1,3,1)

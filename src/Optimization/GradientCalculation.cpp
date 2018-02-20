@@ -86,8 +86,8 @@ void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Va
     SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("SourceTaperRadius"));
     SourceTaper.apply(gradient);
 
-	if(config.get<IndexType>("WriteGradientPerShot"))
-        gradient.getVelocityP().writeToFile(config.get<std::string>("GradientFilename") + "_vp" + ".It" + std::to_string(iteration) + ".Shot" + std::to_string(shotNumber)+ ".mtx");
+    if(config.get<IndexType>("WriteGradientPerShot"))
+       gradient.getVelocityP().writeToFile(config.get<std::string>("GradientFilename")  + ".It_" + std::to_string(iteration) + ".Shot_" + std::to_string(shotNumber) + ".vp" + ".mtx");
 
 //     receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/rec_adjoint.mtx");
     

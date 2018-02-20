@@ -179,8 +179,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
 
     IndexType maxiterations = config.get<IndexType>("MaxIterations");
-    if (config.get<bool>("runForward"))
-        maxiterations = 1;
+
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
 
         // update model for fd simulation (averaging, inverse Density ...)
@@ -195,7 +194,7 @@ int main(int argc, char *argv[])
         for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
                    
             /* Read field data (or pseudo-observed data, respectively) */
-            receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".It0" + ".shot" + std::to_string(shotNumber) + ".mtx", 1);
+            receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
             
             /* --------------------------------------- */
             /*        Forward modelling                */
@@ -216,7 +215,7 @@ int main(int argc, char *argv[])
                 wavefieldrecord[t]->assign(*wavefields);
             }
 
-            receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It" + std::to_string(iteration) + ".shot" + std::to_string(shotNumber));
+            receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
 
             end_t = common::Walltime::get();
             HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
@@ -247,7 +246,7 @@ int main(int argc, char *argv[])
         
         /* Output of gradient */
         if(config.get<IndexType>("WriteGradient"))
-            gradient->getVelocityP().writeToFile(gradname + "_vp" + ".It" + std::to_string(iteration) + ".mtx");
+            gradient->getVelocityP().writeToFile(gradname  + ".It_" + std::to_string(iteration) + ".vp" + ".mtx");
        
         gradient->scale(*model);
         
@@ -256,7 +255,7 @@ int main(int argc, char *argv[])
         *gradient *= SLsearch.getSteplength();
         *model -= *gradient;
        
-        model->write((config.get<std::string>("ModelFilename") + ".It" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
+        model->write((config.get<std::string>("ModelFilename") + ".It_" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
         
