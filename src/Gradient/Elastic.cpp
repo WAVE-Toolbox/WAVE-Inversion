@@ -218,7 +218,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
 
 /*! \brief Overloading + Operation
  *
- \param rhs Model which is added.
+ \param rhs Gradient which is added.
  */
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::operator+(KITGPI::Gradient::Elastic<ValueType> const &rhs)
@@ -230,7 +230,7 @@ KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::opera
 
 /*! \brief Overloading += Operation
  *
- \param rhs Model which is added.
+ \param rhs Gradient which is added.
  */
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator+=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
@@ -244,7 +244,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
 
 /*! \brief Overloading - Operation
  *
- \param rhs Model which is subtractet.
+ \param rhs Gradient which is subtracted.
  */
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::operator-(KITGPI::Gradient::Elastic<ValueType> const &rhs)
@@ -256,7 +256,7 @@ KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::opera
 
 /*! \brief Overloading -= Operation
  *
- \param rhs Model which is subtractet.
+ \param rhs Gradient which is subtracted.
  */
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator-=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
@@ -270,7 +270,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
 
 /*! \brief Overloading = Operation
  *
- \param rhs Model which is copied.
+ \param rhs Gradient which is copied.
  */
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
@@ -284,7 +284,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
 
 /*! \brief function for overloading -= Operation (called in base class)
  *
- \param rhs Abstract model which is assigned.
+ \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -297,7 +297,7 @@ void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<Val
 
 /*! \brief function for overloading -= Operation (called in base class)
  *
- \param rhs Abstract model which is subtractet.
+ \param rhs Abstract gradient which is subtractet.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -310,7 +310,7 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Gradient::Gradien
 
 /*! \brief function for overloading += Operation (called in base class)
  *
- \param rhs Abstarct model which is subtractet.
+ \param rhs Abstract gradient which is subtractet.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -323,7 +323,7 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
 
 /*! \brief function for overloading *= Operation (called in base class)
  *
- \param rhs Abstarct model which is subtractet.
+ \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const &/*rhs*/)

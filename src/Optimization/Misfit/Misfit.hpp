@@ -23,10 +23,15 @@ namespace KITGPI
 
             virtual scai::lama::Scalar calc(KITGPI::Acquisition::Receivers<ValueType> const &receivers1, KITGPI::Acquisition::Receivers<ValueType> const &receivers2) = 0;
             virtual scai::lama::Scalar calc(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismoHandler1, KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismoHandler2) = 0;
-            virtual scai::lama::Scalar calc(KITGPI::Acquisition::Seismogram<ValueType> &seismogram1, KITGPI::Acquisition::Seismogram<ValueType> &seismogram2) = 0;
+            virtual scai::lama::Scalar calc(KITGPI::Acquisition::Seismogram<ValueType> const &seismogram1, KITGPI::Acquisition::Seismogram<ValueType> const &seismogram2) = 0;
+            
+            virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receivers1, KITGPI::Acquisition::Receivers<ValueType> const &receivers2) = 0;
+            virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismoHandler1, KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismoHandler2) = 0;
+            virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Seismogram<ValueType> const &seismogram1, KITGPI::Acquisition::Seismogram<ValueType> const &seismogram2) = 0;
+            
             scai::lama::Scalar getMisfitSum(int iteration);
             scai::lama::Scalar getMisfitShot(int iteration, int shotNumber);
-            void add(scai::lama::DenseVector<ValueType> vector);
+            void addToStorage(scai::lama::DenseVector<ValueType> vector);
 
             //! \brief Misfit pointer
             typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
@@ -37,7 +42,7 @@ namespace KITGPI
             Misfit(){};
             ~Misfit(){};
             
-            std::vector<scai::lama::DenseVector<ValueType>> misfitShot;
+            std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;
             
         };
     }

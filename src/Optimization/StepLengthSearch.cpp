@@ -16,7 +16,7 @@
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
+void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
 {
     
     /* ------------------------------------------- */
@@ -30,8 +30,9 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefields->init(ctx, dist);
     
-    KITGPI::Acquisition::Seismogram<ValueType> truedata(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
     KITGPI::Acquisition::Seismogram<ValueType> synthetic(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
+    
+    typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
     
     scai::lama::Scalar misfitTestSum;
     scai::lama::Scalar steplength;
@@ -70,7 +71,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     step3ok = false; // true if second step length decreases the misfit AND third step length increases the misfit relative to second step length */
    
     /* --- Save first step length in any case --- */
-    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength_init);
+    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength_init);
     steplengthParabola.setValue(1, steplength_init); 
     misfitParabola.setValue(1, misfitTestSum);  
     if ( misfitParabola.getValue(0) > misfitParabola.getValue(1) ){
@@ -80,7 +81,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     steplength = steplength_init;
     while( step2ok == true && stepCalcCount < maxStepCalc ){
         steplength *= scalingFactor;
-        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength);
         steplengthParabola.setValue(2, steplength); 
         misfitParabola.setValue(2, misfitTestSum);
         if( misfitTestSum > misfitParabola.getValue(1)){
@@ -94,7 +95,7 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
     steplength = steplength_init;
     while( step2ok == false && stepCalcCount < maxStepCalc ){
         steplength /= scalingFactor;
-        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength);
         steplengthParabola.setValue(2, steplength); 
         misfitParabola.setValue(2, misfitTestSum);
         if( misfitTestSum < misfitParabola.getValue(0)){
@@ -125,85 +126,6 @@ void StepLengthSearch<ValueType>::calc(KITGPI::ForwardSolver::ForwardSolver<Valu
         HOST_PRINT(comm,"Steplength " << i << ": "<<  steplengthParabola.getValue(i) << ", Corresponding misfit: " << misfitParabola.getValue(i) << std::endl);
     }
     HOST_PRINT(comm,"Accepted step length: " << steplengthOptimum << ", Corresponding misfit: " << misfitTestSum << std::endl);
-    
-    /* -------------------------------------- */
-    /* Find second step length (out of three) */
-    /* -------------------------------------- */
-//     while( step2ok == false ){
-//         
-//         if(stepCalcCount >= maxStepCalc)
-//             break;
-//         
-//         misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
-//         misfitParabola.setValue(1, misfitTestSum);
-//         steplengthParabola.setValue(1, steplength);
-//         if(misfitTestSum < currentMisfit){
-//             step2ok = true; // use set method?
-//             steplength = scalingFactor * steplength;}
-//         else {
-//             steplength /= scalingFactor;
-//             stepCalcCount += 1;}
-//     }
-    
-    /* ----------------------------------------------------------------------------------- */
-    /* Find third step length in case that the second step length DOES decrease the misfit */
-    /* ----------------------------------------------------------------------------------- */
-//     stepCalcCount = 0;
-//     
-//     if( step2ok == true ){
-//         
-//         while( step3ok == false ){
-//             if(stepCalcCount >= maxStepCalc){
-//                 if( steplength > steplengthMax){
-//                     steplengthOptimum = steplengthMax;
-//                     return;}
-//                 break;} 
-//         
-//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
-//             misfitParabola.setValue(2, misfitTestSum);
-//             steplengthParabola.setValue(2, steplength);
-//             if(misfitTestSum > misfitParabola.getValue(1)){
-//                 step3ok = true; // use set method?
-//                 stepCalcCount = 0;}  // do not set stepCalcCount to zero??
-//             else if( misfitTestSum < misfitParabola.getValue(1) ){
-//                 steplength = scalingFactor * steplength;
-//                 stepCalcCount += 1;}
-//         }
-//     }
-//     
-//     /* Fit parabola */
-//     if( step2ok == true && step3ok == true ){
-//         this->parabolicFit();
-//         steplengthOptimum = steplengthExtremum;
-//         return;
-//     }
-    
-    /* --------------------------------------------------------------------------------------- */
-    /* Find third step length in case that the second step length DOES NOT decrease the misfit */
-    /* --------------------------------------------------------------------------------------- */
-//     stepCalcCount = 0;
-//     steplength = steplength_init;
-//     
-//     if( step2ok == false ){
-//         
-//         while(stepCalcCount < maxStepCalc){
-//             
-//             misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, model, *wavefields, config, scaledGradient, steplength);
-//             misfitParabola.setValue(2, misfitTestSum);
-//             steplengthParabola.setValue(2, steplength);
-//             if(misfitTestSum < misfitParabola.getValue(0)){
-//                 stepCalcCount = 0;
-//                 steplengthOptimum = steplength; // set condition with steplengthMax?
-//                 return;}
-//             else{
-//                 steplength = scalingFactor * steplength;
-//                 }
-//         }
-//         
-//         steplengthOptimum = steplengthMin;
-//         return;
-//     }
-    
     
 }
 
@@ -251,7 +173,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVe
  \param steplength Steplength
  */
 template <typename ValueType>
-scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength)
+scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, scai::lama::Scalar steplength)
 {
     
     /* ------------------------------------------- */
@@ -265,12 +187,8 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     IndexType tStart = 0;
     IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5); 
     std::string equationType = config.get<std::string>("equationType");
-
-    KITGPI::Acquisition::Seismogram<ValueType> truedata(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
-    KITGPI::Acquisition::Seismogram<ValueType> synthetic(receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P));
     
-    scai::lama::Scalar misfitTestShot;
-    scai::lama::Scalar misfitTestSum;
+    scai::lama::DenseVector<ValueType> misfitTest(sources.getNumShots(), 0, ctx);
     
     // Implement a (virtual) copy constructor in the abstract base class to simplify the following code -> virtual constructor idiom!
     typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodel(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
@@ -284,14 +202,9 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
         
     testmodel->prepareForModelling(config, ctx, dist, comm); 
     
-    misfitTestSum = 0;
-    
-    std::string fieldSeisName(config.get<std::string>("FieldSeisName"));
-    
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
         
-        misfitTestShot = 0;
         wavefields.reset();
         sources.init(config, ctx, dist, shotNumber);
         
@@ -300,16 +213,13 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
         end_t = scai::common::Walltime::get();
         HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
         
-        truedata.readFromFileRaw(fieldSeisName +".It0" + ".shot" + std::to_string(shotNumber) + ".p.mtx", receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P).getData().getRowDistributionPtr(), NULL);
-        synthetic = receivers.getSeismogramHandler().getSeismogram(KITGPI::Acquisition::SeismogramType::P);
+        receiversTrue.getSeismogramHandler().readFromFileRaw(config.get<std::string>("FieldSeisName") + ".It0" + ".shot" + std::to_string(shotNumber) + ".mtx", 1);
         
-        synthetic -= truedata;
-        misfitTestShot = 0.5*synthetic.getData().l2Norm();   // misfit of one shot
-        misfitTestSum += misfitTestShot;                     // misfit sum of selected shots
+        misfitTest.setValue(shotNumber, dataMisfit.calc(receivers, receiversTrue));
         
     }
     
-    return misfitTestSum;
+    return misfitTest.sum();
             
 }
 

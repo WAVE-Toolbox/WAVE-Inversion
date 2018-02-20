@@ -4,6 +4,8 @@
 #include <scai/common/Walltime.hpp>
 #include <scai/lama.hpp>
 
+#include <vector>
+
 #include "../Gradient/GradientFactory.hpp"
 #include "./ZeroLagCrossCorrelation/ZeroLagXcorrFactory.hpp"
 #include "Misfit/Misfit.hpp"
@@ -31,11 +33,9 @@ class GradientCalculation
 
     void allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx);
     /* Calculate gradients */
-    void calc(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Configuration::Configuration config, IndexType iteration, KITGPI::Misfit::Misfit<ValueType> &dataMisfit);
+    void run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType iteration, int shotNumber);
 
   private:
-    typedef typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr GradientPtr;
-    GradientPtr GradientPerShot;
 
     typedef typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr ZeroLagXcorrPtr;
     ZeroLagXcorrPtr ZeroLagXcorr;
@@ -45,5 +45,4 @@ class GradientCalculation
 
     SourceReceiverTaper <ValueType> SourceTaper;
 
-    std::vector<wavefieldPtr> wavefieldrecord;
 };

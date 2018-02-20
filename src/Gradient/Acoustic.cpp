@@ -122,7 +122,7 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
     density = rhs.density;
 }
 
-/*! \brief Write model to an external file
+/*! \brief Write gradient to an external file
  *
  \param filename For the P-wave modulus ".pWaveModulus.mtx" is added and for density ".density.mtx" is added.
  \param partitionedOut Partitioned output
@@ -219,7 +219,7 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 
 /*! \brief Overloading + Operation
  *
- \param rhs Model which is added.
+ \param rhs Gradient which is added.
  */
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> KITGPI::Gradient::Acoustic<ValueType>::operator+(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
@@ -231,7 +231,7 @@ KITGPI::Gradient::Acoustic<ValueType> KITGPI::Gradient::Acoustic<ValueType>::ope
 
 /*! \brief Overloading += Operation
  *
- \param rhs Model which is added.
+ \param rhs Gradient which is added.
  */
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator+=(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
@@ -244,7 +244,7 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 
 /*! \brief Overloading - Operation
  *
- \param rhs Model which is subtractet.
+ \param rhs Gradient which is subtractet.
  */
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> KITGPI::Gradient::Acoustic<ValueType>::operator-(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
@@ -256,7 +256,7 @@ KITGPI::Gradient::Acoustic<ValueType> KITGPI::Gradient::Acoustic<ValueType>::ope
 
 /*! \brief Overloading -= Operation
  *
- \param rhs Model which is subtractet.
+ \param rhs Gradient which is subtracted.
  */
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator-=(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
@@ -268,7 +268,7 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 
 /*! \brief Overloading = Operation
  *
- \param rhs Model which is copied.
+ \param rhs Gradient which is copied.
  */
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator=(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
@@ -281,7 +281,7 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 
 /*! \brief function for overloading = Operation (called in base class)
  *
- \param rhs Abstract model which is assigned.
+ \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -293,7 +293,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::assign(KITGPI::Gradient::Gradient<Va
 
 /*! \brief function for overloading -= Operation (called in base class)
  *
- \param rhs Abstract model which is subtractet.
+ \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -305,7 +305,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Gradient::Gradie
 
 /*! \brief function for overloading += Operation (called in base class)
  *
- \param rhs Abstarct model which is subtractet.
+ \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
@@ -317,7 +317,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::plusAssign(KITGPI::Gradient::Gradien
 
 /*! \brief function for overloading *= Operation (called in base class)
  *
- \param rhs Abstarct model which is subtractet.
+ \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Scalar const &rhs)
@@ -328,7 +328,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Scalar const
 
 /*! \brief function for overloading -= Operation (called in base class)
  *
- \param lhs Abstract model.
+ \param lhs Abstract gradient.
  \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>

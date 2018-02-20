@@ -3,19 +3,19 @@
 template <typename ValueType>
 scai::lama::Scalar KITGPI::Misfit::Misfit<ValueType>::getMisfitSum(int iteration)
 {
-    return this->misfitShot.at(iteration).sum();
+    return this->misfitStorage.at(iteration).sum();
 }
 
 template <typename ValueType>
 scai::lama::Scalar KITGPI::Misfit::Misfit<ValueType>::getMisfitShot(int iteration, int shotNumber)
 {
-    return this->misfitShot.at(iteration).getValue(shotNumber);
+    return this->misfitStorage.at(iteration).getValue(shotNumber);
 }
 
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::add(scai::lama::DenseVector<ValueType> vector)
+void KITGPI::Misfit::Misfit<ValueType>::addToStorage(scai::lama::DenseVector<ValueType> vector)
 {
-    this->misfitShot.push_back(vector);
+    this->misfitStorage.push_back(vector);
 }
 
 template class KITGPI::Misfit::Misfit<double>;
