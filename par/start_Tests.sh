@@ -24,6 +24,6 @@ mpirun -np ${NUM_MPI_PROCESSES} ${IFOS_EXE} ./ci/configuration_ci.2D.acoustic.tx
  ${INTEGRATIONTEST_EXE} ci/configuration_ci.2D.acoustic.txt
 if [ "$?" != "0" ]; then
 	echo "Test failed ! "
-	return
+	exit 2
 fi
 

@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
     /* Step length search                      */
     /* --------------------------------------- */
     StepLengthSearch<ValueType> SLsearch;
-    SLsearch.initLogFile(comm, logFilename);
+    SLsearch.initLogFile(comm, logFilename, misfitType);
     
     /* --------------------------------------- */
     /* Gradients                               */
@@ -234,6 +234,9 @@ int main(int argc, char *argv[])
         
         dataMisfit->addToStorage(misfitPerIt);
         
+        SLsearch.appendToLogFile(comm, iteration, logFilename, dataMisfit->getMisfitSum(iteration));
+        
+        /* Check abort criteria */
         HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n\n");
 
         if ((iteration > 0) && (dataMisfit->getMisfitSum(iteration) >= dataMisfit->getMisfitSum(iteration - 1))) {
@@ -246,20 +249,20 @@ int main(int argc, char *argv[])
         
         /* Output of gradient */
         if(config.get<IndexType>("WriteGradient"))
-            gradient->getVelocityP().writeToFile(gradname  + ".It_" + std::to_string(iteration) + ".vp" + ".mtx");
+            gradient->getVelocityP().writeToFile(gradname  + ".It_" + std::to_string(iteration + 1) + ".vp" + ".mtx");
        
         gradient->scale(*model);
         
+        /* Search for a step length */
         SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplength_init, dataMisfit->getMisfitSum(iteration));
         
+        /* Apply model update */
         *gradient *= SLsearch.getSteplength();
         *model -= *gradient;
        
-        model->write((config.get<std::string>("ModelFilename") + ".It_" + std::to_string(iteration)), config.get<IndexType>("PartitionedOut"));
+        model->write((config.get<std::string>("ModelFilename") + ".It_" + std::to_string(iteration + 1)), config.get<IndexType>("PartitionedOut"));
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
-        
-        SLsearch.appendToLogFile(comm, iteration, logFilename);
  
     } //end of loop over iterations
     return 0;

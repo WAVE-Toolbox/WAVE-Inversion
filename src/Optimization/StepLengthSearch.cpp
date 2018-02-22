@@ -1,5 +1,6 @@
 #include "StepLengthSearch.hpp"
 #include <string>
+#include <iomanip>
 
 /*! \brief Find the optimal steplength
  *
@@ -40,7 +41,7 @@ void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Value
     /* ------------------------------------------- */
     /* Set values for step length search           */
     /* ------------------------------------------- */
-    int stepCalcCount = 0;                                                       // number of calculations to find a proper (steplength, misfit) pair
+    stepCalcCount = 0;                                                       // number of calculations to find a proper (steplength, misfit) pair
     int maxStepCalc = config.get<int>("MaxStepCalc");                            // maximum number of calculations to find a proper (steplength, misfit) pair 
     scai::lama::Scalar scalingFactor = config.get<ValueType>("scalingFactor");
     scai::lama::Scalar steplengthMin = config.get<ValueType>("steplengthMin");
@@ -121,11 +122,11 @@ void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Value
     if ( steplengthOptimum > steplengthMax){
         steplengthOptimum = steplengthMax;}
     
-    HOST_PRINT(comm,"Finished step length search\n\n" );
-    for (int i = 0; i < 3; i++) {
-        HOST_PRINT(comm,"Steplength " << i << ": "<<  steplengthParabola.getValue(i) << ", Corresponding misfit: " << misfitParabola.getValue(i) << std::endl);
-    }
-    HOST_PRINT(comm,"Accepted step length: " << steplengthOptimum << ", Corresponding misfit: " << misfitTestSum << std::endl);
+//     HOST_PRINT(comm,"Finished step length search\n\n" );
+//     for (int i = 0; i < 3; i++) {
+//         HOST_PRINT(comm,"Steplength " << i << ": "<<  steplengthParabola.getValue(i) << ", Corresponding misfit: " << misfitParabola.getValue(i) << std::endl);
+//     }
+//     HOST_PRINT(comm,"Accepted step length: " << steplengthOptimum << ", Corresponding misfit: " << misfitTestSum << std::endl);
     
 }
 
@@ -187,6 +188,9 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     IndexType tStart = 0;
     IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5); 
     std::string equationType = config.get<std::string>("equationType");
+    int testShotStart = config.get<int>("testShotStart");
+    int testShotEnd = config.get<int>("testShotEnd");
+    int testShotIncr = config.get<int>("testShotIncr");
     
     scai::lama::DenseVector<ValueType> misfitTest(sources.getNumShots(), 0, ctx);
     
@@ -203,7 +207,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     testmodel->prepareForModelling(config, ctx, dist, comm); 
     
     // later it should be possible to select only a subset of shots for the step length search
-    for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
+    for (IndexType shotNumber = testShotStart ; shotNumber <= testShotEnd; shotNumber+=testShotIncr) {
         
         wavefields.reset();
         sources.init(config, ctx, dist, shotNumber);
@@ -230,14 +234,15 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
  \param logFilename Name of log-file
  */
 template <typename ValueType>
-void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename)
+void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, std::string misfitType)
 {
     int myRank = comm->getRank(); 
     if (myRank == MASTERGPI) {
         logFile.open(logFilename);
         logFile << "# Step length log file  \n";
-        logFile << "# Misfit type = " << "L2 norm" << "\n";
-        logFile << "# Iteration\t optimum step length\t #Forward\t step length guess 1\t step length guess 2\t step length guess 3\t misfit of slg1\t misfit of slg2\t misfit of slg3\t final misfit of all shots\n";
+        logFile << "# Misfit type = " << misfitType << "\n";
+        logFile << "# Iteration 0 shows misfit of initial model (only first and last column is meaningful here)\n";
+        logFile << "# Iteration | optimum step length | #Forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots\n";
         logFile.close();
     } 
 
@@ -250,14 +255,22 @@ void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm,
  \param iteration Iteration count
  */
 template <typename ValueType>
-void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename)
+void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename, scai::lama::Scalar misfitSum)
 {
     int myRank = comm->getRank(); 
+    /* The following temporaries are only necessary because of a problem with LAMA: e.g. steplengthParabola.getValue(0).getValue<ValueType>() produces an error */
+    scai::lama::Scalar steplengthParabola0 = steplengthParabola.getValue(0);
+    scai::lama::Scalar steplengthParabola1 = steplengthParabola.getValue(1);
+    scai::lama::Scalar steplengthParabola2 = steplengthParabola.getValue(2);
+    scai::lama::Scalar misfitParabola0 = misfitParabola.getValue(0);
+    scai::lama::Scalar misfitParabola1 = misfitParabola.getValue(1);
+    scai::lama::Scalar misfitParabola2 = misfitParabola.getValue(2);
+    
     if (myRank == MASTERGPI) {
         std::string filename(logFilename);
         logFile.open(filename, std::ios_base::app);
         logFile <<  std::scientific ;
-        logFile << iteration << "\t" << steplengthOptimum << "\t n/a"<< "\t" << steplengthParabola.getValue(0) << "\t" << steplengthParabola.getValue(1) << "\t" << steplengthParabola.getValue(2) << "\t" << misfitParabola.getValue(0) << "\t" << misfitParabola.getValue(1) << "\t" << misfitParabola.getValue(2) << "\t n/a" << "\n" ;
+        logFile << std::setw(8) << iteration << std::setw(22) << steplengthOptimum.getValue<ValueType>() << std::setw(18) << stepCalcCount << std::setw(30) << steplengthParabola0.getValue<ValueType>() << std::setw(22) << steplengthParabola1.getValue<ValueType>() << std::setw(22) << steplengthParabola2.getValue<ValueType>() << std::setw(19) << misfitParabola0.getValue<ValueType>() << std::setw(17) << misfitParabola1.getValue<ValueType>() << std::setw(17) << misfitParabola2.getValue<ValueType>() << std::setw(22) << misfitSum.getValue<ValueType>() << "\n" ;
         logFile.close();
     }                             
 }
