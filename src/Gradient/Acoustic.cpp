@@ -358,24 +358,30 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT)
 {
+	//dt should be in cross correlation!
+    //grad_bulk = -dt*Padj*dPfw/dt / (rho^2*vp^4)
     scai::lama::DenseVector<ValueType> grad_bulk;
     grad_bulk = model.getPWaveModulus();
+    grad_bulk *= grad_bulk;
+    grad_bulk *= model.getDensity();
     grad_bulk *= grad_bulk;
     grad_bulk.invert();
     grad_bulk *= correlatedWavefields.getP();
     grad_bulk *= -DT;
 
     if (invertForVp) {
+	//grad_vp = 2*rho*vp*grad_bulk
         velocityP = 2 * grad_bulk;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
     }
-
+    
     if (invertForDensity) {
+	//grad_density=vp^2*grad_bulk + (sum(i) (dt Vadj,i * dVfw,i/dt))
         density = model.getVelocityP();
         density *= model.getVelocityP();
         density *= grad_bulk;
-        density -= DT * correlatedWavefields.getVSum();
+        density += DT * correlatedWavefields.getVSum();
     }
 }
 
