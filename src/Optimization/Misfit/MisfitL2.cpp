@@ -96,7 +96,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogram(KITGPI::Acquisit
 
     seismogramAdj = seismogramSyn - seismogramObs; 
     /* note that the minus-sign in front of the residuals is chosen because the adjoint sources are subtracted from the wave field in the forward solver */
-//     seismogramAdj *= -1;
+    seismogramAdj *= -1;
 
 }
 

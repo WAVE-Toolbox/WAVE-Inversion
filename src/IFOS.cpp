@@ -214,17 +214,16 @@ int main(int argc, char *argv[])
 	    
             start_t = common::Walltime::get();
             for (t = 0; t < tEnd; t++) {
-			
-		
-		*wavefieldsTemp=*wavefields;
-		
+                
+                *wavefieldsTemp=*wavefields;
+                
                 solver->run(receivers, sources, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
 
-		// save wavefields in std::vector
+                // save wavefields in std::vector
                 *wavefieldrecord[t]=*wavefields;
-		//calculate temporal derivative of wavefield
-		*wavefieldrecord[t]-=*wavefieldsTemp;
-		*wavefieldrecord[t]*=-DTinv;
+                //calculate temporal derivative of wavefield
+                *wavefieldrecord[t]-=*wavefieldsTemp;
+                *wavefieldrecord[t]*=DTinv;
             }
 
             receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
