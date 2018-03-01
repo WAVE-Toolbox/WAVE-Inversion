@@ -1,6 +1,0 @@
-# Step length log file  
-# Misfit type = L2 norm
-# Iteration	 optimum step length	 #Forward	 step length guess 1	 step length guess 2	 step length guess 3	 misfit of slg1	 misfit of slg2	 misfit of slg3	 final misfit of all shots
-0	Scalar(1.000000e-01)	 n/a	Scalar(0.000000e+00)	Scalar(3.000000e-02)	Scalar(2.400000e-01)	Scalar(3.379354e+02)	Scalar(2.873697e+02)	Scalar(3.077011e+02)	 n/a
-1	Scalar(3.675000e-03)	 n/a	Scalar(0.000000e+00)	Scalar(2.940000e-02)	Scalar(3.675000e-03)	Scalar(9.757287e+01)	Scalar(1.050751e+02)	Scalar(9.743864e+01)	 n/a
-2	Scalar(1.000000e-03)	 n/a	Scalar(0.000000e+00)	Scalar(2.881200e-02)	Scalar(1.800750e-03)	Scalar(9.743864e+01)	Scalar(1.067848e+02)	Scalar(9.749399e+01)	 n/a

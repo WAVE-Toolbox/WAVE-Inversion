@@ -117,6 +117,10 @@ int main(int argc, char *argv[])
     Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields = Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefields->init(ctx, dist);
     
+    //Temporary Wavefield for the derivative of the forward wavefields
+    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
+    wavefieldsTemp->init(ctx, dist);
+    
     /* --------------------------------------- */
     /* Wavefield record                        */
     /* --------------------------------------- */
@@ -205,14 +209,22 @@ int main(int argc, char *argv[])
                                                                 << "Total Number of time steps: " << tEnd << "\n");
             wavefields->reset();
             sources.init(config, ctx, dist, shotNumber);
-
+	    
+            ValueType DTinv=1/config.get<ValueType>("DT");
+	    
             start_t = common::Walltime::get();
             for (t = 0; t < tEnd; t++) {
-
+			
+		
+		*wavefieldsTemp=*wavefields;
+		
                 solver->run(receivers, sources, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
 
-                // save wavefields in Dense Matrix
-                wavefieldrecord[t]->assign(*wavefields);
+		// save wavefields in std::vector
+                *wavefieldrecord[t]=*wavefields;
+		//calculate temporal derivative of wavefield
+		*wavefieldrecord[t]-=*wavefieldsTemp;
+		*wavefieldrecord[t]*=-DTinv;
             }
 
             receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
