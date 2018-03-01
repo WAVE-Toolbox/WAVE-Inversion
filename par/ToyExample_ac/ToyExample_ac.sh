@@ -9,6 +9,7 @@ rm -f ../gradients/ToyExample*
 rm -f ../model/ToyModel*
 rm -f ../logs/ToyExample*
 
+export SCAI_LOG=ERROR
 export SCAI_UNSUPPORTED=IGNORE
 export OMP_NUM_THREADS=1
 
