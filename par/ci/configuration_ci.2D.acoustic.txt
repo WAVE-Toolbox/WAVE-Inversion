@@ -86,7 +86,7 @@ GradientFilename=gradients/grad        # location/basename of output gradients
 LogFilename=logs/steplengthSearch.log  # target location of log file
 
 # General settings
-MaxIterations=20                       # maximum number of inversion itertions
+MaxIterations=5                        # maximum number of inversion itertions
 misfitType=L2                          # type of misfit (L2, etc.)
 
 # Step length search
