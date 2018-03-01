@@ -19,7 +19,7 @@
 template <typename ValueType>
 void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::Scalar currentMisfit)
 {
-    
+    double start_t, end_t; /* For timing */
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
@@ -66,21 +66,23 @@ void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Value
        5) misfit 2 > misfit 1 AND misfit 3 > misfit 2: SL = very small SL */
     /* ------------------------------------------------------------------------------------------------------ */
     
-    HOST_PRINT(comm,"Start step length search\n\n" );
+    start_t = scai::common::Walltime::get();
     
     step2ok = false; // true if second step length decreases the misfit
     step3ok = false; // true if second step length decreases the misfit AND third step length increases the misfit relative to second step length */
    
-    /* --- Save first step length in any case --- */
+    /* --- Save second step length in any case --- */
+    HOST_PRINT(comm,"\nEstimation of 2nd steplength \n\n" );
     misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength_init);
     steplengthParabola.setValue(1, steplength_init); 
     misfitParabola.setValue(1, misfitTestSum);  
     if ( misfitParabola.getValue(0) > misfitParabola.getValue(1) ){
         step2ok= true;}
     
-    /* --- Search for a second step length - case: misfit was DECREASED --- */
+    /* --- Search for a third step length - case: misfit was DECREASED --- */
     steplength = steplength_init;
     while( step2ok == true && stepCalcCount < maxStepCalc ){
+	HOST_PRINT(comm,"Estimation of 3rd steplength no. " << stepCalcCount +1 << " of " << maxStepCalc <<"\n" );
         steplength *= scalingFactor;
         misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength);
         steplengthParabola.setValue(2, steplength); 
@@ -92,9 +94,10 @@ void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Value
             stepCalcCount += 1;}
     }
     
-    /* --- Search for a second step length - case: misfit was INCREASED  --- */
+    /* --- Search for a third step length - case: misfit was INCREASED  --- */
     steplength = steplength_init;
     while( step2ok == false && stepCalcCount < maxStepCalc ){
+	HOST_PRINT(comm,"Estimation of 3rd steplength no. " << stepCalcCount+1 << " of " << maxStepCalc <<"\n" );
         steplength /= scalingFactor;
         misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength);
         steplengthParabola.setValue(2, steplength); 
@@ -108,7 +111,7 @@ void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Value
     
     /* Set optimum step length */
     if( step2ok == true && step3ok == true ){
-        HOST_PRINT(comm,"Apply parabolic fit\n\n" );
+        HOST_PRINT(comm,"Apply parabolic fit\n" );
         steplengthOptimum = parabolicFit(steplengthParabola,misfitParabola);}
     else if( step2ok == true && step3ok == false ){
         steplengthOptimum = steplengthParabola.getValue(2);}
@@ -121,8 +124,9 @@ void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Value
     /* Check if accepted step length is smaller than maximally allowed step length */
     if ( steplengthOptimum > steplengthMax){
         steplengthOptimum = steplengthMax;}
-    
-//     HOST_PRINT(comm,"Finished step length search\n\n" );
+        
+    end_t = scai::common::Walltime::get();
+    HOST_PRINT(comm,"\nFinished step length search in  " << end_t - start_t << " sec.\n\n\n" );
 //     for (int i = 0; i < 3; i++) {
 //         HOST_PRINT(comm,"Steplength " << i << ": "<<  steplengthParabola.getValue(i) << ", Corresponding misfit: " << misfitParabola.getValue(i) << std::endl);
 //     }
@@ -184,7 +188,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr();   // default communicator, set by environment variable SCAI_COMMUNICATOR
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                   // default context, set by environment variable SCAI_CONTEXT   
         
-    double start_t, end_t; /* For timing */
+   // double start_t, end_t; /* For timing */
     IndexType tStart = 0;
     IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5); 
     std::string equationType = config.get<std::string>("equationType");
@@ -212,10 +216,10 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
         wavefields.reset();
         sources.init(config, ctx, dist, shotNumber);
         
-        start_t = scai::common::Walltime::get();
+     //   start_t = scai::common::Walltime::get();
         solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStart, tEnd, config.get<ValueType>("DT"));
-        end_t = scai::common::Walltime::get();
-        HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
+       // end_t = scai::common::Walltime::get();
+        //HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
         
         receiversTrue.getSeismogramHandler().readFromFileRaw(config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
         

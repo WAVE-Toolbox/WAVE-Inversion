@@ -37,7 +37,7 @@ using namespace KITGPI;
 int main(int argc, char *argv[])
 {
     typedef double ValueType;
-    double start_t, end_t; /* For timing */
+    double start_t, end_t, start_t_shot, end_t_shot; /* For timing */
 
     if (argc != 2) {
         std::cout << "\n\nNo configuration file given!\n\n"
@@ -185,7 +185,11 @@ int main(int argc, char *argv[])
     IndexType maxiterations = config.get<IndexType>("MaxIterations");
 
     for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
-
+            HOST_PRINT(comm, "\n================================================");
+	    HOST_PRINT(comm, "\n================ Iteration" << iteration+1 << " ====================");    
+	    HOST_PRINT(comm, "\n================================================\n\n");
+	    start_t = common::Walltime::get();
+	    
         // update model for fd simulation (averaging, inverse Density ...)
         model->prepareForModelling(config, ctx, dist, comm);
         
@@ -200,19 +204,20 @@ int main(int argc, char *argv[])
             /* Read field data (or pseudo-observed data, respectively) */
             receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
             
+	    HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
+	    
             /* --------------------------------------- */
             /*        Forward modelling                */
             /* --------------------------------------- */
             
-            HOST_PRINT(comm, "\n================Start Forward====================\n");
-            HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
-                                                                << "Total Number of time steps: " << tEnd << "\n");
+            HOST_PRINT(comm, "\n--------------- Start Forward -------------------\n");
+                                                                
             wavefields->reset();
             sources.init(config, ctx, dist, shotNumber);
 	    
             ValueType DTinv=1/config.get<ValueType>("DT");
 	    
-            start_t = common::Walltime::get();
+            start_t_shot = common::Walltime::get();
             for (t = 0; t < tEnd; t++) {
 			
 		
@@ -228,10 +233,9 @@ int main(int argc, char *argv[])
             }
 
             receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
-
-            end_t = common::Walltime::get();
-            HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
+        
             
+	    HOST_PRINT(comm, "Calculate misfit and adjoint sources\n");
             /* Calculate misfit of one shot */
             misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));          
             
@@ -241,18 +245,24 @@ int main(int argc, char *argv[])
             /* Calculate gradient */
             gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, iteration, shotNumber);
             *gradient += *gradientPerShot; 
-        
+	    
+	    end_t_shot = common::Walltime::get();
+            HOST_PRINT(comm, "\nFinished shot in " << end_t_shot - start_t_shot << " sec.\n\n");
+	    
         } //end of loop over shots
         
+        HOST_PRINT(comm, "\n========Finished loop over shots=========");
+        HOST_PRINT(comm, "\n=========================================\n");
+	
         dataMisfit->addToStorage(misfitPerIt);
         
         SLsearch.appendToLogFile(comm, iteration, logFilename, dataMisfit->getMisfitSum(iteration));
         
         /* Check abort criteria */
-        HOST_PRINT(comm, "Misfit after iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n\n");
+        HOST_PRINT(comm, "\nMisfit after iteration " << iteration + 1 << ": " << dataMisfit->getMisfitSum(iteration) << "\n");
 
         if ((iteration > 0) && (dataMisfit->getMisfitSum(iteration) >= dataMisfit->getMisfitSum(iteration - 1))) {
-            HOST_PRINT(comm, "Misfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit->getMisfitSum(iteration - 1) << "\n\n");
+            HOST_PRINT(comm, "\nMisfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit->getMisfitSum(iteration - 1) << "\n\n");
             break;
         }
         
@@ -265,9 +275,13 @@ int main(int argc, char *argv[])
        
         gradient->scale(*model);
         
-        /* Search for a step length */
+         HOST_PRINT(comm,"\n=========================================" );
+         HOST_PRINT(comm,"\n========Start step length search=========\n" );
+	 
         SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplength_init, dataMisfit->getMisfitSum(iteration));
         
+	
+	HOST_PRINT(comm, "=========== Update Model ============\n\n");
         /* Apply model update */
         *gradient *= SLsearch.getSteplength();
         *model -= *gradient;
@@ -275,7 +289,9 @@ int main(int argc, char *argv[])
         model->write((config.get<std::string>("ModelFilename") + ".It_" + std::to_string(iteration + 1)), config.get<IndexType>("PartitionedOut"));
 
         steplength_init*=0.98; // 0.95 with steplengthMax = 0.1 yields misfit of ~97 
- 
+       
+       end_t = common::Walltime::get();
+        HOST_PRINT(comm, "\nFinished iteration " << iteration + 1 << " in " << end_t - start_t << " sec.\n\n");
     } //end of loop over iterations
     return 0;
 }
