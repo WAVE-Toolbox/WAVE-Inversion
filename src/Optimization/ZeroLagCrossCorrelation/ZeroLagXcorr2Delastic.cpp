@@ -18,14 +18,17 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getCon
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist);
+    init(config,ctx, dist);
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
+    invertForVp=config.get<bool>("invertForVp");
+    invertForVp=config.get<bool>("invertForVs");
+    invertForDensity=config.get<bool>("invertForDensity");
     this->initWavefield(VSum, ctx, dist);
     COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")
 }

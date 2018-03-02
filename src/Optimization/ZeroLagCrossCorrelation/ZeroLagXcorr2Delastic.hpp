@@ -29,7 +29,7 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr2Delastic(){};
 
-            explicit ZeroLagXcorr2Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            explicit ZeroLagXcorr2Delastic(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             void reset() override;
 
@@ -40,10 +40,14 @@ namespace KITGPI
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
             void write(std::string type, IndexType t) override;
             void writeSnapshot(IndexType t);
+	    
+	    using ZeroLagXcorr<ValueType>::invertForVp;
+	    using ZeroLagXcorr<ValueType>::invertForVs;
+            using ZeroLagXcorr<ValueType>::invertForDensity;
 
           private:
             /* required wavefields */

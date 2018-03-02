@@ -12,112 +12,47 @@ using namespace KITGPI;
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(config, ctx, dist);
+    init(config, ctx, dist,0,0);
 }
 
-/*! \brief Initialisation with zeros
+/*! \brief Initialisation that is using the configuration class
  *
- \param ctx Context for the Calculation
- \param dist Distribution
- */
-template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
-{
-    init(ctx, dist, 0.0, 0.0);
-}
-
-/*! \brief Initialisation that is using the Configuration class
- *
+ *  Generates a homogeneous gradient, which will be initialized by the two given scalar values.
  \param config Configuration class
- \param ctx Context for the Calculation
- \param dist Distribution
- */
-template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
-{
-    if (config.get<IndexType>("ModelRead")) {
-
-        HOST_PRINT(dist->getCommunicatorPtr(), "Reading model parameter from file...\n");
-
-        init(ctx, dist, config.get<std::string>("ModelFilename"), config.get<IndexType>("PartitionedIn"));
-
-        HOST_PRINT(dist->getCommunicatorPtr(), "Finished with reading of the model parameter!\n\n");
-
-    } else {
-        init(ctx, dist, config.get<ValueType>("velocityP"), config.get<ValueType>("rho"));
-    }
-
-    if (config.get<IndexType>("ModelWrite")) {
-        write(config.get<std::string>("ModelFilename") + ".out", config.get<IndexType>("PartitionedOut"));
-    }
-}
-
-/*! \brief Constructor that is generating a homogeneous model
- *
- *  Generates a homogeneous model, which will be initialized by the two given scalar values.
  \param ctx Context
  \param dist Distribution
- \param pWaveModulus_const P-wave modulus given as Scalar
- \param rho_const Density given as Scalar
  */
 template <typename ValueType>
-KITGPI::Gradient::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus_const, scai::lama::Scalar rho_const)
+void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist, pWaveModulus_const, rho_const);
+  init(config, ctx, dist,0,0);
 }
 
-/*! \brief Initialisation that is generating a homogeneous model
+/*! \brief Initialisation that is generating a homogeneous gradient
  *
- *  Generates a homogeneous model, which will be initialized by the two given scalar values.
+ *  Generates a homogeneous gradient, which will be initialized by the two given scalar values.
+ \param config Configuration class
  \param ctx Context
  \param dist Distribution
- \param pWaveModulus_const P-wave modulus given as Scalar
- \param rho_const Density given as Scalar
+ \param velocityP_const velocity gradients given as Scalar
+ \param rho_const Density gradient given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar rho_const)
+void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar rho_const)
 {
+    invertForVp=config.get<bool>("invertForVp");
+    invertForDensity=config.get<bool>("invertForDensity");
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(density, ctx, dist, rho_const);
 }
 
-/*! \brief Constructor that is reading models from external files
- *
- *  Reads a model from an external file.
- \param ctx Context
- \param dist Distribution
- \param filename For the P-wave modulus ".pWaveModulus.mtx" is added and for density ".density.mtx" is added.
- \param partitionedIn Partitioned input
- */
-template <typename ValueType>
-KITGPI::Gradient::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
-{
-    init(ctx, dist, filename, partitionedIn);
-}
-
-/*! \brief Initialisator that is reading Velocity-Vector
- *
- *  Reads a model from an external file.
- \param ctx Context
- \param dist Distribution
- \param filename For the first Velocity-Vector "filename".vp.mtx" is added and for density "filename+".density.mtx" is added.
- \param partitionedIn Partitioned input
- *
- */
-template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
-{
-    std::string filenameVelocityP = filename + ".vp.mtx";
-    std::string filenamedensity = filename + ".density.mtx";
-
-    this->initParameterisation(velocityP, ctx, dist, filenameVelocityP, partitionedIn);
-    this->initParameterisation(density, ctx, dist, filenamedensity, partitionedIn);
-}
 
 //! \brief Copy constructor
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
 {
+    invertForVp=rhs.invertForVp;
+    invertForDensity=rhs.invertForDensity;
     velocityP = rhs.velocityP;
     density = rhs.density;
 }
@@ -274,6 +209,8 @@ template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator=(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
 {
     // why does rhs.density not work (density = protected)
+    invertForVp=rhs.invertForVp;
+    invertForDensity=rhs.invertForDensity;
     velocityP = rhs.velocityP;
     density = rhs.density;
     return *this;
@@ -286,7 +223,8 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-
+    invertForVp=rhs.invertForVp;
+    invertForDensity=rhs.invertForDensity;
     density = rhs.getDensity();
     velocityP = rhs.getVelocityP();
 }
@@ -359,13 +297,14 @@ template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT)
 {
 	//dt should be in cross correlation!
-    //grad_bulk = -dt*Padj*dPfw/dt / (rho^2*vp^4)
+    //grad_bulk = -dt*Padj*dPfw/dt / (rho*vp^2)^2
     scai::lama::DenseVector<ValueType> grad_bulk;
     grad_bulk = model.getPWaveModulus();
-    grad_bulk *= grad_bulk;
+    grad_bulk *= model.getPWaveModulus();
     grad_bulk *= model.getDensity();
-    grad_bulk *= grad_bulk;
+    grad_bulk *= grad_bulk;   
     grad_bulk.invert();
+    
     grad_bulk *= correlatedWavefields.getP();
     grad_bulk *= -DT;
 

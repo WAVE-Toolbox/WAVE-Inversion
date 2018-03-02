@@ -20,7 +20,7 @@ void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configurati
     wavefields->init(ctx, dist);
 
     ZeroLagXcorr = KITGPI::ZeroLagXcorr::Factory<ValueType>::Create(dimension, equationType);
-    ZeroLagXcorr->init(ctx, dist);
+    ZeroLagXcorr->init(config,ctx, dist);
 
 }
 

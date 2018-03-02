@@ -88,6 +88,9 @@ LogFilename=logs/steplengthSearch.log  # target location of log file
 # General settings
 MaxIterations=20                       # maximum number of inversion iterations
 misfitType=L2                          # type of misfit (L2, etc.) 
+invertForVp=1			       # Invert for Vp 1=true 0=false
+invertForVs=1                          # Invert for Vs 1=true 0=false
+invertForDensity=1                     # Invert for Density 1=true 0=false
 
 # Step length search
 SteplengthInit=0.03                    # initial steplength

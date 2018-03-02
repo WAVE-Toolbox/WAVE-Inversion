@@ -48,16 +48,13 @@ namespace KITGPI
             ~Elastic(){};
 
             explicit Elastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
-            explicit Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus_const, scai::lama::Scalar sWaveModulus_const, scai::lama::Scalar rho);
-            explicit Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn);
 
             //! Copy Constructor.
             Elastic(const Elastic &rhs);
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus, scai::lama::Scalar sWaveModulus, scai::lama::Scalar rho);
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn) override;
-            void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus, scai::lama::Scalar sWaveModulus, scai::lama::Scalar rho);
+            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+
 
             /*! \brief Set all wavefields to zero.
             */
@@ -99,7 +96,7 @@ namespace KITGPI
 
           private:
             using Gradient<ValueType>::invertForVp;
-
+            using Gradient<ValueType>::invertForVs;
             using Gradient<ValueType>::invertForDensity;
 
             using Gradient<ValueType>::density;

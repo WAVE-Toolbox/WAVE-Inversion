@@ -160,10 +160,10 @@ int main(int argc, char *argv[])
     /* Gradients                               */
     /* --------------------------------------- */
     Gradient::Gradient<ValueType>::GradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
-    gradient->init(ctx, dist);
+    gradient->init(config,ctx, dist);
     
     Gradient::Gradient<ValueType>::GradientPtr gradientPerShot(Gradient::Factory<ValueType>::Create(equationType));
-    gradientPerShot->init(ctx, dist);
+    gradientPerShot->init(config,ctx, dist);
     
     /* --------------------------------------- */
     /* Gradient calculation                    */
