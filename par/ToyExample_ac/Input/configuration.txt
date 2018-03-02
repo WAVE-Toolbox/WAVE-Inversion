@@ -78,14 +78,14 @@ runSimultaneousShots=0
 #---------------------------------------------------------#
 
 # Input/Output
-FieldSeisName=../seismograms/ToyExample.true        # location/basename of input seismograms
-WriteGradient=1                        # 1=Gradient will be written to disk, 0=not
-WriteGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
-GradientFilename=../gradients/ToyExample.grad        # location/basename of output gradients
-LogFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
+fieldSeisName=../seismograms/ToyExample.true        # location/basename of input seismograms
+writeGradient=1                        # 1=Gradient will be written to disk, 0=not
+writeGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
+gradientFilename=../gradients/ToyExample.grad        # location/basename of output gradients
+logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
 
 # General settings
-MaxIterations=20                       # maximum number of inversion iterations
+maxIterations=20                       # maximum number of inversion iterations
 misfitType=L2                          # type of misfit (L2, etc.) 
 invertForVp=0                          # Invert for Vp 1=true 0=false
 invertForDensity=1                     # Invert for Density 1=true 0=false
@@ -93,8 +93,8 @@ invertForDensity=1                     # Invert for Density 1=true 0=false
 
 
 # Step length search
-SteplengthInit=0.03                    # starting steplength
-MaxStepCalc=4                          # maximum number of calculations to find a proper (steplength, misfit) pair
+steplengthInit=0.03                    # starting steplength
+maxStepCalc=4                          # maximum number of additional forward calculations to find a proper step length
 scalingFactor=2                        # factor for multiplication or division of test step length
 steplengthMin=0.001                    # minimum step length
 steplengthMax=0.1                      # maximum step length
@@ -104,6 +104,6 @@ testShotIncr=1                         # increment of test shots
 
 
 # Tapers
-SourceTaperRadius=20    # Circular source taper: Radius in gridpoints
-ReceiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
+sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
+receiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
 

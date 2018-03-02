@@ -28,6 +28,7 @@ namespace KITGPI
             virtual void calcAdjointSeismogram(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs) = 0;
             
             scai::lama::Scalar getMisfitSum(int iteration);
+            scai::lama::DenseVector<ValueType> getMisfitIt(int iteration);
             scai::lama::Scalar getMisfitShot(int iteration, int shotNumber);
             void addToStorage(scai::lama::DenseVector<ValueType> vector);
 

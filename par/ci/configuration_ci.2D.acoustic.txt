@@ -79,29 +79,29 @@ runForward=0
 #---------------------------------------------------------#
 
 # Input/Output
-FieldSeisName=ci/rectangle.true        # location/basename of input seismograms
-WriteGradient=1                        # 1=Gradient will be written to disk, 0=not
-WriteGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
-GradientFilename=gradients/grad        # location/basename of output gradients
-LogFilename=logs/steplengthSearch.log  # target location of log file
+fieldSeisName=ci/rectangle.true        # location/basename of input seismograms
+writeGradient=1                        # 1=Gradient will be written to disk, 0=not
+writeGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
+gradientFilename=gradients/grad        # location/basename of output gradients
+logFilename=logs/steplengthSearch.log  # target location of log file
 
 # General settings
-MaxIterations=5                        # maximum number of inversion itertions
+maxIterations=5                        # maximum number of inversion itertions
 misfitType=L2                          # type of misfit (L2, etc.)
 invertForVp=1                          # Invert for Vp 1=true 0=false
 invertForDensity=0                     # Invert for Density 1=true 0=false
 
 
 # Step length search
-SteplengthInit=0.03                    # initial steplength
+steplengthInit=0.03                    # initial steplength
 steplengthMin=0.001                    # minimum step length
 steplengthMax=0.1                      # maximum step length
-MaxStepCalc=4                          # maximum number of calculations to find a proper (steplength, misfit) pair
+maxStepCalc=4                          # maximum number of additional forward calculations to find a proper step length
 scalingFactor=2                        # factor for multiplication or division of test step length
 testShotStart=0                        # shot number of first test shot
 testShotEnd=17                         # shot number of last test shot
 testShotIncr=1                         # increment of test shots
 
 # Tapers
-SourceTaperRadius=20                   # Circular source taper: Radius in gridpoints
-ReceiverTaperRadius=20                 # Circular receiver taper: Radius in gridpoints
+sourceTaperRadius=20                   # Circular source taper: Radius in gridpoints
+receiverTaperRadius=20                 # Circular receiver taper: Radius in gridpoints
