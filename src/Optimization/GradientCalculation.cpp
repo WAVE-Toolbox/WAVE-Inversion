@@ -76,7 +76,7 @@ void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Va
     /* ---------------------------------- */
     /*       Calculate gradients          */
     /* ---------------------------------- */
-    HOST_PRINT(comm, "Calculate Gradient\n");
+    HOST_PRINT(comm, "\nCalculate Gradient\n");
     gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"));
     SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("SourceTaperRadius"));
     SourceTaper.apply(gradient);

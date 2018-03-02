@@ -11,6 +11,17 @@ scai::lama::Scalar KITGPI::Misfit::Misfit<ValueType>::getMisfitSum(int iteration
     return this->misfitStorage.at(iteration).sum();
 }
 
+/*! \brief Return a vector which stores the misfit of each shot for one iteration
+ *
+ *
+ \param iteration Integer value which specifies the iteration number
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Misfit::Misfit<ValueType>::getMisfitIt(int iteration)
+{
+    return this->misfitStorage.at(iteration);
+}
+
 /*! \brief Return the misfit of one shot
  *
  *
