@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
         /*        Loop over shots                  */
         /* --------------------------------------- */
         
-        gradient->reset();    // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
+        gradient->resetGradient();    // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
 
         for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
                    
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm, "\n================Start Forward====================\n");
             HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
                                                                 << "Total Number of time steps: " << tEnd << "\n");
-            wavefields->reset();
+            wavefields->resetWavefields();
             sources.init(config, ctx, dist, shotNumber);
 
             start_t = common::Walltime::get();

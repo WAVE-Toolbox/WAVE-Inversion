@@ -1,0 +1,1256 @@
+%
+%		LAMA_Implementation_Doc
+%
+\documentclass[pdftex,a4paper,parskip,listof=totoc,bibliography=totoc,onehalfspacing,12pt]{scrreprt}
+\usepackage[english]{babel} % If german is needed add ngerman in first bracket 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{textcomp}
+\usepackage{multirow}
+%\usepackage{graphicx} is loaded with pdfpages
+\usepackage{pict2e}
+\usepackage{multicol}
+\usepackage[automark]{scrpage2}
+\usepackage{setspace}
+\usepackage{color}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{mathtools}			%For use of \mathrlap and \mathllap
+\usepackage{amsfonts}			%For use of \mathbb{R} (e.g. show real number letter)
+\usepackage{float}
+\usepackage{longtable}
+\usepackage{pdfpages}
+\usepackage{eso-pic}
+\usepackage{dirtree}
+\usepackage{multirow}
+\usepackage{gauss}				% For use of \newcommand*\dashline... (vertical line in arrays)
+\usepackage[vlined]{algorithm2e}
+\usepackage{enumitem}
+	\setlist[itemize]{itemsep=-12pt}
+	\setlist[enumerate]{itemsep=-12pt}
+\usepackage{subcaption}
+\usepackage{lscape}		%For use of \begin{landscape} \end{landscape} Zur Darstellung einzelner Seiten im Querformat
+\usepackage{adjustbox}
+\usepackage{nicefrac}
+\usepackage{physics}
+\KOMAoptions{twoside}
+\setcounter{MaxMatrixCols}{50}
+
+\usepackage[left=25mm,right=25mm,bottom=35mm, footskip=20mm]{geometry}
+
+\usepackage{siunitx}		% Show units
+\sisetup{per-mode=fraction}	% Representation of fractions
+
+
+\usepackage{listings}
+\usepackage{scrhack}		% Comma-option \KOMAoption{listof}{leveldown} only effects lstlistoflistings 
+
+\lstdefinestyle{MyMatlab}		% Definition of individual listing-styles
+{						% Applications with "\lstinputlisting[style=MyMatlab]{../reflexion/Matlab_Skripte/resample.m}"
+	language={Matlab},
+	captionpos={t},
+	inputencoding={latin1},
+	showstringspaces={false},
+	frame={tlRB},
+	basicstyle=\scriptsize
+}
+
+\lstdefinestyle{MyC++}
+{
+	language={C++},
+	tabsize={8},
+	captionpos={t},
+	frame={tlRB},
+	basicstyle=\tiny
+}
+
+\lstdefinestyle{MyFortran}
+{
+	language={[77]Fortran},
+	captionpos={t},
+	frame={tlRB},
+	basicstyle=\tiny
+}
+
+\lstdefinestyle{MySh}
+{
+	language={sh},
+	captionpos={t},
+	frame={tlRB},
+	basicstyle=\tiny
+}
+
+\lstdefinestyle{MyGnuplot}
+{
+	language={Gnuplot},
+	captionpos={t},
+	frame={tlRB},
+	basicstyle=\scriptsize
+}
+
+\lstset{literate=%
+  {Ö}{{\"O}}1
+  {Ä}{{\"A}}1
+  {Ü}{{\"U}}1
+  {ß}{{\ss}}2
+  {ü}{{\"u}}1
+  {ä}{{\"a}}1
+  {ö}{{\"o}}1
+}
+
+\usepackage{rotating}
+\usepackage{wrapfig}
+\usepackage{tikz}
+	\usetikzlibrary{shapes}
+	\usetikzlibrary{decorations.pathmorphing}
+	\usetikzlibrary{decorations.shapes}
+	\usetikzlibrary{shapes.geometric}
+	\pgfdeclarelayer{edgelayer}
+	\pgfdeclarelayer{nodelayer}
+	\pgfsetlayers{edgelayer,nodelayer,main}
+	\tikzstyle{none}=[inner sep=0pt]
+	\tikzset{decorate with/.style={decorate,decoration={shape backgrounds,shape=#1,shape size=2mm}}}
+
+\definecolor{blue}{rgb}{0.01,0.01,0.95}	%HEX: 0202F2
+\definecolor{green}{rgb}{0.01,0.65,0.01}	%HEX: 02A602
+\definecolor{red}{rgb}{0.95,0.01,0.01}	%HEX: F20202
+\definecolor{brown}{rgb}{0.55,0.27,0.07}	%HEX: 8B4513
+\definecolor{violet}{rgb}{0.65,0.05,0.7}	%HEX: A60DB3
+
+\setcounter{tocdepth}{1}	%Legt die Anzeigetiefe des Inhaltsverzeichnisses fest
+
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}} %Die Nummerierung Formeln wird geändert
+
+
+\renewcommand{\partheadmidvskip}{\enskip}
+\renewcommand{\partformat}{\thepart\autodot}
+
+\renewcommand{\arraystretch}{1.2} %Legt den Faktor fest, um den der Zeilenabstand innerhalb einer Tabelle oder eines Array gedeht wird
+\newcommand*\dashline{\hspace{-0.3em}\rotatebox[origin=c]{90}{\scalebox{-0.3}[1]{$-~~-$}}\hspace{-0.3em}}
+\newcommand*\longdashline{\hspace{-0.3em}\rotatebox[origin=c]{90}{\scalebox{-0.4}[1]{$-~~-~~-~~-$}}\hspace{-0.3em}}
+
+%\setlength{\oddsidemargin}{20mm} 
+%\setlength{\evensidemargin}{20mm} 
+
+\renewcommand*{\chapterheadstartvskip}{\vspace*{-1\baselineskip}}	%legt Abstand vor chapter fest
+
+\newcommand{\CC}[1][]{$\text{C\hspace{0ex}}^{_{_{_{++}}}}					%Write nicer ++ signs in C++
+                      \ifthenelse{\equal{#1}{}}{}{\text{\hspace{-.625ex}#1}}$} 
+\newcommand{\clang}[1][]{$\text{clang\hspace{0ex}}^{_{_{_{++}}}}		%Write nicer ++ signs in clang++
+                      \ifthenelse{\equal{#1}{}}{}{\text{\hspace{-.25ex}(#1)}}$} 
+\newcommand{\gCC}[1][]{$\text{g\hspace{0ex}}^{_{_{_{++}}}}				%Write nicer ++ signs in g++
+                      \ifthenelse{\equal{#1}{}}{}{\text{\hspace{-.25ex}(#1)}}$} 
+                      
+\newcommand\coolover[2]{\mathrlap{\smash{%
+\overbrace{\phantom{\begin{matrix} #2 %
+\end{matrix}}}^{\mbox{$#1$}}}}#2}
+                      
+\newcommand{\shellcmd}[1]{\indent\indent\texttt{#1}}	%change font for shell entries  
+\newcommand{\shellcmdline}[1]{\indent\indent\texttt{\quad#1}} 	%change font for command lines and indention
+
+
+\makeatother
+\usepackage{hyperref}
+\definecolor{LinkColor}{rgb}{0,0,0.75}
+\hypersetup{                    %Farben der Links im pdf werden festgelegt
+colorlinks=true,
+linkcolor=LinkColor,
+citecolor=LinkColor,
+filecolor=LinkColor,
+menucolor=LinkColor,
+pagecolor=LinkColor,
+urlcolor=LinkColor}
+
+\KOMAoption{listof}{leveldown} %Bewirkt, dass listoffigures, listoftables und lstlistoflistings nicht als chapter behandelt werden. Erschenungsbild im Inhaltsverzeichnis und im Dokument selbst (kein automatischer seitenumbruch am Ende der Verzeichnisse).
+
+\pagestyle{scrheadings} %Legt die Art des Seitenformats für alle folgenden Seiten fest. scrheadings: Um bei zweiseitig formatierten Dokumenten (=Bücher, die unterschiedliche "`linke"' und "`rechte"' Seiten haben) den Seitenkopf und -fuß automatisch an die jeweilige Seite anzupassen, gibt es die folgenden Befehle: \ihead, \chead, \ohead, \ifoot, \cfoot, \ofoot für scrheadings wird "`\usepackage{scrpage2}"' benötigt
+\clearscrheadfoot %Löscht alle Kopf- und Fußzeilen
+\ohead{\headmark}
+\automark[section]{chapter}
+\ofoot[\pagemark]{\pagemark}		%[plain-Seiten]{normale Seiten}
+\setheadsepline{0.4pt} %erzeugt eine Linie der Stärke 0.4pt zwischen Rumpf und Kopfzeile
+\setlength{\headsep}{10mm} %Legt den Abstand zwischen der Kopfzeile und dem Rumpf der Seite fest
+
+\hyphenation{CATIA} %definiert die Stellen zum Trennen von Wörter mit "`-"' Beispiel: \hyphenation{er-go-no-mic}
+
+\title{LAMA_Implementation_Doc}
+\author{}
+
+\begin{document}
+
+\selectlanguage{english}
+
+\numberwithin{equation}{chapter} %legt die Formelnummerierung fest
+
+
+\thispagestyle{empty} %Kopf und Fußzeile wird für diese Seite ausgeschaltet
+\newgeometry{left=25mm,right=25mm,bottom=40mm,top=20mm}
+\begin{figure}[h] % Gleiten ist durch Verwendung des H verhindert
+\begin{flushright}
+\includegraphics[scale=0.15]{./images/wave_logo.png}
+\end{flushright}
+\end{figure}
+
+\begin{center}
+\vspace{2cm}
+\huge{FDSimulation\_LAMA }\\
+\vspace{0.5cm}
+\large{HPC Finite Difference Simulation in Matrix-Vector Formalism}
+\end{center}
+
+\vfill
+\begin{center}
+{\Large{\url{wave-toolbox.org}}}
+
+
+{\small Document created \today}
+\end{center}
+
+\newpage 
+\thispagestyle{empty}
+\begin{center}
+{\large
+Supported by the German Ministry of Education and Research (BMBF) through the project \textbf{WAVE}, grant 01IH15004A.
+}
+\end{center}
+
+\cleardoublepage
+
+\pagenumbering{Roman}
+\setcounter{page}{1}
+\restoregeometry
+
+
+\newpage
+
+\tableofcontents % Table of contents is inserted \tableofcontens (insert \addcontentsline, so the content is linked correctly)
+\addcontentsline{toc}{chapter}{Contents} %"Contents" will be displayed in contents
+
+
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\cleardoublepage
+%\markboth{}{License}
+\chapter*{License}
+\addcontentsline{toc}{chapter}{License}
+
+FDSimulation\_LAMA is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License (GNU AGPL v3) as published by the Free Software Foundation, version 3.0 of the License only.
+ 
+FDSimulation\_LAMA is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with FDSimulation. See file LICENSE and/or \url{https://www.gnu.org/licenses/agpl-3.0.de.html}.
+
+The authors of FDSimulation\_LAMA are listed in file \lstinline{AUTHORS}.
+
+\cleardoublepage
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+In order to extract information about the structure and composition of the crust from seismic observations, it is necessary to be able to predict how seismic wavefields are affected by complex structures. 
+Since exact analytical solutions to the wave equations do not exist for most subsurface configurations, the solutions can be obtained only by numerical methods. For iterative calculations of synthetic seismograms with limited computer resources fast and accurate modeling methods are needed. 
+The explicit time-domain finite-difference (FD) modeling program FDSimulation\_LAMA, that is described in this guide, is based on the FD approach described by \cite{virieux:86} and \cite{levander:88}. 
+To solve a large number of forward problem based on wave equations, modern seismic imaging methods often require high performance computing (HPC) systems to provide enough computational power. 
+To parallelise the problem is rewritten in matrix-vector formulation explicit time-domain solving the wave equations. 
+By using matrix-vector formulation the parallelisation problem can be outsources using a HPC-framework. In our case FDSimulation\_LAMA uses the open source framework LAMA allows which is a HPC library enabling the development of hardware independent Software executable on both CPUs and GPUs
+
+FDSimulation\_LAMA features explicit time-domain FD method solving the acoustic, elastic and viscoelastic wave equation in 2D and 3D. 
+The current version of FDSimulation\_LAMA also includes the extension of higher order FD operators and applying Perfectly Matched Layer boundary conditions at the edges of the numerical mesh (\cite{komatitsch:07}).
+In the following sections, we give a short description of the  theoretical background, the different modelling parameters and options and how the program is used and executed.
+
+
+
+\cleardoublepage
+\part{Theory of Finite Difference Simulation in Matrix-Vector Formalism}
+\chapter{Physical Derivation of Wave Propagations}
+
+This chapter contains the theoretical principles for the physical description of wave propagation in elastic media. This also includes the general stress-stain relation of solid objects or viscose fluids. Furthermore conservation of momentum is applied to infinitesimal volume elements.
+
+\section{General State of Stress}
+\label{kap:AllSp}
+
+Other than not viscose fluids, viscose fluids and solid objects can be under shear stress. The normal stress in all spatial directions is generally varying. This can be explained by internal friction.
+
+The state of stress is represented by an infinitesimal volume element  $\partial V = \partial x~ \partial y~ \partial z$, as shown in figure \ref{fig:AllgSpZu}.
+
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+	\begin{pgfonlayer}{nodelayer}
+		\node [style=none] (0) at (0, 0) {};
+		\node [style=none, label=-180:$x$] (1) at (-1, -1) {};
+		\node [style=none, label=-90:$y$] (2) at (2, 0) {};
+		\node [style=none, label=-180:$z$] (3) at (0, 2) {};
+		\node [style=none] (4) at (5, 0) {};
+		\node [style=none] (5) at (3, -2) {};
+		\node [style=none] (6) at (9, 0) {};
+		\node [style=none] (7) at (7, -2) {};
+		\node [style=none] (8) at (5, 4) {};
+		\node [style=none] (9) at (9, 4) {};
+		\node [style=none] (10) at (3, 2) {};
+		\node [style=none] (11) at (7, 2) {};
+		\node [style=none, label=-90:\textcolor{red}{$\tau_{12}$}] (12) at (6, 0) {};
+		\node [style=none, label=-180:\textcolor{red}{$\tau_{13}$}] (13) at (5, 1) {};
+		\node [style=none, label=180:\textcolor{green}{$\sigma_{11}$}] (14) at (4.5, -0.5) {};
+		\node [style=none] (15) at (8, 1) {};
+		\node [style=none, label=-180:\textcolor{red}{$\tau_{23}$}] (16) at (8, 2) {};
+		\node [style=none, label=0:\textcolor{red}{$\tau_{21}$}] (17) at (7.5, 0.5) {};
+		\node [style=none, label=-135:\textcolor{green}{$\sigma_{22}$}] (18) at (9, 1) {};
+		\node [style=none] (19) at (6, 3) {};
+		\node [style=none, label=-180:\textcolor{red}{$\tau_{31}$}] (20) at (5.5, 2.5) {};
+		\node [style=none, label=-90:\textcolor{red}{$\tau_{32}$}] (21) at (7, 3) {};
+		\node [style=none, label=-135:\textcolor{green}{$\sigma_{33}$}] (22) at (6, 4) {};
+	\end{pgfonlayer}
+	\begin{pgfonlayer}{edgelayer}
+		\draw [->] (0.center) to (1.center);
+		\draw [->] (0.center) to (2.center);
+		\draw [->] (0.center) to (3.center);
+		\draw [line width = 1.2](8.center) to (10.center);
+		\draw [line width = 1.2](10.center) to (5.center);
+		\draw [line width = 1.2](5.center) to (7.center);
+		\draw [line width = 1.2](7.center) to (6.center);
+		\draw [line width = 1.2](6.center) to (9.center);
+		\draw [line width = 1.2](8.center) to (9.center);
+		\draw [line width = 1.2](10.center) to (11.center);
+		\draw [line width = 1.2](11.center) to (9.center);
+		\draw [line width = 1.2](11.center) to (7.center);
+		\draw [->, color=red] (4.center) to (12.center);
+		\draw [->, color=green] (4.center) to (14.center);
+		\draw [->, color=red] (4.center) to (13.center);
+		\draw [->, color=red] (15.center) to (17.center);
+		\draw [->, color=red] (15.center) to (16.center);
+		\draw [->, color=green] (15.center) to (18.center);
+		\draw [->, color=red] (19.center) to (20.center);
+		\draw [->, color=red] (19.center) to (21.center);
+		\draw [->, color=green] (19.center) to (22.center);
+	\end{pgfonlayer}
+\end{tikzpicture}
+\caption[Representation of the general stress state by a volume element.]{Representation of the general stress state by a volume element $\partial V = \partial x~ \partial y~ \partial z$. Where $\sigma_{ij}$ corresponds to normal stress and $\tau_{ij}$ to shear stress. }
+\label{fig:AllgSpZu}
+\end{figure}
+
+In index notation $\sigma_{ij}$, index $i$ represents the direction of the surface normal, which is affected by the stress and index $j$ describes the direction of the stress itself. 
+$\sigma_{ii}$ correspond to normal stress with the convention $\sigma_{ii} > 0$: drag and $\sigma_{ii} < 0$: pressure. $\sigma_{ij}$ with  $i \neq j$ are also denoted by $\tau_{ij}$ and correspond to shear stress. 
+
+As the state of stress represents an object in a static equilibrium, for every tension on one of the three covered sides there exists a counter-stress in the opposite direction. 
+
+\begin{minipage}[t]{0.4\textwidth}
+\begin{equation}
+	\sigma_{ij}=\left(
+\begin{array}{ccc}
+\sigma_{11} & \tau_{12} & \tau_{13}\\
+\tau_{21} & \sigma_{22} & \tau_{23}\\
+\tau_{31} & \tau_{32} & \sigma_{33}
+\end{array}
+\right)
+\end{equation}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+To prevent the volume from rotation the following must apply: $\sigma_{ij} = \sigma_{ji}$ (conservation of angular momentum). Hence, $\sigma_{ij}$ is symmetric and contains \num{6} independent entries of stress.
+\end{minipage}
+
+By applying Hook's law a connection between stress and dilatation  can be established. In case of small dilatations in comparison to the wavelength, which in case of seismic waves is always given, the dependancy of the stress component to dilatation can be approximated as a linear relation.
+
+\begin{minipage}[t]{0.4\textwidth}
+\begin{equation}
+	\sigma_{ij} = C_{ijkl} \cdot\epsilon_{kl}
+\end{equation}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+$\sigma_{ij}$: stress tensor\\
+$\epsilon_{kl}$: strain tensor\\
+$C_{ijkl}$: elastic moduli
+\end{minipage}
+
+The elastic moduli $C_{ijkl}$ is \num{4}-dimensional and  in general has $3^4 = 81$ elements. Because $\sigma_{ij}$ and $\epsilon_{kl}$ are symmetrical, the number of independent components reduces to \num{36}. With energetic reasoning the problem can be reduced furthermore to \num{21} and in isotropic media eventually even to \num{2} components. 
+
+Thus the generalised Hook's law for linear elastic and isotropic media can be derived:
+\begin{align}
+	\sigma_{ij} &= \lambda \epsilon_{rr} \delta_{ij} + 2 \mu \epsilon_{ij}\label{eqn:GenHook}\\
+	\epsilon_{ij} &= \frac{1}{2} \left( \frac{\partial u_i}{\partial x_j} + \frac{\partial u_j}{\partial x_i} \right)\label{eqn:Dehnij}
+\end{align}
+Here $\lambda$ is the first Lam\'{e} parameter and $\mu$ the second Lam\'{e} parameter. $\delta_{ij}$ is equivalent to the Kronecker delta. $\epsilon_{ij}$ represents the linear strain tensor and $u_i$ resembles the displacement of a particle in $i$-direction.
+
+\section{Conservation of Momentum}
+
+Beside the stress-stain relation, conservation of momentum is main a core concept for elastic wave propagation. In principle conservation of momentum corresponds to differential formulation of a dynamic equilibrium per volume unit. There are two applying force to an infinitesimal volume with edge length $\partial x_i$, volume force and surface force. \citep{landau:97}
+
+Volume force, inertial force and gravitational force apply to objects due to having mass. 
+Inertial forces can be derived by applying Newton's  second law of motion in it's original formulation: 
+\begin{equation}
+	\frac{\mathrm{d} p}{\mathrm{d} t} = \frac{\mathrm{d} (\partial m \cdot v_i)}{\mathrm{d} t} = \underbrace{\frac{\mathrm{d} (\partial m)}{\mathrm{d} t}}_{\mathrlap{\text{$= 0$ , as $m$ is $t$-independent}}} v_i + \partial m \frac{\mathrm{d} v_i}{\mathrm{d} t}
+\end{equation}
+Writing the inertial force density with $v_i = v_i (x_k,t)$:
+\begin{equation}
+	f_{I,i} = \frac{\partial m}{\partial V} \frac{\mathrm{d} v_i}{\mathrm{d} t} = \rho \frac{\mathrm{d} v_i}{\mathrm{d} t} = \rho \bigg[ \frac{\partial v_i}{\partial t} + \underbrace{v_k \frac{\partial v_i}{\partial x_k}}_{\mathrlap{\substack{\text{$\approx 0$, for small shifts in relation}\\\text{ to the wavelength}}}} \bigg] \approx \rho \frac{\partial v_i}{\partial t}\label{eqn:TKD}
+\end{equation}
+For elastic body waves, the gravitational force can be ignored. Only in case of low frequent natural oscillation, gravitation has an effect and should be considered.
+
+Surface forces affect an object due to its stress conditions. The derivation of surface forces is made by evaluating the force balance in all three spatial directions.
+To begin with the surface force can be written as an integration of the stress vector $\vec{s}$ over the object's surface $\partial V$.
+\begin{equation}
+	\vec{F}_s = \int_A \vec{s} ~\mathrm{d}A
+\end{equation}
+In general the stress vector, perpendicular to an arbitrary surface, can be calculated by multiplying the transposed stress tensor with the normal vector of the surface $\vec{n}$. Note that the stress tensor is symmetric due to conservation of angular momentum (see chapter \ref{kap:AllSp}) and therefore $\sigma^T = \sigma$ applies.
+\begin{equation}
+	\vec{s} = \sigma^\mathrm{T} \cdot\vec{n}
+\end{equation}
+With a directed plane element $\mathrm{d}\vec{A} = \vec{n} ~\mathrm{d}A$, the surface force can be rewritten to: 
+\begin{equation}
+	\vec{F}_s = \int_A \sigma \cdot\vec{n} ~\mathrm{d}A = \int_A \sigma \mathrm{d}\vec{A} 
+\end{equation}
+The divergence theorem also known as Gauss's theorem $\int_A \vec{F}~\mathrm{d}\vec{A} = \int_V \operatorname{div} \vec{F} ~\mathrm{d}V$ enable to transfer the surface integral to a volume integral. This is beneficial to obtain the surface force density $\vec{f}_{s}$, by simply dividing the surface force by the volume. 
+\begin{align}
+	\vec{F}_s &= \int_A \sigma \mathrm{d}\vec{A} = \int_V \operatorname{div} \sigma ~\mathrm{d}V\\
+	\vec{f}_s &= \frac{\vec{F}_s}{\mathrm{d}V} = \operatorname{div} \sigma~~~~~~~\vec{f}_{s,i} = \frac{\partial \sigma_{ij}}{\partial x_j}\label{eqn:OFKD}
+\end{align}
+Finally the equilibrium of forces $f_{T,i} = f_{s,i}$, resulting from equation \ref{eqn:TKD} and \ref{eqn:OFKD} can be formulated to obtain the equation of motion 
+\begin{equation}
+	\rho \frac{\partial v_i}{\partial t} =  \frac{\partial \sigma_{ji}}{\partial x_j}\label{eqn:ElBewGl}
+\end{equation}
+
+The tree equations \ref{eqn:ElBewGl}, \ref{eqn:GenHook} and \ref{eqn:Dehnij} describe a complete wave propagation in linear elastic and isotropic media.
+Time-derivation of equations \ref{eqn:GenHook} and \ref{eqn:Dehnij} together with equation \ref{eqn:ElBewGl} leads to the stress-velocity formulation:
+\begin{align}
+	\frac{\partial\sigma_{ij}}{\partial t} &= \lambda \frac{\epsilon_{rr}}{\partial t} \delta_{ij} + 2 \mu \frac{\epsilon_{ij}}{\partial t}\label{eqn:GenHookdt}\\
+	\frac{\partial\epsilon_{ij}}{\partial t} &= \frac{1}{2} \left( \frac{\partial v_i}{\partial x_j} + \frac{\partial v_j}{\partial x_i} \right)\label{eqn:Dehnijdt}
+\end{align}
+\cleardoublepage
+
+\chapter{Discretization}
+
+To solve the wave equations with finite differences, the physical continuous space and time have to be discretised in mathematical grids. Space and time coordinates are given by $x=k \cdot \Delta x$, $y=l \cdot \Delta y$, $z=m \cdot \Delta z$ and $t=n \cdot \Delta t$. The spacial intervals between grid points in each direction are represented by $\Delta x, \Delta y$ and $\Delta z$. $\Delta t$ is equivalent to a time interval. The total grid size $N$ is equal to $NX \times NY \times NZ$ and the simulation duration $T$ is $NT \cdot \Delta t$.
+
+\section{Definition of the \textit{Standard Staggered Grid} (SSG)} \label{sec:SSG}
+
+The SSG \citep{virieux:86,levander:88} is a method to distribute physical quantities over grid points, so the partial differential wave equations each refer to a common grid point. The shape of the SSG in three dimensions is shown in figure \ref{fig:StagGrid}. Here temporal dimension is not shown explicitly. Stress components $\sigma_{ij}$ are temporally located on half-spaced grid points, the particle velocity $v_{i}$ is situated on full grid points.
+
+\begin{figure}
+\begin{tikzpicture}
+	\begin{pgfonlayer}{nodelayer}
+		\node [style=none, rectangle, color=green, minimum size=3 mm, fill=green, draw,label=90:{$k,l,m$}] (0) at (0, 0) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=orange, draw,label=90:{$m+\frac{1}{2}$}] (1) at (2, 1) {};
+		\node [style=none, diamond, color=brown, minimum size=4 mm, fill=brown, draw,label=90:{$k+\frac{1}{2}$}] (2) at (4, 0) {};
+		\node [style=none, regular polygon,regular polygon sides=5, color=black, minimum size=4 mm, fill=white,line width=0.5 mm, draw] (3) at (6, 1) {};
+		\node [style=none,label=0:$z(m)$] (4) at (4, 2) {};
+		\node [style=none, regular polygon,regular polygon sides=3, color=red, minimum size=4 mm, fill=red, line width=0.5 mm, draw,label=180:{$l+\frac{1}{2}$}] (5) at (0, -4) {};
+		\node [style=none, rectangle, color=violet, minimum size=3 mm, line width=0.5 mm, fill=white, draw] (6) at (4, -4) {};
+		\node [style=none, regular polygon,regular polygon sides=3, color=blue, minimum size=4 mm, line width=0.5 mm, fill=white, draw] (7) at (2, -3) {};
+		\node [style=none] (8) at (6, -3) {};
+		\node [style=none,label=-90:$x(k)$] (9) at (8, 0) {};
+		\node [style=none,label=0:$y(l)$] (10) at (0, -6) {};
+		\node [style=none, rectangle, color=green, minimum size=3 mm, fill=green, draw,label=right:\textcolor{green}{$\sigma_{xx},\sigma_{yy},\sigma_{zz},\lambda,\mu,\rho$}] (11) at (10,2) {};
+		\node [style=none, diamond, color=brown, minimum size=4 mm, fill=brown, draw,label=right:\textcolor{brown}{$v_x$}] (12) at (10,1) {};
+		\node [style=none, regular polygon,regular polygon sides=3, color=red, minimum size=4 mm, fill=red, line width=0.5 mm, draw,label=right:\textcolor{red}{$v_y$}] (13) at (10,0) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=orange, draw,label=right:\textcolor{orange}{$v_z$}] (14) at (10,-1) {};
+		\node [style=none, rectangle, color=violet, minimum size=3 mm, line width=0.5 mm, fill=white, draw,label=right:\textcolor{violet}{$\sigma_{xy}$}] (15) at (10,-2) {};
+		\node [style=none, regular polygon,regular polygon sides=3, color=blue, minimum size=4 mm, line width=0.5 mm, fill=white, draw,label=right:\textcolor{blue}{$\sigma_{yz}$}] (16) at (10,-3) {};
+		\node [style=none, regular polygon,regular polygon sides=5, color=black, minimum size=4 mm, fill=white,line width=0.5 mm, draw,label=right:\textcolor{black}{$\sigma_{xz}$}] (17) at (10,-4) {};
+	\end{pgfonlayer}
+	\begin{pgfonlayer}{edgelayer}
+		\draw (0.center) to (1.center);
+		\draw (2.center) to (3.center);
+		\draw (0.center) to (2.center);
+		\draw (1.center) to (3.center);
+		\draw (0.center) to (5.center);
+		\draw (5.center) to (6.center);
+		\draw [dashed](5.center) to (7.center);
+		\draw (6.center) to (8.center);
+		\draw [dashed](7.center) to (8.center);
+		\draw (6.center) to (2.center);
+		\draw [dashed](7.center) to (1.center);
+		\draw (8.center) to (3.center);
+		\draw [->] (1.center) to (4.center);
+		\draw [->] (2.center) to (9.center);
+		\draw [->] (5.center) to (10.center);
+	\end{pgfonlayer}
+\end{tikzpicture}
+\caption[Representation of the \textit{Standard Staggered Grid} (SSG).]{Representation of the \textit{Standard Staggered Grid} (SSG) with the distribution of material and wavefield parameter in 3-D.}
+\label{fig:StagGrid}
+\end{figure}
+
+Using the solution approach of finite differences, the analytical calculations of spatial and time derivation are approximated by calculating the weighted average (FD-operators) of surrounding grid points. Depending on the FD-operator order, more surrounding grid points are included in the averaging. Models can be approximated more exactly by using higher orders, at the expense of higher computing effort and thus higher computing time.
+
+To accomplish a feasible implementation of the finite difference calculations to solve the wave equations, calculations are made in recursive time-stepping. Therefor time derivation of stress and particle velocity are replaced by second order FD-operators, resulting in two temporal successive values of stress $\sigma_{ij}$ or velocity $v_i$.
+\begin{align}
+	\rho \frac{\partial v_i}{\partial t} &= \frac{\partial \sigma_{ji}}{\partial x_j} \qquad \qquad \qquad \quad \,\,\,\, \text{with} \quad \left.\frac{\partial v_i}{\partial t}\right\rvert^{n+\frac{1}{2}} \approx \frac{v_i^{n+1} - v_i^{n}}{\Delta t}\notag\\
+	&\rightarrow v_i^{n+1} \approx v_i^n + \frac{\Delta t}{\rho}  \left.\frac{\partial \sigma_{ji}}{\partial x_j}\right\rvert^{n+\frac{1}{2}}\label{eqn:ElBewGlDis}\\
+	\frac{\partial \sigma_{ij}}{\partial t} &= \lambda \frac{\partial \epsilon_{rr}}{\partial t} \delta_{ij} + 2 \mu \frac{\partial \epsilon_{ij}}{\partial t} \qquad \text{with} \quad \left.\frac{\partial \sigma_{ij}}{\partial t}\right\rvert^n \approx \frac{\sigma_{ij}^{n+\frac{1}{2}} - \sigma_{ij}^{n-\frac{1}{2}}}{\Delta t}\notag\\
+	&\rightarrow \sigma_{ij}^{n+\frac{1}{2}} \approx \sigma_{ij}^{n-\frac{1}{2}} + \Delta t \cdot \lambda \left.\frac{\partial \epsilon_{rr}}{\partial t}\right\rvert^n \delta_{ij} + 2 \cdot \Delta t \cdot \mu \left. \frac{\partial \epsilon_{ij}}{\partial t}\right\rvert^n
+\end{align}
+In equation \ref{eqn:ElBewGlDis} it can be seen that velocity is defined on full grid points whereas stress is defined on half grid points. This leads to the fact that the equations are referring to a joint grid point. 
+
+A compact definition of the FD-scheme can be made by defining fractions for each order of the spatial derivation as shown below. 
+In the following equations upper indices represents the time increments and lower indices describes the spatial centres. 
+
+For second and forth order the following applies: 
+\begin{align}
+	\mathcal{O}_2: \qquad   \left.\frac{\partial\sigma_{xx}}{\partial x}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} &\overset{}{\coloneqq} \frac{\sigma_{xx,k+1,l,m}^{n+\frac{1}{2}} - \sigma_{xx,k,l,m}^{n+\frac{1}{2}}}{\Delta x}\label{eqn:FDO2O}\\
+	\mathcal{O}_4: \qquad  \left.\frac{\partial\sigma_{xx}}{\partial x}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} &\overset{}{\coloneqq} \frac{\frac{9}{8}\left(\sigma_{xx,k+1,l,m}^{n+\frac{1}{2}} - \sigma_{xx,k,l,m}^{n+\frac{1}{2}}\right) - \frac{1}{24}\left(\sigma_{xx,k+2,l,m}^{n+\frac{1}{2}} - \sigma_{xx,k-1,l,m}^{n+\frac{1}{2}}\right)}{\Delta x}
+\end{align}
+Consequently by usage of the SSG, the elastic wave equation can be discretised as follows:
+\begin{align*}
+	\sigma_{xx,k,l,m}^{n+\frac{1}{2}} &= \sigma_{xx,k,l,m}^{n-\frac{1}{2}} + \Delta t \cdot \lambda_{k,l,m} \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^n + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^n + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^n \right) + 2 \cdot \Delta t  \cdot\mu_{k,l,m} \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^n\\
+	\sigma_{yy,k,l,m}^{n+\frac{1}{2}} &= \sigma_{yy,k,l,m}^{n-\frac{1}{2}} + \Delta t \cdot \lambda_{k,l,m} \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^n + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^n + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^n \right) + 2 \cdot \Delta t \cdot \mu_{k,l,m} \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^n\\
+	\sigma_{zz,k,l,m}^{n+\frac{1}{2}} &= \sigma_{zz,k,l,m}^{n-\frac{1}{2}} + \Delta t \cdot \lambda_{k,l,m} \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^n + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^n + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^n \right) + 2 \cdot \Delta t \cdot \mu_{k,l,m} \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^n
+\end{align*}
+\begin{align*}
+	\sigma_{xy,k+\frac{1}{2},l+\frac{1}{2},m}^{n+\frac{1}{2}} &= \sigma_{xy,k+\frac{1}{2},l+\frac{1}{2},m}^{n-\frac{1}{2}} + \Delta t \cdot \mu_{k+\frac{1}{2},l+\frac{1}{2},m} \left( \left.\frac{\partial v_x}{\partial y}\right\rvert_{k+\frac{1}{2},l+\frac{1}{2},m}^n + \left.\frac{\partial v_y}{\partial x}\right\rvert_{k+\frac{1}{2},l+\frac{1}{2},m}^n \right)\\
+	\sigma_{xz,k+\frac{1}{2},l,m+\frac{1}{2}}^{n+\frac{1}{2}} &= \sigma_{xz,k+\frac{1}{2},l,m+\frac{1}{2}}^{n-\frac{1}{2}} + \Delta t \cdot \mu_{k+\frac{1}{2},l,m+\frac{1}{2}} \left( \left.\frac{\partial v_x}{\partial z}\right\rvert_{k+\frac{1}{2},l,m+\frac{1}{2}}^n + \left.\frac{\partial v_z}{\partial x}\right\rvert_{k+\frac{1}{2},l,m+\frac{1}{2}}^n \right)\\
+	\sigma_{yz,k,l+\frac{1}{2},m+\frac{1}{2}}^{n+\frac{1}{2}} &= \sigma_{yz,k,l+\frac{1}{2},m+\frac{1}{2}}^{n-\frac{1}{2}} + \Delta t \cdot \mu_{k,l+\frac{1}{2},m+\frac{1}{2}} \left( \left.\frac{\partial v_y}{\partial z}\right\rvert_{k,l+\frac{1}{2},m+\frac{1}{2}}^n + \left.\frac{\partial v_z}{\partial y}\right\rvert_{k,l+\frac{1}{2},m+\frac{1}{2}}^n \right)
+\end{align*}
+\begin{align*}
+	v_{x,k+\frac{1}{2},l,m}^{n+1} &= v_{x,k+\frac{1}{2},l,m}^n + \frac{\Delta t}{\rho_{k+\frac{1}{2},l,m}}  \left( \left.\frac{\partial\sigma_{xx}}{\partial x}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{xy}}{\partial y}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{xz}}{\partial z}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} \right)\\
+	v_{y,k,l+\frac{1}{2},m}^{n+1} &= v_{y,k,l+\frac{1}{2},m}^n + \frac{\Delta t}{\rho_{k,l+\frac{1}{2},m}}  \left( \left.\frac{\partial\sigma_{yx}}{\partial x}\right\rvert_{k,l+\frac{1}{2},m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{yy}}{\partial y}\right\rvert_{k,l+\frac{1}{2},m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{yz}}{\partial z}\right\rvert_{k,l+\frac{1}{2},m}^{n+\frac{1}{2}} \right)\\
+	v_{z,k,l,m+\frac{1}{2}}^{n+1} &= v_{z,k,l,m+\frac{1}{2}}^n + \frac{\Delta t}{\rho_{k,l,m+\frac{1}{2}}}  \left( \left.\frac{\partial\sigma_{zx}}{\partial x}\right\rvert_{k,l,m+\frac{1}{2}}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{zy}}{\partial y}\right\rvert_{k,l,m+\frac{1}{2}}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{zz}}{\partial z}\right\rvert_{k,l,m+\frac{1}{2}}^{n+\frac{1}{2}} \right)
+\end{align*}
+Using the SSG  requires numerical stability. Density $\rho_{klm}$ on half grid points is arithmetically averaged from surrounding full grid points. The first Lam\'{e} parameter $\mu_{k,l,m}$ however is harmonically averaged. 
+\begin{align*}
+	\rho_{k+\frac{1}{2},l,m} &= \frac{\rho_{k,l,m} + \rho_{k+1,l,m}}{2} \quad \rho_{k,l+\frac{1}{2},m} = \frac{\rho_{k,l,m} + \rho_{k,l+1,m}}{2} \quad \rho_{k,l,m+\frac{1}{2}} = \frac{\rho_{k,l,m} + \rho_{k,l,m+1}}{2}
+\end{align*}
+\begin{align*}
+	\mu_{k+\frac{1}{2},l+\frac{1}{2},m} &= \frac{4}{\mu^{-1}_{k,l,m} + \mu^{-1}_{k+1,l,m} + \mu^{-1}_{k,l+1,m} + \mu^{-1}_{k+1,l+1,m}}\\
+	\mu_{k+\frac{1}{2},l,m+\frac{1}{2}} &= \frac{4}{\mu^{-1}_{k,l,m} + \mu^{-1}_{k+1,l,m} + \mu^{-1}_{k,l,m+1} + \mu^{-1}_{k+1,l,m+1}}\\
+	\mu_{k,l+\frac{1}{2},m+\frac{1}{2}} &= \frac{4}{\mu^{-1}_{k,l,m} + \mu^{-1}_{k,l+1,m} + \mu^{-1}_{k,l,m+1} + \mu^{-1}_{k,l+1,m+1}}
+\end{align*}
+\\
+Derivation of the viscoelastic wave equations for the SSG yields the following system of equations for stress and velocity. Here $\mu_{k,l,m}$ is the first Lam\'{e} parameter or S-wave module and $M_{k,l,m}$ is the P-wave module.
+The S- and P-wave module are defined as:
+\begin{align}
+	\mu_{k,l,m}&= \rho_{,k,l,m}\cdot v_{S,k,l,m}^{2}\\
+	M_{k,l,m} &= \rho_{,k,l,m}\cdot v_{P,k,l,m}^{2}
+\end{align}
+ Where $v_{S,k,l,m}$ is the velocity of the S-wave and $v_{P,k,l,m}$ is the velocity of the P-wave.
+As the system is represented by relaxation bodies the summation over $q$ is equal to the summation over all $L$ Maxwell-bodies. $\tau_{\sigma,q}$ describes the stress relaxation time and $\tau_{k,l,m}^s$ and $\tau_{k,l,m}^s$ respectively describe the level of attenuation for S- and P-waves. $\tau_{k,l,m}^s$ on half grid points is calculated by averaging $\tau_{k,l,m}^s$  from the four surrounding grid points. 
+\begin{align*}
+	\tau_{k+\frac{1}{2},l+\frac{1}{2},m} &= \frac{\tau_{k,l,m} + \tau_{k+1,l,m} + \tau_{k,l+1,m} + \tau_{k+1,l+1,m}}{4}\\
+	\tau_{k+\frac{1}{2},l,m+\frac{1}{2}} &= \frac{\tau_{k,l,m} + \tau_{k+1,l,m} + \tau_{k,l,m+1} + \tau_{k+1,l,m+1}}{4}\\
+	\tau_{k,l+\frac{1}{2},m+\frac{1}{2}} &= \frac{\mu_{k,l,m} + \mu_{k,l+1,m} + \tau^{-1}_{k,l,m+1} + \tau_{k,l+1,m+1}}{4}
+\end{align*}
+
+Further on $r_{ij,q,k,l,m}^{n}$ can be interpreted as a memory variable for the $q$-th relaxation body, to help calculating the corresponding stress-tensor component $\sigma_{ij,k,l,m}$.
+\\\\The components of the stress tensor are given by:
+\begin{align*}
+	\sigma_{xx,k,l,m}^{n+\frac{1}{2}} =& \;\sigma_{xx,k,l,m}^{n-\frac{1}{2}}+ \Bigg[ \Delta t \cdot M_{k,l,m} \left(1+L\cdot \tau^p_{k,l,m}\right)\left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n} \right)\Bigg]  \\
+	&- \Bigg[ 2 \Delta t \cdot \mu_{k,l,m} \left(1+L\cdot \tau^s_{k,l,m}\right)\cdot \left( \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n} \right)\Bigg] \\
+	&+ \frac{\Delta t}{2} \sum _{q=1}^{L} \left( r_{xx,q,k,l,m}^{n-\frac{1}{2}}+ r_{xx,q,k,l,m}^{n+\frac{1}{2}}\right) \\
+	\sigma_{yy,k,l,m}^{n+\frac{1}{2}} =&\;\sigma_{yy,k,l,m}^{n}+ \Bigg[ \Delta t \cdot M_{k,l,m} \left(1+L\cdot \tau^p_{k,l,m}\right)\left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n} \right)\Bigg]  \\
+	&- \Bigg[ 2 \Delta t \cdot \mu_{k,l,m} \left(1+L\cdot \tau^s_{k,l,m}\right)\cdot \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n-} \right)\Bigg] \\
+	&+ \frac{\Delta t}{2} \sum _{q=1}^{L} \left( r_{yy,q,k,l,m}^{n-\frac{1}{2}}+ r_{yy,q,k,l,m}^{n+\frac{1}{2}}\right)\\ 
+	\sigma_{zz,k,l,m}^{n+\frac{1}{2}} =&\;\sigma_{zz,k,l,m}^{n-\frac{1}{2}}+ \Bigg[ \Delta t \cdot M_{k,l,m} \left(1+L\cdot \tau^p_{k,l,m}\right)\left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n}+ \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n} \right)\Bigg]  \\
+	&- \Bigg[ 2 \Delta t \cdot \mu_{k,l,m} \left(1+L\cdot \tau^s_{k,l,m}\right)\cdot \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} \right)\Bigg] \\
+	&+ \frac{\Delta t}{2} \sum _{q=1}^{L} \left( r_{yy,i,k,l,m}^{n-\frac{1}{2}}+ r_{yy,q,k,l,m}^{n+\frac{1}{2}}\right)\\ 
+	\sigma_{xy,k+\frac{1}{2},l+\frac{1}{2},m}^{n+\frac{1}{2}} =&\;\sigma_{xy,k+\frac{1}{2},l+\frac{1}{2},m}^{n-\frac{1}{2}}+\Bigg[\Delta t \cdot \mu_{k+\frac{1}{2},l+\frac{1}{2},m}\left(1+L\cdot\tau_{k+\frac{1}{2},l+\frac{1}{2},m}^s \right)\cdot \\ 
+	&\left( \left.\frac{\partial v_x}{\partial y}\right\rvert_{k+\frac{1}{2},l+\frac{1}{2},m}^n + \left.\frac{\partial v_y}{\partial x}\right\rvert_{k+\frac{1}{2},l+\frac{1}{2},m}^n \right)\Bigg] + \frac{\Delta t}{2} \sum _{q=1}^{L} \left( r_{xy,q,k+\frac{1}{2},l+\frac{1}{2},m}^{n-\frac{1}{2}}+ r_{xy,q,k+\frac{1}{2},l+\frac{1}{2},m}^{n+\frac{1}{2}}\right) \\
+	\sigma_{xz,k+\frac{1}{2},l,m+\frac{1}{2}}^{n+\frac{1}{2}} =&\;\sigma_{xy,k+\frac{1}{2},l,m+\frac{1}{2}}^{n-\frac{1}{2}}+\Bigg[\Delta t \cdot \mu_{k+\frac{1}{2},l,m+\frac{1}{2}}\left(1+L\cdot\tau_{k+\frac{1}{2},l,m+\frac{1}{2}}^s \right)\cdot \\ 
+	&\left( \left.\frac{\partial v_x}{\partial y}\right\rvert_{k+\frac{1}{2},l,m+\frac{1}{2}}^n + \left.\frac{\partial v_y}{\partial x}\right\rvert_{k+\frac{1}{2},l,m+\frac{1}{2}}^n \right)\Bigg]  + \frac{\Delta t}{2} \sum _{q=1}^{L} \left( r_{xy,q,k+\frac{1}{2},l,m+\frac{1}{2}}^{n-\frac{1}{2}}+ r_{xy,q,k+\frac{1}{2},l,m+\frac{1}{2}}^{n+\frac{1}{2}}\right) \\
+	\sigma_{yz,k,l+\frac{1}{2},m+\frac{1}{2}}^{n+\frac{1}{2}} =& \;\sigma_{xy,k,l+\frac{1}{2},m+\frac{1}{2}}^{n-\frac{1}{2}}+\Bigg[\Delta t \cdot \mu_{k,l+\frac{1}{2},m+\frac{1}{2}}\left(1+L\cdot\tau_{k,l+\frac{1}{2},m+\frac{1}{2}}^s \right)\cdot \\ 
+	&\left( \left.\frac{\partial v_x}{\partial y}\right\rvert_{k,l+\frac{1}{2},m+\frac{1}{2}}^n + \left.\frac{\partial v_y}{\partial x}\right\rvert_{k,l+\frac{1}{2},m+\frac{1}{2}}^n \right)\Bigg]  + \frac{\Delta t}{2} \sum _{q=1}^{L} \left( r_{xy,q,k,l+\frac{1}{2},m+\frac{1}{2}}^{n-\frac{1}{2}}+ r_{xy,q,k,l+\frac{1}{2},m+\frac{1}{2}}^{n+\frac{1}{2}}\right) \\
+\end{align*}
+
+\begin{align*}
+	r_{xx,q,k,l,m}^{n+\frac{1}{2}} =& \left( 1+ \frac{\Delta t}{2\tau_{\sigma,q}} \right)^{-1}\cdot \Bigg[\left( 1- \frac{\Delta t}{2\tau_{\sigma,q}}  \right) \cdot r_{xx,q,k,l,m}^{n-\frac{1}{2}} \\ 
+	& -\frac{M_{k,l,m}\cdot\Delta t}{\tau_{\sigma,q}}\cdot \tau^p_{k,l,m} \cdot \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n} \right)\\
+	& + \frac{2\mu_{k,l,m} \Delta t}{\tau_{\sigma,q}}\cdot \tau_{k,l,m}^s \left( \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n}  \right)\Bigg] \\
+	r_{yy,q,k,l,m}^{n+\frac{1}{2}} =& \left( 1+ \frac{\Delta t}{2\tau_{\sigma,q}} \right)^{-1}\cdot \Bigg[\left( 1- \frac{\Delta t}{2\tau_{\sigma,q}}  \right) \cdot r_{yy,q,k,l,m}^{n-\frac{1}{2}} \\ 
+	& -\frac{M_{k,l,m}\cdot\Delta t}{\tau_{\sigma,q}}\cdot \tau^p_{k,l,m} \cdot \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n} \right)\\
+	& + \frac{2\mu_{k,l,m} \Delta t}{\tau_{\sigma,q}}\cdot \tau_{k,l,m}^s \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n}  \right)\Bigg] \\
+	r_{zz,q,k,l,m}^{n+\frac{1}{2}} =& \left( 1+ \frac{\Delta t}{2\tau_{\sigma,q}} \right)^{-1}\cdot \Bigg[\left( 1- \frac{\Delta t}{2\tau_{\sigma,q}}  \right) \cdot r_{zz,q,k,l,m}^{n-\frac{1}{2}} \\ 
+	& -\frac{M_{k,l,m}\cdot\Delta t}{\tau_{\sigma,q}}\cdot \tau^p_{k,l,m} \cdot \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l,m}^{n} \right)\\
+	& + \frac{2\mu_{k,l,m} \Delta t}{\tau_{\sigma,q}}\cdot \tau_{k,l,m}^s \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k,l,m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l,m}^{n}  \right)\Bigg] \\
+	r_{xy,q,k+\frac{1}{2},l+\frac{1}{2},m}^{n+\frac{1}{2}} =& \left( 1+ \frac{\Delta t}{2\tau_{\sigma,q}} \right)^{-1}\cdot \Bigg[\left( 1- \frac{\Delta t}{2\tau_{\sigma,q}}  \right) \cdot r_{xy,q,k+\frac{1}{2},l+\frac{1}{2},m}^{n-\frac{1}{2}} \\ 
+	& -\frac{\mu_{k+\frac{1}{2},l+\frac{1}{2},m}\cdot\Delta t}{\tau_{\sigma,q}}\cdot \tau^s_{k+\frac{1}{2},l+\frac{1}{2},m} \cdot \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k+\frac{1}{2},l+\frac{1}{2},m}^{n} + \left.\frac{\partial v_y}{\partial y}\right\rvert_{k+\frac{1}{2},l+\frac{1}{2},m}^{n} \right)\Bigg]\\
+	r_{xz,q,k+\frac{1}{2},l,m+\frac{1}{2}}^{n+\frac{1}{2}} =& \left( 1+ \frac{\Delta t}{2\tau_{\sigma,q}} \right)^{-1}\cdot \Bigg[\left( 1- \frac{\Delta t}{2\tau_{\sigma,q}}  \right) \cdot r_{xz,q,k+\frac{1}{2},l,m+\frac{1}{2}}^{n-\frac{1}{2}} \\ 
+	& -\frac{\mu_{k+\frac{1}{2},l,m+\frac{1}{2}}\cdot\Delta t}{\tau_{\sigma,q}}\cdot \tau^s_{k+\frac{1}{2},l,m+\frac{1}{2}} \cdot \left( \left.\frac{\partial v_x}{\partial x}\right\rvert_{k+\frac{1}{2},l,m+\frac{1}{2}}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k+\frac{1}{2},l,m+\frac{1}{2}}^{n} \right)\Bigg]\\
+	r_{yz,q,k,l+\frac{1}{2},m+\frac{1}{2}}^{n+\frac{1}{2}} =& \left( 1+ \frac{\Delta t}{2\tau_{\sigma,q}} \right)^{-1}\cdot \Bigg[\left( 1- \frac{\Delta t}{2\tau_{\sigma,q}}  \right) \cdot r_{yz,q,k,l+\frac{1}{2},m+\frac{1}{2}}^{n-\frac{1}{2}} \\ 
+	& -\frac{\mu_{k,l+\frac{1}{2},m+\frac{1}{2}}\cdot\Delta t}{\tau_{\sigma,q}}\cdot \tau^s_{k,l+\frac{1}{2},m+\frac{1}{2}} \cdot \left( \left.\frac{\partial v_y}{\partial y}\right\rvert_{k,l+\frac{1}{2},m+\frac{1}{2}}^{n} + \left.\frac{\partial v_z}{\partial z}\right\rvert_{k,l+\frac{1}{2},m+\frac{1}{2}}^{n} \right)\Bigg] \\
+\end{align*}
+
+Just as in the elastic case, the velocity equations for the viscoelastic case are given by:
+\begin{align*}
+	v_{x,k+\frac{1}{2},l,m}^{n+1} &= v_{x,k+\frac{1}{2},l,m}^n + \frac{\Delta t}{\rho_{k+\frac{1}{2},l,m}}  \left( \left.\frac{\partial\sigma_{xx}}{\partial x}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{xy}}{\partial y}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{xz}}{\partial z}\right\rvert_{k+\frac{1}{2},l,m}^{n+\frac{1}{2}} \right)\\
+	v_{y,k,l+\frac{1}{2},m}^{n+1} &= v_{y,k,l+\frac{1}{2},m}^n + \frac{\Delta t}{\rho_{k,l+\frac{1}{2},m}}  \left( \left.\frac{\partial\sigma_{yx}}{\partial x}\right\rvert_{k,l+\frac{1}{2},m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{yy}}{\partial y}\right\rvert_{k,l+\frac{1}{2},m}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{yz}}{\partial z}\right\rvert_{k,l+\frac{1}{2},m}^{n+\frac{1}{2}} \right)\\
+	v_{z,k,l,m+\frac{1}{2}}^{n+1} &= v_{z,k,l,m+\frac{1}{2}}^n + \frac{\Delta t}{\rho_{k,l,m+\frac{1}{2}}}  \left( \left.\frac{\partial\sigma_{zx}}{\partial x}\right\rvert_{k,l,m+\frac{1}{2}}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{zy}}{\partial y}\right\rvert_{k,l,m+\frac{1}{2}}^{n+\frac{1}{2}} + \left.\frac{\partial\sigma_{zz}}{\partial z}\right\rvert_{k,l,m+\frac{1}{2}}^{n+\frac{1}{2}} \right)
+\end{align*}
+\section{Calculation of the Wavefield}
+To simulate the wavefields in space and time all discretised equations for stress and velocity have to be evaluated for each grid point and every time step. Since the temporal preceding value is needed, $n$ has to be increased continuously. The chronological order of calculating spatial derivations however is irrelevant. Whereas stress $\sigma_{ij}^{n+\frac{1}{2}}$ is required to calculate the particle velocity $v_i^{n+\frac{1}{2}}$ and thus has to be calculated first. The corresponding algorithm structure is shown below. 
+\begin{algorithm}
+\caption{Structure of the finite differences simulation.}
+\label{alg:FD}
+\For{n=1 \KwTo NT}{
+	\For{k=1 \KwTo NX}{
+		\For{l=1 \KwTo NY}{
+			\For{m=1 \KwTo NZ}{
+				Update stresses $\sigma_{ij}$
+			}
+		}
+	}
+	\For{k=1 \KwTo NX}{
+		\For{l=1 \KwTo NY}{
+			\For{m=1 \KwTo NZ}{
+				Update velocities $v_i$
+			}
+		}
+	}		
+}
+\end{algorithm}
+
+\section{Boundary Conditions}
+To find to a unique solution of the problem, boundary conditions have to be defined. 
+To avoid wavefield reflections at the boundaries of the model grid, an absorbing boundary condition can be applied. A commonly used implementation is described in \cite{cerjan:85}: The numerical grid is enlarged by grid points (if damping boundary is used, boundary width $FW$  is 10 gridpoints by default) in each direction. The values of the stress and particle velocity in this boundary frame are multiplied by a damping factor $damp$.
+\begin{equation}
+	damp= e^{\left(-a^2+x^2\right)} \qquad \text{with} \qquad a= \sqrt{\frac{-log(amp)}{FW}}
+\end{equation}
+where $amp$ is calculated from the damping coeffitient $amp= 1-{DampingCoefficient}/{100}$. With a damping coefficient of \SI{8.0}{}, $amp=$ \SI{0.92}{}. The seismic waves are damped inside the boundary frame and cannot be reflected back into the model. This type of absorbing boundary is not able to damp the reflected waves from the boundary completely.
+
+A more effective way to damp the waves near the boundaries are the Perfectly Matched Layers (PMLs). This can be achieved by a coordinate stretch of the wave equations in the frequency domain \cite{komatitsch:07}. The coordinate stretch creates exponentially decaying plane wave solutions in the absorbing boundary frame. The PMLs are only reflectionless if the exact wave equation is solved. As soon as the problem is discretized (for example using finite differences) you are solving an approximate wave equation and the analytical perfection of the PML is no longer valid. To overcome this shortcoming the wavefield is damped by the damping function 
+\begin{equation}
+	c=-V_{pml} \cdot \frac{log(\alpha)}{L}
+\end{equation}
+where $V_{pml}$ denotes the typical P-wave velocity of the medium in the absorbing boundary frame, $\alpha=8 \cdot 10^{-4}$is the absorbing coefficient and L is the thickness of the absorbing boundary layer.
+
+\cleardoublepage
+\chapter{Matrix-Vektor Formalism of Finite Differences}
+This chapter initially appeals the advantages of the matrix-vector formalism. Subsequently the arrays are vectorised. A central task is, to find a set of matrices, which function equivalently to the FD-operators, applied to $v_i$ and $\sigma_{ij}$. The principles are shown with the aid of simple examples. 
+\section{Motivation}
+The matrix-vector formalism is in the first place simply a compact notation for the same mathematical method. Beside greater clarity, a main benefit is in terms of program processing. It is a universal notation, which can be applied to describe numerous physical problems. Therefore the framework LAMA \citep{lama:16}, a plug-in architecture which can be used in \CC, provides the development of hardware independent software and is additionally executable on heterogenous computer architectures. The software can also be executed either on CPUs or GPUs. To access this functionality, the problem has to be reformulated to a matrix-vector formalism. 
+\begin{equation}
+	\vec{y} = A\cdot\vec{x}
+\end{equation}
+
+\section{Vectorisation of Arrays}
+As already mentioned, the order of spatial derivation is irrelevant. This is a precondition to replace the previous formalism of three spatial loops, to calculate both $v_i$ and $\sigma_{ij}$ with matrix operations. For a better understanding, the discretised equations from section \ref{sec:SSG}, for the second order FD-operators (compare equation \ref{eqn:FDO2O}) are replaced. In this case for an equidistant grid ($\Delta x = \Delta y = \Delta z = \Delta h$). As programming language only handles full indices, half value indices are set to previous full value indices. 
+
+Therefore, to update $v_x$ and $\sigma_{xy}$  the following applies:
+\begin{multline}
+	v_{x,k,l,m}^{n+1} = v_{x,k,l,m}^n + \frac{\Delta t}{\rho_{k,l,m} \cdot \Delta h} \cdot\\  \left( \sigma_{xx,k+1,l,m}^{n} - \sigma_{xx,k,l,m}^{n} + \sigma_{xy,k,l,m}^{n} - \sigma_{xy,k,l-1,m}^{n} + \sigma_{xz,k,l,m}^{n} - \sigma_{xz,k,l,m-1}^{n} \right)\label{eqn:exMV1}
+\end{multline}
+
+All physical quantities, represented by three-dimensional arrays (here $v_x$, $\sigma_{ii}$ and $\rho$), have to be converted to vectors. The approach has to be applied consequently. Figure \ref{fig:ArrayToVec} illustrates the conversation from a $4 \times 3 \times 2$-array to a single vector. Projecting first the x-direction then y-direction and finally the z-direction.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+	\begin{pgfonlayer}{nodelayer}
+		\node [style=none] (0) at (0, 0) {};
+		\node [style=none] (1) at (1, -1) {1};
+		\node [style=none] (2) at (2, -1) {2};
+		\node [style=none] (3) at (3, -1) {3};
+		\node [style=none] (4) at (4, -1) {4};
+		\node [style=none] (5) at (1, -2) {5};
+		\node [style=none] (6) at (2, -2) {6};
+		\node [style=none] (7) at (3, -2) {7};
+		\node [style=none] (8) at (4, -2) {8};
+		\node [style=none] (9) at (1, -3) {9};
+		\node [style=none] (10) at (2, -3) {10};
+		\node [style=none] (11) at (3, -3) {11};
+		\node [style=none] (12) at (4, -3) {12};
+		\node [style=none] (13) at (1.5, -0.5) {\scriptsize{13}};
+		\node [style=none] (14) at (2.5, -0.5) {\scriptsize{14}};
+		\node [style=none] (15) at (3.5, -0.5) {\scriptsize{15}};
+		\node [style=none] (16) at (4.5, -0.5) {\scriptsize{16}};
+		\node [style=none] (17) at (1.5, -1.5) {\scriptsize{17}};
+		\node [style=none] (18) at (2.5, -1.5) {\scriptsize{18}};
+		\node [style=none] (19) at (3.5, -1.5) {\scriptsize{19}};
+		\node [style=none] (20) at (4.5, -1.5) {\scriptsize{20}};
+		\node [style=none] (21) at (1.5, -2.5) {\scriptsize{21}};
+		\node [style=none] (22) at (2.5, -2.5) {\scriptsize{22}};
+		\node [style=none] (23) at (3.5, -2.5) {\scriptsize{23}};
+		\node [style=none] (24) at (4.5, -2.5) {\scriptsize{24}};
+		\node [style=none,label=-90:$x(k)$] (25) at (6, 0) {};
+		\node [style=none,label=0:$y(l)$] (26) at (0, -4) {};
+		\node [style=none,label=0:$z(m)$] (27) at (1, 1) {};
+	\end{pgfonlayer}
+	\begin{pgfonlayer}{edgelayer}
+		\draw [->](0.center) to (25.center);
+		\draw [->](0.center) to (26.center);
+		\draw [->](0.center) to (27.center);
+	\end{pgfonlayer}
+\end{tikzpicture}
+\caption[Transformation from a $4 \times 3 \times 2$-array to a single vector. ]{Transformation from a $4 \times 3 \times 2$-array to a single vector. Showing the indices of the resulting vector.}
+\label{fig:ArrayToVec}
+\end{figure}
+
+\section{Introducing the FD-Coefficient Matrices}
+
+The biggest step in applying the new formalism is, finding the according FD-coefficient matrices $\underline{D}_i$.
+
+\subsection{Consequence of an Index-Shift}
+
+Due to an index-shift of all half value indices by $(-\frac{1}{2})$, when applied, it must be distinguished between two cases. 
+
+Is the original centre of the FD-operator in direction of the derivation, on full grid points, the second order FD-operator theoretically refers to $\left(v_{x,k+\frac{1}{2},l,m} - v_{x,k-\frac{1}{2},l,m}\right)$. Such as in case of a $\sigma_{xx,k,l,m}$-update where the centre of $\left. \frac{\partial v_x}{\partial x} \right\rvert_{k,l,m}$ is in direction of the derivation. By shifting half value indices by $(-\frac{1}{2})$, the operator's centre is shifted likewise and the result of $\sigma_{xx,k,l,m}$ at $k$ is calculated from $v_x$ at $(k-1)$ and $k$ (compare figure \ref{fig:IndShift}, left). This geometry is given in all $\frac{\partial v_i}{\partial x_i}$ as well as in $\frac{\partial \sigma_{ij}}{\partial x_j}$ with $i\neq j$. In this case the matching FD-coefficient matrix  is named $\underline{D}_{\,i,b}$, where $b$ stands for \textit{backward}. $i$ represents the derivation direction.
+
+The second case occurs when the centre of the FD-operator is placed on half value grid points in its direction of derivation. As for example in case of  updating $\sigma_{xy,k+\frac{1}{2},l+\frac{1}{2},m}$, where the centre of $\left. \frac{\partial v_x}{\partial y} \right\rvert_{k+\frac{1}{2},l+\frac{1}{2},m}$, in derivation direction $y$, is placed at $(l+\frac{1}{2})$. In this case the second order FD-operator theoretically refers back to the $\left(v_{x,k+\frac{1}{2},l+1,m} - v_{x,k+\frac{1}{2},l,m}\right)$-term. These $v_x$-values don't have to be shifted in $y$-direction. However hereby the calculated value of $\sigma_{xy,k+\frac{1}{2},l+\frac{1}{2},m}$ is shifted to $\sigma_{xy,k,l,m}$, which is equal to a shift in $x$ and in $y$-direction by $(-\frac{1}{2})$. Thus the centre of the FD-operator is shifted to the right, compared to the $\sigma_{xy,k,l,m}$ reference frame (compare figure \ref{fig:IndShift}, right). This shift is given for all $\frac{\partial v_i}{\partial x_j}$ with $i\neq j$ and $\frac{\partial \sigma_{ii}}{\partial x_i}$. This case is designated as $\underline{D}_{\,i,f}$, where $f$ indicates \textit{forward}.
+These Determinations manifests itself by shifting the FD-coefficients in the matrix, which in general can be expressed by $\underline{D}_{\,i,f} = -\underline{D}_{\,i,b}^T$.
+
+\begin{figure}
+\begin{tikzpicture}
+	\begin{pgfonlayer}{nodelayer}
+		\node [style=none, circle, color=green, minimum size=3 mm, fill=green, draw] (0) at (0, 0) {};
+		\node [style=none] (1) at (2, 0) {};
+		\node [style=none, circle, color=green, minimum size=3 mm, fill=green, draw] (2) at (4, 0) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=white, draw,label=90:{$k-\frac{1}{2}$}] (3) at (2, 2) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=orange, draw,label=90:{$k$}] (4) at (4, 2) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=white, draw,label=90:{$k+\frac{1}{2}$}] (5) at (6, 2) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=orange, draw,label=90:{$k$}] (6) at (10, 2) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=white, draw,label=90:{$k+\frac{1}{2}$}] (7) at (12, 2) {};
+		\node [style=none, circle, color=orange, minimum size=3 mm, fill=orange, draw,label=90:{$k+1$}] (8) at (14, 2) {};
+		\node [style=none, circle, color=green, minimum size=3 mm, fill=green, draw] (9) at (10, 0) {};
+		\node [style=none, circle, color=green, minimum size=3 mm, fill=green, draw] (10) at (14, 0) {};
+		\node [style=none] (11) at (1.5, 1.5) {};
+		\node [style=none] (12) at (0.5, 0.5) {};
+		\node [style=none] (13) at (5.5, 1.5) {};
+		\node [style=none] (14) at (4.5, 0.5) {};
+		\node [style=none] (15) at (11.5, 1.5) {};
+		\node [style=none] (16) at (10.5, 0.5) {};
+	\end{pgfonlayer}
+	\begin{pgfonlayer}{edgelayer}
+		\draw [->](11.center) to (12.center);
+		\draw [->](13.center) to (14.center);
+		\draw [->](15.center) to (16.center);
+	\end{pgfonlayer}
+\end{tikzpicture}
+\caption[Effect of an index-shift to the FD-operator's position.]{Effect of an index-shift to the FD-operator's position. Left: The original center is placed at $k$ and is relatively shifted to the right, by which it falls back ($\underline{D}_{\,i,b}$). Right: The original center is placed at $k+\frac{1}{2}$ and is relatively shifted to the left, by which it set forward ($\underline{D}_{\,i,f}$).}
+\label{fig:IndShift}
+\end{figure}
+
+\subsection{Completing the Formalism}\label{sec:Mat}
+An example for an update equation in the matrix-vector formalism is based on equation \ref{eqn:exMV1}, where the index-shift has already been executed:
+\begin{equation}
+	\vec{v}_x^{\,n+1} = \vec{v}_x^{\,n} + \frac{\Delta t}{\Delta h} \cdot \mathrm{diag} \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) \cdot \left( \underline{D}_{\,x,f}^2 \vec{\sigma}_{xx}^{\,n} + \underline{D}_{\,y,b}^2 \vec{\sigma}_{xy}^{\,n} + \underline{D}_{\,z,b}^2 \vec{\sigma}_{xz}^{\,n} \right)\label{eqn:exMV2}
+\end{equation}
+The diagonal matrix $\mathrm{diag} \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) = \mathrm{diag} \left( \rho_1^{-1}, \rho_2^{-1}, \rho_3^{-1}, \dots , \rho_{NX \cdot NY \cdot NZ}^{-1} \right)$ contains the density model values. $\underline{D}_{\,i,b}^2$ or $\underline{D}_{\,i,f}^2$ contain the second order FD-coefficients (the order is indicated by the upper index) in spatial derivation direction $i$. Now the matrix $\underline{D}_{\,i}^2$ has to be found, so that the model $\vec{\sigma}_{ij}$ is equivalent to the according FD-operators.
+
+Following, the matrices $\underline{D}_{\,i,f}^2$ and $\underline{D}_{\,i,f}^4$ are shown to point out the impact on the FD-order. Performing the matrix multiplication from equation \ref{eqn:exMV2} leads to the expressions for $\underline{D}_{\,i,b}$.
+
+\begin{align*}
+	\underline{D}_{\,x,f}^2 &= \begin{psmallmatrix}
+\text{-}1 & 1 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & \text{-}1 & 1 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & \text{-}1 & 1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \text{-}1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 &\dashline& \text{-}1 & 1 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 &\dashline& 0 & \text{-}1 & 1 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 &\dashline& 0 & 0 & \text{-}1 & 1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \text{-}1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}1 & 1 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \text{-}1 & 1 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \text{-}1 & 1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \text{-}1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}1 & 1 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \text{-}1 & 1 & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \text{-}1 & 1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \text{-}1 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}1 & 1 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \text{-}1 & 1 & 0 &\dashline& 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \text{-}1 & 1 &\dashline& 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \text{-}1 &\dashline& 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}1 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \text{-}1 & 1 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \text{-}1 & 1 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \text{-}1 \\
+\end{psmallmatrix}
+\end{align*}
+
+\begin{align*}
+	\underline{D}_{\,x,f}^4 &= \begin{psmallmatrix}
+\text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+\frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & \frac{1}{24} & \text{-}\frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 &\dashline& \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 &\dashline& \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 &\dashline& 0 & \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 &\dashline& 0 & 0 & \frac{1}{24} & \text{-}\frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \frac{1}{24} & \text{-}\frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} & 0 &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \frac{1}{24} & \text{-}\frac{9}{8} &\dashline& 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} & 0 &\dashline& 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} &\dashline& 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} &\dashline& 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \frac{1}{24} & \text{-}\frac{9}{8} &\dashline& 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} & 0 \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} & \text{-}\frac{1}{24} \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & \frac{1}{24} & \text{-}\frac{9}{8} & \frac{9}{8} \\
+0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 && 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \frac{1}{24} & \text{-}\frac{9}{8} \\
+\end{psmallmatrix}
+\end{align*}
+
+\begin{align*}
+	\underline{D}_{\,y,f}^2 &= \begin{psmallmatrix}
+\text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 1 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 \\
+\end{psmallmatrix}
+\end{align*}
+
+\begin{align*}
+	\underline{D}_{\,y,f}^4 &= \begin{psmallmatrix}
+\text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\\hline
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & \text{-}\frac{1}{24} \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & \frac{9}{8} \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 &\dashline& 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & \text{-}\frac{9}{8} \\
+\end{psmallmatrix}
+\end{align*}
+
+\begin{align*}
+	\underline{D}_{\,z,f}^2 &= \begin{psmallmatrix}
+\text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}1 \\
+\end{psmallmatrix}
+\end{align*}
+
+\begin{align*}
+	\underline{D}_{\,z,f}^4 &= \begin{psmallmatrix}
+\text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{9}{8} \\
+\frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \frac{1}{24} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & \text{-}\frac{9}{8} \\
+\end{psmallmatrix}
+\end{align*}
+
+Beyond the dashed lines all entries are equal to 0, independent form the FD-operator's order. The reason for this is due to the fact that at this position the indices have to skip from $y\rightarrow y+1$ after $NX$ entries in $\underline{D}_{\,x}$ or from $z\rightarrow z+1$ afrter $NX \cdot NY$ entries in $\underline{D}_{\,y}$.
+
+All $\underline{D}_{\,i,b}$ can be derived from $\underline{D}_{\,i,f}$ by switching all entries $\neq 0$  in a row with the next value $\neq 0$ to the right. As this is equivalent to a multiplication with $(-1)$ followed by a transposition is obvious especially for $\underline{D}_{\,y}^4$.
+
+An important property of the FD-coefficient matrix is, how the model border is treated. Because entries beyond the model don't exist. Inevitably this entails that updates of $v_i$ and $\sigma_{ij}$ near the edge have to be calculated from partial FD-operators. At $v_x^{n+1}$ in the last $yz$-plane with $k=NX$ for example it is not possible to refer to grid point beyond the last plane. The second order FD-operator then can only be calculated from $\sigma_{xx}^n$, $\sigma_{xy}^n$ as well as $\sigma_{xz}^n$. Not including values beyond the edge is equal to fixing the wavefield and consequently the medium itself at the borders. Thus this provokes a total reflection. 
+
+The discrete components for an acoustic wavefield in matrix-vector notation can be written as:
+\begin{align*}
+	\vec{p}^{\,n} &= \vec{p}^{\,n-1} + \frac{\Delta t}{\Delta h}~ \mathrm{diag} \left( \vec{\lambda}^{\,T} \right) \cdot \left( \underline{D}_{\,x,b}^q \vec{v}_x +\underline{D}_{\,y,b}^q \vec{v}_y + \underline{D}_{\,z,b}^q \vec{v}_z \right) 
+\end{align*}
+\begin{align*}
+	\vec{v}_x^{\,n+1} &= \vec{v}_x^{\,n} + \frac{\Delta t}{\Delta h} ~ \mathrm{diag} \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) \cdot \left( \underline{D}_{\,x,f}^q \vec{p}^{\,n}  \right)\\
+	\vec{v}_y^{\,n+1} &= \vec{v}_y^{\,n} + \frac{\Delta t}{\Delta h} ~ \mathrm{diag} \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) \cdot \left( \underline{D}_{\,y,f}^q \vec{p}^{\,n} \right)\\
+	\vec{v}_z^{\,n+1} &= \vec{v}_z^{\,n} + \frac{\Delta t}{\Delta h} ~ \mathrm{diag}  \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) \cdot\left( \underline{D}_{\,z,f}^q \vec{p}^{\,n} \right)\\
+\end{align*}
+
+All discrete components of the elastic wavefield in matrix-vector notation are: 
+\begin{align*}
+	\vec{\sigma}_{xx}^{\,n} &= \vec{\sigma}_{xx}^{\,n-1} + \frac{\Delta t}{\Delta h}~ \mathrm{diag} \left( \vec{\lambda}^{\,T} \right) \cdot \left( \underline{D}_{\,x,b}^q \vec{v}_x +\underline{D}_{\,y,b}^q \vec{v}_y + \underline{D}_{\,z,b}^q \vec{v}_z \right) + 2~ \frac{\Delta t}{\Delta h} ~\mathrm{diag} \left( \vec{\mu}^{\,T} \right) \cdot \underline{D}_{\,x,b}^q \vec{v}_x\\
+	\vec{\sigma}_{yy}^{\,n} &= \vec{\sigma}_{yy}^{\,n-1} + \frac{\Delta t}{\Delta h}~ \mathrm{diag} \left( \vec{\lambda}^{\,T} \right) \cdot \left( \underline{D}_{\,x,b}^q \vec{v}_x +\underline{D}_{\,y,b}^q \vec{v}_y + \underline{D}_{\,z,b}^q \vec{v}_z \right) + 2~ \frac{\Delta t}{\Delta h} ~\mathrm{diag} \left( \vec{\mu}^{\,T} \right) \cdot \underline{D}_{\,y,b}^q \vec{v}_y\\
+	\vec{\sigma}_{zz}^{\,n} &= \vec{\sigma}_{zz}^{\,n-1} + \frac{\Delta t}{\Delta h}~ \mathrm{diag} \left( \vec{\lambda}^{\,T} \right) \cdot \left( \underline{D}_{\,x,b}^q \vec{v}_x +\underline{D}_{\,y,b}^q \vec{v}_y + \underline{D}_{\,z,b}^q \vec{v}_z \right) + 2~ \frac{\Delta t}{\Delta h} ~\mathrm{diag} \left( \vec{\mu}^{\,T} \right) \cdot \underline{D}_{\,z,b}^q \vec{v}_z
+\end{align*}
+\begin{align*}
+	\vec{\sigma}_{xy}^{\,n} &= \vec{\sigma}_{xy}^{\,n-1} + \frac{\Delta t}{\Delta h}~ \mathrm{diag} \left( \vec{\mu}^{\,T} \right) \cdot \left( \underline{D}_{\,y,f}^q \vec{v}_x + \underline{D}_{\,x,f}^q \vec{v}_y \right)\\
+	\vec{\sigma}_{xz}^{\,n} &= \vec{\sigma}_{xz}^{\,n-1} + \frac{\Delta t}{\Delta h}~ \mathrm{diag} \left( \vec{\mu}^{\,T} \right) \cdot \left( \underline{D}_{\,z,f}^q \vec{v}_x + \underline{D}_{\,x,f}^q \vec{v}_z \right)\\
+	\vec{\sigma}_{yz}^{\,n} &= \vec{\sigma}_{yz}^{\,n-1} + \frac{\Delta t}{\Delta h}~ \mathrm{diag} \left( \vec{\mu}^{\,T} \right) \cdot \left( \underline{D}_{\,z,f}^q \vec{v}_y + \underline{D}_{\,y,f}^q \vec{v}_z \right)
+\end{align*}
+\begin{align*}
+	\vec{v}_x^{\,n+1} &= \vec{v}_x^{\,n} + \frac{\Delta t}{\Delta h} ~ \mathrm{diag} \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) \cdot \left( \underline{D}_{\,x,f}^q \vec{\sigma}_{xx}^{\,n} + \underline{D}_{\,y,b}^q \vec{\sigma}_{xy}^{\,n} + \underline{D}_{\,z,b}^q \vec{\sigma}_{xz}^{\,n} \right)\\
+	\vec{v}_y^{\,n+1} &= \vec{v}_y^{\,n} + \frac{\Delta t}{\Delta h} ~ \mathrm{diag} \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) \cdot \left( \underline{D}_{\,x,b}^q \vec{\sigma}_{yx}^{\,n} + \underline{D}_{\,y,f}^q \vec{\sigma}_{yy}^{\,n} + \underline{D}_{\,z,b}^q \vec{\sigma}_{yz}^{\,n} \right)\\
+	\vec{v}_z^{\,n+1} &= \vec{v}_z^{\,n} + \frac{\Delta t}{\Delta h} ~ \mathrm{diag} \left( \vec{\rho}_\mathrm{inv}^{\,T} \right) \cdot \left( \underline{D}_{\,x,b}^q \vec{\sigma}_{zx}^{\,n} + \underline{D}_{\,y,b}^q \vec{\sigma}_{zy}^{\,n} + \underline{D}_{\,z,f}^q \vec{\sigma}_{zz}^{\,n} \right)\\
+\end{align*}
+
+\subsection{Introducing Averaging Matrices}
+As mentioned in section \ref{fig:StagGrid}, to calculate the elastic and viscoelastic wave equations in time propagation, density $\rho_{k,l,m}$ and the first Lam\'{e} parameter $\mu_{k,l,m}$ have to be averaged. $\rho_{k,l,m}$ can be written in matrix-vector formalism as:
+\begin{equation*}
+\vec{\rho}_{i}=\frac{1}{2}\cdot\underline{A}^{\text{a}}_{i} \cdot\vec{\rho}	
+\end{equation*}
+Postulating the arithmetical averaging matrix $\underline{A}^{\text{a}}_{i}$ in $i$-direction is trivial and similar to $\underline{D}_{\,i,f}^2$ whereby it should be noted that $\underline{A}^{a}_{i}$ has only entries $=1$. The upper index $a$ represents arithmetical averaging.
+
+Establishing the matrices for harmonic averaging more complicated. In matrix-vector formalism averaging the first Lam\'{e} parameter $\mu_{k,l,m}$ in the $ij$-plane can be calculated as follows.
+\begin{equation*}
+\vec{\mu}_{ij}=\left(\underline{A}^{h}_{ij} \cdot\vec{\mu}	\right)^{-1}
+\end{equation*}
+Here the upper index $h$ defines harmonic averaging. After multiplying $\vec{\mu}$ with the average matrix $\underline{A}^{h}_{ij}$ all calculated values have to be inverted to get $\vec{\mu}_{ij}$.
+To illustrate the the matrices, as in section \ref{sec:Mat}, again example for averaging in the $xy$-plane for model in size $NX\times 4 \times 2$ is shown below: 
+\begin{align*}
+	\underline{A}^{h}_{xy} &= \tiny\begin{psmallmatrix}
+	\frac{1}{4} & 0 & \dots   & &   &&  \frac{1}{4} & 0 & \dots   & &   &\dashline&  \frac{1}{4} & 0 & \dots   & &   &&  & \frac{1}{4} & 0 & \dots & & &\dashline& & & && & & & & && & & && & && & & & & \\
+  	& \frac{1}{4} & 0 & \dots &   &&   & \frac{1}{4} & 0 & \dots &   &\dashline&   & \frac{1}{4} & 0 & \dots &   &&   & & \frac{1}{4} & 0 & \dots & &\dashline  & & & && & & & & && && & & & && & & & & \\
+    & & \frac{1}{4} & 0 & \dots    &&  &  & \frac{1}{4} & 0 & \dots    &\dashline&   & & \frac{1}{4} & 0 & \dots   &&  &  &  & \frac{1}{4} & 0 & \dots &\dashline & & & && & & & & && & && & & && & & & & \\
+   	& &  & \ddots &     &&  &  & & \ddots &   &\longdashline& &   & &  \ddots &  &    &&  &  & & \ddots &   &\longdashline& & & & && & & & & &&& & & & & && & & & & \\
+    & & & & \frac{1}{4} &&  & & & & \frac{1}{4} &\dashline& & & & & \frac{1}{4} && & & & & & \frac{1}{4}  &\dashline & & & &&& & & & & && & & & & && & & & & \\
+    &   &     & &   &&  \frac{1}{2} & 0 & \dots   & &   &\dashline&    &   &     & &   &&  & \frac{1}{2} & 0 & \dots & &   & \dashline& & && && & & & & && & & & & && & & & & \\
+ 	& &   &  &   &&   & \frac{1}{2} & 0 & \dots &   &\dashline&   &   &   &   &   &&   & & \frac{1}{2} & 0 & \dots && \dashline& & & && && & & & && & & & & && & & & & \\
+   	& &   &   &      &&  &  & \frac{1}{2} & 0 & \dots    &\dashline&   & &   &   &     &&  &  &  & \frac{1}{2} & 0 & \dots&\dashline & & && && & & & & && & & & & && & & & & \\
+   	& &  &   &    &&  &  & & \ddots &  &\longdashline&&   & &    &  &    &&  &  & & \ddots &   &\longdashline     & & & & && & & & & && & & & && && & & & & \\
+    & & & &   &&  & & & & \frac{1}{2} &\dashline& & & & &   && & & & & & \frac{1}{2}  &\dashline & & & && & & & & && & & & && && & & & & \\ \hline
+	& & & & & && & & & & && && & & & && & & & &\dashline& \frac{1}{4} & 0 & \dots   & &   &&  \frac{1}{4} & 0 & \dots   & &   &\dashline&  \frac{1}{4} & 0 & \dots   & &   &&  & \frac{1}{4} & 0 & \dots & \\
+  	& & & & & && & & & & && && & & & && & & & &\dashline& & \frac{1}{4} & 0 & \dots &   &&   & \frac{1}{4} & 0 & \dots &   &\dashline&   & \frac{1}{4} & 0 & \dots &   &&   & & \frac{1}{4} & 0 & \dots \\
+    & & & & & && & & & & &&& & & & & && & & & &\dashline& & & \frac{1}{4} & 0 & \dots    &&  &  & \frac{1}{4} & 0 & \dots    &\dashline&   & & \frac{1}{4} & 0 & \dots   &&  &  &  & \frac{1}{4} & 0 & \dots \\
+   	& & & & & && & & & & &&& & & & & && & & && \longdashline& & &  & \ddots &     &&  &  & & \ddots &   &     \longdashline & &   & &  \ddots &  &    &&  &  & & \ddots &   & \\
+    & & & & & && & & & & && && & & & && & & &&\dashline& &  & & & \frac{1}{4} &&  & & & & \frac{1}{4} &\dashline& & & & & \frac{1}{4} && & & & & & \frac{1}{4} \\
+    & & & & & && & & & & &&& & & & & && & & & &\dashline & &  &     & &   &&  \frac{1}{2} & 0 & \dots   & &   &\dashline&    &   &     & &   &&  & \frac{1}{2} & 0 & \dots & &  \\
+ 	&  & & & & && & & & & &&& & & & & && & & & & \dashline & & &  &  &   &&   & \frac{1}{2} & 0 & \dots &   &\dashline&   &   &   &   &   &&   & & \frac{1}{2} & 0 & \dots & \\
+    & & & & & && & & & & &&& & & & & && & & & &\dashline & & &  &   &      &&  &  & \frac{1}{2} & 0 & \dots    &\dashline&   & &   &   &     &&  &  &  & \frac{1}{2} & 0 & \dots\\
+   	& & & & & && & & & & &&& & & & & && & & &  &\longdashline &  & & &   &    &&  &  & & \ddots &  &\longdashline     &&   & &    &  &    &&  &  & & \ddots &   &    \\
+   	& & & & & && & & & & &&& & & & & && & & &  &\dashline & & &  & &   &&  & & & & \frac{1}{2} &\dashline& & & & &   && & & & & & \frac{1}{2}\\ 
+    \end{psmallmatrix}	\normalsize
+\end{align*}
+Mark, that in case a border plane is reached, the averaging can only be calculated from two other grid-points. In this case the matrix elements contain the factor $(\frac{1}{2})$ instead of $(\frac{1}{4})$. This principle can also be used to obtain the averaging matrices $\underline{A}^{h}_{yz}$ and $\underline{A}^{h}_{xz}$ in the $yz$- and $xz$-planes. 
+\cleardoublepage
+
+
+
+\part{Software Guide to FDSimulation\_LAMA}
+\chapter{Software Requirements and Quick Guide}
+
+FDSimulation\_LAMA is developed as a part of the WAVE-project (\url{http://wave-toolbox.org}) and is a Seismic Finite-Difference modelling framework. 
+
+\section{Software Requirements}
+
+To begin with, a \CC-compiler has to be available. A compiler with  \CC[11]-standard support is needed. To compile FDSimulation\_LAMA, make sure a couple of libraries are installed and running properly. All necessary libraries for proper usage and a short description can be seen in table \ref{tab:pack}. A \CC-compiler and LAMA are mandatory whereas the other libraries and software is optional to execute FDSimulation\_LAMA.
+As the software is meant for high performance computing (HPC) on cluster networks, it is primarily designed to run on Linux-platforms. The code has been tested using \gCC[4.9.3], \clang[3.9] as a  \CC-compiler and using OpenMPI(1.7.2, 1.10.0) as MPI implementation.
+
+\begin{table}[h!]
+\caption{List of necessary libraries, packages and compiler.}\label{tab:pack}
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{lll}
+	\toprule
+	Program & Brief description & Weblink \\
+	\midrule
+	\CC-compiler	& The code is written in \CC[], the compiler	has 		& \\
+										& to be compatible to compile \CC[11]-standard					& \\
+LAMA 				& The LAMA-framework for high performance			& \url{https://www.libama.org} \\
+	& computing 	(HPC)							    & \\
+	\midrule
+	OpenMPI			& Implementation of MPI for parallelised  			& \url{https://www.open-mpi.org} \\
+										& calculations						& \\
+		boost					& Implementation of the boost-library	for  				& \url{https://www.boost.org}		\\
+										& debugging																& \\										
+	Python				& Models can be generated using Python 		& \url{https://www.python.org}\\
+	Matlab				& Models can be generated using Matlab		& \url{http://www.mathworks.com}\\	
+	
+	
+	Seismic Un*x	& 	Seismic processing package, to generate a  	& \url{http://www.cwp.mines.edu/cwpcodes}\\ 
+											&  Seismogram from SU-data  															& \\
+	
+	
+	Sphinx				& 	A Python documentation generator 							& \url{http://www.sphinx-doc.org}\\
+	doxygen			& 	Generation of documentation from annotated				& \url{http://www.doxygen.org}\\
+										& \CC-code 															& \\
+	googletest & Implementation of gtest for unit-tests & \url{http://code.google.com/p/googletest}\\
+	\bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}
+
+\section{Quick Guide}
+
+\subsection{Installation}
+To get started Download, FDSimulation\_LAMA. 
+
+You can either download the software directly from \url{https://git.scc.kit.edu/WAVE/FDSimulation_LAMA/repository/archive.zip?ref=master} and unzip the folder (e.g. by entering \shellcmd{tar -zxvf FDSimulation\_LAMA.tgz}).
+
+Alternatively you can also get FDSimulation\_LAMA by entering the command: \\\shellcmdline{git clone https://git.scc.kit.edu/WAVE/FDSimulation\_LAMA.git}
+
+As preparatory steps environment variables have to be linked to LAMA. Add the following lines to the \shellcmd{{\char`\~}/.bashrc}:
+\\\shellcmdline{ `export SCAI\_ROOT=[PATH\_TO\_LAMA\_BUILD]`}
+\\\shellcmdline{ `export DYLD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{DYLD\_LIBRARY\_PATH\}`}
+\\\shellcmdline{ `export LD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{LD\_LIBRARY\_PATH\}`}
+\\\shellcmdline{ `export OMP\_NUM\_THREADS=1`}\\
+You can also find the instructions in \shellcmd{FDSimulation\_LAMA/par/README.md}. 
+
+Change to the directory: \\\shellcmdline{FDSimulation\_LAMA/build/}
+
+You can compile the source code by simply entering: \\\shellcmdline{make prog}\\ in your command line. \gCC is set to be the default \CC-compiler. To use an alternative compiler, the compiler setting can be change in the \shellcmd{Makefile}, or otherwise by executing:\\\shellcmdline{make CXX=<yourCompiler> sofi}
+
+The runtime configuration (such as the FD grid) can be changed in the \shellcmd{configuration.txt} file, located in the directory \shellcmd{FDSimulation\_LAMA/par/configuration/}. A list of all input variables and their dependencies can be found in section \ref{sec:config}. 
+
+To create a html and LaTeX or Pdf documentation of the software code itself, you can generate a doxygen documentation. Therefore change the directory to \shellcmd{FDSimulation\_LAMA/build/} and run the command \shellcmd{make doc}. After running doxygen, the html, LaTeX and Pdf version of the reference manual can be found in \shellcmd{build/doc/doxygen/} and \shellcmd{build/doc/guide/}.
+
+\subsection{Example}
+
+To run the simulation change the directory to: \\\shellcmdline{FDSimulation\_LAMA/par/}\\
+and start the program by running the shell script \shellcmd{start\_FDSimulation.sh} with  \\\shellcmdline{source start\_FDSimulation.sh}\\
+
+The synthetic Seismogram data is saved in \shellcmd{par/seismograms/} and can be plotted by either using either the \shellcmd{plotSeismogram.m} Matlab-script or by executing the Python-script \shellcmd{plotSeismogram.py}.
+As a first test, run the default example by following the commands to obtain the seismogram. You can compare the seismogram to the seismogram shown in figure \ref{fig:Seismogram}.
+
+\begin{figure}[h!]
+\centering
+	\includegraphics[width = .8\textwidth]{images/Test_Seismogram.png}
+	\caption[Example pressure seismogram.]{Example pressure seismogram with 2nd order FD-operator and the default values: $NX=NY=NZ=100$, $v_p=\SI{3500}{m\per s}$ and $\rho = \SI{2000}{kg\per\cubic\metre}$.}\label{fig:Seismogram}
+\end{figure}
+
+\section{Configuration}\label{sec:config}
+
+\begin{table}[h!]
+\caption[List of all configuration parameters.]{List of all configuration parameters, that can be added and changed in the config-file.}\label{tab:config}
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{llll}
+	\toprule
+	Variable & Short description & Type & Example value \\
+	\midrule
+	dimension & Dimension of the model  & string & 3D\\
+	equationType & Type of the wave equations & string & acoustic \\
+	NX & Number of grid points in $x$-direction & int & \num{100} \\
+	NY & Number of grid points in $y$-direction & int & \num{100} \\
+	NZ & Number of grid points in $z$-direction & int & \num{100} \\
+	DH & Distance between two grid points & double & \SI{50}{m}\\
+	DT & Temporal sampling & double & \SI{2.0e-3}{s}\\
+	T & Total simulation time & double & \SI{2}{s}\\
+	UseCubePartitioning & Use cubes to partition the wave fields & int & \num{0}\\
+	ProcNX & Number of cores in $x$-direction & int & \num{2}\\
+	ProcNY & Number of cores in $y$-direction & int & \num{1}\\
+	ProcNZ & Number of cores in $z$-direction & int & \num{1}\\
+	spatialFDorder & Define order of spatial FD operator & int & \num{2}\\
+	\midrule	 
+	 ModelRead& Read model from File  & int & \num{0}\\
+	 PartitioningIn&  Read model from distributed file & int & \num{0}\\
+	 ModelWrite& Write model to file  & int & \num{0}\\
+	 PartitioningOut& Write model to distributed file-block & int & \num{0}\\
+	  ModelParametrisation & Parametrisation of read model & int & \num{2}\\
+	 ModelFilename& Filename-prefix to read model & int & \shellcmd{model/model}\\
+	 SourceFilename& Filename to read source configuration & string & \begin{tabular}{@{}l@{}}\shellcmd{acquisition/} \\\shellcmd{sources.mtx}\end{tabular}  \\
+	 ReceiverFilename	 & Filename to read receiver configuration & string & \begin{tabular}{@{}l@{}}\shellcmd{acquisition/} \\\shellcmd{reciever.mtx}\end{tabular}  \\
+	 SeismogramFilename & Filename to write seismograms & string & \begin{tabular}{@{}l@{}}\shellcmd{seismograms/} \\\shellcmd{seismogram.mtx}\end{tabular}  \\
+	 SeismogramFormat & Seismogram format & int & \num{1}\\
+	 NormalizeTraces & Normalize the seismogram-traces & int & \num{0}\\
+	\midrule
+	 velocityP& P-wave velocity $v_p$ & double & \SI{3500}{m\per s} \\
+	 velocityS& S-wave velocity $v_s$ & double  &  \SI{0}{m\per s}\\
+	 rho& Density $\rho$ & double &  \SI{2000}{kg\per\cubic\metre}\\
+	 tauP& $\tau$ value for P-waves & double & \num{0.0}\\
+	 tauS& $\tau$ value for S-waves & double & \num{0.0}\\
+	 numRelaxationMechanisms & Number of relaxation mechanisms & int & \num{0}\\
+	 relaxationFrequency& Relaxation frequency for first & double & \SI{0}{Hz}\\
+	 & relaxation mechanism& & \\
+	  \bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}	
+	 \begin{table}[h!]
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{llll}
+	\toprule
+	  Variable & Short description & Type &Example value\;\;\;\\
+	\midrule
+	 FreeSurface& Use the free surface & int & \num{0}\\
+	 DampingBoundary& Use the Damping Boundary & int & \num{0}\\
+	 DampingBoundaryType& Type of damping boundary & int & \num{1}\\
+	 BoundaryWidth& Width of damping boundary & int & \num{10}\\
+	 DampingCoeff& Damping coefficient & double & \num{8.0}\\
+	 VMaxCPML& Maximum velocity of the CPML & double &\SI{3500}{m\per s}\\
+	 CenterFrequencyCPML\;\;\;\;& Center frequency inside the boundaries\;\;\;  & double &\SI{5}{Hz}\\
+	 NPower& Degree of the damping profile & int &\num{4}\\
+	 KMaxCPML& ?????? & double &\num{1.0}\\
+    \bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}	
+
+As mentioned in the quick guide, the configuration can be found in \shellcmd{par/configuration/}. In the \shellcmd{configuration.txt} file Input variables can be added or changed. A list of all variables and config parameters that can be added and changed can be found in table \ref{tab:config}.
+
+The parameters can be divided in four main groups. The first group contains the dimension and the type of wave equation of the model, as well as parameters to describe the model (\textit{NX}, \textit{NY}, \textit{NZ} and \textit{DH}) and temporal parameters (\textit{DT} and \textit{T}). The total number of gridpoints is given by 
+\begin{equation*}
+	N=NX\times NY\times NZ
+\end{equation*}
+The total Number of time-steps can be calculated by 
+\begin{equation*}
+	NT = round\left(\frac{T}{DT}+0.5\right)
+\end{equation*}
+The parameter \textit{UseCubePartitioning} characterises whether the model is partitioned into cubes and then distributed to the CPUs/GPUs. If \textit{UseCubePartitioning} $=1$ the model is partitioned in cubes, else it is partitioned automatically. The number of CPUs/GPUs available in each spatial direction is given by \textit{ProcNX}, \textit{ProcNY} and \textit{ProcNZ}. The product has to be equal to the total number of used CPUs/GPUs. 
+The last parameter of the first section, \textit{spatialFDorder}, defines the order of the spatial FD-operator and therefore, influences the accuracy of the simulation significantly.
+
+The second section contains all parameters to manage input and output. The first four parameters \textit{ModelRead}, \textit{ModelWrite}, \textit{PartitioningIn} and  \textit{PartitioningOut} can be set with ($1=$ yes) or (else $=$ no). The values for partitioned input and output are only needed when \textit{ModelRead} and \textit{ModelWrite} are set to 1. Make sure, that if you are using partitioning-input, the data is distributed properly. The partitioning and repartitioning of files has to be done during pre- and post-processing (section \ref{sec:process}).
+If the model is read from files, the \textit{ModelParametrisation} has to be set. If \textit{ModelParametrisation} $=1$ the data is interpreted as a wave-modulus-model-vector. Else if \textit{ModelParametrisation} $=2$ velocity-vectors are given.
+\textit{ModelFilename}, \textit{SourceFilename}, \textit{ReceiverFilename} and  \textit{SeismogramFilename} are given to determine the respective location and filename. \textit{ModelFilename} is only a prefix to read the model data in directory \shellcmd{model/}. The filename ending is added automatically depending on which data is needed (e.g. \shellcmd{morel.vp.mtx}).
+Seismograms can be written in matrix-format (\shellcmd{.MTX}-format $=1$) or in seismic-unix-format (\shellcmd{.SU}-format $=2$). 
+
+In the third section all variables can be set to create a homogeneous model on-the-fly. The variable \textit{velocityP} ($v_p$) is only needed in elastic and viscoelastic calculations and  \textit{tauP} ($\tau_p$) and \textit{tauS} ($\tau_s$) are solely needed in the viscoelastic case. 
+The S-wave ($M$) and P-wave ($\mu$) modules can be calculated by:
+\begin{align*}
+	M&=\rho\cdot v_s^2\\
+	\mu &=\rho\cdot v_p^2\\
+\end{align*}
+The Matlab script \shellcmd{createHomogeneousModel.m} and the Python script \shellcmd{createHomoge- neousModel.py} in \shellcmd{model/} are examples how to generate external models in both mentioned parametrisation. 
+The last two parameters of the table-section describe the number of relaxation mechanisms and the relaxation frequency for first relaxation mechanism (given in \SI{}{Hz}).
+
+The fist part of the last table-section handles and the boundary conditions. Free surface can used by setting (\textit{FreeSurface} $=1$). If the parameter is set to 0, free surface is not used. 
+The model boundaries are characterised by \textit{DampingBoundary}, \textit{BoundaryWidth} and \textit{DampingCoeff}. The usage of damping boundaries can be set by (\textit{DampingBoundary} $=1$), with the \textit{DampingBoundaryType} options (ABS$=1$ or CPML$=2$). Again, if the parameter for \textit{DampingBoundary} is set to 0, it is not used. 
+If \textit{CPML} is used, \textit{VMaxCPML}, \textit{CenterFrequencyCPML}, \textit{NPower} and \textit{KMaxCPML} also have to be set. 
+
+
+To verify the models stability  the courant can be calculated: 
+\begin{equation*}
+	v_{max} \cdot \frac{DT}{DH} \leq 0.43
+\end{equation*}
+
+\subsection{Source Signal}
+By default a synthetic source signal is used to calculate the wave fields. The Software contains different source signals which can be chosen from. A visualisation of the signals is show in figure \ref{fig:Signal}. The built in wavelets are a signal given by the first derivative of the Gaussian, $\int sin^3$ wavelet, Ricker wavelet, $sin^3$ wavelet, Fuchs-M\"uller signal and a spike signal. The corresponding equations are given by equation \ref{eqn:SignalStart} to \ref{eqn:SignalEnd}, where $A$ is the wavelet amplitude.
+\begin{figure}[h!]
+\centering
+	\includegraphics[width=.7\textwidth]{images/Signal_Plot.png}
+	\caption[Plot of the different source wavelets.]{Plot of the different source wavelets (equation \ref{eqn:SignalStart} to \ref{eqn:SignalEnd}). All signals have an amplitude of $1$, a center frequency of $f_c = $\SI{50}{Hz} and a time-shift of $T_s=\nicefrac{1}{f_c}=$\SI{50}{ms}}\label{fig:Signal}
+\end{figure}
+
+\begin{itemize}
+\item Ricker wavelet:
+\begin{align}
+	f(t) &= A \cdot \left(1 - 2\cdot\tau^2\right)\cdot e^{-\tau^2} \qquad \text{with} \qquad \tau=\pi\cdot f_c\cdot\left(t - \frac{1.5}{f_c}\right)\\
+\intertext{\item Fuchs-M\"uller signal, which is a combination of different sinus signals:}
+	f(t)&= 
+	\begin{cases}
+		 \quad A\cdot\left(sin(\tau) - \frac{1}{2}sin(2\cdot\tau)\right)  & \qquad \text{if } \quad T_s\leq t\leq\left(T_s+\frac{1}{f_c}\right)\\
+	\quad 0 & \qquad \text{otherwise}
+	\end{cases}
+\intertext{\item $sin^3$ signal:}
+	f(t)&= 
+	\begin{cases}
+		 \quad A\cdot sin^3(\tau)  & \qquad \text{if } \quad T_s\leq t\leq\left(T_s+\frac{1}{f_c}\right)\\
+	\quad 0 & \qquad \text{otherwise}
+	\end{cases}
+\intertext{\item Signal given by the first derivative of the Gaussian:}
+	f(t) &=-A \cdot 2 \cdot \tau \cdot e^{-\tau^2} \qquad \text{with} \qquad \tau=\pi\cdot f_c\cdot\left(t - \frac{1.2}{f_c}\right) \label{eqn:SignalStart}\\
+\intertext{\item Spike signal:}
+	f(t)&= 
+	\begin{cases}
+		 \quad 1  & \qquad \text{if } \quad t = T_s \\
+	\quad 0 & \qquad \text{otherwise}
+	\end{cases}
+\intertext{\item Wavelet given by the integral of $sin^3$: with $ \tau=\pi\cdot f_c\cdot\left(t - \frac{T_s}{2}\right)$}
+	f(t)&= \label{eqn:SignalEnd}
+	\begin{cases}
+		 \quad \dfrac{A \cdot \left(\frac{1}{2} - \frac{3}{4}\cdot cos(\tau) + \frac{1}{4} \cdot cos^3(\tau)\right)}
+	{f_c\cdot \pi \frac{3}{4}}  & \qquad \text{if } \quad T_s\leq t\leq\left(T_s+\frac{1}{f_c}\right)\\
+	\quad 0 & \qquad \text{otherwise}
+	\end{cases}
+\end{align}
+\end{itemize}
+
+To create different source signals the \shellcmd{source.mtx} file can be generated with either the \shellcmd{createSource.m} or the \shellcmd{createSource.py} script. The scripts give the options to change the source type, the wavelet type, the wavelet shape ($1=$ Ricker, $2=$ Fuchs-M\"uller, $3=sin^3$, $4=$ FGaussian, $5=$ Spike, $6=$ Integral of $sin^3$), the center frequency in Hz, the Amplitude and the timeshift in s. 
+
+\clearpage
+\section{Pre- and Post-Processing}\label{sec:process}
+
+As already mentioned in section \ref{sec:config}, data can be read from a single file as well as from a partitioned file-block. The advantage of a distributed file system ist, that CPUs/GPUs can read data simultaneously and therefore with substantial timesaving. Installing LAMA with all examples (\shellcmd{-DBUILD\_EXAMPLES=ON}), LAMA includes examples to partition and repartition files or file-blocks in \shellcmd{.mtx}-format (\shellcmd{vectorRepartition.exe}). 
+
+To partition a single vector-file change to the directory where the files are located and run the following comand:  \\
+\shellcmdline{\$SCAI\_ROOT/lama/examples/io/vectorRepartition.exe filename.mtx 1 }\\
+\shellcmdline{filename\_\%r.mtx <NProcessors>}\\
+The first part marks the LAMA-example to repartition a file, \shellcmd{filename.mtx} is a single file (\shellcmd{1}) you want to partition and \shellcmd{filename\_\%r.mtx} is the name of the output file-block. The number of files in a file-block has to be the same as the number of CPUs/GPUs (\shellcmd{<NProcessors>}) reading the file-block later on. 
+
+To merge a fileblock \shellcmd{filename\_\%r.mtx} to a single vector-file, the command is very similar:\\
+\shellcmdline{\$SCAI\_ROOT/lama/examples/io/vectorRepartition.exe filename\_\%r.mtx}\\
+\shellcmdline{<NProcessors> filename.mtx 1}\\
+In this case the name of the file-block and its size is written fist and then the name of the single output-file.
+
+\section{Unit Tests}
+To guarantee a functioning framework, FDSimulation\_LAMA includes unit-tests using the googletest framework. To run all unit-tests, you first have to install googletest (e.g. from \url{http://code.google.com/p/googletest}). 
+
+As preparatory steps environment variables have to be linked to googletest. Add the following lines to the \shellcmd{{\char`\~}/.bashrc}:
+\\\shellcmdline{ `export GTEST\_DIR=[PATH\_TO\_GTEST\_DIRECTORY]`}
+\\\shellcmdline{ `export LD\_LIBRARY\_PATH=\$\{GTEST\_DIR\}:\$\{LD\_LIBRARY\_PATH\}`}
+\\\shellcmdline{ `export DYLD\_LIBRARY\_PATH=\$\{GTEST\_DIR\}:\$\{DYLD\_LIBRARY\_PATH\}}
+
+To compile all tests, change the directory: \\\shellcmdline{FDSimulation\_LAMA/src/} \\ and compile the tests by simply entering:\\\shellcmdline{make utest} and \shellcmdline{make itest}
+
+The executable file is located in the directory:
+\\\shellcmdline{FDSimulation\_LAMA/build/bin}\\
+To execute the unit-tests change to the \shellcmd{/par} folder and run the \shellcmd{Test\_unit} file by entering:
+\\\shellcmdline{./../bin/Tests/Test\_unit}\\ 
+For faultless function of FDSimulation\_LAMA all tests should execute without failure.
+
+\section{Benchmark}
+
+\cleardoublepage
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
+\listoffigures
+\addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
+\addcontentsline{toc}{chapter}{List of Figures}
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
+\listoftables
+\addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
+\addcontentsline{toc}{chapter}{List of Tables}
+\cleardoublepage
+\bibliography{WAVE_guide}
+\bibliographystyle{apalike}
+\end{document}

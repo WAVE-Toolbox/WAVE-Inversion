@@ -63,7 +63,7 @@ namespace KITGPI
 
             /*! \brief Set all wavefields to zero.
              */
-            void reset()
+            void resetGradient()
             {
                 this->resetParameter(velocityP);
                 this->resetParameter(density);

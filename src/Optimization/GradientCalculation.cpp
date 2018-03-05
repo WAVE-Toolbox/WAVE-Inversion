@@ -61,8 +61,8 @@ void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Va
     HOST_PRINT(comm, "Start time stepping\n"
                             << "Total Number of time steps: " << tEnd << "\n");
 
-    wavefields->reset();
-    ZeroLagXcorr->reset();
+    wavefields->resetWavefields();
+    ZeroLagXcorr->resetXcorr();
 
     start_t = scai::common::Walltime::get();
 

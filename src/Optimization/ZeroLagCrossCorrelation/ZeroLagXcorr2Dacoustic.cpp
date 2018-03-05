@@ -57,7 +57,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::writeSnapshot(Inde
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::reset()
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr()
 {
     this->resetWavefield(VSum);
     this->resetWavefield(P);

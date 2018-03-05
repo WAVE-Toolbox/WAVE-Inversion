@@ -80,7 +80,7 @@ namespace KITGPI
              */
             virtual void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
 
-            virtual void reset() = 0;
+            virtual void resetGradient() = 0;
 
             virtual void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT) = 0;
 

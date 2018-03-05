@@ -57,7 +57,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::writeSnapshot(Index
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::reset()
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::resetXcorr()
 {
     this->resetWavefield(VSum);
     COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")

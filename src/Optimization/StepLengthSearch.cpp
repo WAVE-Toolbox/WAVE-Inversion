@@ -209,7 +209,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = testShotStart ; shotNumber <= testShotEnd; shotNumber+=testShotIncr) {
         
-        wavefields.reset();
+        wavefields.resetWavefields();
         sources.init(config, ctx, dist, shotNumber);
         
         start_t = scai::common::Walltime::get();
