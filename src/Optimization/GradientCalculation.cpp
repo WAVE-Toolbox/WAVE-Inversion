@@ -20,7 +20,7 @@ void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configurati
     wavefields->init(ctx, dist);
 
     ZeroLagXcorr = KITGPI::ZeroLagXcorr::Factory<ValueType>::Create(dimension, equationType);
-    ZeroLagXcorr->init(ctx, dist);
+    ZeroLagXcorr->init(config,ctx, dist);
 
 }
 
@@ -41,7 +41,6 @@ template <typename ValueType>
 void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType iteration, int shotNumber)
 {
 
-    double start_t, end_t; /* For timing */
     IndexType t = 0;
     IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
@@ -57,14 +56,11 @@ void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Va
     /*                Backward Modelling                      */
     /* ------------------------------------------------------ */
 
-    HOST_PRINT(comm, "\n================Start Backward====================\n");
-    HOST_PRINT(comm, "Start time stepping\n"
-                            << "Total Number of time steps: " << tEnd << "\n");
+    HOST_PRINT(comm, "\n-------------- Start Backward -------------------\n");
 
     wavefields->resetWavefields();
     ZeroLagXcorr->resetXcorr();
 
-    start_t = scai::common::Walltime::get();
 
     for (t = tEnd - 1; t >= 0; t--) {
 
@@ -75,13 +71,12 @@ void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Va
         /* --------------------------------------- */
         ZeroLagXcorr->update(*wavefieldrecord[t], *wavefields);
     }
-    end_t = scai::common::Walltime::get();
-    HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
+
 
     /* ---------------------------------- */
     /*       Calculate gradients          */
     /* ---------------------------------- */
-
+    HOST_PRINT(comm, "\nCalculate Gradient\n");
     gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"));
     SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("SourceTaperRadius"));
     SourceTaper.apply(gradient);

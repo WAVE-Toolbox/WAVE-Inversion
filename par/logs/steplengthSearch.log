@@ -2,3 +2,5 @@
 # Misfit type = L2
 # Iteration 0 shows misfit of initial model (only first and last column is meaningful here)
 # Iteration | optimum step length | #Forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots
+       0          0.000000e+00                 0                 6.907350e-310         9.137519e-317         1.581010e-322      6.907350e-310    9.123242e-317    1.581010e-322          3.379354e+02
+       1          1.000000e-01                 4                  0.000000e+00          3.000000e-02          2.400000e-01       3.379354e+02     3.130526e+02     1.566679e+02          2.060652e+02

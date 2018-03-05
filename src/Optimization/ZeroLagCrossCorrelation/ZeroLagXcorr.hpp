@@ -4,6 +4,7 @@
 #include <scai/lama.hpp>
 #include <scai/lama/DenseVector.hpp>
 
+#include <Configuration/Configuration.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
 #include <scai/dmemo/BlockDistribution.hpp>
 #include <scai/hmemo/HArray.hpp>
@@ -45,14 +46,15 @@ namespace KITGPI
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
 
             //! \brief Initialization
-            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
+            virtual void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
 
             virtual void write(std::string type, IndexType t) = 0;
 
-          protected:
-            bool invertForVp = true;
+	    bool invertForVp = false;
             bool invertForVs = false;
             bool invertForDensity = false;
+	    
+          protected:
 
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);
             void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);

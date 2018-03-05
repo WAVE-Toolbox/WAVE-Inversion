@@ -18,14 +18,16 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>:
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::ZeroLagXcorr3Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::ZeroLagXcorr3Dacoustic(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist);
+    init(config,ctx, dist);
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
+    invertForVp=config.get<bool>("invertForVp");
+    invertForDensity=config.get<bool>("invertForDensity");
     this->initWavefield(VSum, ctx, dist);
     this->initWavefield(P, ctx, dist);
 }

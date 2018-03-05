@@ -56,21 +56,6 @@ namespace KITGPI
             //! \brief Gradient pointer
             typedef std::shared_ptr<Gradient<ValueType>> GradientPtr;
 
-            /*! \brief Abstract initialization function
-             * Standard initialisation function
-             \param ctx Context
-             \param dist Distribution
-             \param filename filename to read parameters (endings will be added by derived classes)
-             \param partitionedIn Partitioned input
-             */
-            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn) = 0;
-
-            /*! \brief Abstract initialisation function
-             * initialises parameter vectors with zero
-             \param ctx Context
-             \param dist Distribution
-             */
-            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
 
             /*! \brief Abstract initialisation function
              * Standard initialisation function
@@ -141,10 +126,11 @@ namespace KITGPI
 
             virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
 
-          protected:
-            bool invertForVp = true;
+	    bool invertForVp = false;
             bool invertForVs = false;
             bool invertForDensity = false;
+	    
+          protected:
 
             void resetParameter(scai::lama::DenseVector<ValueType> &vector) { vector.assign(0.0); }
 

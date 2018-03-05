@@ -29,7 +29,7 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr3Dacoustic(){};
 
-            explicit ZeroLagXcorr3Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            explicit ZeroLagXcorr3Dacoustic(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             void resetXcorr() override;
 
@@ -37,12 +37,16 @@ namespace KITGPI
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
             void write(std::string type, IndexType t) override;
             void writeSnapshot(IndexType t);
+	    
+	     using ZeroLagXcorr<ValueType>::invertForVp;
+            using ZeroLagXcorr<ValueType>::invertForDensity;
 
           private:
+	    
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::VSum;
             using ZeroLagXcorr<ValueType>::P;

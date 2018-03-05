@@ -4,6 +4,7 @@
 export OMP_NUM_THREADS=1
 export NUM_MPI_PROCESSES=4
 export SCAI_UNSUPPORTED=IGNORE
+export SCAI_LOG=ERROR
 
 IFOS_EXE="./../build/bin/IFOS"
 UNITTEST_EXE="./../build/bin/Test_unit"
