@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Gradient taper                          */
     /* --------------------------------------- */
-    SourceReceiverTaper<ValueType> ReceiverTaper;
+    Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("SourceTaperRadius"));
     
     

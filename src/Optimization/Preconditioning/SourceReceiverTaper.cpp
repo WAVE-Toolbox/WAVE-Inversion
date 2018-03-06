@@ -2,19 +2,19 @@
 using namespace scai;
 
 template <typename ValueType>
-void SourceReceiverTaper<ValueType>::getTaper()
+void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::getTaper()
 {
     //return ;
 }
 
 template <typename ValueType>
-void SourceReceiverTaper<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradient)
+void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradient)
 {   
     gradient *= taper;
 }
 
 template <typename ValueType>
-void SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config,IndexType radius)
+void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config,IndexType radius)
 {
     //taper radius should be input!
     lama::DenseVector<ValueType> taperTmp(dist);
@@ -92,5 +92,5 @@ void SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, sca
     taper += 1;
 }
 
-template class SourceReceiverTaper<double>;
-template class SourceReceiverTaper<float>;
+template class KITGPI::Preconditioning::SourceReceiverTaper<double>;
+template class KITGPI::Preconditioning::SourceReceiverTaper<float>;
