@@ -9,11 +9,8 @@ void SourceReceiverTaper<ValueType>::getTaper()
 
 template <typename ValueType>
 void SourceReceiverTaper<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradient)
-{
-    scai::lama::DenseVector<ValueType> velocityP;
-    velocityP = gradient.getVelocityP();
-    velocityP *= taper;
-    gradient.setVelocityP(velocityP);
+{   
+    gradient *= taper;
 }
 
 template <typename ValueType>

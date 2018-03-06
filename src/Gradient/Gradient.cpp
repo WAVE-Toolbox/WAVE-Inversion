@@ -312,5 +312,16 @@ KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::op
     return *this;
 }
 
+/*! \brief Overloading *= Operation
+ *
+ \param rhs Gradient which is subtracted.
+ */
+template <typename ValueType>
+KITGPI::Gradient::Gradient<ValueType> &KITGPI::Gradient::Gradient<ValueType>::operator*=(scai::lama::Vector const &rhs)
+{
+    timesAssign(rhs);
+    return *this;
+}
+
 template class KITGPI::Gradient::Gradient<float>;
 template class KITGPI::Gradient::Gradient<double>;

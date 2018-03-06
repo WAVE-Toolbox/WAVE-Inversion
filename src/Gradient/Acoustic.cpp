@@ -264,6 +264,17 @@ void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Scalar const
     velocityP *= rhs;
 }
 
+/*! \brief function for overloading *= Operation (called in base class)
+ *
+ \param rhs Abstract gradient which is subtracted.
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Vector const &rhs)
+{
+    density *= rhs;
+    velocityP *= rhs;
+}
+
 /*! \brief function for overloading -= Operation (called in base class)
  *
  \param lhs Abstract gradient.
