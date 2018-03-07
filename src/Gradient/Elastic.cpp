@@ -195,7 +195,7 @@ KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::opera
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator-=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
 {
-    density = density -= rhs.density;
+    density -= rhs.density;
     velocityP -= rhs.velocityP;
     velocityS -= rhs.velocityS;
 
@@ -244,7 +244,7 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Gradient::Gradien
 
     density -= rhs.getDensity();
     velocityP -= rhs.getVelocityP();
-    velocityS = rhs.getVelocityS();
+    velocityS -= rhs.getVelocityS();
 }
 
 /*! \brief function for overloading += Operation (called in base class)
@@ -257,7 +257,7 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
 
     density += rhs.getDensity();
     velocityP += rhs.getVelocityP();
-    velocityS = rhs.getVelocityS();
+    velocityS += rhs.getVelocityS();
 }
 
 /*! \brief function for overloading *= Operation (called in base class)
@@ -265,9 +265,11 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
  \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const &/*rhs*/)
+void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const &rhs)
 {
-    COMMON_THROWEXCEPTION("elastic times Assign is not implemented,yet ");
+    density *= rhs;
+    velocityP *= rhs;
+    velocityS *= rhs;
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -276,17 +278,128 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const 
  \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &/*lhs*/, KITGPI::Gradient::Gradient<ValueType> const &/*rhs*/){
-    COMMON_THROWEXCEPTION("elastic minus Assign is not implemented,yet ")};
+void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){
+    scai::lama::DenseVector<ValueType> temp;
+    temp = lhs.getVelocityP() - rhs.getVelocityP();
+    lhs.setVelocityP(temp);
+    temp = lhs.getVelocityS() - rhs.getVelocityS();
+    lhs.setVelocityS(temp);
+    temp = lhs.getDensity() - rhs.getDensity();
+    lhs.setDensity(temp);
+    
+};
 
 /*! \brief function for scaling the gradients with the model parameter 
  *
  \param model Abstract model.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &/*model*/)
+void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
-    COMMON_THROWEXCEPTION("scale is not implemented for elastic gradients,yet ");
+    if (invertForVp) {
+        velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
+    }
+    
+    if (invertForVs) {
+        velocityS *= 1 / velocityS.maxNorm() * model.getVelocityS().maxNorm();
+    }   
+    
+    if (invertForDensity) {
+        density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
+    }
+}
+
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT)
+{
+    // Only implementedfor 2D!
+    //dt should be in cross correlation!
+
+   // Lambda and Mu gradients
+	
+    scai::lama::DenseVector<ValueType> gradLambda;
+    scai::lama::DenseVector<ValueType> gradMu;  
+    scai::lama::DenseVector<ValueType> temp;
+    
+    
+    gradLambda = model.getVelocityP();
+    gradLambda *= model.getVelocityP();
+    temp = model.getVelocityS();
+    temp *= model.getVelocityS();
+    gradLambda-=temp;
+    gradLambda*=gradLambda;
+    gradLambda*=model.getDensity();
+    gradLambda*=model.getDensity();
+    gradLambda*=4;
+    gradLambda.invert();
+    
+    gradLambda *= correlatedWavefields.getNormalStressSum();
+    gradLambda *= -DT;
+
+    if ((invertForVs) || (invertForDensity)){
+	  gradMu=gradLambda;
+ 
+	  temp = model.getVelocityS();
+          temp *= model.getVelocityS();
+	  temp *= model.getDensity();
+	  temp *= temp;
+	  temp*=4;
+	  temp.invert();
+	  temp *= correlatedWavefields.getNormalStressDiff();
+	  temp *= -DT;
+	  
+	  gradMu += temp;
+	
+	  temp = model.getVelocityS();
+          temp *= model.getVelocityS();
+	  temp *= model.getDensity();
+	  temp *= temp;
+	  temp.invert();
+	  temp *= correlatedWavefields.getShearStress();
+	  temp *= -DT;
+	  
+	  gradMu += temp;
+    }
+    
+    // vp, vs , rho gradients
+    
+    if (invertForVp) {
+	//grad_vp = 2*rho*vp*grad_bulk
+        velocityP = 2 * gradLambda;
+        velocityP *= model.getDensity();
+        velocityP *= model.getVelocityP();
+    }
+
+    if (invertForVs) {
+
+        velocityS = -4 * gradLambda;
+        velocityS *= model.getDensity();
+        velocityS *= model.getVelocityS();
+	
+	temp=2*gradMu;
+	temp*=model.getDensity();
+	temp*=model.getVelocityS();
+	
+	velocityS+=temp;
+    }
+    
+    if (invertForDensity) {
+
+        density = model.getVelocityP();
+        density *= model.getVelocityP();
+        temp = 2 * model.getVelocityS();
+        temp *= model.getVelocityS();
+        density-=temp;
+	density*=gradLambda;
+	
+	temp = model.getVelocityS();
+	temp*= model.getVelocityS();
+	temp*= gradMu;
+	
+	density+=temp;
+	
+        density += DT * correlatedWavefields.getVSum();
+    }
 }
 
 template class KITGPI::Gradient::Elastic<float>;

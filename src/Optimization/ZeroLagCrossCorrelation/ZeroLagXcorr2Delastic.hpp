@@ -29,30 +29,32 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr2Delastic(){};
 
-            explicit ZeroLagXcorr2Delastic(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            explicit ZeroLagXcorr2Delastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             void reset() override;
 
-            void update(Wavefields::Wavefields<ValueType> &/*forwardWavefield*/, Wavefields::Wavefields<ValueType> &/*adjointWavefield*/) override{COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")};
+            void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield) override;
 
             /* Getter routines for non-required wavefields: Will throw an error */
             scai::lama::DenseVector<ValueType> const &getP() const override;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
             void write(std::string type, IndexType t) override;
             void writeSnapshot(IndexType t);
-	    
-	    using ZeroLagXcorr<ValueType>::invertForVp;
-	    using ZeroLagXcorr<ValueType>::invertForVs;
+
+            using ZeroLagXcorr<ValueType>::invertForVp;
+            using ZeroLagXcorr<ValueType>::invertForVs;
             using ZeroLagXcorr<ValueType>::invertForDensity;
 
           private:
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::VSum;
-
+            using ZeroLagXcorr<ValueType>::ShearStress;
+            using ZeroLagXcorr<ValueType>::NormalStressDiff;
+            using ZeroLagXcorr<ValueType>::NormalStressSum;
             /* non-required wavefields */
             using ZeroLagXcorr<ValueType>::P;
 

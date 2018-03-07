@@ -57,5 +57,26 @@ scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<Val
     return (P);
 }
 
+//! \brief Getter routine for ShearStress
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getShearStress() const
+{
+    return (ShearStress);
+}
+
+//! \brief Getter routine for NormalStressDiff
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getNormalStressDiff() const
+{
+    return (NormalStressDiff);
+}
+
+//! \brief Getter routine for NormalStressSum
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getNormalStressSum() const
+{
+    return (NormalStressSum);
+}
+
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr<float>;
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr<double>;

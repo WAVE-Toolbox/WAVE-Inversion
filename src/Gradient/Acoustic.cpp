@@ -12,7 +12,7 @@ using namespace KITGPI;
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(config, ctx, dist,0,0);
+    init(config, ctx, dist,0.0,0.0);
 }
 
 /*! \brief Initialisation that is using the configuration class
@@ -25,7 +25,7 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(Configuration::Configuration con
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-  init(config, ctx, dist,0,0);
+  init(config, ctx, dist,0.0,0.0);
 }
 
 /*! \brief Initialisation that is generating a homogeneous gradient
@@ -293,14 +293,15 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
         density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
     }
 }
+
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT)
 {
 	//dt should be in cross correlation!
     //grad_bulk = -dt*Padj*dPfw/dt / (rho*vp^2)^2
     scai::lama::DenseVector<ValueType> grad_bulk;
-    grad_bulk = model.getPWaveModulus();
-    grad_bulk *= model.getPWaveModulus();
+    grad_bulk = model.getVelocityP();
+    grad_bulk *= model.getVelocityP();
     grad_bulk *= model.getDensity();
     grad_bulk *= grad_bulk;   
     grad_bulk.invert();

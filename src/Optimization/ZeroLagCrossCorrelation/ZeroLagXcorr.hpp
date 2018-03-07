@@ -41,27 +41,32 @@ namespace KITGPI
 
             virtual scai::lama::DenseVector<ValueType> const &getVSum() const;
             virtual scai::lama::DenseVector<ValueType> const &getP() const;
+            virtual scai::lama::DenseVector<ValueType> const &getShearStress() const;
+            virtual scai::lama::DenseVector<ValueType> const &getNormalStressDiff() const;
+            virtual scai::lama::DenseVector<ValueType> const &getNormalStressSum() const;
 
             //! Declare getter variable for context pointer
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
 
             //! \brief Initialization
-            virtual void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
+            virtual void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
 
             virtual void write(std::string type, IndexType t) = 0;
 
-	    bool invertForVp = false;
+            bool invertForVp = false;
             bool invertForVs = false;
             bool invertForDensity = false;
-	    
-          protected:
 
+          protected:
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);
             void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
             void writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, IndexType t);
 
-            scai::lama::DenseVector<ValueType> VSum; //!< Wavefield for velocity in x
-            scai::lama::DenseVector<ValueType> P;    //!< Wavefield
+            scai::lama::DenseVector<ValueType> ShearStress;      //!< (sum of) correlated shear stresses
+            scai::lama::DenseVector<ValueType> NormalStressDiff; //!<correlated difference of normal stress components  2D: (sxxF-syyF)*(sxxB-syyB)
+            scai::lama::DenseVector<ValueType> NormalStressSum;  //!<correlated sum        of normal stress components  2D: (sxxF+syyF)*(sxxB+syyB)
+            scai::lama::DenseVector<ValueType> VSum;             //!< sum of the correlated velocity wavefields sum_i (viF*viB)
+            scai::lama::DenseVector<ValueType> P;                //!< correlated pressure Wavefield
         };
     }
 }

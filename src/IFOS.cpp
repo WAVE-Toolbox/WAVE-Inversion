@@ -253,6 +253,10 @@ int main(int argc, char *argv[])
         HOST_PRINT(comm, "\n======== Finished loop over shots =========");
         HOST_PRINT(comm, "\n===========================================\n");
 	
+	/* Output of gradient */
+        if(config.get<IndexType>("WriteGradient"))
+	           gradient->write(gradname  + ".It_" + std::to_string(iteration + 1), config.get<IndexType>("PartitionedOut"));
+	
         dataMisfit->addToStorage(misfitPerIt);
         
         SLsearch.appendToLogFile(comm, iteration, logFilename, dataMisfit->getMisfitSum(iteration));
@@ -268,9 +272,6 @@ int main(int argc, char *argv[])
         /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
         ReceiverTaper.apply(*gradient);
         
-        /* Output of gradient */
-        if(config.get<IndexType>("WriteGradient"))
-            gradient->getVelocityP().writeToFile(gradname  + ".It_" + std::to_string(iteration + 1) + ".vp" + ".mtx");
        
         gradient->scale(*model);
         
