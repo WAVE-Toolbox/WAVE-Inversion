@@ -102,8 +102,13 @@ testShotStart=0                        # shot number of first test shot
 testShotEnd=17                         # shot number of last test shot
 testShotIncr=1                         # increment of test shots
 
-# Tapers
-sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
-receiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
+# Preconditioning
+sourceTaperRadius=20    # circular source taper: Radius in gridpoints
+receiverTaperRadius=20  # circular receiver taper: Radius in gridpoints
+
+useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradient per shot
+epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)
+saveApproxHessian=0        
+approxHessianName=gradients/Hessian
 
 

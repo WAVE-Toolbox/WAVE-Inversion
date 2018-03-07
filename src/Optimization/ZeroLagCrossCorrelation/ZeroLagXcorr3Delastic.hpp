@@ -31,7 +31,7 @@ namespace KITGPI
 
             explicit ZeroLagXcorr3Delastic(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
-            void reset() override;
+            void resetXcorr() override;
 
             void update(Wavefields::Wavefields<ValueType> &/*forwardWavefield*/, Wavefields::Wavefields<ValueType> &/*adjointWavefield*/) override{COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")};
 

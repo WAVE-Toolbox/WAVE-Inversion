@@ -60,7 +60,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::writeSnapshot(Index
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::reset()
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::resetXcorr()
 {
     this->resetWavefield(VSum);
     COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.")

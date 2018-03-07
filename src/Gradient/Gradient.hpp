@@ -65,7 +65,7 @@ namespace KITGPI
              */
             virtual void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
 
-            virtual void reset() = 0;
+            virtual void resetGradient() = 0;
 
             virtual void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT) = 0;
 
@@ -109,6 +109,7 @@ namespace KITGPI
             virtual void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void timesAssign(scai::lama::Scalar const &rhs) = 0;
+            virtual void timesAssign(scai::lama::Vector const &rhs) = 0;
 
             /* Operator overloading */
             /*lhs Base rhs Base */
@@ -116,7 +117,8 @@ namespace KITGPI
             KITGPI::Gradient::Gradient<ValueType> &operator-=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator+=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator*=(scai::lama::Scalar const &rhs);
-
+            KITGPI::Gradient::Gradient<ValueType> &operator*=(scai::lama::Vector const &rhs);
+            
             /*lhs: fd-Model-Base rhs: gradient Base */
             friend KITGPI::Modelparameter::Modelparameter<ValueType> &operator-=(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> &rhs)
             {
@@ -126,7 +128,7 @@ namespace KITGPI
 
             virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
 
-	    bool invertForVp = false;
+            bool invertForVp = false;
             bool invertForVs = false;
             bool invertForDensity = false;
 	    

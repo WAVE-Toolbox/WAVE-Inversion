@@ -35,7 +35,7 @@ namespace KITGPI
             typedef std::shared_ptr<ZeroLagXcorr<ValueType>> ZeroLagXcorrPtr;
 
             //! Reset cross correlated wavefields
-            virtual void reset() = 0;
+            virtual void resetXcorr() = 0;
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield) = 0;
 

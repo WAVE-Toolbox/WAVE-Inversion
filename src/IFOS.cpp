@@ -25,8 +25,8 @@
 #include "Optimization/GradientCalculation.hpp"
 #include "Optimization/Misfit/Misfit.hpp"
 #include "Optimization/Misfit/MisfitFactory.hpp"
-#include "Gradient/GradientFactory.hpp"
 #include "Optimization/StepLengthSearch.hpp"
+#include "Optimization/Preconditioning/EnergyPreconditioning.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -174,9 +174,15 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Gradient taper                          */
     /* --------------------------------------- */
-    SourceReceiverTaper<ValueType> ReceiverTaper;
+    Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("SourceTaperRadius"));
     
+    /* --------------------------------------- */
+    /* Gradient preconditioning                */
+    /* --------------------------------------- */
+    Preconditioning::EnergyPreconditioning<ValueType> energyPrecond;
+    if (config.get<bool>("useEnergyPreconditioning") == 1){
+        energyPrecond.init(dist, config);}
     
     /* --------------------------------------- */
     /*        Loop over iterations             */
@@ -198,12 +204,16 @@ int main(int argc, char *argv[])
         /*        Loop over shots                  */
         /* --------------------------------------- */
         
-        gradient->reset();    // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
+        gradient->resetGradient();    // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
 
         for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
                    
             /* Read field data (or pseudo-observed data, respectively) */
             receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+            
+            /* Reset approximated Hessian per shot */
+            if (config.get<bool>("useEnergyPreconditioning") == 1){
+                energyPrecond.resetApproxHessian();}
             
             HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
 	    
@@ -211,9 +221,13 @@ int main(int argc, char *argv[])
             /*        Forward modelling                */
             /* --------------------------------------- */
             
-            HOST_PRINT(comm, "\n--------------- Start Forward -------------------\n");
+
+            HOST_PRINT(comm, "\n================Start Forward====================\n");
+            HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
+                                                                << "Total Number of time steps: " << tEnd << "\n");
                                                                 
-            wavefields->reset();
+            wavefields->resetWavefields();
+
             sources.init(config, ctx, dist, shotNumber);
 	    
             ValueType DTinv=1/config.get<ValueType>("DT");
@@ -230,6 +244,9 @@ int main(int argc, char *argv[])
                 //calculate temporal derivative of wavefield
                 *wavefieldrecord[t]-=*wavefieldsTemp;
                 *wavefieldrecord[t]*=DTinv;
+                
+                if (config.get<bool>("useEnergyPreconditioning") == 1){
+                    energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));}
             }
 
             receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
@@ -243,8 +260,13 @@ int main(int argc, char *argv[])
             
             /* Calculate gradient */
             gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, iteration, shotNumber);
+            
+            /* Apply energy preconditioning per shot */
+            if (config.get<bool>("useEnergyPreconditioning") == 1){
+                energyPrecond.apply(*gradientPerShot, shotNumber);}
+            
             *gradient += *gradientPerShot; 
-	    
+            
             end_t_shot = common::Walltime::get();
             HOST_PRINT(comm, "\nFinished shot in " << end_t_shot - start_t_shot << " sec.\n\n");
 	    

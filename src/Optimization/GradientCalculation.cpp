@@ -10,7 +10,7 @@
  \param ctx Context
  */
 template <typename ValueType>
-void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist,  scai::hmemo::ContextPtr ctx)
+void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist,  scai::hmemo::ContextPtr ctx)
 {
 
     std::string dimension = config.get<std::string>("dimension");
@@ -38,7 +38,7 @@ void GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configurati
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType iteration, int shotNumber)
+void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType iteration, int shotNumber)
 {
 
     IndexType t = 0;
@@ -58,8 +58,8 @@ void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Va
 
     HOST_PRINT(comm, "\n-------------- Start Backward -------------------\n");
 
-    wavefields->reset();
-    ZeroLagXcorr->reset();
+    wavefields->resetWavefields();
+    ZeroLagXcorr->resetXcorr();
 
 
     for (t = tEnd - 1; t >= 0; t--) {
@@ -88,5 +88,5 @@ void GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Va
     
 }
 
-template class GradientCalculation<double>;
-template class GradientCalculation<float>;
+template class KITGPI::GradientCalculation<double>;
+template class KITGPI::GradientCalculation<float>;

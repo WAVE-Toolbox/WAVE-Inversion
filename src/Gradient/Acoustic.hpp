@@ -59,7 +59,7 @@ namespace KITGPI
 
             /*! \brief Set all wavefields to zero.
              */
-            void reset()
+            void resetGradient()
             {
                 this->resetParameter(velocityP);
                 this->resetParameter(density);
@@ -108,6 +108,7 @@ namespace KITGPI
             void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void timesAssign(scai::lama::Scalar const &rhs);
+            void timesAssign(scai::lama::Vector const &rhs);
 
           private:
             using Gradient<ValueType>::invertForVp;

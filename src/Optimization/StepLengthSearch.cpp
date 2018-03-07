@@ -17,7 +17,7 @@
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::DenseVector<ValueType> currentMisfit)
+void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::DenseVector<ValueType> currentMisfit)
 {
     double start_t, end_t; /* For timing */
     /* ------------------------------------------- */
@@ -156,7 +156,7 @@ void StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<Value
  \param xValues Vector of three values on the y-axis
  */
 template <typename ValueType>
-scai::lama::Scalar StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVector<ValueType> const &xValues,scai::lama::DenseVector<ValueType> const &yValues){
+scai::lama::Scalar KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVector<ValueType> const &xValues,scai::lama::DenseVector<ValueType> const &yValues){
 	
     SCAI_ASSERT(xValues.size() == 3, "xvalues must contain 3 values!");
     SCAI_ASSERT(yValues.size() == 3, "yvalues must contain 3 values!");    
@@ -193,7 +193,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVe
  \param steplength Steplength
  */
 template <typename ValueType>
-scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, scai::lama::Scalar steplength)
+scai::lama::Scalar KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, scai::lama::Scalar steplength)
 {
     
     /* ------------------------------------------- */
@@ -228,10 +228,11 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = testShotStart ; shotNumber <= testShotEnd; shotNumber+=testShotIncr) {
         
+        wavefields.resetWavefields();
+
         HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
         HOST_PRINT(comm, "\n--------------- Start Test Forward -------------------\n");
-        
-        wavefields.reset();
+
         sources.init(config, ctx, dist, shotNumber);
         
 //         start_t = scai::common::Walltime::get();
@@ -259,7 +260,7 @@ scai::lama::Scalar StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver
  \param logFilename Name of log-file
  */
 template <typename ValueType>
-void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, std::string misfitType)
+void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, std::string misfitType)
 {
     int myRank = comm->getRank(); 
     if (myRank == MASTERGPI) {
@@ -280,7 +281,7 @@ void StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm,
  \param iteration Iteration count
  */
 template <typename ValueType>
-void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename, scai::lama::Scalar misfitSum)
+void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename, scai::lama::Scalar misfitSum)
 {
     int myRank = comm->getRank(); 
     /* The following temporaries are only necessary because of a problem with LAMA: e.g. steplengthParabola.getValue(0).getValue<ValueType>() produces an error */
@@ -305,12 +306,12 @@ void StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr c
  *
  */
 template <typename ValueType>
-scai::lama::Scalar const &StepLengthSearch<ValueType>::getSteplength()
+scai::lama::Scalar const &KITGPI::StepLengthSearch<ValueType>::getSteplength()
 {
     return (steplengthOptimum);
 }
 
 
-template class StepLengthSearch<double>;
-template class StepLengthSearch<float>;
+template class KITGPI::StepLengthSearch<double>;
+template class KITGPI::StepLengthSearch<float>;
 

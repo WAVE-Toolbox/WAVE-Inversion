@@ -31,7 +31,7 @@ namespace KITGPI
 
             explicit ZeroLagXcorr2Dacoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
-            void reset() override;
+            void resetXcorr() override;
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield) override;
 
