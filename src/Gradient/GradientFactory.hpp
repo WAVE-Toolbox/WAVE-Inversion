@@ -14,7 +14,7 @@ namespace KITGPI
     namespace Gradient
     {
 
-        //! \brief Factory class.
+        //! \brief Gradient factory class.
         template <typename ValueType>
         class Factory
         {

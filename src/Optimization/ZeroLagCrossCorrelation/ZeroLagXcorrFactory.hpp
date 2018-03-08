@@ -15,7 +15,7 @@ namespace KITGPI
     namespace ZeroLagXcorr
     {
 
-        //! \brief Factory class.
+        //! \brief ZeroLagXcorr factory class.
         template <typename ValueType>
         class Factory
         {

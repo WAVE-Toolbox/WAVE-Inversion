@@ -10,14 +10,16 @@
 namespace KITGPI
 {
     
-    //! \brief Preconditioning namespace
+    //! \brief Gradient preconditioning namespace
     namespace Preconditioning
     {
-        /*! \brief EnergyPreconditioning class (migration weight K1 after Plessix and Mulder, 2004)
-         *  This class offers the possibility to calculate an approximation of the diagonal of the inverse of the Hessian.
+        /*! \brief Class to precondition a gradient based on migration weight K1 from Plessix and Mulder, 2004.
+         * 
+         *  It offers the possibility to calculate and apply the inverse of an approximation of the diagonal of the Hessian. 
+         *  For this, the forward propagated wavefield (which is used in the misfit) is squared and integrated for all time steps.
          *  If applied to the gradient, source artifacts will be reduced and badly illuminated model parts will be enhanced. 
+         *  In the current implementation, the preconditioning can only be applied to a single shot!
          */
-
         template <typename ValueType>
         class EnergyPreconditioning
         {
@@ -30,7 +32,7 @@ namespace KITGPI
 
             void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config);
             void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT); //!< Integrate squared wavefields 
-            void apply(KITGPI::Gradient::Gradient<ValueType> &gradient, IndexType shotNumber);
+            void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, IndexType shotNumber);
             void resetApproxHessian();
             
         private:

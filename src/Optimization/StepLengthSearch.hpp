@@ -20,9 +20,11 @@
 namespace KITGPI
 {
     
-    /*! \brief The class StepLengthSearch searches for the optimal steplength for model update
-    *
-    */
+    /*! \brief Class to do an inexact line search for finding an optimal steplength for the model update
+     * 
+     * The inexact line search is done by applying a parabolic fit if appropriate (steplength, misfit) pairs can be found. 
+     *
+     */
     template <typename ValueType>
     class StepLengthSearch{
         

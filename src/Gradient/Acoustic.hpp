@@ -35,9 +35,8 @@ namespace KITGPI
     namespace Gradient
     {
 
-        //! Class for Gradient for acoustic simulations (Subsurface properties)
-        /*!
-         This class handels the modelparameter for the acoustic finite-difference simulation.
+        /*! \brief Class to store the gradients for acoustic inversion 
+         *
          */
         template <typename ValueType>
         class Acoustic : public Gradient<ValueType>

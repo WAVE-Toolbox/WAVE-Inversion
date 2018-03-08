@@ -21,7 +21,7 @@
 namespace KITGPI
 {
     
-    /*! \brief The class GradientCalculation holds the gradients for inversion
+    /*! \brief Class to calculate the gradient for one shot
      * 
      */
     template <typename ValueType>

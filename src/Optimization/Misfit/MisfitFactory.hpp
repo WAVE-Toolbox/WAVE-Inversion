@@ -10,7 +10,7 @@ namespace KITGPI
     namespace Misfit
     {
 
-        //! \brief Factory class.
+        //! \brief Misfit factory class.
         template <typename ValueType>
         class Factory
         {

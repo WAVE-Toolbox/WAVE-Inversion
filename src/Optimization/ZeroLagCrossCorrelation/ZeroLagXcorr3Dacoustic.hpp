@@ -15,7 +15,7 @@ namespace KITGPI
     namespace ZeroLagXcorr
     {
 
-        /*! \brief The class ZeroLagXcorr2Delastic holds and caclulates the zero lag cross correlated wavefields for 3D acoustic gradients
+        /*! \brief Class to hold and caclulate the zero lag cross correlated wavefields for 3D acoustic gradients
          *
          */
         template <typename ValueType>

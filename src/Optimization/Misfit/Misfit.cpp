@@ -1,7 +1,7 @@
 #include "Misfit.hpp"
 
-/*! \brief Return the misfit summed over all shots
- *
+/*! \brief Return the misfit summed over all shots. 
+ * 
  * 
  \param iteration Integer value which specifies the iteration number
  */
