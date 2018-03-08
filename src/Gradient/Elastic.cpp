@@ -277,9 +277,11 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const 
  \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector const &/*rhs*/)
+void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector const &rhs)
 {
-    COMMON_THROWEXCEPTION("elastic times Assign is not implemented,yet ");
+    density *= rhs;
+    velocityP *= rhs;
+    velocityS *= rhs;
 }
 
 /*! \brief function for overloading -= Operation (called in base class)

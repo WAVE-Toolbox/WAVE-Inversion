@@ -314,7 +314,8 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     grad_bulk = model.getVelocityP();
     grad_bulk *= model.getVelocityP();
     grad_bulk *= model.getDensity();
-    grad_bulk *= grad_bulk;   
+    grad_bulk *= grad_bulk; 
+    grad_bulk *= 4; 
     grad_bulk.invert();
     
     grad_bulk *= correlatedWavefields.getP();

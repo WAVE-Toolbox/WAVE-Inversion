@@ -9,7 +9,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(Configuration
     invertForDensity = config.get<bool>("invertForDensity");
     if (invertForDensity)
         this->initWavefield(VSum, ctx, dist);
-    if (invertForVp)
+    if ((invertForVp) || (invertForDensity))
         this->initWavefield(P, ctx, dist);
 }
 
@@ -45,7 +45,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string 
 {
     if (invertForDensity)
     this->writeWavefield(VSum, "VSum", type, t);
-    if (invertForVp)
+    if ((invertForVp) || (invertForDensity))
     this->writeWavefield(P, "P", type, t);
 }
 
@@ -67,7 +67,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr()
 {
     if (invertForDensity)
     this->resetWavefield(VSum);
-    if (invertForVp)
+    if ((invertForVp) || (invertForDensity))
     this->resetWavefield(P);
 }
 
@@ -78,7 +78,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp;
-    if (invertForVp) {
+    if ((invertForVp) || (invertForDensity)) {
         temp = forwardWavefield.getRefP();
         temp *= adjointWavefield.getRefP();
         P += temp;
