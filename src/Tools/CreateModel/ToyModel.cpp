@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 {
     typedef double ValueType;
 
-    
+    ValueType vpTopLeftScale=1.0, vpTopRightScale=1.0, vpBottomLeftScale=1.0, vpBottomRightScale=1.0, vsTopLeftScale=1.0, vsTopRightScale=1.0, vsBottomLeftScale=1.0, vsBottomRightScale=1.0, rhoTopLeftScale=1.0, rhoTopRightScale=1.0, rhoBottomLeftScale=1.0, rhoBottomRightScale=1.0;
     
     if (argc != 2) {
         std::cout << "\n\nNo configuration file given!\n\n"
@@ -28,11 +28,23 @@ int main(int argc, char *argv[])
     int width=20;
     int height=20;	
 
-    // permutations in box
-    ValueType topLeftVal=1.1;
-    ValueType topRightVal=0.95;
-    ValueType bottomLeftVal=0.9;
-    ValueType bottomRightVal=1.05;
+
+//    permutations in box
+    
+    vpTopLeftScale=0.8;
+    vpTopRightScale=1.0;
+    vpBottomLeftScale=0.9;
+    vpBottomRightScale=0.9;
+//     
+//     vsTopLeftScale=0.8;
+//     vsTopRightScale=0.8;
+//     vsBottomLeftScale=1.6;
+//     vsBottomRightScale=1.6;
+    
+     rhoTopLeftScale=1.0;
+     rhoTopRightScale=1.2;
+     rhoBottomLeftScale=0.9;
+     rhoBottomRightScale=0.9;
 
     // read configuration parameter from file
     KITGPI::Configuration::Configuration config(argv[1]);
@@ -55,36 +67,45 @@ int main(int argc, char *argv[])
 
     
    //top-left
-  for (IndexType x = NX/2-width/2; x <= NX/2; ++x) {
-    for (IndexType y = NY/2-height/2; y <= NY/2; ++y) {
-        vp(lama::Range(), y, x) *= topLeftVal;
+  for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
+    for (IndexType y = NY/2-height/2; y < NY/2; ++y) {
+	  vp(lama::Range(), y, x) *= vpTopLeftScale; 
+	  vs(lama::Range(), y, x) *= vsTopLeftScale; 
+          rho(lama::Range(), y, x) *= rhoTopLeftScale;
     }
    }
 
     //top-right
-  for (IndexType x = NX/2+1; x < NX/2+width/2; ++x) {
-    for (IndexType y = NY/2-height/2; y <= NY/2; ++y) {
-        vp(lama::Range(), y, x) *= topRightVal;
+  for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
+    for (IndexType y = NY/2-height/2; y < NY/2; ++y) {    
+	  vp(lama::Range(), y, x) *= vpTopRightScale; 
+	  vs(lama::Range(), y, x) *= vsTopRightScale; 
+          rho(lama::Range(), y, x) *= rhoTopRightScale;
     }
    }      
 
  //bottom left        
- for (IndexType x = NX/2-width/2; x <= NX/2; ++x) {
-  for (IndexType y = NY/2+1; y < NY/2+width/2; ++y) {
-      vp(lama::Range(), y, x) *= bottomLeftVal;
+ for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
+  for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
+	  vp(lama::Range(), y, x) *= vpBottomLeftScale; 
+	  vs(lama::Range(), y, x) *= vsBottomLeftScale; 
+          rho(lama::Range(), y, x) *= rhoBottomLeftScale;
   }                                                               
  }
 
     //bottom right
-  for (IndexType x = NX/2+1; x < NX/2+width/2; ++x) {
-    for (IndexType y = NY/2+1; y < NY/2+width/2; ++y) {
-        vp(lama::Range(), y, x) *= bottomRightVal;
+  for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
+    for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
+	  vp(lama::Range(), y, x) *= vpBottomRightScale; 
+	  vs(lama::Range(), y, x) *= vsBottomRightScale; 
+          rho(lama::Range(), y, x) *= rhoBottomRightScale;
     }
    }      
 
     //write model to file specified in configuration
     std::string filename = config.get<std::string>("ModelFilename");
     vp.writeToFile(filename + ".vp.mtx");
+    vs.writeToFile(filename + ".vs.mtx");
     rho.writeToFile(filename + ".density.mtx");
     return 0;
 }

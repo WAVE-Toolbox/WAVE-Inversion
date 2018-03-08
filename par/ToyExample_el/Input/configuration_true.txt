@@ -4,7 +4,7 @@
 
 # Type of forward simulation
 dimension=2D              # Dimension: 2D or 3D
-equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
+equationType=elastic     # Type of wave equation: acoustic, elastic, visco
 
 # define spatial sampling: number of grid points in direction
 NX=100                    # horizontal 1
@@ -49,11 +49,6 @@ VMaxCPML=3500.0           # Maximum velocity of the CPML
 CenterFrequencyCPML=5.0   # Center frequency inside the boundaries
 NPower=4.0
 KMaxCPML=1.0
-
-saveSnapshots=0
-tincSnapshot=0
-tFirstSnapshot=0
-tLastSnapshot=0
     
 # Viscoelastic modelling
 numRelaxationMechanisms=0 # Number of relaxation mechanisms 
@@ -61,10 +56,15 @@ relaxationFrequency=0     # Relaxation frequency
 
 # generate homogeneous model
 velocityP=3500            # P-wave velocity in meter per seconds
-velocityS=0               # S-wave velocity in meter per seconds
+velocityS=2000.0               # S-wave velocity in meter per seconds
 rho=2000                  # Density in kilo gramms per cubic meter
 tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
+
+saveSnapshots=0
+tincSnapshot=0
+tFirstSnapshot=0
+tLastSnapshot=0
 
 # Acquisition
 SourceFilename=Input/sources.mtx         # location of source file

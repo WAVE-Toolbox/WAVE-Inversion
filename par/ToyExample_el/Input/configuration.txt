@@ -8,7 +8,7 @@
 
 # Type of forward simulation
 dimension=2D              # Dimension: 2D or 3D
-equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
+equationType=elastic     # Type of wave equation: acoustic, elastic, visco
 
 # define spatial sampling: number of grid points in direction
 NX=100                    # horizontal 1
@@ -60,15 +60,15 @@ relaxationFrequency=0     # Relaxation frequency
 
 # generate homogeneous model
 velocityP=3500            # P-wave velocity in meter per seconds
-velocityS=0               # S-wave velocity in meter per seconds
+velocityS=2000               # S-wave velocity in meter per seconds
 rho=2000                  # Density in kilo gramms per cubic meter
 tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
 
 saveSnapshots=0
 tincSnapshot=0
-tlastSnapshot=0
 tFirstSnapshot=0
+tLastSnapshot=0
 
 # Acquisition
 SourceFilename=Input/sources.mtx         # location of source file
@@ -92,27 +92,28 @@ logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log fi
 # General settings
 maxIterations=20                       # maximum number of inversion iterations
 misfitType=L2                          # type of misfit (L2, etc.) 
-invertForVp=1                          # Invert for Vp 1=true 0=false
-invertForDensity=1                     # Invert for Density 1=true 0=false
+invertForVp=0                          # Invert for Vp 1=true 0=false
+invertForVs=1                          # Invert for Vp 1=true 0=false
+invertForDensity=0                     # Invert for Density 1=true 0=false
 
 
 
 # Step length search
-steplengthInit=0.03                    # starting steplength
+steplengthInit=0.05                    # starting steplength
 maxStepCalc=4                          # maximum number of additional forward calculations to find a proper step length
 scalingFactor=2                        # factor for multiplication or division of test step length
 steplengthMin=0.001                    # minimum step length
-steplengthMax=0.1                      # maximum step length
+steplengthMax=0.3                      # maximum step length
 testShotStart=0                        # shot number of first test shot
 testShotEnd=17                         # shot number of last test shot
 testShotIncr=1                         # increment of test shots
 
+useEnergyPreconditioning=0
+epsilonHessian=0.005
+saveApproxHessian=0
+approxHessianName=hessian
 
-# Preconditioning
+# Tapers
 sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
 
-useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradient per shot
-epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)
-saveApproxHessian=0
-approxHessianName=gradients/Hessian
