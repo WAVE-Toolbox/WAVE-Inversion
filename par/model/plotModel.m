@@ -1,26 +1,20 @@
-clearvars; close all;
+function plotModel(parameter,colorbarRange,iteration,geometry,acquisition,inversionModel,startingModel,trueModel)
 
-Min=2500;
-Max=4500;
+nargin
 
-parameter='vp';
-iteration=2;
+Min=colorbarRange.min;
+Max=colorbarRange.max;
 
-load ../acquisition/sources.mtx;
-sources=spconvert(sources(2:end,:));
-load '../acquisition/receiver.mtx';
-receiver=spconvert(receiver(2:end,:));
-
-trueModel='model_true';
-inversionModel='model';
+sources=acquisition.sources;
+receiver=acquisition.receiver;
 
 %% Define input parameter
 
-NX=100;  % Number of grid points in X
-NY=100;  % Number of grid points in Y
-NZ=1;  % Number of grid points in Z
-DH=50;   % Spatial grid sampling
-LAYER=1; % Define layer of 3D model to display as 2D slice
+NX=geometry.NX;  % Number of grid points in X
+NY=geometry.NY;  % Number of grid points in Y
+NZ=geometry.NZ;  % Number of grid points in Z
+DH=geometry.DH;   % Spatial grid sampling
+LAYER=geometry.LAYER; % Define layer of 3D model to display as 2D slice
 
 
 %% Read model
@@ -31,7 +25,14 @@ Y=0:DH:(NY*DH-DH);
 
 %% Plot
 figure
+switch nargin
+case 8
 subplot(1,3,3)
+case 7
+subplot(1,2,2)
+case default
+ subplot(1,1,1)     
+end
 imagesc(X,Y,model(:,:,LAYER))
 caxis([Min Max])
 colorbar('location','southoutside');
@@ -41,14 +42,17 @@ title([parameter ' model at iteration ' num2str(iteration)])
 
 
 
-
+if nargin > 6
 %% Read model
-filename=[inversionModel '.' parameter '.mtx']; % File name of the model
+filename=[startingModel '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
 
 %% Plot
-
+if nargin > 7
 subplot(1,3,2)
+else
+subplot(1,2,1)
+end
 imagesc(X,Y,model(:,:,LAYER))
 caxis([Min Max])
 colorbar('location','southoutside');
@@ -58,8 +62,9 @@ hold on
 plot(sources(:,1)*DH,sources(:,2)*DH,'*')
 plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' starting model'])
+end
 
-
+if nargin > 7
 %% Read model
 filename=[trueModel '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
@@ -75,3 +80,4 @@ hold on
 plot(sources(:,1)*DH,sources(:,2)*DH,'*')
 plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' true model'])
+end
