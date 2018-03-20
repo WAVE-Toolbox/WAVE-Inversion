@@ -16,9 +16,9 @@ namespace KITGPI
     namespace ZeroLagXcorr
     {
 
-        /*! \brief Abstract class to calculate the cross correlation between Forward and Adjoint Wavefield.
+        /*! \brief Abstract class to calculate the cross correlation between forward and adjoint wavefield.
          *
-         * ZeroLagXcorr implements some methods, which are requiered by all derived classes.
+         * ZeroLagXcorr implements some methods, which are required by all derived classes.
          * As this class is an abstract class, all methods are protected.
          */
         template <typename ValueType>

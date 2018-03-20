@@ -13,7 +13,7 @@ namespace KITGPI
     //! \brief Misfit namespace
     namespace Misfit
     {
-        //! \brief Least-squares misfit class
+        //! \brief Class for least-squares misfit
 
         template <typename ValueType>
         class MisfitL2 : public Misfit<ValueType>

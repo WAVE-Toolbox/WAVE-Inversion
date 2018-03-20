@@ -33,9 +33,8 @@ namespace KITGPI
     namespace Gradient
     {
 
-        //! Class for Gradient for elastic simulations (Subsurface properties)
-        /*!
-         This class handels the modelparameter for the elastic finite-difference simulation.
+        /*! \brief Class to store the gradients for elastic inversion
+         *
          */
         template <typename ValueType>
         class Elastic : public Gradient<ValueType>

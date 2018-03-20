@@ -60,11 +60,11 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
 /*! \brief Apply the approximation of the diagonal of the inverse of the Hessian for one shot
  *
  *
- \param gradient 
+ \param gradientPerShot 
  \param shotNumber 
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradient, IndexType shotNumber)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, IndexType shotNumber)
 {
 //     approxHessian *= approxRecGreensFct;
 //     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
@@ -77,7 +77,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
         approxHessian.writeToFile(approxHessianName + ".shot_" + std::to_string(shotNumber+1) + ".mtx");}
     
     approxHessian.invert();
-    gradient *= approxHessian;    // overload operator /= in gradient-class    
+    gradientPerShot *= approxHessian;    // overload operator /= in gradient-class    
     
 }
 

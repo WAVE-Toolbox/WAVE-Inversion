@@ -10,8 +10,8 @@ namespace KITGPI
     //! \brief Misfit namespace
     namespace Misfit
     {
-        //! \brief Abstract class for the misfit
-        /*!
+        /*! \brief Abstract class to store and calculate the misfit
+         *
          * As this class is an abstract class, all constructors are protected.
          */
         

@@ -38,9 +38,9 @@ namespace KITGPI
     namespace Gradient
     {
 
-        /*! \brief Abstract class for a single Gradient (Subsurface properties)
+        /*! \brief Abstract class to store gradients for inversion
          *
-	 * Gradient implements some methods, which are requiered by all derived classes.
+	     * This class implements some methods which are required by all derived classes.
          * As this class is an abstract class, all constructors are protected.
          */
         template <typename ValueType>

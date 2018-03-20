@@ -17,9 +17,13 @@
 namespace KITGPI
 {
     
-    //! \brief Preconditioning namespace
+    //! \brief Gradient preconditioning namespace
     namespace Preconditioning
     {
+        
+        /*! \brief Class to damp a gradient in the vicinity of the sources and receivers
+         * 
+         */
         template <typename ValueType>
         class SourceReceiverTaper
         {
