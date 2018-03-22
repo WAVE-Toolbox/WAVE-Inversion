@@ -1,6 +1,35 @@
+%% Function Name: plotModel
+%
+% Inputs:
+%   parameter(string): model parameter eg. vp,vs,density
+%
+%   colorbarRange(struct): struct with entries min and max for a fixed colorbar
+%
+%   iteration(int): Nr. of the iterarion to be displayed
+%
+%   geometry(struct): struct with entries: NX,NY,NZ,DH,LAYER (layer of 3D model to
+%   display as 2D slice)
+%
+%   acquisition(struct): struct with entries sources and receivers matrices
+%
+%   inversionModel(string): location of the model at itaration 'itaration'
+%
+%   startingModel(string): location  of the starting model 
+%
+%   true model(string): location of the "true" model in synthetic tests
+%
+% Modes:
+%   inversion model, starting model + inversion model, true model +
+%   starting model + inversion model
+%
+% Outputs:
+%   None
+
+%
+% $Date: March 20, 2018
+% ________________________________________
 function plotModel(parameter,colorbarRange,iteration,geometry,acquisition,inversionModel,startingModel,trueModel)
 
-nargin
 
 Min=colorbarRange.min;
 Max=colorbarRange.max;

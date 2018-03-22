@@ -2,19 +2,36 @@ clc
 close all
 clear all
 
+iteration=1;
 
-geometry.NX=100;  % Number of grid points in X
-geometry.NY=100;  % Number of grid points in Y
-geometry.NZ=1;  % Number of grid points in Z
-geometry.DH=50;   % Spatial grid sampling
+parameter='vp';   % model parameter
+
+colorbarRange.min=2500; %lower clip of the colorbar 
+colorbarRange.max=4500; %upper clip of the colorbar
+
+%% Usually, there is no need to change anything below this line
+
+currentDir=pwd;
+cd ../ % change to par directory
+addpath(currentDir)
+addpath('configuration')
+
+config=conf('./ci/configuration_ci.2D.acoustic.txt'); % filename of configuration
+
+geometry.NX=config.getValue('NX');  % Number of grid points in X
+geometry.NY=config.getValue('NY');  % Number of grid points in Y
+geometry.NZ=config.getValue('NZ');  % Number of grid points in Z
+geometry.DH=config.getValue('DH');   % Spatial grid sampling
 geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
 
-colorbarRange.min=2500;
-colorbarRange.max=4500;
 
-load '../acquisition/sources.mtx';
+sources = load (config.getString('SourceFilename'));
 acquisition.sources=spconvert(sources(2:end,:));
-load '../acquisition/receiver.mtx';
+receiver = load (config.getString('ReceiverFilename'));
 acquisition.receiver=spconvert(receiver(2:end,:));
 
-plotModel ('vp',colorbarRange,15,geometry,acquisition,'model','model.out')
+
+
+plotModel (parameter,colorbarRange,iteration,geometry,acquisition,'model','model.out')
+
+cd (currentDir)
