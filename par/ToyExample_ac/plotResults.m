@@ -1,17 +1,14 @@
 clc
 close all
 clear all
-addpath('../model')
-addpath('../seismograms')
-addpath('../gradients')
-addpath('../configuration')
 
+addpath('../configuration')
 config=conf('../ToyExample_ac/Input/configuration.txt');
 configTrue=conf('../ToyExample_ac/Input/configuration_true.txt');
 
 % general parameter ----------------------------------------------
 
-iteration=1; % iteration number
+iteration=11; % iteration number
 
 % model parameter-------------------------------------------------
 geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
@@ -27,6 +24,10 @@ component='p'; % seismogram component
 
 
 %% Usually, there is no need to change anything below this line
+
+addpath('../model')
+addpath('../seismograms')
+addpath('../gradients')
 
 geometry.NX=config.getValue('NX');  % Number of grid points in X
 geometry.NY=config.getValue('NY');  % Number of grid points in Y
@@ -62,3 +63,8 @@ plotSeismogram(DT,iteration,shot,component,skipTraces,syntheticData,fieldData);
 gradientName=config.getString('gradientFilename');
 
 plotGradient(parameter,iteration,geometry,gradientName);
+
+rmpath('../model')
+rmpath('../seismograms')
+rmpath('../gradients')
+rmpath('../configuration')

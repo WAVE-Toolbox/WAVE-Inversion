@@ -2,7 +2,7 @@ clc
 close all
 clear all
 
-iteration=1;
+iteration=2;
 
 parameter='vp';   % model parameter
 
@@ -13,9 +13,8 @@ colorbarRange.max=4500; %upper clip of the colorbar
 
 currentDir=pwd;
 cd ../ % change to par directory
-addpath(currentDir)
 addpath('configuration')
-
+addpath(currentDir)
 config=conf('./ci/configuration_ci.2D.acoustic.txt'); % filename of configuration
 
 geometry.NX=config.getValue('NX');  % Number of grid points in X
@@ -30,8 +29,11 @@ acquisition.sources=spconvert(sources(2:end,:));
 receiver = load (config.getString('ReceiverFilename'));
 acquisition.receiver=spconvert(receiver(2:end,:));
 
+inversionModel=config.getString('ModelFilename');
+startingModel=[config.getString('ModelFilename') '.out'];
 
-
-plotModel (parameter,colorbarRange,iteration,geometry,acquisition,'model','model.out')
+plotModel (parameter,colorbarRange,iteration,geometry,acquisition,inversionModel,startingModel)
 
 cd (currentDir)
+rmpath(currentDir)
+rmpath('configuration')

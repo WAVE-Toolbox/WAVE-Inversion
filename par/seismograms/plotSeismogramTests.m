@@ -24,3 +24,4 @@ syntheticData=config.getString('SeismogramFilename');
 plotSeismogram(DT,iteration,shot,component,skipTraces,syntheticData,fieldData);
 
 cd (currentDir)
+rmpath(currentDir)

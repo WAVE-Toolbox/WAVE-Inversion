@@ -3,7 +3,7 @@ clc
 close all
 clear all
 
-iteration=1;
+iteration=5;
 
 parameter='vp';   % model parameter
 
@@ -21,3 +21,4 @@ geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
 gradientName=config.getString('gradientFilename');
 
 plotGradient(parameter,iteration,geometry,gradientName);
+rmpath('../configuration')
