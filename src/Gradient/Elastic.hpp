@@ -18,7 +18,6 @@
 #include <scai/tracing.hpp>
 
 #include <scai/common/Walltime.hpp>
-#include <scai/common/unique_ptr.hpp>
 #include <scai/logging.hpp>
 
 #include <iostream>
@@ -51,7 +50,7 @@ namespace KITGPI
             //! Copy Constructor.
             Elastic(const Elastic &rhs);
 
-            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar pWaveModulus, scai::lama::Scalar sWaveModulus, scai::lama::Scalar rho);
+            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType pWaveModulus, ValueType sWaveModulus, ValueType rho);
             void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
 
@@ -64,20 +63,20 @@ namespace KITGPI
                 this->resetParameter(density);
             };
 
-            void write(std::string filename, IndexType partitionedOut) const override;
+            void write(std::string filename, scai::IndexType partitionedOut) const override;
 
             /* Getter methods for not requiered parameters */
-            scai::lama::Vector const &getTauP() override;
-            scai::lama::Vector const &getTauS() override;
-            IndexType getNumRelaxationMechanisms() const override;
+            scai::lama::Vector<ValueType> const &getTauP() override;
+            scai::lama::Vector<ValueType> const &getTauS() override;
+            scai::IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
             void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &/*correlatedWavefields*/, KITGPI::Modelparameter::Modelparameter<ValueType> const &/*model*/, ValueType /*DT*/) override;
             void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
 
             /* Overloading Operators */
-            KITGPI::Gradient::Elastic<ValueType> operator*(scai::lama::Scalar rhs);
-            KITGPI::Gradient::Elastic<ValueType> &operator*=(scai::lama::Scalar const &rhs);
+            KITGPI::Gradient::Elastic<ValueType> operator*(ValueType rhs);
+            KITGPI::Gradient::Elastic<ValueType> &operator*=(ValueType const &rhs);
             KITGPI::Gradient::Elastic<ValueType> operator+(KITGPI::Gradient::Elastic<ValueType> const &rhs);
             KITGPI::Gradient::Elastic<ValueType> &operator+=(KITGPI::Gradient::Elastic<ValueType> const &rhs);
             KITGPI::Gradient::Elastic<ValueType> operator-(KITGPI::Gradient::Elastic<ValueType> const &rhs);
@@ -88,8 +87,8 @@ namespace KITGPI
             void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs);
-            void timesAssign(scai::lama::Scalar const &rhs);
-            void timesAssign(scai::lama::Vector const &rhs);
+            void timesAssign(ValueType const &rhs);
+            void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
           private:
             using Gradient<ValueType>::invertForVp;

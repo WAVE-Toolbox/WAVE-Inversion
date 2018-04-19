@@ -35,7 +35,7 @@ namespace KITGPI
 
             void getTaper();
             void apply(KITGPI::Gradient::Gradient<ValueType> &gradient);
-            void init(scai::dmemo::DistributionPtr dist,scai::hmemo::ContextPtr ctx,KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition,KITGPI::Configuration::Configuration config,IndexType radius);
+            void init(scai::dmemo::DistributionPtr dist,scai::hmemo::ContextPtr ctx,KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition,KITGPI::Configuration::Configuration config,scai::IndexType radius);
 
 
         private:

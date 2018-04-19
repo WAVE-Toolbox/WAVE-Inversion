@@ -16,8 +16,6 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::apply(KITGPI::Grad
 template <typename ValueType>
 void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config,IndexType radius)
 {
-    //taper radius should be input!
-    lama::DenseVector<ValueType> taperTmp(dist);
     /* Get local "global" indices */
     hmemo::HArray<IndexType> globalIndices;
     dist->getOwnedIndexes(globalIndices); // get global indeces for local part
@@ -31,7 +29,6 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     ValueType write_taperValues_temp[numLocalIndices];
 
     //gets coordinate index for first source to be changed
-    lama::Scalar temp;
     IndexType SourceCoordinate;
 
     
@@ -39,10 +36,9 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     for (IndexType srcRecNum = 0; srcRecNum < Acquisition.getCoordinates().size(); srcRecNum++) {
 
 	// get 1D coordinate
-        temp = Acquisition.getCoordinates().getValue(srcRecNum);
-        SourceCoordinate = temp.getValue<IndexType>();
+        SourceCoordinate = Acquisition.getCoordinates().getValue(srcRecNum);
 
-        KITGPI::Acquisition::Coordinates<ValueType> coordTransform;
+        KITGPI::Acquisition::Coordinates coordTransform;
         KITGPI::Acquisition::coordinate3D coord;
         KITGPI::Acquisition::coordinate3D centerCoord;
 
@@ -82,11 +78,11 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     }
     }
     write_taperValues.release();
-    taperTmp.setDenseValues(taperValues);
+    //taper radius should be input!
+    lama::DenseVector<ValueType> taperTmp(dist, std::move(taperValues) );
 
     // copy assign tmp vector to sparsevector
     taper.setContextPtr(ctx);
-    taper.allocate(dist);
     taper = taperTmp;
     // setting zero element to 1 by adding 1 to all values (non zero values were set by value-1)
     taper += 1;

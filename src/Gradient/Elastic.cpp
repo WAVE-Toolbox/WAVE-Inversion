@@ -37,7 +37,7 @@ void KITGPI::Gradient::Elastic<ValueType>::init(Configuration::Configuration con
  \param rho Density given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar velocityS_const, scai::lama::Scalar rho)
+void KITGPI::Gradient::Elastic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho)
 {
     invertForVp=config.get<bool>("invertForVp");
     invertForVs=config.get<bool>("invertForVs");
@@ -82,7 +82,7 @@ void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType
  *
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Gradient::Elastic<ValueType>::getTauP()
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Elastic<ValueType>::getTauP()
 {
     COMMON_THROWEXCEPTION("There is no tau parameter in an elastic modelling")
     return (tauP);
@@ -91,7 +91,7 @@ scai::lama::Vector const &KITGPI::Gradient::Elastic<ValueType>::getTauP()
 /*! \brief Get reference to tauS
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Gradient::Elastic<ValueType>::getTauS()
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Elastic<ValueType>::getTauS()
 {
     COMMON_THROWEXCEPTION("There is no tau parameter in an elastic modelling")
     return (tauS);
@@ -118,7 +118,7 @@ IndexType KITGPI::Gradient::Elastic<ValueType>::getNumRelaxationMechanisms() con
  \param rhs Scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::operator*(scai::lama::Scalar rhs)
+KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::operator*(ValueType rhs)
 {
     KITGPI::Gradient::Elastic<ValueType> result(*this);
     result *= rhs;
@@ -131,7 +131,7 @@ KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::opera
  \param rhs Vector
  */
 template <typename ValueType>
-KITGPI::Gradient::Elastic<ValueType> operator*(scai::lama::Scalar lhs, KITGPI::Gradient::Elastic<ValueType> rhs)
+KITGPI::Gradient::Elastic<ValueType> operator*(ValueType lhs, KITGPI::Gradient::Elastic<ValueType> rhs)
 {
     return rhs * lhs;
 }
@@ -141,7 +141,7 @@ KITGPI::Gradient::Elastic<ValueType> operator*(scai::lama::Scalar lhs, KITGPI::G
  \param rhs Scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator*=(scai::lama::Scalar const &rhs)
+KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator*=(ValueType const &rhs)
 {
     density *= rhs;
     velocityP *= rhs;
@@ -265,7 +265,7 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
  \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const &rhs)
+void KITGPI::Gradient::Elastic<ValueType>::timesAssign(ValueType const &rhs)
 {
     density *= rhs;
     velocityP *= rhs;
@@ -277,7 +277,7 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Scalar const 
  \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector const &rhs)
+void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector<ValueType> const &rhs)
 {
     density *= rhs;
     velocityP *= rhs;
@@ -343,7 +343,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     gradLambda*=model.getDensity();
     gradLambda*=model.getDensity();
     gradLambda*=4;
-    gradLambda.invert();
+    gradLambda=1/gradLambda;
     
     gradLambda *= correlatedWavefields.getNormalStressSum();
     gradLambda *= -DT;
@@ -356,7 +356,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 	  temp *= model.getDensity();
 	  temp *= temp;
 	  temp*=4;
-	  temp.invert();
+	  temp = 1/temp;
 	  temp *= correlatedWavefields.getNormalStressDiff();
 	  temp *= -DT;
 	  
@@ -366,7 +366,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
           temp *= model.getVelocityS();
 	  temp *= model.getDensity();
 	  temp *= temp;
-	  temp.invert();
+	  temp = 1/temp;
 	  temp *= correlatedWavefields.getShearStress();
 	  temp *= -DT;
 	  

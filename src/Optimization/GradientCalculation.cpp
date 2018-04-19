@@ -2,6 +2,8 @@
 
 #include "GradientCalculation.hpp"
 
+using scai::IndexType;
+
 /*! \brief Allocation of wavefields, zero-lag crosscorrelation and gradients
  *
  *

@@ -8,7 +8,7 @@ using namespace scai;
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::resetWavefield(scai::lama::DenseVector<ValueType> &vector)
 {
-    vector.assign(0.0);
+    vector = 0;
 }
 
 /*! \brief Intitialisation of a single wavefield vector.
@@ -22,10 +22,13 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::resetWavefield(scai::lama::D
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    vector.setContextPtr(ctx);
-    vector.allocate(dist);
+    // NOTE_TB: why is this an own method, 
 
-    resetWavefield(vector);
+    vector = lama::zero<lama::DenseVector<ValueType>>( dist, ctx );
+
+    // vector.setContextPtr(ctx);
+    // vector.allocate(dist);
+    // resetWavefield(vector);
 }
 
 /*! \brief Methode to Write Wavefield for timestep t

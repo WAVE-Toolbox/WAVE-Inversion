@@ -2,6 +2,8 @@
 #include <string>
 #include <iomanip>
 
+using scai::IndexType;
+
 /*! \brief Find the optimal steplength
  *
  *
@@ -17,7 +19,7 @@
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, scai::lama::Scalar steplength_init, scai::lama::DenseVector<ValueType> currentMisfit)
+void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplength_init, scai::lama::DenseVector<ValueType> currentMisfit)
 {
     double start_t, end_t; /* For timing */
     /* ------------------------------------------- */
@@ -38,23 +40,21 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
     
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
     
-    scai::lama::Scalar misfitTestSum;
-    scai::lama::Scalar steplength;
+    ValueType misfitTestSum;
+    ValueType steplength;
     
     /* ------------------------------------------- */
     /* Set values for step length search           */
     /* ------------------------------------------- */
     stepCalcCount = 1;                                                           // number of forward calculations to find a proper (steplength, misfit) pair
     int maxStepCalc = config.get<int>("maxStepCalc");                            // maximum number of forward calculations to find a proper (steplength, misfit) pair 
-    scai::lama::Scalar scalingFactor = config.get<ValueType>("scalingFactor");
-    scai::lama::Scalar steplengthMin = config.get<ValueType>("steplengthMin");
-    scai::lama::Scalar steplengthMax = config.get<ValueType>("steplengthMax");
+    ValueType scalingFactor = config.get<ValueType>("scalingFactor");
+    ValueType steplengthMin = config.get<ValueType>("steplengthMin");
+    ValueType steplengthMax = config.get<ValueType>("steplengthMax");
     
     /* Save three pairs (steplength, misfit) for the parabolic fit */
-    steplengthParabola.allocate(3);
-    misfitParabola.allocate(3);
-    steplengthParabola.assign(0.0);
-    misfitParabola.assign(0.0);
+    steplengthParabola.setSameValue(3, 0);
+    misfitParabola.setSameValue(3, 0);
 
     /* ------------------------------------------------------------------------------------------------------ */
     /* Try to find a second step length which gives a smaller misfit and a third step length which gives again a larger misfit.
@@ -156,11 +156,11 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
  \param xValues Vector of three values on the y-axis
  */
 template <typename ValueType>
-scai::lama::Scalar KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVector<ValueType> const &xValues,scai::lama::DenseVector<ValueType> const &yValues){
+ValueType KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVector<ValueType> const &xValues,scai::lama::DenseVector<ValueType> const &yValues){
 	
     SCAI_ASSERT(xValues.size() == 3, "xvalues must contain 3 values!");
     SCAI_ASSERT(yValues.size() == 3, "yvalues must contain 3 values!");    
-    scai::lama::Scalar steplengthExtremum;
+    ValueType steplengthExtremum;
     scai::lama::DenseMatrix<ValueType> A(3,3);
     scai::lama::DenseMatrix<ValueType> invA;
     scai::lama::DenseVector<ValueType> coeff; // does the size need to be specified?
@@ -168,9 +168,9 @@ scai::lama::Scalar KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama:
     scai::lama::DenseVector<ValueType> xValuesPow2 = xValues;
     xValuesPow2 *= xValues;
     
-    A.setColumn(xValuesPow2, 0, scai::common::binary::BinaryOp::COPY);
-    A.setColumn(xValues, 1, scai::common::binary::BinaryOp::COPY);
-    A.setColumn(vectorOnes, 2, scai::common::binary::BinaryOp::COPY);
+    A.setColumn(xValuesPow2, 0, scai::common::BinaryOp::COPY);
+    A.setColumn(xValues, 1, scai::common::BinaryOp::COPY);
+    A.setColumn(vectorOnes, 2, scai::common::BinaryOp::COPY);
     invA.invert(A); 
     
     coeff = invA * yValues;       
@@ -193,7 +193,7 @@ scai::lama::Scalar KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama:
  \param steplength Steplength
  */
 template <typename ValueType>
-scai::lama::Scalar KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, scai::lama::Scalar steplength)
+ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength)
 {
     
     /* ------------------------------------------- */
@@ -281,22 +281,22 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
  \param iteration Iteration count
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename, scai::lama::Scalar misfitSum)
+void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename, ValueType misfitSum)
 {
     int myRank = comm->getRank(); 
     /* The following temporaries are only necessary because of a problem with LAMA: e.g. steplengthParabola.getValue(0).getValue<ValueType>() produces an error */
-    scai::lama::Scalar steplengthParabola0 = steplengthParabola.getValue(0);
-    scai::lama::Scalar steplengthParabola1 = steplengthParabola.getValue(1);
-    scai::lama::Scalar steplengthParabola2 = steplengthParabola.getValue(2);
-    scai::lama::Scalar misfitParabola0 = misfitParabola.getValue(0);
-    scai::lama::Scalar misfitParabola1 = misfitParabola.getValue(1);
-    scai::lama::Scalar misfitParabola2 = misfitParabola.getValue(2);
+    ValueType steplengthParabola0 = steplengthParabola.getValue(0);
+    ValueType steplengthParabola1 = steplengthParabola.getValue(1);
+    ValueType steplengthParabola2 = steplengthParabola.getValue(2);
+    ValueType misfitParabola0 = misfitParabola.getValue(0);
+    ValueType misfitParabola1 = misfitParabola.getValue(1);
+    ValueType misfitParabola2 = misfitParabola.getValue(2);
     
     if (myRank == MASTERGPI) {
         std::string filename(logFilename);
         logFile.open(filename, std::ios_base::app);
         logFile <<  std::scientific ;
-        logFile << std::setw(8) << iteration << std::setw(22) << steplengthOptimum.getValue<ValueType>() << std::setw(18) << stepCalcCount << std::setw(30) << steplengthParabola0.getValue<ValueType>() << std::setw(22) << steplengthParabola1.getValue<ValueType>() << std::setw(22) << steplengthParabola2.getValue<ValueType>() << std::setw(19) << misfitParabola0.getValue<ValueType>() << std::setw(17) << misfitParabola1.getValue<ValueType>() << std::setw(17) << misfitParabola2.getValue<ValueType>() << std::setw(22) << misfitSum.getValue<ValueType>() << "\n" ;
+        logFile << std::setw(8) << iteration << std::setw(22) << steplengthOptimum << std::setw(18) << stepCalcCount << std::setw(30) << steplengthParabola0 << std::setw(22) << steplengthParabola1 << std::setw(22) << steplengthParabola2 << std::setw(19) << misfitParabola0 << std::setw(17) << misfitParabola1 << std::setw(17) << misfitParabola2 << std::setw(22) << misfitSum << "\n" ;
         logFile.close();
     }                             
 }
@@ -306,7 +306,7 @@ void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::Communica
  *
  */
 template <typename ValueType>
-scai::lama::Scalar const &KITGPI::StepLengthSearch<ValueType>::getSteplength()
+ValueType const &KITGPI::StepLengthSearch<ValueType>::getSteplength()
 {
     return (steplengthOptimum);
 }

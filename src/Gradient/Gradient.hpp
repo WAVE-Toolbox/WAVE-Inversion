@@ -19,7 +19,6 @@
 #include <scai/tracing.hpp>
 
 #include <scai/common/Walltime.hpp>
-#include <scai/common/unique_ptr.hpp>
 #include <scai/logging.hpp>
 
 #include <iostream>
@@ -76,31 +75,31 @@ namespace KITGPI
              \param filename filename to write parameters (endings will be added by derived classes)
              \param partitionedOut Partitioned output
              */
-            virtual void write(std::string filename, IndexType partitionedOut) const = 0;
+            virtual void write(std::string filename, scai::IndexType partitionedOut) const = 0;
 
-            virtual scai::lama::Vector const &getDensity();
-            virtual scai::lama::Vector const &getDensity() const;
-            virtual scai::lama::Vector const &getVelocityP();
-            virtual scai::lama::Vector const &getVelocityP() const;
-            virtual scai::lama::Vector const &getVelocityS();
-            virtual scai::lama::Vector const &getVelocityS() const;
+            virtual scai::lama::Vector<ValueType> const &getDensity();
+            virtual scai::lama::Vector<ValueType> const &getDensity() const;
+            virtual scai::lama::Vector<ValueType> const &getVelocityP();
+            virtual scai::lama::Vector<ValueType> const &getVelocityP() const;
+            virtual scai::lama::Vector<ValueType> const &getVelocityS();
+            virtual scai::lama::Vector<ValueType> const &getVelocityS() const;
 
-            virtual scai::lama::Vector const &getTauP();
-            virtual scai::lama::Vector const &getTauP() const;
-            virtual scai::lama::Vector const &getTauS();
-            virtual scai::lama::Vector const &getTauS() const;
+            virtual scai::lama::Vector<ValueType> const &getTauP();
+            virtual scai::lama::Vector<ValueType> const &getTauP() const;
+            virtual scai::lama::Vector<ValueType> const &getTauS();
+            virtual scai::lama::Vector<ValueType> const &getTauS() const;
 
-            virtual IndexType getNumRelaxationMechanisms() const;
+            virtual scai::IndexType getNumRelaxationMechanisms() const;
             virtual ValueType getRelaxationFrequency() const;
 
-            virtual void setDensity(scai::lama::Vector const &setDensity);
-            virtual void setVelocityP(scai::lama::Vector const &setVelocityP);
-            virtual void setVelocityS(scai::lama::Vector const &setVelocityS);
+            virtual void setDensity(scai::lama::Vector<ValueType> const &setDensity);
+            virtual void setVelocityP(scai::lama::Vector<ValueType> const &setVelocityP);
+            virtual void setVelocityS(scai::lama::Vector<ValueType> const &setVelocityS);
 
-            virtual void setTauP(scai::lama::Vector const &setTauP);
-            virtual void setTauS(scai::lama::Vector const &setTauS);
+            virtual void setTauP(scai::lama::Vector<ValueType> const &setTauP);
+            virtual void setTauS(scai::lama::Vector<ValueType> const &setTauS);
 
-            virtual void setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms);
+            virtual void setNumRelaxationMechanisms(scai::IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
 
             virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model) = 0;
@@ -108,16 +107,16 @@ namespace KITGPI
             virtual void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
-            virtual void timesAssign(scai::lama::Scalar const &rhs) = 0;
-            virtual void timesAssign(scai::lama::Vector const &rhs) = 0;
+            virtual void timesAssign(ValueType const &rhs) = 0;
+            virtual void timesAssign(scai::lama::Vector<ValueType> const &rhs) = 0;
 
             /* Operator overloading */
             /*lhs Base rhs Base */
             KITGPI::Gradient::Gradient<ValueType> &operator=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator-=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator+=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
-            KITGPI::Gradient::Gradient<ValueType> &operator*=(scai::lama::Scalar const &rhs);
-            KITGPI::Gradient::Gradient<ValueType> &operator*=(scai::lama::Vector const &rhs);
+            KITGPI::Gradient::Gradient<ValueType> &operator*=(ValueType const &rhs);
+            KITGPI::Gradient::Gradient<ValueType> &operator*=(scai::lama::Vector<ValueType> const &rhs);
             
             /*lhs: fd-Model-Base rhs: gradient Base */
             friend KITGPI::Modelparameter::Modelparameter<ValueType> &operator-=(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> &rhs)
@@ -134,10 +133,10 @@ namespace KITGPI
 	    
           protected:
 
-            void resetParameter(scai::lama::DenseVector<ValueType> &vector) { vector.assign(0.0); }
+            void resetParameter(scai::lama::DenseVector<ValueType> &vector) { vector.setScalar( 0 ); }
 
-            IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
-            IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files
+            scai::IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
+            scai::IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files
 
             scai::lama::DenseVector<ValueType> density; //!< Vector storing Density.
 
@@ -147,21 +146,21 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> tauP; //!< Vector storing tauP for visco-elastic modelling.
             scai::lama::DenseVector<ValueType> tauS; //!< Vector storing tauS for visco-elastic modelling.
 
-            IndexType numRelaxationMechanisms; //!< Number of relaxation mechanisms
+            scai::IndexType numRelaxationMechanisms; //!< Number of relaxation mechanisms
             ValueType relaxationFrequency;     //!< Relaxation Frequency
 
-            void initParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar value);
-            void initParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn);
+            void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType value);
+            void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, scai::IndexType partitionedIn);
 
-            void writeParameterisation(scai::lama::Vector const &vector, std::string filename, IndexType partitionedOut) const;
+            void writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, scai::IndexType partitionedOut) const;
 
-            IndexType getPartitionedIn();
-            IndexType getPartitionedOut();
+            scai::IndexType getPartitionedIn();
+            scai::IndexType getPartitionedOut();
 
           private:
-            void allocateParameterisation(scai::lama::Vector &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            void allocateParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
-            void readParameterisation(scai::lama::Vector &vector, std::string filename, scai::dmemo::DistributionPtr dist, IndexType partitionedIn);
+            void readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, scai::dmemo::DistributionPtr dist, scai::IndexType partitionedIn);
         };
     }
 }

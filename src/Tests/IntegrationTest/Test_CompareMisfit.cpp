@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
         }
     }
     misfitFile.close();
-    scai::lama::Scalar referenceMisfit(std::stof(referenceMisfitStr));
+    ValueType referenceMisfit(std::stof(referenceMisfitStr));
 
     //get smallest misfit value from log file
     std::ifstream logFile;

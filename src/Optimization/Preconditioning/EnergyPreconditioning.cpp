@@ -10,11 +10,9 @@
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config)
 {
-    approxHessian.allocate(dist);
-    approxHessian.assign(0.0);
-    
-    wavefieldSeismogramType.allocate(dist);
-    wavefieldSeismogramType.assign(0.0);
+    approxHessian.setSameValue(dist, 0 );
+
+    wavefieldSeismogramType.setSameValue(dist, 0 );
     
     saveApproxHessian = config.get<bool>("saveApproxHessian");  
     approxHessianName = config.get<std::string>("approxHessianName");  
@@ -64,7 +62,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
  \param shotNumber 
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, IndexType shotNumber)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber)
 {
 //     approxHessian *= approxRecGreensFct;
 //     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
@@ -76,7 +74,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
     if(saveApproxHessian==1){
         approxHessian.writeToFile(approxHessianName + ".shot_" + std::to_string(shotNumber+1) + ".mtx");}
     
-    approxHessian.invert();
+    approxHessian = 1 / approxHessian;
     gradientPerShot *= approxHessian;    // overload operator /= in gradient-class    
     
 }
@@ -84,8 +82,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::resetApproxHessian()
 {
-    approxHessian.assign(0.0);
-    
+    approxHessian = 0;   // does not change size/distribution
 }
 
 template class KITGPI::Preconditioning::EnergyPreconditioning<double>;

@@ -34,11 +34,11 @@ void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration co
  \param config Configuration class
  \param ctx Context
  \param dist Distribution
- \param velocityP_const velocity gradients given as Scalar
- \param rho_const Density gradient given as Scalar
+ \param velocityP_const velocity gradients given as scalar value
+ \param rho_const Density gradient given as scalar value
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, scai::lama::Scalar velocityP_const, scai::lama::Scalar rho_const)
+void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType rho_const)
 {
     invertForVp=config.get<bool>("invertForVp");
     invertForDensity=config.get<bool>("invertForDensity");
@@ -75,7 +75,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexTyp
 /*! \brief Get reference to S-wave velocity
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Gradient::Acoustic<ValueType>::getVelocityS()
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Acoustic<ValueType>::getVelocityS()
 {
     COMMON_THROWEXCEPTION("The S-wave velocity is not defined in an acoustic simulation.")
     return (velocityS);
@@ -85,7 +85,7 @@ scai::lama::Vector const &KITGPI::Gradient::Acoustic<ValueType>::getVelocityS()
  *
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Gradient::Acoustic<ValueType>::getTauP()
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Acoustic<ValueType>::getTauP()
 {
     COMMON_THROWEXCEPTION("There is no tau parameter in an elastic modelling")
     return (tauP);
@@ -94,7 +94,7 @@ scai::lama::Vector const &KITGPI::Gradient::Acoustic<ValueType>::getTauP()
 /*! \brief Get reference to tauS
  */
 template <typename ValueType>
-scai::lama::Vector const &KITGPI::Gradient::Acoustic<ValueType>::getTauS()
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Acoustic<ValueType>::getTauS()
 {
     COMMON_THROWEXCEPTION("There is no tau parameter in an elastic modelling")
     return (tauS);
@@ -118,10 +118,10 @@ IndexType KITGPI::Gradient::Acoustic<ValueType>::getNumRelaxationMechanisms() co
 
 /*! \brief Overloading * Operation
  *
- \param rhs Scalar factor with which the vectors are multiplied.
+ \param rhs scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Gradient::Acoustic<ValueType> KITGPI::Gradient::Acoustic<ValueType>::operator*(scai::lama::Scalar rhs)
+KITGPI::Gradient::Acoustic<ValueType> KITGPI::Gradient::Acoustic<ValueType>::operator*(ValueType rhs)
 {
     KITGPI::Gradient::Acoustic<ValueType> result(*this);
     result *= rhs;
@@ -130,21 +130,21 @@ KITGPI::Gradient::Acoustic<ValueType> KITGPI::Gradient::Acoustic<ValueType>::ope
 
 /*! \brief non-member function to multiply (scalar as left operand)
  *
- \param lhs Scalar factor with which the vectors are multiplied.
+ \param lhs scalar factor with which the vectors are multiplied.
  \param rhs Vector
  */
 template <typename ValueType>
-KITGPI::Gradient::Acoustic<ValueType> operator*(scai::lama::Scalar lhs, KITGPI::Gradient::Acoustic<ValueType> rhs)
+KITGPI::Gradient::Acoustic<ValueType> operator*(ValueType lhs, KITGPI::Gradient::Acoustic<ValueType> rhs)
 {
     return rhs * lhs;
 }
 
 /*! \brief Overloading *= Operation
  *
- \param rhs Scalar factor with which the vectors are multiplied.
+ \param rhs scalar factor with which the vectors are multiplied.
  */
 template <typename ValueType>
-KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator*=(scai::lama::Scalar const &rhs)
+KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator*=(ValueType const &rhs)
 {
     density *= rhs;
     velocityP *= rhs;
@@ -258,7 +258,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::plusAssign(KITGPI::Gradient::Gradien
  \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Scalar const &rhs)
+void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(ValueType const &rhs)
 {
     density *= rhs;
     velocityP *= rhs;
@@ -269,7 +269,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Scalar const
  \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Vector const &rhs)
+void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Vector<ValueType> const &rhs)
 {
     density *= rhs;
     velocityP *= rhs;
@@ -316,7 +316,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     grad_bulk *= model.getDensity();
     grad_bulk *= grad_bulk; 
     grad_bulk *= 4; 
-    grad_bulk.invert();
+    grad_bulk = 1 / grad_bulk;
     
     grad_bulk *= correlatedWavefields.getP();
     grad_bulk *= -DT;
