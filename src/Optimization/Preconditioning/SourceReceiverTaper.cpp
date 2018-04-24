@@ -16,6 +16,9 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::apply(KITGPI::Grad
 template <typename ValueType>
 void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config,IndexType radius)
 {
+    
+    lama::DenseVector<ValueType> taperTmp(dist, 0.0);
+
     /* Get local "global" indices */
     hmemo::HArray<IndexType> globalIndices;
     dist->getOwnedIndexes(globalIndices); // get global indeces for local part
@@ -79,7 +82,8 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     }
     write_taperValues.release();
     //taper radius should be input!
-    lama::DenseVector<ValueType> taperTmp(dist, std::move(taperValues) );
+    taperTmp.setDenseValues(taperValues);
+//     lama::DenseVector<ValueType> taperTmp(dist, std::move(taperValues) ); // problems here during runtime
 
     // copy assign tmp vector to sparsevector
     taper.setContextPtr(ctx);

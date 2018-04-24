@@ -26,8 +26,8 @@ unittest-gcc:
     - SCAI_ROOT=/data14/software/scai_lama/build_dev
     - echo "LAMA Version:" && file ${SCAI_ROOT}/lib/libscai_lama.so | sed 's/.*libscai_lama\.so\.\([0-9]*\.[0-9]*\.[0.9]*\).*/\1/g'
   script:
-    - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${GTEST_DIR}:${DYLD_LIBRARY_PATH}
-    - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${GTEST_DIR}:${LD_LIBRARY_PATH}
+    - DYLD_LIBRARY_PATH=${SCAI_ROOT}/lib/:${GTEST_DIR}/lib:${DYLD_LIBRARY_PATH}
+    - LD_LIBRARY_PATH=${SCAI_ROOT}/lib:${GTEST_DIR}/lib:${LD_LIBRARY_PATH}
     - cd par/     - ./../build/bin/Test_unit
     - ./../build/bin/Test_unit
 
