@@ -1,5 +1,4 @@
 #include "EnergyPreconditioning.hpp"
-// #include <cmath> // for asinh()
 
 /*! \brief Initialize private members of the object
  *
@@ -12,25 +11,16 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
 {
     approxHessian.setSameValue(dist, 0 );
 
-    wavefieldSeismogramType.setSameValue(dist, 0 );
+    wavefieldVX.setSameValue(dist, 0 );
+    wavefieldVY.setSameValue(dist, 0 );
+    wavefieldVZ.setSameValue(dist, 0 );
     
     saveApproxHessian = config.get<bool>("saveApproxHessian");  
     approxHessianName = config.get<std::string>("approxHessianName");  
     epsilonHessian = config.get<ValueType>("epsilonHessian");
- 
     
-    /* Calculate approximation of receiver Green's function (migration weight K3 after Plessix and Mulder, 2004)
-       Attention: only valid, if z_r = 0 (depth) for all receivers! */
-    
-//     approxRecGreensFct.allocate(dist);
-//     approxRecGreensFct.assign(0.0);
-    
-    /* Allocate approximation of the receiver Green's function: 
-       It (x_r,min and x_r,max) depends on the shot if the shots use different reicevers
-       A loop over the model is necessary:
-       for ...
-          index2coordinate(1Dcoordinate, NX,Ny,NZ);
-          ( asinh() - asinh() )                        */
+    dimension = config.get<std::string>("dimension");
+    equationType = config.get<std::string>("equationType");
     
 }
 
@@ -43,15 +33,24 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT)
 {
+            
+    if(equationType!="SH"){
+        wavefieldVX = wavefield.getRefVX();
+        wavefieldVX *= wavefieldVX;
+        wavefieldVX *= DT;
+        approxHessian += wavefieldVX;}
+        
+    if(equationType!="SH"){
+        wavefieldVY = wavefield.getRefVY();
+        wavefieldVY *= wavefieldVY;
+        wavefieldVY *= DT;
+        approxHessian += wavefieldVY;}
     
-    /* Function should use the wavefield of the seismogram type which is used  to calculate the misfit! */
-    
-//     receivers.getSeismogramTypes();
-    
-    wavefieldSeismogramType = wavefield.getRefP();
-    wavefieldSeismogramType *= wavefieldSeismogramType;
-    wavefieldSeismogramType *= DT;
-    approxHessian += wavefieldSeismogramType;
+    if(dimension=="3D" || equationType=="SH"){
+        wavefieldVZ = wavefield.getRefVZ();
+        wavefieldVZ *= wavefieldVZ;
+        wavefieldVZ *= DT;
+        approxHessian += wavefieldVZ;}
     
 }
 
@@ -64,7 +63,6 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber)
 {
-//     approxHessian *= approxRecGreensFct;
 //     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
     
     /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
