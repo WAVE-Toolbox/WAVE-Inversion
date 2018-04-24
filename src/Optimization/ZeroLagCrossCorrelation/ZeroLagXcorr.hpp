@@ -51,7 +51,7 @@ namespace KITGPI
             //! \brief Initialization
             virtual void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
 
-            virtual void write(std::string type, IndexType t) = 0;
+            virtual void write(std::string type, scai::IndexType t) = 0;
 
             bool invertForVp = false;
             bool invertForVs = false;
@@ -60,7 +60,7 @@ namespace KITGPI
           protected:
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);
             void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
-            void writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, IndexType t);
+            void writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, scai::IndexType t);
 
             scai::lama::DenseVector<ValueType> ShearStress;      //!< (sum of) correlated shear stresses
             scai::lama::DenseVector<ValueType> NormalStressDiff; //!<correlated difference of normal stress components  2D: (sxxF-syyF)*(sxxB-syyB)

@@ -32,7 +32,7 @@ namespace KITGPI
 
             void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config);
             void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT); //!< Integrate squared wavefields 
-            void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, IndexType shotNumber);
+            void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber);
             void resetApproxHessian();
             
         private:

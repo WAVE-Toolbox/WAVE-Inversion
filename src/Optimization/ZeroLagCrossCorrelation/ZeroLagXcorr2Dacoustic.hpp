@@ -43,8 +43,8 @@ namespace KITGPI
 
             void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
-            void write(std::string type, IndexType t) override;
-            void writeSnapshot(IndexType t);
+            void write(std::string type, scai::IndexType t) override;
+            void writeSnapshot(scai::IndexType t);
 
             using ZeroLagXcorr<ValueType>::invertForVp;
             using ZeroLagXcorr<ValueType>::invertForDensity;

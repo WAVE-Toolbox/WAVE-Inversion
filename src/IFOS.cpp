@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     std::string fieldSeisName(config.get<std::string>("FieldSeisName"));
     std::string gradname(config.get<std::string>("GradientFilename"));
     std::string logFilename = config.get<std::string>("LogFilename");
-    lama::Scalar steplength_init = config.get<ValueType>("SteplengthInit");
+    ValueType steplength_init = config.get<ValueType>("SteplengthInit");
 
     /* --------------------------------------- */
     /* Context and Distribution                */

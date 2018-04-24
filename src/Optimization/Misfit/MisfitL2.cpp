@@ -8,7 +8,7 @@
  \param receiversObs Receiver object which stores the observed data 
  */
 template <typename ValueType>
-scai::lama::Scalar KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs)
+ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs)
 {    
         
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyn;
@@ -16,8 +16,8 @@ scai::lama::Scalar KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition
     KITGPI::Acquisition::SeismogramHandler<ValueType> seismoHandlerSyn;
     KITGPI::Acquisition::SeismogramHandler<ValueType> seismoHandlerObs;
     
-    scai::lama::Scalar misfit;
-    scai::lama::Scalar misfitSum;
+    ValueType misfit;
+    ValueType misfitSum;
     misfitSum = 0;
 
     seismoHandlerSyn = receiversSyn.getSeismogramHandler();
@@ -43,7 +43,7 @@ scai::lama::Scalar KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition
  \param seismogramObs Seismogram object which stores the observed data 
  */
 template <typename ValueType>
-scai::lama::Scalar KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
+ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
     

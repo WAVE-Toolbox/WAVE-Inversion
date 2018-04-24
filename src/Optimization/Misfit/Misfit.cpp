@@ -6,7 +6,7 @@
  \param iteration Integer value which specifies the iteration number
  */
 template <typename ValueType>
-scai::lama::Scalar KITGPI::Misfit::Misfit<ValueType>::getMisfitSum(int iteration)
+ValueType KITGPI::Misfit::Misfit<ValueType>::getMisfitSum(int iteration)
 {
     return this->misfitStorage.at(iteration).sum();
 }
@@ -29,7 +29,7 @@ scai::lama::DenseVector<ValueType> KITGPI::Misfit::Misfit<ValueType>::getMisfitI
  \param shotNumber Integer value which specifies the shot number
  */
 template <typename ValueType>
-scai::lama::Scalar KITGPI::Misfit::Misfit<ValueType>::getMisfitShot(int iteration, int shotNumber)
+ValueType KITGPI::Misfit::Misfit<ValueType>::getMisfitShot(int iteration, int shotNumber)
 {
     return this->misfitStorage.at(iteration).getValue(shotNumber);
 }
