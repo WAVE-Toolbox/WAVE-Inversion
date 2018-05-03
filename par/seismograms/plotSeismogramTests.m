@@ -2,6 +2,7 @@ clc
 close all
 clear all
 
+stage=1;
 iteration=0;
 skipTraces=3;  % every 'skipTraces' trace will be displayed
 shot=5;        % shot number
@@ -21,7 +22,7 @@ fieldData=config.getString('fieldSeisName');
 syntheticData=config.getString('SeismogramFilename');
 
 
-plotSeismogram(DT,iteration,shot,component,skipTraces,syntheticData,fieldData);
+plotSeismogram(DT,stage,iteration,shot,component,skipTraces,syntheticData,fieldData);
 
 cd (currentDir)
 rmpath(currentDir)

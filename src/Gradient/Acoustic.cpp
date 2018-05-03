@@ -5,43 +5,39 @@ using namespace KITGPI;
 
 /*! \brief Constructor that is using the Configuration class
  *
- \param config Configuration class
  \param ctx Context for the Calculation
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::Gradient::Acoustic<ValueType>::Acoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::Gradient::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(config, ctx, dist,0.0,0.0);
+    init(ctx, dist,0.0,0.0);
 }
 
 /*! \brief Initialisation that is using the configuration class
  *
  *  Generates a homogeneous gradient, which will be initialized by the two given scalar values.
- \param config Configuration class
  \param ctx Context
  \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-  init(config, ctx, dist,0.0,0.0);
+  init(ctx, dist,0.0,0.0);
 }
+
 
 /*! \brief Initialisation that is generating a homogeneous gradient
  *
  *  Generates a homogeneous gradient, which will be initialized by the two given scalar values.
- \param config Configuration class
  \param ctx Context
  \param dist Distribution
  \param velocityP_const velocity gradients given as scalar value
  \param rho_const Density gradient given as scalar value
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType rho_const)
+void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType rho_const)
 {
-    invertForVp=config.get<bool>("invertForVp");
-    invertForDensity=config.get<bool>("invertForDensity");
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(density, ctx, dist, rho_const);
 }
@@ -51,8 +47,6 @@ void KITGPI::Gradient::Acoustic<ValueType>::init(Configuration::Configuration co
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
 {
-    invertForVp=rhs.invertForVp;
-    invertForDensity=rhs.invertForDensity;
     velocityP = rhs.velocityP;
     density = rhs.density;
 }
@@ -209,8 +203,6 @@ template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator=(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
 {
     // why does rhs.density not work (density = protected)
-    invertForVp=rhs.invertForVp;
-    invertForDensity=rhs.invertForDensity;
     velocityP = rhs.velocityP;
     density = rhs.density;
     return *this;
@@ -223,8 +215,6 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-    invertForVp=rhs.invertForVp;
-    invertForDensity=rhs.invertForDensity;
     density = rhs.getDensity();
     velocityP = rhs.getVelocityP();
 }
@@ -295,18 +285,18 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::
  \param model Abstract model.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (invertForVp) {
+    if (workflow.invertForVp) {
         velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
     }
-    if (invertForDensity) {
+    if (workflow.invertForDensity) {
         density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
     }
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT)
+void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
 	//dt should be in cross correlation!
     //grad_bulk = -dt*Padj*dPfw/dt / (rho*vp^2)^2
@@ -321,14 +311,14 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     grad_bulk *= correlatedWavefields.getP();
     grad_bulk *= -DT;
 
-    if (invertForVp) {
+    if (workflow.invertForVp) {
 	//grad_vp = 2*rho*vp*grad_bulk
         velocityP = 2 * grad_bulk;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
     }
     
-    if (invertForDensity) {
+    if (workflow.invertForDensity) {
 	//grad_density=vp^2*grad_bulk + (sum(i) (dt Vadj,i * dVfw,i/dt))
         density = model.getVelocityP();
         density *= model.getVelocityP();

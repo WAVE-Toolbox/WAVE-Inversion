@@ -3,13 +3,11 @@
 using namespace scai;
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    invertForVp = config.get<bool>("invertForVp");
-    invertForDensity = config.get<bool>("invertForDensity");
-    if (invertForDensity)
+    if (workflow.invertForDensity)
         this->initWavefield(VSum, ctx, dist);
-    if ((invertForVp) || (invertForDensity))
+    if ((workflow.invertForVp) || (workflow.invertForDensity))
         this->initWavefield(P, ctx, dist);
 }
 
@@ -29,9 +27,9 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>:
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    init(config, ctx, dist);
+    init(ctx, dist, workflow);
 }
 
 /*! \brief override Methode tor write Wavefield Snapshot to file
@@ -41,11 +39,11 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string type, IndexType t)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (invertForDensity)
+    if (workflow.invertForDensity)
     this->writeWavefield(VSum, "VSum", type, t);
-    if ((invertForVp) || (invertForDensity))
+    if ((workflow.invertForVp) || (workflow.invertForDensity))
     this->writeWavefield(P, "P", type, t);
 }
 
@@ -55,35 +53,35 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string 
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::writeSnapshot(IndexType t)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    write(type, t);
+    write(type, t, workflow);
 }
 
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr()
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (invertForDensity)
+    if (workflow.invertForDensity)
     this->resetWavefield(VSum);
-    if ((invertForVp) || (invertForDensity))
+    if ((workflow.invertForVp) || (workflow.invertForDensity))
     this->resetWavefield(P);
 }
 
 /*! \brief function to update the result of the zero lag cross-correlation for per timestep 
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp;
-    if ((invertForVp) || (invertForDensity)) {
+    if ((workflow.invertForVp) || (workflow.invertForDensity)) {
         temp = forwardWavefield.getRefP();
         temp *= adjointWavefield.getRefP();
         P += temp;
     }
-    if (invertForDensity) {
+    if (workflow.invertForDensity) {
         temp = forwardWavefield.getRefVX();
         temp *= adjointWavefield.getRefVX();
         VSum += temp;

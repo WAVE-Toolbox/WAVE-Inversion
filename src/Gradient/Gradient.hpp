@@ -29,6 +29,7 @@
 
 #include "../Optimization/ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
 #include <Modelparameter/Modelparameter.hpp>
+#include "../Workflow/Workflow.hpp"
 
 namespace KITGPI
 {
@@ -58,15 +59,14 @@ namespace KITGPI
 
             /*! \brief Abstract initialisation function
              * Standard initialisation function
-             \param config Configuration from configuration file
              \param ctx Context
              \param dist Distribution
              */
-            virtual void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
+            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
 
             virtual void resetGradient() = 0;
 
-            virtual void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT) = 0;
+            virtual void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             /*! \brief Abstract write function
              *
@@ -102,7 +102,7 @@ namespace KITGPI
             virtual void setNumRelaxationMechanisms(scai::IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
 
-            virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model) = 0;
+            virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
@@ -126,10 +126,6 @@ namespace KITGPI
             };
 
             virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
-
-            bool invertForVp = false;
-            bool invertForVs = false;
-            bool invertForDensity = false;
 	    
           protected:
 

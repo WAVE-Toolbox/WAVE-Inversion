@@ -3,19 +3,15 @@
 using namespace scai;
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    invertForVp = config.get<bool>("invertForVp");
-    invertForVs = config.get<bool>("invertForVs");
-    invertForDensity = config.get<bool>("invertForDensity");
-    
-    if (invertForDensity)
+    if (workflow.invertForDensity)
         this->initWavefield(VSum, ctx, dist);
 
-    if ((invertForVp) || (invertForVs) || (invertForDensity)) 
+    if ((workflow.invertForVp) || (workflow.invertForVs) || (workflow.invertForDensity)) 
         this->initWavefield(NormalStressSum, ctx, dist);
 
-    if ((invertForVs) || (invertForDensity)){
+    if ((workflow.invertForVs) || (workflow.invertForDensity)){
         this->initWavefield(ShearStress, ctx, dist);
         this->initWavefield(NormalStressDiff, ctx, dist);
     }
@@ -37,9 +33,9 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getCon
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    init(config, ctx, dist);
+    init(ctx, dist, workflow);
 }
 
 /*! \brief override Methode tor write Wavefield Snapshot to file
@@ -49,7 +45,7 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(Co
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::write(std::string type, IndexType t)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/)
 {
     this->writeWavefield(VSum, "VSum", type, t);
     COMMON_THROWEXCEPTION("write correlated elastic wavefields is not implemented yet.")
@@ -61,25 +57,25 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::write(std::string t
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::writeSnapshot(IndexType t)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    write(type, t);
+    write(type, t, workflow);
 }
 
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::resetXcorr()
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (invertForDensity)
+    if (workflow.invertForDensity)
     this->resetWavefield(VSum);
 
-    if ((invertForVs)|| (invertForDensity)) {
+    if ((workflow.invertForVs)|| (workflow.invertForDensity)) {
     this->resetWavefield(ShearStress);
     this->resetWavefield(NormalStressDiff);
     }
     
-    if ((invertForVp) || (invertForVs)|| (invertForDensity)){
+    if ((workflow.invertForVp) || (workflow.invertForVs)|| (workflow.invertForDensity)){
     this->resetWavefield(NormalStressSum);
     }
 }
@@ -87,19 +83,19 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::resetXcorr()
 /*! \brief function to update the result of the zero lag cross-correlation for per timestep 
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     //temporary wavefields allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp1;
     lama::DenseVector<ValueType> temp2;
-    if ((invertForVp) || (invertForVs) || (invertForDensity)) {
+    if ((workflow.invertForVp) || (workflow.invertForVs) || (workflow.invertForDensity)) {
         temp1 = forwardWavefield.getRefSxx() + forwardWavefield.getRefSyy();
         temp2 = adjointWavefield.getRefSxx() + adjointWavefield.getRefSyy();
         temp1 *= temp2;
         NormalStressSum += temp1;
     }
 
-    if ((invertForVs) || (invertForDensity)){
+    if ((workflow.invertForVs) || (workflow.invertForDensity)){
         temp1 = forwardWavefield.getRefSxx() - forwardWavefield.getRefSyy();
         temp2 = adjointWavefield.getRefSxx() - adjointWavefield.getRefSyy();
         temp1 *= temp2;
@@ -109,7 +105,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::
         ShearStress += temp1;
     }
 
-    if (invertForDensity) {
+    if (workflow.invertForDensity) {
         temp1 = forwardWavefield.getRefVX();
         temp1 *= adjointWavefield.getRefVX();
         VSum += temp1;

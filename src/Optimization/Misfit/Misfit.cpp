@@ -45,5 +45,14 @@ void KITGPI::Misfit::Misfit<ValueType>::addToStorage(scai::lama::DenseVector<Val
     this->misfitStorage.push_back(vector);
 }
 
+/*! \brief Clear the misfit storage 
+ *
+ */
+template <typename ValueType>
+void KITGPI::Misfit::Misfit<ValueType>::clearStorage()
+{
+    this->misfitStorage.clear();
+}
+
 template class KITGPI::Misfit::Misfit<double>;
 template class KITGPI::Misfit::Misfit<float>;

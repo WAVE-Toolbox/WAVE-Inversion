@@ -26,6 +26,7 @@
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
 #include <Modelparameter/Acoustic.hpp>
+#include "../Workflow/Workflow.hpp"
 
 namespace KITGPI
 {
@@ -47,13 +48,13 @@ namespace KITGPI
             //! Destructor, releases all allocated resources.
             ~Acoustic(){};
 
-            explicit Acoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            explicit Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             //! Copy Constructor.
             Acoustic(const Acoustic &rhs);
 
-            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType pWaveModulus_const, ValueType rho_const);
-            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType pWaveModulus_const, ValueType rho_const);
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
             /*! \brief Set all wavefields to zero.
              */
@@ -72,8 +73,8 @@ namespace KITGPI
             scai::IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
-            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT) override;
-            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
             /* Overloading Operators */
             KITGPI::Gradient::Acoustic<ValueType> operator*(ValueType rhs);
@@ -109,8 +110,6 @@ namespace KITGPI
             void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
           private:
-            using Gradient<ValueType>::invertForVp;
-            using Gradient<ValueType>::invertForDensity;
 
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;

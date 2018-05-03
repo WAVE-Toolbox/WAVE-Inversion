@@ -79,18 +79,16 @@ runForward=0
 #---------------------------------------------------------#
 
 # Input/Output
-fieldSeisName=ci/rectangle.true        # location/basename of input seismograms
-writeGradient=1                        # 1=Gradient will be written to disk, 0=not
-writeGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
-gradientFilename=gradients/grad        # location/basename of output gradients
+fieldSeisName=ci/rectangle.true                  # location/basename of input seismograms
+writeGradient=1                                  # 1=Gradient will be written to disk, 0=not
+writeGradientPerShot=0                           # Write Gradient for Single Shots 1=Yes 0=No
+gradientFilename=gradients/grad                  # location/basename of output gradients
 logFilename=logs/steplengthSearch.log  # target location of log file
 
 # General settings
-maxIterations=5                        # maximum number of inversion itertions
-misfitType=L2                          # type of misfit (L2, etc.)
-invertForVp=1                          # Invert for Vp 1=true 0=false
-invertForDensity=0                     # Invert for Density 1=true 0=false
-
+maxIterations=5                         # maximum number of inversion itertions
+misfitType=L2                                   # type of misfit (L2, etc.)
+workflowFilename=ci/workflow_ci.2D.acoustic.txt # location/basename of workflow file
 
 # Step length search
 steplengthInit=0.03                    # initial steplength

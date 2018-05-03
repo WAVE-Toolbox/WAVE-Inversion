@@ -15,11 +15,11 @@ using scai::IndexType;
  \param dist Distribution
  \param config Configuration
  \param scaledGradient Misfit gradient 
- \param steplength_init Initial steplength
+ \param steplengthInit Initial steplength
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplength_init, scai::lama::DenseVector<ValueType> currentMisfit)
+void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, scai::lama::DenseVector<ValueType> currentMisfit)
 {
     double start_t, end_t; /* For timing */
     /* ------------------------------------------- */
@@ -82,14 +82,14 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
    
     /* --- Save second step length (initial step length) in any case --- */
     HOST_PRINT(comm,"\nEstimation of 2nd steplength, forward test run no. " << stepCalcCount << " of maximum " << maxStepCalc <<"\n" );
-    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength_init);
-    steplengthParabola.setValue(1, steplength_init); 
+    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplengthInit);
+    steplengthParabola.setValue(1, steplengthInit); 
     misfitParabola.setValue(1, misfitTestSum);  
     if ( misfitParabola.getValue(0) > misfitParabola.getValue(1) ){
         step2ok= true;}
     
     /* --- Search for a third step length - case: misfit was DECREASED --- */
-    steplength = steplength_init;
+    steplength = steplengthInit;
     while( step2ok == true && stepCalcCount < maxStepCalc ){
         HOST_PRINT(comm,"\nEstimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc <<"\n" );
         steplength *= scalingFactor;
@@ -105,7 +105,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
     }
     
     /* --- Search for a third step length - case: misfit was INCREASED  --- */
-    steplength = steplength_init;
+    steplength = steplengthInit;
     while( step2ok == false && stepCalcCount < maxStepCalc ){
         HOST_PRINT(comm,"Estimation of 3rd steplength, forward test run no. " << stepCalcCount +1 << " of maximum " << maxStepCalc << "\n" );
         steplength /= scalingFactor;
@@ -220,7 +220,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
     *testgradient = scaledGradient;
 
     /* Update model */   
-    *testgradient *= steplength;
+    *testgradient *= steplength;  
     *testmodel -= *testgradient;
         
     testmodel->prepareForModelling(config, ctx, dist, comm); 
@@ -267,8 +267,8 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
         logFile.open(logFilename);
         logFile << "# Step length log file  \n";
         logFile << "# Misfit type = " << misfitType << "\n";
-        logFile << "# Iteration 0 shows misfit of initial model (only first and last column is meaningful here)\n";
-        logFile << "# Iteration | optimum step length | #Forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots\n";
+        logFile << "# Iteration 0 shows misfit of initial model of each workflow stage (only first and last column is meaningful here)\n";
+        logFile << "# Stage | Iteration | optimum step length | #Forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots\n";
         logFile.close();
     } 
 
@@ -281,7 +281,7 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
  \param iteration Iteration count
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType iteration, std::string logFilename, ValueType misfitSum)
+void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType workflowStage, IndexType iteration, std::string logFilename, ValueType misfitSum)
 {
     int myRank = comm->getRank(); 
     /* The following temporaries are only necessary because of a problem with LAMA: e.g. steplengthParabola.getValue(0).getValue<ValueType>() produces an error */
@@ -293,12 +293,21 @@ void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::Communica
     ValueType misfitParabola2 = misfitParabola.getValue(2);
     
     if (myRank == MASTERGPI) {
-        std::string filename(logFilename);
-        logFile.open(filename, std::ios_base::app);
-        logFile <<  std::scientific ;
-        logFile << std::setw(8) << iteration << std::setw(22) << steplengthOptimum << std::setw(18) << stepCalcCount << std::setw(30) << steplengthParabola0 << std::setw(22) << steplengthParabola1 << std::setw(22) << steplengthParabola2 << std::setw(19) << misfitParabola0 << std::setw(17) << misfitParabola1 << std::setw(17) << misfitParabola2 << std::setw(22) << misfitSum << "\n" ;
-        logFile.close();
-    }                             
+        if(iteration==0){
+            std::string filename(logFilename);
+            logFile.open(filename, std::ios_base::app);
+            logFile <<  std::scientific ;
+            logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << 0 << std::setw(18) << 0 << std::setw(30) << 0 << std::setw(22) << 0 << std::setw(22) << 0 << std::setw(19) << 0 << std::setw(17) << 0 << std::setw(17) << 0 << std::setw(22) << misfitSum << "\n" ;
+            logFile.close();
+        } else {
+            std::string filename(logFilename);
+            logFile.open(filename, std::ios_base::app);
+            logFile <<  std::scientific ;
+            logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << steplengthOptimum << std::setw(18) << stepCalcCount << std::setw(30) << steplengthParabola0 << std::setw(22) << steplengthParabola1 << std::setw(22) << steplengthParabola2 << std::setw(19) << misfitParabola0 << std::setw(17) << misfitParabola1 << std::setw(17) << misfitParabola2 << std::setw(22) << misfitSum << "\n" ;
+            logFile.close();
+        }  
+    }
+    
 }
 
 /*! \brief Get optimum steplength

@@ -23,7 +23,7 @@
 %
 % $Date: March 21, 2018
 % ________________________________________
-function plotSeismogram(DT,iteration,shot,component,skipTraces,syntheticData,fieldData)
+function plotSeismogram(DT,stage,iteration,shot,component,skipTraces,syntheticData,fieldData)
 
 
 
@@ -45,7 +45,7 @@ axis([0.7 size(seismogramtrue,2)*DT 0 size(seismogramtrue,1)+1])
 
 
 %% Read seismogram
-filename=[syntheticData '.It_' num2str(iteration) '.shot_' num2str(shot) '.' component '.mtx'];
+filename=[syntheticData '.stage_' num2str(stage) '.It_' num2str(iteration) '.shot_' num2str(shot) '.' component '.mtx'];
 seismogram=readSeismogram(filename);
 
 %% Plot seismogram

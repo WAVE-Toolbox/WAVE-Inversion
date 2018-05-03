@@ -10,9 +10,10 @@ using scai::IndexType;
  \param config Configuration
  \param dist Distribution of the wave fields
  \param ctx Context
+ \param workflow Workflow
  */
 template <typename ValueType>
-void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist,  scai::hmemo::ContextPtr ctx)
+void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr dist,  scai::hmemo::ContextPtr ctx, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
 
     std::string dimension = config.get<std::string>("dimension");
@@ -22,7 +23,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
     wavefields->init(ctx, dist);
 
     ZeroLagXcorr = KITGPI::ZeroLagXcorr::Factory<ValueType>::Create(dimension, equationType);
-    ZeroLagXcorr->init(config,ctx, dist);
+    ZeroLagXcorr->init(ctx, dist, workflow);
 
 }
 
@@ -40,7 +41,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType iteration, int shotNumber)
+void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, IndexType workflowStage, IndexType iteration, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
 
     IndexType t = 0;
@@ -61,7 +62,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     HOST_PRINT(comm, "\n-------------- Start Backward -------------------\n");
 
     wavefields->resetWavefields();
-    ZeroLagXcorr->resetXcorr();
+    ZeroLagXcorr->resetXcorr(workflow);
 
 
     for (t = tEnd - 1; t >= 0; t--) {
@@ -71,7 +72,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
         /* --------------------------------------- */
         /*             Convolution                 */
         /* --------------------------------------- */
-        ZeroLagXcorr->update(*wavefieldrecord[t], *wavefields);
+        ZeroLagXcorr->update(*wavefieldrecord[t], *wavefields, workflow);
     }
 
 
@@ -79,12 +80,12 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     /*       Calculate gradients          */
     /* ---------------------------------- */
     HOST_PRINT(comm, "\nCalculate Gradient\n");
-    gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"));
+    gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);
     SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("SourceTaperRadius"));
     SourceTaper.apply(gradient);
 
     if(config.get<IndexType>("WriteGradientPerShot"))
-       gradient.getVelocityP().writeToFile(config.get<std::string>("GradientFilename")  + ".It_" + std::to_string(iteration + 1) + ".Shot_" + std::to_string(shotNumber) + ".vp" + ".mtx");
+       gradient.getVelocityP().writeToFile(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration + 1) + ".Shot_" + std::to_string(shotNumber) + ".vp" + ".mtx");
 
 //     receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/rec_adjoint.mtx");
     

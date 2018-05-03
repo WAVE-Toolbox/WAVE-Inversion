@@ -24,6 +24,7 @@
 
 #include "Gradient.hpp"
 #include <PartitionedInOut/PartitionedInOut.hpp>
+#include "../Workflow/Workflow.hpp"
 
 namespace KITGPI
 {
@@ -45,13 +46,13 @@ namespace KITGPI
             //! Destructor, releases all allocated resources.
             ~Elastic(){};
 
-            explicit Elastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            explicit Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             //! Copy Constructor.
             Elastic(const Elastic &rhs);
 
-            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType pWaveModulus, ValueType sWaveModulus, ValueType rho);
-            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType pWaveModulus, ValueType sWaveModulus, ValueType rho);
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
 
             /*! \brief Set all wavefields to zero.
@@ -71,8 +72,8 @@ namespace KITGPI
             scai::IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
-            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &/*correlatedWavefields*/, KITGPI::Modelparameter::Modelparameter<ValueType> const &/*model*/, ValueType /*DT*/) override;
-            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
             /* Overloading Operators */
             KITGPI::Gradient::Elastic<ValueType> operator*(ValueType rhs);
@@ -91,9 +92,6 @@ namespace KITGPI
             void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
           private:
-            using Gradient<ValueType>::invertForVp;
-            using Gradient<ValueType>::invertForVs;
-            using Gradient<ValueType>::invertForDensity;
 
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;

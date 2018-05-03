@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     std::string misfit;
 
     while (!logFile.eof() && !logFile.bad()) {
-        logFile >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> misfit;
+        logFile >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> bufferStr >> misfit;
     }
 
     ValueType finalMisfit = std::stof(misfit);
