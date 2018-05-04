@@ -205,7 +205,8 @@ int main(int argc, char *argv[])
         HOST_PRINT(comm, "invertForVp = " << workflow.invertForVp << "\n");
         HOST_PRINT(comm, "invertForVs = " << workflow.invertForVs << "\n");
         HOST_PRINT(comm, "invertForDensity = " << workflow.invertForDensity << "\n");
-    
+        HOST_PRINT(comm, "relativeMisfitChange = " << workflow.relativeMisfitChange << "\n");
+        
         gradientCalculation.allocate(config, dist, ctx, workflow); 
         
         /* --------------------------------------- */
@@ -310,10 +311,13 @@ int main(int argc, char *argv[])
             
             /* Check abort criteria */
             HOST_PRINT(comm, "\nMisfit after stage " << workflowStage << ", iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n");
-
-            if ((iteration > 0) && (dataMisfit->getMisfitSum(iteration) >= dataMisfit->getMisfitSum(iteration - 1))) {
-                HOST_PRINT(comm, "\nMisfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit->getMisfitSum(iteration - 1) << "\n\n");
-                workflow.changeStage(config, *dataMisfit, steplengthInit);
+            
+            if ( (iteration > 1) && ( std::abs((dataMisfit->getMisfitSum(iteration) - dataMisfit->getMisfitSum(iteration - 2)))/(dataMisfit->getMisfitSum(iteration - 2)) < workflow.relativeMisfitChange) ) {
+                HOST_PRINT(comm, "\nAbort criterion fulfilled \n");
+                HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.relativeMisfitChange << "\n");
+                if(workflowStage != workflow.maxStage-1){
+                    HOST_PRINT(comm, "\nChange workflow stage\n");
+                    workflow.changeStage(config, *dataMisfit, steplengthInit);}
                 break;
             }
             
@@ -384,6 +388,7 @@ int main(int argc, char *argv[])
                 SLsearch.appendToLogFile(comm, workflowStage+1, iteration+1, logFilename, dataMisfit->getMisfitSum(iteration+1));
                 
                 if(workflowStage != workflow.maxStage-1){
+                    HOST_PRINT(comm, "\nChange workflow stage\n");
                     workflow.changeStage(config, *dataMisfit, steplengthInit);}
                 
             } // end extra forward modelling

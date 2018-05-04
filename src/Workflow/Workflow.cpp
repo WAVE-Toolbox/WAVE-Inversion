@@ -28,7 +28,7 @@ void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configur
     
 }
 
-/*! \brief Reset and adapt variables when workflow is changed
+/*! \brief Reset and adapt parameters when workflow is changed
  *
  * 
  \param config Configuration
@@ -52,11 +52,7 @@ void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::C
  */
 template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFilename)
-{
-    std::string invertForVpStr;
-    std::string invertForVsStr;
-    std::string invertForDensityStr;
-    
+{   
     workflowFile.open(workflowFilename);
     
     /* Skip comment lines */
@@ -71,11 +67,7 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
         workflowFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');}
         
     /* Extract variables from current workflow stage */
-    workflowFile >> invertForVpStr >> invertForVsStr >> invertForDensityStr;
-
-    invertForVp = std::stof(invertForVpStr);
-    invertForVs = std::stof(invertForVsStr);
-    invertForDensity = std::stof(invertForDensityStr);
+    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange;
     
     workflowFile.close();
 }

@@ -75,7 +75,10 @@ runSimultaneousShots=0
 runForward=0
 
 #---------------------------------------------------------#
-#                Inversion Parameters                     #
+#                Inversion Parameters
+#---------------------------------------------------------#
+# note: more (obligatory!) inversion parameters are defined 
+#       in the workflow file
 #---------------------------------------------------------#
 
 # Input/Output

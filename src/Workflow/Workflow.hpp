@@ -38,6 +38,7 @@ namespace KITGPI
             bool invertForVp = false;
             bool invertForVs = false;
             bool invertForDensity = false;
+            ValueType relativeMisfitChange = 0.01; 
             
         private:
       
