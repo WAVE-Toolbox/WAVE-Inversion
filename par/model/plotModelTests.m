@@ -2,7 +2,8 @@ clc
 close all
 clear all
 
-iteration=2;
+stage=1;
+iteration=1;
 
 parameter='vp';   % model parameter
 
@@ -32,7 +33,7 @@ acquisition.receiver=spconvert(receiver(2:end,:));
 inversionModel=config.getString('ModelFilename');
 startingModel=[config.getString('ModelFilename') '.out'];
 
-plotModel (parameter,colorbarRange,iteration,geometry,acquisition,inversionModel,startingModel)
+plotModel (parameter,colorbarRange,stage,iteration,geometry,acquisition,inversionModel,startingModel)
 
 cd (currentDir)
 rmpath(currentDir)

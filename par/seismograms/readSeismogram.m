@@ -1,5 +1,5 @@
 
-function [Seismogram]=read_seismogram(filename)
+function [Seismogram]=readSeismogram(filename)
 
 fileID = fopen(filename,'r');
 HEADER = fgets(fileID);

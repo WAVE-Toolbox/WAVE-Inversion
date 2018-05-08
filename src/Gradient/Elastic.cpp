@@ -4,26 +4,24 @@ using namespace scai;
 
 /*! \brief Constructor that is using the Configuration class
  *
- \param config Configuration class
  \param ctx Context for the Calculation
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::Gradient::Elastic<ValueType>::Elastic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+KITGPI::Gradient::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(config, ctx, dist,0.0, 0.0, 0.0);
+    init(ctx, dist,0.0, 0.0, 0.0);
 }
 
 /*! \brief Initialisation with zeros
  *
-  \param config Configuration class
  \param ctx Context for the Calculation
  \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
+void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(config,ctx, dist, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0);
 }
 
 
@@ -37,25 +35,18 @@ void KITGPI::Gradient::Elastic<ValueType>::init(Configuration::Configuration con
  \param rho Density given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho)
+void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho)
 {
-    invertForVp=config.get<bool>("invertForVp");
-    invertForVs=config.get<bool>("invertForVs");
-    invertForDensity=config.get<bool>("invertForDensity");
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(velocityS, ctx, dist, velocityS_const);
     this->initParameterisation(density, ctx, dist, rho);
 }
 
 
-
 //! \brief Copy constructor
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
 {
-    invertForVp=rhs.invertForVp;
-    invertForVs=rhs.invertForVs;
-    invertForDensity=rhs.invertForDensity;
     velocityP = rhs.velocityP;
     velocityS = rhs.velocityS;
     density = rhs.density;
@@ -209,9 +200,6 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::operator=(KITGPI::Gradient::Elastic<ValueType> const &rhs)
 {
-    invertForVp=rhs.invertForVp;
-    invertForVs=rhs.invertForVs;
-    invertForDensity=rhs.invertForDensity;	
     velocityP = rhs.velocityP;
     velocityS = rhs.velocityS;
     density = rhs.density;
@@ -226,9 +214,6 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-    invertForVp=rhs.invertForVp;
-    invertForVs=rhs.invertForVs;
-    invertForDensity=rhs.invertForDensity;
     density = rhs.getDensity();
     velocityP = rhs.getVelocityP();
     velocityS = rhs.getVelocityS();
@@ -306,23 +291,23 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
  \param model Abstract model.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (invertForVp) {
+    if (workflow.invertForVp) {
         velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
     }
     
-    if (invertForVs) {
+    if (workflow.invertForVs) {
         velocityS *= 1 / velocityS.maxNorm() * model.getVelocityS().maxNorm();
     }   
     
-    if (invertForDensity) {
+    if (workflow.invertForDensity) {
         density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
     }
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT)
+void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     // Only implementedfor 2D!
     //dt should be in cross correlation!
@@ -348,7 +333,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     gradLambda *= correlatedWavefields.getNormalStressSum();
     gradLambda *= -DT;
 
-    if ((invertForVs) || (invertForDensity)){
+    if ((workflow.invertForVs) || (workflow.invertForDensity)){
 	  gradMu=gradLambda;
  
 	  temp = model.getVelocityS();
@@ -375,14 +360,14 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     
     // vp, vs , rho gradients
     
-    if (invertForVp) {
+    if (workflow.invertForVp) {
 	//grad_vp = 2*rho*vp*grad_bulk
         velocityP = 2 * gradLambda;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
     }
 
-    if (invertForVs) {
+    if (workflow.invertForVs) {
 
         velocityS = -4 * gradLambda;
         velocityS *= model.getDensity();
@@ -395,7 +380,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 	velocityS+=temp;
     }
     
-    if (invertForDensity) {
+    if (workflow.invertForDensity) {
 
         density = model.getVelocityP();
         density *= model.getVelocityP();

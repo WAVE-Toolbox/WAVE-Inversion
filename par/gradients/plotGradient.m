@@ -1,10 +1,10 @@
-function plotGradient(parameter,iteration,geometry,gradientName)
+function plotGradient(parameter,stage, iteration,geometry,gradientName)
 
 load 'seismic.map'
 
 
 %% Define input parameter
-filename=[gradientName '.It_' num2str(iteration)  '.' parameter '.mtx']; % File name of the gradient
+filename=[gradientName '.stage_' num2str(stage) '.It_' num2str(iteration)  '.' parameter '.mtx']; % File name of the gradient
 NX=geometry.NX;  % Number of grid points in X
 NY=geometry.NY;  % Number of grid points in Y
 NZ=geometry.NZ;  % Number of grid points in Z

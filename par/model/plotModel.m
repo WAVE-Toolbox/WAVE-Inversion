@@ -28,7 +28,7 @@
 %
 % $Date: March 20, 2018
 % ________________________________________
-function plotModel(parameter,colorbarRange,iteration,geometry,acquisition,inversionModel,startingModel,trueModel)
+function plotModel(parameter,colorbarRange,stage,iteration,geometry,acquisition,inversionModel,startingModel,trueModel)
 
 
 Min=colorbarRange.min;
@@ -47,7 +47,7 @@ LAYER=geometry.LAYER; % Define layer of 3D model to display as 2D slice
 
 
 %% Read model
-filename=[inversionModel '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the model
+filename=[inversionModel '.stage_' num2str(stage) '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
 X=0:DH:(NX*DH-DH);
 Y=0:DH:(NY*DH-DH);
@@ -55,9 +55,9 @@ Y=0:DH:(NY*DH-DH);
 %% Plot
 figure
 switch nargin
-case 8
+case 9
 subplot(1,3,3)
-case 7
+case 8
 subplot(1,2,2)
 case default
  subplot(1,1,1)     
@@ -71,13 +71,13 @@ title([parameter ' model at iteration ' num2str(iteration)])
 
 
 
-if nargin > 6
+if nargin > 7
 %% Read model
 filename=[startingModel '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
 
 %% Plot
-if nargin > 7
+if nargin > 8
 subplot(1,3,2)
 else
 subplot(1,2,1)
@@ -93,7 +93,7 @@ plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' starting model'])
 end
 
-if nargin > 7
+if nargin > 8
 %% Read model
 filename=[trueModel '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);

@@ -31,7 +31,8 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> getMisfitIt(int iteration);
             ValueType getMisfitShot(int iteration, int shotNumber);
             void addToStorage(scai::lama::DenseVector<ValueType> vector);
-
+            void clearStorage();
+            
             //! \brief Misfit pointer
             typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
             

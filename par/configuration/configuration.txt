@@ -75,7 +75,10 @@ runSimultaneousShots=0
 runForward=0
 
 #---------------------------------------------------------#
-#                Inversion Parameters                     #
+#                Inversion Parameters
+#---------------------------------------------------------#
+# note: more (obligatory!) inversion parameters are defined 
+#       in the workflow file
 #---------------------------------------------------------#
 
 # Input/Output
@@ -86,11 +89,9 @@ gradientFilename=gradients/grad        # location/basename of output gradients
 logFilename=logs/steplengthSearch.log  # target location of log file
 
 # General settings
-maxIterations=20                       # maximum number of inversion iterations
+maxIterations=20                       # maximum number of inversion iterations (per workflow stage if used)
 misfitType=L2                          # type of misfit (L2, etc.) 
-invertForVp=1			       # Invert for Vp 1=true 0=false
-invertForVs=1                          # Invert for Vs 1=true 0=false
-invertForDensity=1                     # Invert for Density 1=true 0=false
+workflowFilename=workflow/workflow.txt # location/basename of workflow file
 
 # Step length search
 steplengthInit=0.03                    # initial steplength

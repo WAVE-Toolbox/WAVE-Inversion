@@ -27,6 +27,7 @@
 #include "Optimization/Misfit/MisfitFactory.hpp"
 #include "Optimization/StepLengthSearch.hpp"
 #include "Optimization/Preconditioning/EnergyPreconditioning.hpp"
+#include "Workflow/Workflow.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -56,10 +57,11 @@ int main(int argc, char *argv[])
     IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     
     std::string misfitType = config.get<std::string>("misfitType");
-    std::string fieldSeisName(config.get<std::string>("FieldSeisName"));
-    std::string gradname(config.get<std::string>("GradientFilename"));
-    std::string logFilename = config.get<std::string>("LogFilename");
-    ValueType steplength_init = config.get<ValueType>("SteplengthInit");
+    std::string fieldSeisName(config.get<std::string>("fieldSeisName"));
+    std::string gradname(config.get<std::string>("gradientFilename"));
+    std::string logFilename = config.get<std::string>("logFilename");
+    ValueType steplengthInit = config.get<ValueType>("steplengthInit");
+    IndexType maxiterations = config.get<IndexType>("maxIterations");
 
     /* --------------------------------------- */
     /* Context and Distribution                */
@@ -151,6 +153,11 @@ int main(int argc, char *argv[])
     Acquisition::Receivers<ValueType> adjointSources(config, ctx, dist);
     
     /* --------------------------------------- */
+    /* Workflow                                */
+    /* --------------------------------------- */
+    Workflow::Workflow<ValueType> workflow(config);
+    
+    /* --------------------------------------- */
     /* Step length search                      */
     /* --------------------------------------- */
     StepLengthSearch<ValueType> SLsearch;
@@ -160,16 +167,15 @@ int main(int argc, char *argv[])
     /* Gradients                               */
     /* --------------------------------------- */
     Gradient::Gradient<ValueType>::GradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
-    gradient->init(config,ctx, dist);
+    gradient->init(ctx, dist);
     
     Gradient::Gradient<ValueType>::GradientPtr gradientPerShot(Gradient::Factory<ValueType>::Create(equationType));
-    gradientPerShot->init(config,ctx, dist);
+    gradientPerShot->init(ctx, dist);
     
     /* --------------------------------------- */
     /* Gradient calculation                    */
     /* --------------------------------------- */
     GradientCalculation<ValueType> gradientCalculation;
-    gradientCalculation.allocate(config, dist, ctx);
     
     /* --------------------------------------- */
     /* Gradient taper                          */
@@ -184,136 +190,212 @@ int main(int argc, char *argv[])
     if (config.get<bool>("useEnergyPreconditioning") == 1){
         energyPrecond.init(dist, config);}
     
+    
     /* --------------------------------------- */
-    /*        Loop over iterations             */
+    /*       Loop over workflow stages         */
     /* --------------------------------------- */
-
-    IndexType maxiterations = config.get<IndexType>("MaxIterations");
-
-    for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
+    
+    for (IndexType workflowStage = 0; workflowStage < workflow.maxStage; workflowStage++) {
         
         HOST_PRINT(comm, "\n=================================================");
-	    HOST_PRINT(comm, "\n================ Iteration " << iteration+1 << " ====================");    
-	    HOST_PRINT(comm, "\n=================================================\n\n");
-	    start_t = common::Walltime::get();
-	    
-        // update model for fd simulation (averaging, inverse Density ...)
-        model->prepareForModelling(config, ctx, dist, comm);
+        HOST_PRINT(comm, "\n============ Workflow stage " << workflowStage+1 << " of " << workflow.maxStage << " ==============");    
+        HOST_PRINT(comm, "\n=================================================\n\n");
+        
+        HOST_PRINT(comm, "Set parameters: \n");
+        HOST_PRINT(comm, "invertForVp = " << workflow.invertForVp << "\n");
+        HOST_PRINT(comm, "invertForVs = " << workflow.invertForVs << "\n");
+        HOST_PRINT(comm, "invertForDensity = " << workflow.invertForDensity << "\n");
+        HOST_PRINT(comm, "relativeMisfitChange = " << workflow.relativeMisfitChange << "\n");
+        
+        gradientCalculation.allocate(config, dist, ctx, workflow); 
         
         /* --------------------------------------- */
-        /*        Loop over shots                  */
+        /*        Loop over iterations             */
         /* --------------------------------------- */
-        
-        gradient->resetGradient();    // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
 
-        for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
-                   
-            /* Read field data (or pseudo-observed data, respectively) */
-            receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+        for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
             
-            /* Reset approximated Hessian per shot */
-            if (config.get<bool>("useEnergyPreconditioning") == 1){
-                energyPrecond.resetApproxHessian();}
+            HOST_PRINT(comm, "\n=================================================");
+            HOST_PRINT(comm, "\n================ Iteration " << iteration+1 << " ====================");    
+            HOST_PRINT(comm, "\n=================================================\n\n");
+            start_t = common::Walltime::get();
             
-            HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
-	    
+            /* Update model for fd simulation (averaging, inverse Density ...) */
+            model->prepareForModelling(config, ctx, dist, comm);
+            
             /* --------------------------------------- */
-            /*        Forward modelling                */
+            /*        Loop over shots                  */
             /* --------------------------------------- */
             
+            gradient->resetGradient();    // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
 
-            HOST_PRINT(comm, "\n================Start Forward====================\n");
-            HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
-                                                                << "Total Number of time steps: " << tEnd << "\n");
-                                                                
-            wavefields->resetWavefields();
-
-            sources.init(config, ctx, dist, shotNumber);
-	    
-            ValueType DTinv=1/config.get<ValueType>("DT");
-	    
-            start_t_shot = common::Walltime::get();
-            for (t = 0; t < tEnd; t++) {
+            for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
                 
-                *wavefieldsTemp=*wavefields;
+                gradientPerShot->resetGradient(); 
+                    
+                /* Read field data (or pseudo-observed data, respectively) */
+                receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
                 
-                solver->run(receivers, sources, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
-
-                // save wavefields in std::vector
-                *wavefieldrecord[t]=*wavefields;
-                //calculate temporal derivative of wavefield
-                *wavefieldrecord[t]-=*wavefieldsTemp;
-                *wavefieldrecord[t]*=DTinv;
-                
+                /* Reset approximated Hessian per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1){
-                    energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));}
+                    energyPrecond.resetApproxHessian();}
+                
+                HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
+            
+                /* --------------------------------------- */
+                /*        Forward modelling                */
+                /* --------------------------------------- */
+                
+
+                HOST_PRINT(comm, "\n================Start Forward====================\n");
+                HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
+                                                                    << "Total Number of time steps: " << tEnd << "\n");
+                                                                    
+                wavefields->resetWavefields();
+
+                sources.init(config, ctx, dist, shotNumber);
+            
+                ValueType DTinv=1/config.get<ValueType>("DT");
+            
+                start_t_shot = common::Walltime::get();
+                for (t = 0; t < tEnd; t++) {
+                    
+                    *wavefieldsTemp=*wavefields;
+                    
+                    solver->run(receivers, sources, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
+
+                    // save wavefields in std::vector
+                    *wavefieldrecord[t]=*wavefields;
+                    //calculate temporal derivative of wavefield
+                    *wavefieldrecord[t]-=*wavefieldsTemp;
+                    *wavefieldrecord[t]*=DTinv;
+                    
+                    if (config.get<bool>("useEnergyPreconditioning") == 1){
+                        energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));}
+                }
+
+                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
+                
+                HOST_PRINT(comm, "\nCalculate misfit and adjoint sources\n");
+                
+                /* Calculate misfit of one shot */
+                misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));
+                
+                /* Calculate adjoint sources */
+                dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
+                
+                /* Calculate gradient */
+                gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, workflowStage, iteration, shotNumber, workflow);
+                
+                /* Apply energy preconditioning per shot */
+                if (config.get<bool>("useEnergyPreconditioning") == 1){
+                    energyPrecond.apply(*gradientPerShot, shotNumber);}
+                
+                *gradient += *gradientPerShot; 
+                
+                end_t_shot = common::Walltime::get();
+                HOST_PRINT(comm, "\nFinished shot in " << end_t_shot - start_t_shot << " sec.\n\n");
+            
+            } //end of loop over shots
+            
+            HOST_PRINT(comm, "\n======== Finished loop over shots =========");
+            HOST_PRINT(comm, "\n===========================================\n");
+
+            /* Output of gradient */
+            if(config.get<IndexType>("WriteGradient"))
+                gradient->write(gradname + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration + 1), config.get<IndexType>("PartitionedOut"));
+
+            dataMisfit->addToStorage(misfitPerIt);
+            
+            SLsearch.appendToLogFile(comm, workflowStage+1, iteration, logFilename, dataMisfit->getMisfitSum(iteration));
+            
+            /* Check abort criteria */
+            HOST_PRINT(comm, "\nMisfit after stage " << workflowStage << ", iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n");
+            
+            if ( (iteration > 1) && ( std::abs((dataMisfit->getMisfitSum(iteration) - dataMisfit->getMisfitSum(iteration - 2)))/(dataMisfit->getMisfitSum(iteration - 2)) < workflow.relativeMisfitChange) ) {
+                HOST_PRINT(comm, "\nAbort criterion fulfilled \n");
+                HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.relativeMisfitChange << "\n");
+                if(workflowStage != workflow.maxStage-1){
+                    HOST_PRINT(comm, "\nChange workflow stage\n");
+                    workflow.changeStage(config, *dataMisfit, steplengthInit);}
+                break;
             }
+            
+            /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
+            ReceiverTaper.apply(*gradient);
+            
+            gradient->scale(*model, workflow);
+            
+            HOST_PRINT(comm,"\n===========================================" );
+            HOST_PRINT(comm,"\n======== Start step length search =========\n" );
+        
+            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(iteration));
+            
+        
+            HOST_PRINT(comm, "=========== Update Model ============\n\n");
+            /* Apply model update */
+            *gradient *= SLsearch.getSteplength();
+            *model -= *gradient;
+        
+            model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration+1)), config.get<IndexType>("PartitionedOut"));
 
-            receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
-            
-            HOST_PRINT(comm, "\nCalculate misfit and adjoint sources\n");
-            /* Calculate misfit of one shot */
-            misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));          
-            
-            /* Calculate adjoint sources */
-            dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
-            
-            /* Calculate gradient */
-            gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, iteration, shotNumber);
-            
-            /* Apply energy preconditioning per shot */
-            if (config.get<bool>("useEnergyPreconditioning") == 1){
-                energyPrecond.apply(*gradientPerShot, shotNumber);}
-            
-            *gradient += *gradientPerShot; 
-            
-            end_t_shot = common::Walltime::get();
-            HOST_PRINT(comm, "\nFinished shot in " << end_t_shot - start_t_shot << " sec.\n\n");
-	    
-        } //end of loop over shots
+            steplengthInit*=0.98; 
         
-        HOST_PRINT(comm, "\n======== Finished loop over shots =========");
-        HOST_PRINT(comm, "\n===========================================\n");
-	
-	/* Output of gradient */
-        if(config.get<IndexType>("WriteGradient"))
-	           gradient->write(gradname  + ".It_" + std::to_string(iteration + 1), config.get<IndexType>("PartitionedOut"));
-	
-        dataMisfit->addToStorage(misfitPerIt);
-        
-        SLsearch.appendToLogFile(comm, iteration, logFilename, dataMisfit->getMisfitSum(iteration));
-        
-        /* Check abort criteria */
-        HOST_PRINT(comm, "\nMisfit after iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n");
+            end_t = common::Walltime::get();
+            HOST_PRINT(comm, "\nFinished iteration " << iteration + 1 << " in " << end_t - start_t << " sec.\n\n");
+            
+            
+            /* -------------------------------------------------------------------- */
+            /* One extra forward modelling to ensure complete and consistent output */
+            /* -------------------------------------------------------------------- */
+            if (iteration == maxiterations-1){
+                
+                HOST_PRINT(comm, "================ Maximum number of iterations reached =================\n");
+                HOST_PRINT(comm, "=== Do one more forward modelling to calculate misfit and save seismograms ===\n\n");
+                
+                /* Update model for fd simulation (averaging, inverse Density ...) */
+                model->prepareForModelling(config, ctx, dist, comm);
+                
+                for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
+                    
+                /* Read field data (or pseudo-observed data, respectively) */
+                receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);  
 
-        if ((iteration > 0) && (dataMisfit->getMisfitSum(iteration) >= dataMisfit->getMisfitSum(iteration - 1))) {
-            HOST_PRINT(comm, "\nMisfit is getting higher after iteration " << iteration << ", last_misfit: " << dataMisfit->getMisfitSum(iteration - 1) << "\n\n");
-            break;
-        }
-        
-        /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-        ReceiverTaper.apply(*gradient);
-        
-       
-        gradient->scale(*model);
-        
-        HOST_PRINT(comm,"\n===========================================" );
-        HOST_PRINT(comm,"\n======== Start step length search =========\n" );
-	 
-        SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplength_init, dataMisfit->getMisfitIt(iteration));
-        
-	
-        HOST_PRINT(comm, "=========== Update Model ============\n\n");
-        /* Apply model update */
-        *gradient *= SLsearch.getSteplength();
-        *model -= *gradient;
-       
-        model->write((config.get<std::string>("ModelFilename") + ".It_" + std::to_string(iteration + 1)), config.get<IndexType>("PartitionedOut"));
+                HOST_PRINT(comm, "\n================Start Forward====================\n");
+                HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
+                                                                    << "Total Number of time steps: " << tEnd << "\n");
+                                                                    
+                wavefields->resetWavefields();
 
-        steplength_init*=0.98; 
-       
-        end_t = common::Walltime::get();
-        HOST_PRINT(comm, "\nFinished iteration " << iteration + 1 << " in " << end_t - start_t << " sec.\n\n");
-    } //end of loop over iterations
+                sources.init(config, ctx, dist, shotNumber);
+            
+                start_t_shot = common::Walltime::get();
+ 
+                solver->run(receivers, sources, *model, *wavefields, *derivatives, 0, tEnd, config.get<ValueType>("DT"));
+
+                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration+1) + ".shot_" + std::to_string(shotNumber));
+                
+                /* Calculate misfit of one shot */
+                misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));          
+                
+                end_t_shot = common::Walltime::get();
+                HOST_PRINT(comm, "\nFinished shot in " << end_t_shot - start_t_shot << " sec.\n\n");
+                
+                } //end of loop over shots
+                
+                dataMisfit->addToStorage(misfitPerIt);
+                
+                SLsearch.appendToLogFile(comm, workflowStage+1, iteration+1, logFilename, dataMisfit->getMisfitSum(iteration+1));
+                
+                if(workflowStage != workflow.maxStage-1){
+                    HOST_PRINT(comm, "\nChange workflow stage\n");
+                    workflow.changeStage(config, *dataMisfit, steplengthInit);}
+                
+            } // end extra forward modelling
+            
+        } // end of loop over iterations
+    
+    } // end of loop over workflow stages
+    
     return 0;
 }

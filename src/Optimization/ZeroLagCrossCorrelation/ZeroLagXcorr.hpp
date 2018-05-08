@@ -9,6 +9,8 @@
 #include <scai/dmemo/BlockDistribution.hpp>
 #include <scai/hmemo/HArray.hpp>
 
+#include "../../Workflow/Workflow.hpp"
+
 namespace KITGPI
 {
 
@@ -35,9 +37,9 @@ namespace KITGPI
             typedef std::shared_ptr<ZeroLagXcorr<ValueType>> ZeroLagXcorrPtr;
 
             //! Reset cross correlated wavefields
-            virtual void resetXcorr() = 0;
+            virtual void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
-            virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield) = 0;
+            virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual scai::lama::DenseVector<ValueType> const &getVSum() const;
             virtual scai::lama::DenseVector<ValueType> const &getP() const;
@@ -49,13 +51,9 @@ namespace KITGPI
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
 
             //! \brief Initialization
-            virtual void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) = 0;
+            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
-            virtual void write(std::string type, scai::IndexType t) = 0;
-
-            bool invertForVp = false;
-            bool invertForVs = false;
-            bool invertForDensity = false;
+            virtual void write(std::string type, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
           protected:
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);

@@ -9,6 +9,8 @@
 
 #include "ZeroLagXcorr.hpp"
 
+#include "../../Workflow/Workflow.hpp"
+
 namespace KITGPI
 {
 
@@ -29,25 +31,21 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr3Delastic(){};
 
-            explicit ZeroLagXcorr3Delastic(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            explicit ZeroLagXcorr3Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
-            void resetXcorr() override;
+            void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void update(Wavefields::Wavefields<ValueType> &/*forwardWavefield*/, Wavefields::Wavefields<ValueType> &/*adjointWavefield*/) override{COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")};
+            void update(Wavefields::Wavefields<ValueType> &/*forwardWavefield*/, Wavefields::Wavefields<ValueType> &/*adjointWavefield*/, KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/) override{COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")};
 
             /* Getter routines for non-required wavefields: Will throw an error */
             scai::lama::DenseVector<ValueType> const &getP() const override;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(Configuration::Configuration const &config,scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void write(std::string type, scai::IndexType t) override;
-            void writeSnapshot(scai::IndexType t);
-
-	    using ZeroLagXcorr<ValueType>::invertForVp;
-	    using ZeroLagXcorr<ValueType>::invertForVs;
-            using ZeroLagXcorr<ValueType>::invertForDensity;
+            void write(std::string type, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void writeSnapshot(scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 	    
           private:
             /* required wavefields */

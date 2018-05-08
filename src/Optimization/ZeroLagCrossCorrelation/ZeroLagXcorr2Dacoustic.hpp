@@ -9,6 +9,8 @@
 
 #include "ZeroLagXcorr.hpp"
 
+#include "../../Workflow/Workflow.hpp"
+
 namespace KITGPI
 {
 
@@ -29,11 +31,11 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr2Dacoustic(){};
 
-            explicit ZeroLagXcorr2Dacoustic(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
+            explicit ZeroLagXcorr2Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
-            void resetXcorr() override;
+            void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield) override;
+            void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             /* Getter routines for non-required wavefields: Will throw an error */
             scai::lama::DenseVector<ValueType> const &getShearStress() const override;
@@ -41,13 +43,10 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> const &getNormalStressSum() const override;
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void write(std::string type, scai::IndexType t) override;
-            void writeSnapshot(scai::IndexType t);
-
-            using ZeroLagXcorr<ValueType>::invertForVp;
-            using ZeroLagXcorr<ValueType>::invertForDensity;
+            void write(std::string type, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void writeSnapshot(scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
           private:
             /* required wavefields */
