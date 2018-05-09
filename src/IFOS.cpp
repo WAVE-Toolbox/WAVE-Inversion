@@ -27,6 +27,7 @@
 #include "Optimization/Misfit/MisfitFactory.hpp"
 #include "Optimization/StepLengthSearch.hpp"
 #include "Optimization/Preconditioning/EnergyPreconditioning.hpp"
+#include "Optimization/ConjugateGradient.hpp"
 #include "Workflow/Workflow.hpp"
 
 #include <Common/HostPrint.hpp>
@@ -62,6 +63,7 @@ int main(int argc, char *argv[])
     std::string logFilename = config.get<std::string>("logFilename");
     ValueType steplengthInit = config.get<ValueType>("steplengthInit");
     IndexType maxiterations = config.get<IndexType>("maxIterations");
+    IndexType optimization = config.get<IndexType>("optimization");
 
     /* --------------------------------------- */
     /* Context and Distribution                */
@@ -189,7 +191,11 @@ int main(int argc, char *argv[])
     Preconditioning::EnergyPreconditioning<ValueType> energyPrecond;
     if (config.get<bool>("useEnergyPreconditioning") == 1){
         energyPrecond.init(dist, config);}
-    
+        
+    /* --------------------------------------- */
+    /* Conjugate gradient                      */
+    /* --------------------------------------- */
+    ConjugateGradient<ValueType> conjugateGradient(dist);
     
     /* --------------------------------------- */
     /*       Loop over workflow stages         */
@@ -301,6 +307,9 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm, "\n======== Finished loop over shots =========");
             HOST_PRINT(comm, "\n===========================================\n");
 
+            if(optimization == 1){
+                conjugateGradient.calc(*gradient, workflow, iteration);}
+            
             /* Output of gradient */
             if(config.get<IndexType>("WriteGradient"))
                 gradient->write(gradname + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration + 1), config.get<IndexType>("PartitionedOut"));
