@@ -88,6 +88,7 @@ logFilename=logs/steplengthSearch.log            # target location of log file
 # General settings
 maxIterations=5                                 # maximum number of inversion itertions
 misfitType=L2                                   # type of misfit (L2, etc.)
+optimization=0                                  # type of optimization method: 0=steepest descent, 1=conjugate gradient
 workflowFilename=ci/workflow_ci.2D.acoustic.txt # location/basename of workflow file
 
 # Step length search
