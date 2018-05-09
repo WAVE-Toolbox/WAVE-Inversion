@@ -299,31 +299,38 @@ template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
 	//dt should be in cross correlation!
-    //grad_bulk = -dt*Padj*dPfw/dt / (rho*vp^2)^2
-    scai::lama::DenseVector<ValueType> grad_bulk;
-    grad_bulk = model.getVelocityP();
-    grad_bulk *= model.getVelocityP();
-    grad_bulk *= model.getDensity();
-    grad_bulk *= grad_bulk; 
-    grad_bulk *= 4; 
-    grad_bulk = 1 / grad_bulk;
+    //gradBulk = -dt*Padj*dPfw/dt / (rho*vp^2)^2
+    scai::lama::DenseVector<ValueType> gradBulk;
+    gradBulk = model.getVelocityP();
+    gradBulk *= model.getVelocityP();
+    gradBulk *= model.getDensity();
+    gradBulk *= gradBulk; 
+    gradBulk *= 4; 
+    gradBulk = 1 / gradBulk;
     
-    grad_bulk *= correlatedWavefields.getP();
-    grad_bulk *= -DT;
+    gradBulk *= correlatedWavefields.getP();
+    gradBulk *= -DT;
+    
+    scai::hmemo::ContextPtr ctx = gradBulk.getContextPtr();
+    scai::dmemo::DistributionPtr dist = gradBulk.getDistributionPtr();
 
     if (workflow.invertForVp) {
-	//grad_vp = 2*rho*vp*grad_bulk
-        velocityP = 2 * grad_bulk;
+	//grad_vp = 2*rho*vp*gradBulk
+        velocityP = 2 * gradBulk;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
+    } else {
+        this->initParameterisation(velocityP, ctx, dist, 0.0);
     }
     
     if (workflow.invertForDensity) {
-	//grad_density=vp^2*grad_bulk + (sum(i) (dt Vadj,i * dVfw,i/dt))
+	//grad_density=vp^2*gradBulk + (sum(i) (dt Vadj,i * dVfw,i/dt))
         density = model.getVelocityP();
         density *= model.getVelocityP();
-        density *= grad_bulk;
+        density *= gradBulk;
         density += DT * correlatedWavefields.getVSum();
+    } else {
+        this->initParameterisation(density, ctx, dist, 0.0);
     }
 }
 

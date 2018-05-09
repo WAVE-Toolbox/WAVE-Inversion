@@ -236,9 +236,7 @@ int main(int argc, char *argv[])
             gradient->resetGradient();    // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
 
             for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
-                
-                gradientPerShot->resetGradient(); 
-                    
+            
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
                 

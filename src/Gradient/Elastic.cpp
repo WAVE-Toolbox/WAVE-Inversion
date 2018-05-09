@@ -318,7 +318,6 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::lama::DenseVector<ValueType> gradMu;  
     scai::lama::DenseVector<ValueType> temp;
     
-    
     gradLambda = model.getVelocityP();
     gradLambda *= model.getVelocityP();
     temp = model.getVelocityS();
@@ -332,6 +331,9 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     
     gradLambda *= correlatedWavefields.getNormalStressSum();
     gradLambda *= -DT;
+    
+    scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
+    scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
 
     if ((workflow.invertForVs) || (workflow.invertForDensity)){
 	  gradMu=gradLambda;
@@ -365,6 +367,8 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         velocityP = 2 * gradLambda;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
+    } else {
+        this->initParameterisation(velocityP, ctx, dist, 0.0);
     }
 
     if (workflow.invertForVs) {
@@ -378,6 +382,8 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 	temp*=model.getVelocityS();
 	
 	velocityS+=temp;
+    } else {
+        this->initParameterisation(velocityS, ctx, dist, 0.0);
     }
     
     if (workflow.invertForDensity) {
@@ -396,6 +402,8 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 	density+=temp;
 	
         density += DT * correlatedWavefields.getVSum();
+    } else {
+        this->initParameterisation(density, ctx, dist, 0.0);
     }
 }
 
