@@ -29,6 +29,7 @@
 #include "Optimization/Preconditioning/EnergyPreconditioning.hpp"
 #include "Optimization/ConjugateGradient.hpp"
 #include "Workflow/Workflow.hpp"
+#include "Optimization/AbortCriterion.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -158,6 +159,11 @@ int main(int argc, char *argv[])
     /* Workflow                                */
     /* --------------------------------------- */
     Workflow::Workflow<ValueType> workflow(config);
+    
+    /* --------------------------------------- */
+    /* Abort criterion                         */
+    /* --------------------------------------- */
+    AbortCriterion<ValueType> abortCriterion;
     
     /* --------------------------------------- */
     /* Step length search                      */
@@ -319,14 +325,8 @@ int main(int argc, char *argv[])
             /* Check abort criteria */
             HOST_PRINT(comm, "\nMisfit after stage " << workflowStage << ", iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n");
             
-            if ( (iteration > 1) && ( std::abs((dataMisfit->getMisfitSum(iteration) - dataMisfit->getMisfitSum(iteration - 2)))/(dataMisfit->getMisfitSum(iteration - 2)) < workflow.relativeMisfitChange) ) {
-                HOST_PRINT(comm, "\nAbort criterion fulfilled \n");
-                HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.relativeMisfitChange << "\n");
-                if(workflowStage != workflow.maxStage-1){
-                    HOST_PRINT(comm, "\nChange workflow stage\n");
-                    workflow.changeStage(config, *dataMisfit, steplengthInit);}
-                break;
-            }
+            bool breakLoop = abortCriterion.check(comm, *dataMisfit, config, steplengthInit, workflow, workflowStage, iteration);
+            if (breakLoop == true){break;}
             
             /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
             ReceiverTaper.apply(*gradient);
