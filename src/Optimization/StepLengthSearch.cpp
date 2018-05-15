@@ -204,8 +204,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                   // default context, set by environment variable SCAI_CONTEXT   
         
 //     double start_t, end_t; /* For timing */
-    IndexType tStart = 0;
-    IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5); 
+    IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5); 
     std::string equationType = config.get<std::string>("equationType");
     int testShotStart = config.get<int>("testShotStart");
     int testShotEnd = config.get<int>("testShotEnd");
@@ -235,10 +234,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
 
         sources.init(config, ctx, dist, shotNumber);
         
-//         start_t = scai::common::Walltime::get();
-        solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStart, tEnd, config.get<ValueType>("DT"));
-//         end_t = scai::common::Walltime::get();
-//         HOST_PRINT(comm, "Finished time stepping in " << end_t - start_t << " sec.\n\n");
+        for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+            solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);
+        }
         
         receiversTrue.getSeismogramHandler().readFromFileRaw(config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
         

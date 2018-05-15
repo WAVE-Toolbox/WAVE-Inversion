@@ -55,8 +55,7 @@ int main(int argc, char *argv[])
 
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
-    IndexType t = 0;
-    IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
+    IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     
     std::string misfitType = config.get<std::string>("misfitType");
     std::string fieldSeisName(config.get<std::string>("fieldSeisName"));
@@ -132,7 +131,7 @@ int main(int argc, char *argv[])
     typedef typename Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
     std::vector<wavefieldPtr> wavefieldrecord;
     
-    for (IndexType i = 0; i < tEnd; i++) {
+    for (IndexType i = 0; i < tStepEnd; i++) {
         wavefieldPtr wavefieldsTemp(Wavefields::Factory<ValueType>::Create(dimension, equationType));
         wavefieldsTemp->init(ctx, dist);
 
@@ -255,7 +254,7 @@ int main(int argc, char *argv[])
 
                 HOST_PRINT(comm, "\n================Start Forward====================\n");
                 HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
-                                                                    << "Total Number of time steps: " << tEnd << "\n");
+                                                                    << "Total Number of time steps: " << tStepEnd << "\n");
                                                                     
                 wavefields->resetWavefields();
 
@@ -264,17 +263,17 @@ int main(int argc, char *argv[])
                 ValueType DTinv=1/config.get<ValueType>("DT");
             
                 start_t_shot = common::Walltime::get();
-                for (t = 0; t < tEnd; t++) {
+                for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                     
                     *wavefieldsTemp=*wavefields;
                     
-                    solver->run(receivers, sources, *model, *wavefields, *derivatives, t, t + 1, config.get<ValueType>("DT"));
+                    solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
 
                     // save wavefields in std::vector
-                    *wavefieldrecord[t]=*wavefields;
+                    *wavefieldrecord[tStep]=*wavefields;
                     //calculate temporal derivative of wavefield
-                    *wavefieldrecord[t]-=*wavefieldsTemp;
-                    *wavefieldrecord[t]*=DTinv;
+                    *wavefieldrecord[tStep]-=*wavefieldsTemp;
+                    *wavefieldrecord[tStep]*=DTinv;
                     
                     if (config.get<bool>("useEnergyPreconditioning") == 1){
                         energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));}
@@ -366,7 +365,7 @@ int main(int argc, char *argv[])
 
                 HOST_PRINT(comm, "\n================Start Forward====================\n");
                 HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
-                                                                    << "Total Number of time steps: " << tEnd << "\n");
+                                                                    << "Total Number of time steps: " << tStepEnd << "\n");
                                                                     
                 wavefields->resetWavefields();
 
@@ -374,7 +373,9 @@ int main(int argc, char *argv[])
             
                 start_t_shot = common::Walltime::get();
  
-                solver->run(receivers, sources, *model, *wavefields, *derivatives, 0, tEnd, config.get<ValueType>("DT"));
+                for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                    solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                }
 
                 receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration+1) + ".shot_" + std::to_string(shotNumber));
                 

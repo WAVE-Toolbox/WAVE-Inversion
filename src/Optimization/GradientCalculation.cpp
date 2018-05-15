@@ -66,7 +66,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
 
     for (t = tEnd - 1; t >= 0; t--) {
 
-        solver.run(receivers, adjointSources, model, *wavefields, derivatives, t, t + 1, config.get<ValueType>("DT"));
+        solver.run(receivers, adjointSources, model, *wavefields, derivatives, t);
 
         /* --------------------------------------- */
         /*             Convolution                 */
