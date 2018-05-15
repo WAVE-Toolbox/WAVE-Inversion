@@ -72,6 +72,19 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
     workflowFile.close();
 }
 
+/*! \brief Print current set of workflow variables to terminal
+ *
+ \param comm Communicator 
+ */
+template <typename ValueType>
+void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::CommunicatorPtr comm)
+{
+    HOST_PRINT(comm, "Set parameters: \n");
+    HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
+    HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
+    HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
+    HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
+}
 
 template class KITGPI::Workflow::Workflow<double>;
 template class KITGPI::Workflow::Workflow<float>;

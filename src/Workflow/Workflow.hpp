@@ -3,6 +3,7 @@
 #include <scai/lama.hpp>
 #include <iostream>
 
+#include <Common/HostPrint.hpp>
 #include <Configuration/Configuration.hpp>
 #include <../Optimization/Misfit/Misfit.hpp>
 
@@ -32,6 +33,7 @@ namespace KITGPI
             void init(KITGPI::Configuration::Configuration config);
             void changeStage(KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType &steplengthInit);
             void readFromFile(std::string workflowFilename);
+            void printParameters(scai::dmemo::CommunicatorPtr comm);
       
             int maxStage;
             scai::IndexType workflowStage;

@@ -213,11 +213,7 @@ int main(int argc, char *argv[])
         HOST_PRINT(comm, "\n============ Workflow stage " << workflow.workflowStage+1 << " of " << workflow.maxStage << " ==============");    
         HOST_PRINT(comm, "\n=================================================\n\n");
         
-        HOST_PRINT(comm, "Set parameters: \n");
-        HOST_PRINT(comm, "invertForVp = " << workflow.invertForVp << "\n");
-        HOST_PRINT(comm, "invertForVs = " << workflow.invertForVs << "\n");
-        HOST_PRINT(comm, "invertForDensity = " << workflow.invertForDensity << "\n");
-        HOST_PRINT(comm, "relativeMisfitChange = " << workflow.relativeMisfitChange << "\n");
+        workflow.printParameters(comm);
         
         gradientCalculation.allocate(config, dist, ctx, workflow); 
         

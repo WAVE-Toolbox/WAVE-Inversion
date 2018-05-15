@@ -3,7 +3,7 @@
 /*! \brief Check abort criterion/criteria
  * 
  * 
- \param comm Communictaor 
+ \param comm Communicator 
  \param misfit reference of misfit is used because sometimes the misfitStorage has to be reset
  \param config configuration 
  \param steplengthInit reference of initial step lenght is used because it has ot be reset sometimes 
