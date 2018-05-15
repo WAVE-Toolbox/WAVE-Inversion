@@ -34,6 +34,9 @@ namespace KITGPI
             void readFromFile(std::string workflowFilename);
       
             int maxStage;
+            scai::IndexType workflowStage;
+            scai::IndexType iteration;
+            scai::IndexType skipCount;
             
             bool invertForVp = false;
             bool invertForVs = false;
@@ -41,8 +44,7 @@ namespace KITGPI
             ValueType relativeMisfitChange = 0.01; 
             
         private:
-      
-            int currentStage;
+
             std::ifstream workflowFile;
    
             

@@ -23,7 +23,7 @@ void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configur
     maxStage = std::count(std::istreambuf_iterator<char>(workflowFile), std::istreambuf_iterator<char>(), '\n');
     maxStage = maxStage-2; // substract comment lines
     workflowFile.close();
-    currentStage = 1;
+    skipCount = 0;
     readFromFile(config.get<std::string>("workflowFilename"));
     
 }
@@ -38,7 +38,7 @@ void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configur
 template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType &steplengthInit)
 {
-    currentStage += 1;
+    skipCount += 1;
     readFromFile(config.get<std::string>("workflowFilename"));
     
     dataMisfit.clearStorage();
@@ -63,7 +63,7 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
     }
     
     /* Skip stage lines (except for first stage) */
-    for (int i = 1; i < currentStage; i++){
+    for (int i = 0; i < skipCount; i++){
         workflowFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');}
         
     /* Extract variables from current workflow stage */

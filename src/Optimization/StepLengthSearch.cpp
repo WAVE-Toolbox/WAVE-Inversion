@@ -267,7 +267,7 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
         logFile.open(logFilename);
         logFile << "# Step length log file  \n";
         logFile << "# Misfit type = " << misfitType << "\n";
-        logFile << "# Iteration 0 shows misfit of initial model of each workflow stage (only first and last column is meaningful here)\n";
+        logFile << "# Iteration 0 shows misfit of initial model of each workflow stage (only first two columns and last column is meaningful here)\n";
         logFile << "# Stage | Iteration | optimum step length | #Forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots\n";
         logFile.close();
     } 
@@ -281,7 +281,7 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
  \param iteration Iteration count
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType workflowStage, IndexType iteration, std::string logFilename, ValueType misfitSum)
+void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType workflowStage, scai::IndexType iteration, std::string logFilename, ValueType misfitSum)
 {
     int myRank = comm->getRank(); 
     /* The following temporaries are only necessary because of a problem with LAMA: e.g. steplengthParabola.getValue(0).getValue<ValueType>() produces an error */

@@ -207,10 +207,10 @@ int main(int argc, char *argv[])
     /*       Loop over workflow stages         */
     /* --------------------------------------- */
     
-    for (IndexType workflowStage = 0; workflowStage < workflow.maxStage; workflowStage++) {
+    for (workflow.workflowStage = 0; workflow.workflowStage < workflow.maxStage; workflow.workflowStage++) {
         
         HOST_PRINT(comm, "\n=================================================");
-        HOST_PRINT(comm, "\n============ Workflow stage " << workflowStage+1 << " of " << workflow.maxStage << " ==============");    
+        HOST_PRINT(comm, "\n============ Workflow stage " << workflow.workflowStage+1 << " of " << workflow.maxStage << " ==============");    
         HOST_PRINT(comm, "\n=================================================\n\n");
         
         HOST_PRINT(comm, "Set parameters: \n");
@@ -225,10 +225,10 @@ int main(int argc, char *argv[])
         /*        Loop over iterations             */
         /* --------------------------------------- */
 
-        for (IndexType iteration = 0; iteration < maxiterations; iteration++) {
+        for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
             
             HOST_PRINT(comm, "\n=================================================");
-            HOST_PRINT(comm, "\n================ Iteration " << iteration+1 << " ====================");    
+            HOST_PRINT(comm, "\n================ Iteration " << workflow.iteration+1 << " ====================");    
             HOST_PRINT(comm, "\n=================================================\n\n");
             start_t = common::Walltime::get();
             
@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
                         energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));}
                 }
 
-                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration) + ".shot_" + std::to_string(shotNumber));
+                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber));
                 
                 HOST_PRINT(comm, "\nCalculate misfit and adjoint sources\n");
                 
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
                 dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
                 
                 /* Calculate gradient */
-                gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, workflowStage, iteration, shotNumber, workflow);
+                gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, shotNumber, workflow);
                 
                 /* Apply energy preconditioning per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1){
@@ -312,20 +312,20 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm, "\n===========================================\n");
 
             if(optimization == 1){
-                conjugateGradient.calc(*gradient, workflow, iteration);}
+                conjugateGradient.calc(*gradient, workflow);}
             
             /* Output of gradient */
             if(config.get<IndexType>("WriteGradient"))
-                gradient->write(gradname + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration + 1), config.get<IndexType>("PartitionedOut"));
+                gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("PartitionedOut"));
 
             dataMisfit->addToStorage(misfitPerIt);
             
-            SLsearch.appendToLogFile(comm, workflowStage+1, iteration, logFilename, dataMisfit->getMisfitSum(iteration));
+            SLsearch.appendToLogFile(comm, workflow.workflowStage+1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration));
             
             /* Check abort criteria */
-            HOST_PRINT(comm, "\nMisfit after stage " << workflowStage << ", iteration " << iteration << ": " << dataMisfit->getMisfitSum(iteration) << "\n");
+            HOST_PRINT(comm, "\nMisfit after stage " << workflow.workflowStage << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
             
-            bool breakLoop = abortCriterion.check(comm, *dataMisfit, config, steplengthInit, workflow, workflowStage, iteration);
+            bool breakLoop = abortCriterion.check(comm, *dataMisfit, config, steplengthInit, workflow);
             if (breakLoop == true){break;}
             
             /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm,"\n===========================================" );
             HOST_PRINT(comm,"\n======== Start step length search =========\n" );
         
-            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(iteration));
+            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration));
             
         
             HOST_PRINT(comm, "=========== Update Model ============\n\n");
@@ -344,18 +344,18 @@ int main(int argc, char *argv[])
             *gradient *= SLsearch.getSteplength();
             *model -= *gradient;
         
-            model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration+1)), config.get<IndexType>("PartitionedOut"));
+            model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration+1)), config.get<IndexType>("PartitionedOut"));
 
             steplengthInit*=0.98; 
         
             end_t = common::Walltime::get();
-            HOST_PRINT(comm, "\nFinished iteration " << iteration + 1 << " in " << end_t - start_t << " sec.\n\n");
+            HOST_PRINT(comm, "\nFinished iteration " << workflow.iteration + 1 << " in " << end_t - start_t << " sec.\n\n");
             
             
             /* -------------------------------------------------------------------- */
             /* One extra forward modelling to ensure complete and consistent output */
             /* -------------------------------------------------------------------- */
-            if (iteration == maxiterations-1){
+            if (workflow.iteration == maxiterations-1){
                 
                 HOST_PRINT(comm, "================ Maximum number of iterations reached =================\n");
                 HOST_PRINT(comm, "=== Do one more forward modelling to calculate misfit and save seismograms ===\n\n");
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
  
                 solver->run(receivers, sources, *model, *wavefields, *derivatives, 0, tEnd, config.get<ValueType>("DT"));
 
-                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowStage+1) + ".It_" + std::to_string(iteration+1) + ".shot_" + std::to_string(shotNumber));
+                receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration+1) + ".shot_" + std::to_string(shotNumber));
                 
                 /* Calculate misfit of one shot */
                 misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));          
@@ -392,9 +392,9 @@ int main(int argc, char *argv[])
                 
                 dataMisfit->addToStorage(misfitPerIt);
                 
-                SLsearch.appendToLogFile(comm, workflowStage+1, iteration+1, logFilename, dataMisfit->getMisfitSum(iteration+1));
+                SLsearch.appendToLogFile(comm, workflow.workflowStage+1, workflow.iteration+1, logFilename, dataMisfit->getMisfitSum(workflow.iteration+1));
                 
-                if(workflowStage != workflow.maxStage-1){
+                if(workflow.workflowStage != workflow.maxStage-1){
                     HOST_PRINT(comm, "\nChange workflow stage\n");
                     workflow.changeStage(config, *dataMisfit, steplengthInit);}
                 

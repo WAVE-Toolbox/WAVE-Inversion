@@ -8,20 +8,18 @@
  \param config configuration 
  \param steplengthInit reference of initial step lenght is used because it has ot be reset sometimes 
  \param workflow reference of workflow is used because sometimes private members have to be reset 
- \param workflowStage workflow stage number 
- \param iteration iteration number 
  */
 template <typename ValueType>
-bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm, KITGPI::Misfit::Misfit<ValueType> &misfit, KITGPI::Configuration::Configuration config, ValueType &steplengthInit, Workflow::Workflow<ValueType> &workflow, int workflowStage, int iteration)
+bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm, KITGPI::Misfit::Misfit<ValueType> &misfit, KITGPI::Configuration::Configuration config, ValueType &steplengthInit, Workflow::Workflow<ValueType> &workflow)
 {
     bool breakLoop = false;
     
-    if ( (iteration > 1) && ( std::abs((misfit.getMisfitSum(iteration) - misfit.getMisfitSum(iteration - 2)))/(misfit.getMisfitSum(iteration - 2)) < workflow.relativeMisfitChange) ) 
+    if ( (workflow.iteration > 1) && ( std::abs( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration-2) )/(misfit.getMisfitSum(workflow.iteration - 2)) < workflow.relativeMisfitChange) ) 
     {        
         HOST_PRINT(comm, "\nAbort criterion fulfilled \n");
         HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.relativeMisfitChange << "\n");
         
-        if(workflowStage != workflow.maxStage-1){
+        if(workflow.workflowStage != workflow.maxStage-1){
             HOST_PRINT(comm, "\nChange workflow stage\n");
             workflow.changeStage(config, misfit, steplengthInit);}
             

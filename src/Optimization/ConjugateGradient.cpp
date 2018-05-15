@@ -35,12 +35,11 @@ void KITGPI::ConjugateGradient<ValueType>::init(scai::dmemo::DistributionPtr dis
  * 
  \param gradient In- and output
  \param workflow To check which parameter class is inverted for
- \param iteration To check if last (conjugate) gradient has to be initialized 
  */
 template <typename ValueType>
-void KITGPI::ConjugateGradient<ValueType>::calc(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow, int iteration)
+void KITGPI::ConjugateGradient<ValueType>::calc(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if(iteration==0){
+    if(workflow.iteration==0){
         
         if(workflow.invertForVp == 1){
             lastGradientVp = gradient.getVelocityP();

@@ -21,7 +21,7 @@ namespace KITGPI
         ConjugateGradient(scai::dmemo::DistributionPtr dist);
         
         void init(scai::dmemo::DistributionPtr dist);
-        void calc(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow, int iteration);
+        void calc(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow);
         
 
     private:
