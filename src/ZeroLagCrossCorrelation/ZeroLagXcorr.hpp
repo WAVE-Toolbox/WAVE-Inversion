@@ -9,7 +9,7 @@
 #include <scai/dmemo/BlockDistribution.hpp>
 #include <scai/hmemo/HArray.hpp>
 
-#include "../../Workflow/Workflow.hpp"
+#include "../Workflow/Workflow.hpp"
 
 namespace KITGPI
 {

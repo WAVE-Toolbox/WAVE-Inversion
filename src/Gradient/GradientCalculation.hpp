@@ -6,10 +6,10 @@
 
 #include <vector>
 
-#include "../Gradient/GradientFactory.hpp"
-#include "./ZeroLagCrossCorrelation/ZeroLagXcorrFactory.hpp"
-#include "Misfit/Misfit.hpp"
-#include "Preconditioning/SourceReceiverTaper.hpp"
+#include "GradientFactory.hpp"
+#include "../ZeroLagCrossCorrelation/ZeroLagXcorrFactory.hpp"
+#include "../Misfit/Misfit.hpp"
+#include "../Preconditioning/SourceReceiverTaper.hpp"
 #include <Acquisition/Receivers.hpp>
 #include <Acquisition/Sources.hpp>
 #include <Configuration/Configuration.hpp>

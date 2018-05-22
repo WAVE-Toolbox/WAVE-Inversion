@@ -14,8 +14,8 @@
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "../Gradient/GradientFactory.hpp"
-#include "Misfit/Misfit.hpp"
-#include "Misfit/MisfitFactory.hpp"
+#include "../Misfit/Misfit.hpp"
+#include "../Misfit/MisfitFactory.hpp"
 
 namespace KITGPI
 {

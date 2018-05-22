@@ -5,7 +5,7 @@
 #include <Common/HostPrint.hpp>
 #include <Configuration/Configuration.hpp>
 
-#include "Misfit/Misfit.hpp"
+#include "Misfit.hpp"
 #include "../Workflow/Workflow.hpp"
 
 namespace KITGPI

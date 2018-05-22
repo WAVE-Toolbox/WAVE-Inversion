@@ -5,7 +5,7 @@
 
 #include <Common/HostPrint.hpp>
 #include <Configuration/Configuration.hpp>
-#include <../Optimization/Misfit/Misfit.hpp>
+#include <../Misfit/Misfit.hpp>
 
 namespace KITGPI
 {

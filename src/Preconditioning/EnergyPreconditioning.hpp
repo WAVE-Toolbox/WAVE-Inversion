@@ -5,7 +5,7 @@
 
 #include <Acquisition/Receivers.hpp>
 #include <Wavefields/Wavefields.hpp>
-#include "../../Gradient/Gradient.hpp"
+#include "../Gradient/Gradient.hpp"
 
 namespace KITGPI
 {

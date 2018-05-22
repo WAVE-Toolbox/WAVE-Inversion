@@ -22,14 +22,15 @@
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "Gradient/GradientFactory.hpp"
-#include "Optimization/GradientCalculation.hpp"
-#include "Optimization/Misfit/Misfit.hpp"
-#include "Optimization/Misfit/MisfitFactory.hpp"
-#include "Optimization/StepLengthSearch.hpp"
-#include "Optimization/Preconditioning/EnergyPreconditioning.hpp"
+#include "Gradient/GradientCalculation.hpp"
+#include "Misfit/Misfit.hpp"
+#include "Misfit/MisfitFactory.hpp"
+#include "Misfit/AbortCriterion.hpp"
+#include "StepLengthSearch/StepLengthSearch.hpp"
+#include "Preconditioning/EnergyPreconditioning.hpp"
 #include "Optimization/ConjugateGradient.hpp"
 #include "Workflow/Workflow.hpp"
-#include "Optimization/AbortCriterion.hpp"
+
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>

@@ -9,7 +9,7 @@
 
 #include "ZeroLagXcorr.hpp"
 
-#include "../../Workflow/Workflow.hpp"
+#include "../Workflow/Workflow.hpp"
 
 namespace KITGPI
 {
@@ -17,28 +17,25 @@ namespace KITGPI
     namespace ZeroLagXcorr
     {
 
-        /*! \brief Class to hold and caclulate the zero lag cross correlated wavefields for 3D elastic gradients
+        /*! \brief Class to hold and caclulate the zero lag cross correlated wavefields for 3D acoustic gradients
          *
          */
         template <typename ValueType>
-        class ZeroLagXcorr3Delastic : public ZeroLagXcorr<ValueType>
+        class ZeroLagXcorr3Dacoustic : public ZeroLagXcorr<ValueType>
         {
 
           public:
             //! Default constructor
-            ZeroLagXcorr3Delastic(){};
+            ZeroLagXcorr3Dacoustic(){};
 
             //! Default destructor
-            ~ZeroLagXcorr3Delastic(){};
+            ~ZeroLagXcorr3Dacoustic(){};
 
-            explicit ZeroLagXcorr3Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            explicit ZeroLagXcorr3Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void update(Wavefields::Wavefields<ValueType> &/*forwardWavefield*/, Wavefields::Wavefields<ValueType> &/*adjointWavefield*/, KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/) override{COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")};
-
-            /* Getter routines for non-required wavefields: Will throw an error */
-            scai::lama::DenseVector<ValueType> const &getP() const override;
+            void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
@@ -46,15 +43,16 @@ namespace KITGPI
 
             void write(std::string type, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             void writeSnapshot(scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow);
-	    
+
           private:
+	    
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::VSum;
-
-            /* non-required wavefields */
             using ZeroLagXcorr<ValueType>::P;
 
-            std::string type = "Elastic3D";
+            /* non-required wavefields */
+
+            std::string type = "Acoustic3D";
         };
     }
 }

@@ -26,7 +26,7 @@
 #include <Configuration/Configuration.hpp>
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
-#include "../Optimization/ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
+#include "../ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
 #include <Modelparameter/Modelparameter.hpp>
 #include "../Workflow/Workflow.hpp"
 
