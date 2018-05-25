@@ -6,7 +6,7 @@
  \param dist
  */
 template <typename ValueType>
-KITGPI::ConjugateGradient<ValueType>::ConjugateGradient(scai::dmemo::DistributionPtr dist)
+KITGPI::Optimization::ConjugateGradient<ValueType>::ConjugateGradient(scai::dmemo::DistributionPtr dist)
 {
     this->init(dist);
    
@@ -18,7 +18,7 @@ KITGPI::ConjugateGradient<ValueType>::ConjugateGradient(scai::dmemo::Distributio
  \param dist
  */
 template <typename ValueType>
-void KITGPI::ConjugateGradient<ValueType>::init(scai::dmemo::DistributionPtr dist)
+void KITGPI::Optimization::ConjugateGradient<ValueType>::init(scai::dmemo::DistributionPtr dist)
 {
     lastGradientVp.setSameValue(dist, 0 );
     lastGradientVs.setSameValue(dist, 0 );
@@ -37,8 +37,9 @@ void KITGPI::ConjugateGradient<ValueType>::init(scai::dmemo::DistributionPtr dis
  \param workflow To check which parameter class is inverted for
  */
 template <typename ValueType>
-void KITGPI::ConjugateGradient<ValueType>::calc(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
+    
     if(workflow.iteration==0){
         
         if(workflow.invertForVp == 1){
@@ -100,6 +101,8 @@ void KITGPI::ConjugateGradient<ValueType>::calc(KITGPI::Gradient::Gradient<Value
         }
         
     }
+    
+    gradient.scale(model, workflow);
    
 }
 
@@ -113,7 +116,7 @@ void KITGPI::ConjugateGradient<ValueType>::calc(KITGPI::Gradient::Gradient<Value
  \param lastGradient Dense Vector
  */
 template <typename ValueType>
-void KITGPI::ConjugateGradient<ValueType>::calcConjugateGradient(scai::lama::DenseVector<ValueType> &conjugateGradient, scai::lama::DenseVector<ValueType> const &gradient, scai::lama::DenseVector<ValueType> const &lastConjugateGradient, scai::lama::DenseVector<ValueType> const &lastGradient)
+void KITGPI::Optimization::ConjugateGradient<ValueType>::calcConjugateGradient(scai::lama::DenseVector<ValueType> &conjugateGradient, scai::lama::DenseVector<ValueType> const &gradient, scai::lama::DenseVector<ValueType> const &lastConjugateGradient, scai::lama::DenseVector<ValueType> const &lastGradient)
 {      
     ValueType beta;
     
@@ -124,5 +127,5 @@ void KITGPI::ConjugateGradient<ValueType>::calcConjugateGradient(scai::lama::Den
    
 }
 
-template class KITGPI::ConjugateGradient<double>;
-template class KITGPI::ConjugateGradient<float>;
+template class KITGPI::Optimization::ConjugateGradient<double>;
+template class KITGPI::Optimization::ConjugateGradient<float>;
