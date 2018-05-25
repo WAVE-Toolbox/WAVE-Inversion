@@ -328,6 +328,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     gradLambda*=model.getDensity();
     gradLambda*=4;
     gradLambda=1/gradLambda;
+    Common::replaceInvalid<ValueType,IndexType>(gradLambda,0.0);
     
     gradLambda *= correlatedWavefields.getNormalStressSum();
     gradLambda *= -DT;
@@ -344,6 +345,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 	  temp *= temp;
 	  temp*=4;
 	  temp = 1/temp;
+          Common::replaceInvalid<ValueType,IndexType>(temp,0.0);
 	  temp *= correlatedWavefields.getNormalStressDiff();
 	  temp *= -DT;
 	  
@@ -354,6 +356,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 	  temp *= model.getDensity();
 	  temp *= temp;
 	  temp = 1/temp;
+          Common::replaceInvalid<ValueType,IndexType>(temp,0.0);
 	  temp *= correlatedWavefields.getShearStress();
 	  temp *= -DT;
 	  

@@ -313,6 +313,13 @@ int main(int argc, char *argv[])
             
             gradientOptimization->apply(*gradient, workflow, *model);
             
+            if (config.get<IndexType>("FreeSurface") == 2) {
+                lama::DenseVector<ValueType> mask;
+                mask = model->getVelocityP();
+                Common::searchAndReplace(mask,0.0,1.0,2);
+                *gradient *= mask;
+            }
+            
             /* Output of gradient */
             if(config.get<IndexType>("WriteGradient"))
                 gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("PartitionedOut"));

@@ -29,6 +29,7 @@
 #include "../ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
 #include <Modelparameter/Modelparameter.hpp>
 #include "../Workflow/Workflow.hpp"
+#include <Common/Common.hpp>
 
 namespace KITGPI
 {
