@@ -28,7 +28,7 @@
 #include "Misfit/AbortCriterion.hpp"
 #include "StepLengthSearch/StepLengthSearch.hpp"
 #include "Preconditioning/EnergyPreconditioning.hpp"
-#include "Optimization/ConjugateGradient.hpp"
+#include "Optimization/OptimizationFactory.hpp"
 #include "Workflow/Workflow.hpp"
 
 
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     std::string logFilename = config.get<std::string>("logFilename");
     ValueType steplengthInit = config.get<ValueType>("steplengthInit");
     IndexType maxiterations = config.get<IndexType>("maxIterations");
-    IndexType optimization = config.get<IndexType>("optimization");
+    std::string optimizationType = config.get<std::string>("optimizationType");
 
     /* --------------------------------------- */
     /* Context and Distribution                */
@@ -199,9 +199,10 @@ int main(int argc, char *argv[])
         energyPrecond.init(dist, config);}
         
     /* --------------------------------------- */
-    /* Conjugate gradient                      */
+    /* Gradient optimization                   */
     /* --------------------------------------- */
-    ConjugateGradient<ValueType> conjugateGradient(dist);
+    Optimization::Optimization<ValueType>::OptimizationPtr gradientOptimization(Optimization::Factory<ValueType>::Create(optimizationType));
+    gradientOptimization->init(dist);
     
     /* --------------------------------------- */
     /*       Loop over workflow stages         */
@@ -307,8 +308,10 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm, "\n======== Finished loop over shots =========");
             HOST_PRINT(comm, "\n===========================================\n");
 
-            if(optimization == 1){
-                conjugateGradient.calc(*gradient, workflow);}
+            /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
+            ReceiverTaper.apply(*gradient);
+            
+            gradientOptimization->apply(*gradient, workflow, *model);
             
             /* Output of gradient */
             if(config.get<IndexType>("WriteGradient"))
@@ -324,16 +327,10 @@ int main(int argc, char *argv[])
             bool breakLoop = abortCriterion.check(comm, *dataMisfit, config, steplengthInit, workflow);
             if (breakLoop == true){break;}
             
-            /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-            ReceiverTaper.apply(*gradient);
-            
-            gradient->scale(*model, workflow);
-            
             HOST_PRINT(comm,"\n===========================================" );
             HOST_PRINT(comm,"\n======== Start step length search =========\n" );
         
             SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration));
-            
         
             HOST_PRINT(comm, "=========== Update Model ============\n\n");
             /* Apply model update */
