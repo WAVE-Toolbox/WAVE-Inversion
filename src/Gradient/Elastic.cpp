@@ -58,15 +58,23 @@ KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
  \param partitionedOut Partitioned output
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType partitionedOut) const
+void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
-    std::string filenameP = filename + ".vp.mtx";
-    std::string filenameS = filename + ".vs.mtx";
-    std::string filenamedensity = filename + ".density.mtx";
-
-    this->writeParameterisation(density, filenamedensity, partitionedOut);
-    this->writeParameterisation(velocityP, filenameP, partitionedOut);
-    this->writeParameterisation(velocityS, filenameS, partitionedOut);
+    if(workflow.getInvertForVp() == 1){
+        std::string filenameP = filename + ".vp.mtx";
+        this->writeParameterisation(velocityP, filenameP, partitionedOut);
+    }
+    
+    if(workflow.getInvertForVs() == 1){
+        std::string filenameS = filename + ".vs.mtx";
+        this->writeParameterisation(velocityS, filenameS, partitionedOut);
+    }
+    
+    if(workflow.getInvertForDensity() == 1){
+        std::string filenamedensity = filename + ".density.mtx";
+        this->writeParameterisation(density, filenamedensity, partitionedOut);
+    }
+    
 };
 
 /*! \brief Get reference to tauP
@@ -293,15 +301,15 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.invertForVp) {
+    if (workflow.getInvertForVp()) {
         velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
     }
     
-    if (workflow.invertForVs) {
+    if (workflow.getInvertForVs()) {
         velocityS *= 1 / velocityS.maxNorm() * model.getVelocityS().maxNorm();
     }   
     
-    if (workflow.invertForDensity) {
+    if (workflow.getInvertForDensity()) {
         density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
     }
 }
@@ -335,11 +343,11 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
 
-    if ((workflow.invertForVs) || (workflow.invertForDensity)){
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())){
 	  gradMu=gradLambda;
  
 	  temp = model.getVelocityS();
-          temp *= model.getVelocityS();
+      temp *= model.getVelocityS();
 	  temp *= model.getDensity();
 	  temp *= temp;
 	  temp*=4;
@@ -350,7 +358,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 	  gradMu += temp;
 	
 	  temp = model.getVelocityS();
-          temp *= model.getVelocityS();
+      temp *= model.getVelocityS();
 	  temp *= model.getDensity();
 	  temp *= temp;
 	  temp = 1/temp;
@@ -362,7 +370,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     
     // vp, vs , rho gradients
     
-    if (workflow.invertForVp) {
+    if (workflow.getInvertForVp()) {
 	//grad_vp = 2*rho*vp*grad_bulk
         velocityP = 2 * gradLambda;
         velocityP *= model.getDensity();
@@ -371,7 +379,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         this->initParameterisation(velocityP, ctx, dist, 0.0);
     }
 
-    if (workflow.invertForVs) {
+    if (workflow.getInvertForVs()) {
 
         velocityS = -4 * gradLambda;
         velocityS *= model.getDensity();
@@ -386,21 +394,21 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }
     
-    if (workflow.invertForDensity) {
+    if (workflow.getInvertForDensity()) {
 
         density = model.getVelocityP();
         density *= model.getVelocityP();
         temp = 2 * model.getVelocityS();
         temp *= model.getVelocityS();
         density-=temp;
-	density*=gradLambda;
+        density*=gradLambda;
 	
-	temp = model.getVelocityS();
-	temp*= model.getVelocityS();
-	temp*= gradMu;
-	
-	density+=temp;
-	
+        temp = model.getVelocityS();
+        temp*= model.getVelocityS();
+        temp*= gradMu;
+
+        density+=temp;
+
         density += DT * correlatedWavefields.getVSum();
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);

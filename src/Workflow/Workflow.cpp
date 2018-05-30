@@ -81,12 +81,46 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
 template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::CommunicatorPtr comm)
 {
-    HOST_PRINT(comm, "Set parameters: \n");
+    HOST_PRINT(comm, "=================================================\n");
+    HOST_PRINT(comm, "Workflow stage parameters: \n");
     HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
     HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
     HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
     HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
 }
 
+/*! \brief Return copy of invertForVp
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVp() const
+{
+    return invertForVp;
+}
+
+/*! \brief Return copy of invertForVs
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVs() const
+{
+    return invertForVs;
+}
+
+/*! \brief Return copy of invertForDensity
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForDensity() const
+{
+    return invertForDensity;
+}
+
+/*! \brief Return copy of relativeMisfitChange
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getRelativeMisfitChange() const
+{
+    return relativeMisfitChange;
+}
+            
+ 
 template class KITGPI::Workflow::Workflow<double>;
 template class KITGPI::Workflow::Workflow<float>;

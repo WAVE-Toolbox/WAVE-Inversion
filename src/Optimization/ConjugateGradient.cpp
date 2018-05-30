@@ -42,17 +42,17 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
     
     if(workflow.iteration==0){
         
-        if(workflow.invertForVp == 1){
+        if(workflow.getInvertForVp() == 1){
             lastGradientVp = gradient.getVelocityP();
             lastConjugateGradientVp = gradient.getVelocityP();
         }
         
-        if(workflow.invertForVs == 1){
+        if(workflow.getInvertForVs() == 1){
             lastGradientVs = gradient.getVelocityS();
             lastConjugateGradientVs = gradient.getVelocityS();
         }
         
-        if(workflow.invertForDensity == 1){
+        if(workflow.getInvertForDensity() == 1){
             lastGradientDensity = gradient.getDensity();
             lastConjugateGradientDensity = gradient.getDensity();
         }
@@ -61,7 +61,7 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
     
     else {
     
-        if(workflow.invertForVp == 1){
+        if(workflow.getInvertForVp() == 1){
             scai::lama::DenseVector<ValueType> gradientVp; 
             gradientVp = gradient.getVelocityP();
             scai::lama::DenseVector<ValueType> conjugateGradientVp;
@@ -74,7 +74,7 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             gradient.setVelocityP(conjugateGradientVp);
         }
         
-        if(workflow.invertForVs == 1){
+        if(workflow.getInvertForVs() == 1){
             scai::lama::DenseVector<ValueType> gradientVs;
             gradientVs = gradient.getVelocityS();
             scai::lama::DenseVector<ValueType> conjugateGradientVs;
@@ -87,7 +87,7 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             gradient.setVelocityS(conjugateGradientVs);
         }
         
-        if(workflow.invertForDensity == 1){
+        if(workflow.getInvertForDensity() == 1){
             scai::lama::DenseVector<ValueType> gradientDensity;
             gradientDensity = gradient.getDensity();
             scai::lama::DenseVector<ValueType> conjugateGradientDensity;

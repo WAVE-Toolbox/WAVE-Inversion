@@ -5,13 +5,13 @@ using namespace scai;
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.invertForDensity)
+    if (workflow.getInvertForDensity())
         this->initWavefield(VSum, ctx, dist);
 
-    if ((workflow.invertForVp) || (workflow.invertForVs) || (workflow.invertForDensity)) 
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity())) 
         this->initWavefield(NormalStressSum, ctx, dist);
 
-    if ((workflow.invertForVs) || (workflow.invertForDensity)){
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())){
         this->initWavefield(ShearStress, ctx, dist);
         this->initWavefield(NormalStressDiff, ctx, dist);
     }
@@ -67,15 +67,15 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::writeSnapshot(Index
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.invertForDensity)
+    if (workflow.getInvertForDensity())
     this->resetWavefield(VSum);
 
-    if ((workflow.invertForVs)|| (workflow.invertForDensity)) {
+    if ((workflow.getInvertForVs())|| (workflow.getInvertForDensity())) {
     this->resetWavefield(ShearStress);
     this->resetWavefield(NormalStressDiff);
     }
     
-    if ((workflow.invertForVp) || (workflow.invertForVs)|| (workflow.invertForDensity)){
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs())|| (workflow.getInvertForDensity())){
     this->resetWavefield(NormalStressSum);
     }
 }
@@ -88,14 +88,14 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::
     //temporary wavefields allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp1;
     lama::DenseVector<ValueType> temp2;
-    if ((workflow.invertForVp) || (workflow.invertForVs) || (workflow.invertForDensity)) {
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
         temp1 = forwardWavefield.getRefSxx() + forwardWavefield.getRefSyy();
         temp2 = adjointWavefield.getRefSxx() + adjointWavefield.getRefSyy();
         temp1 *= temp2;
         NormalStressSum += temp1;
     }
 
-    if ((workflow.invertForVs) || (workflow.invertForDensity)){
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())){
         temp1 = forwardWavefield.getRefSxx() - forwardWavefield.getRefSyy();
         temp2 = adjointWavefield.getRefSxx() - adjointWavefield.getRefSyy();
         temp1 *= temp2;
@@ -105,7 +105,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::
         ShearStress += temp1;
     }
 
-    if (workflow.invertForDensity) {
+    if (workflow.getInvertForDensity()) {
         temp1 = forwardWavefield.getRefVX();
         temp1 *= adjointWavefield.getRefVX();
         VSum += temp1;

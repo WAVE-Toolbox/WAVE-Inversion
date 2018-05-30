@@ -57,13 +57,18 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
  \param partitionedOut Partitioned output
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexType partitionedOut) const
+void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
-    std::string filenameP = filename + ".vp.mtx";
-    std::string filenamedensity = filename + ".density.mtx";
-
-    this->writeParameterisation(density, filenamedensity, partitionedOut);
-    this->writeParameterisation(velocityP, filenameP, partitionedOut);
+    if(workflow.getInvertForVp() == 1){
+        std::string filenameP = filename + ".vp.mtx";
+        this->writeParameterisation(velocityP, filenameP, partitionedOut);
+    }
+    
+    if(workflow.getInvertForDensity() == 1){
+        std::string filenamedensity = filename + ".density.mtx";
+        this->writeParameterisation(density, filenamedensity, partitionedOut);
+    }
+    
 };
 
 /*! \brief Get reference to S-wave velocity
@@ -287,10 +292,10 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.invertForVp) {
+    if (workflow.getInvertForVp()) {
         velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
     }
-    if (workflow.invertForDensity) {
+    if (workflow.getInvertForDensity()) {
         density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
     }
 }
@@ -314,7 +319,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     scai::hmemo::ContextPtr ctx = gradBulk.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradBulk.getDistributionPtr();
 
-    if (workflow.invertForVp) {
+    if (workflow.getInvertForVp()) {
 	//grad_vp = 2*rho*vp*gradBulk
         velocityP = 2 * gradBulk;
         velocityP *= model.getDensity();
@@ -323,7 +328,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
         this->initParameterisation(velocityP, ctx, dist, 0.0);
     }
     
-    if (workflow.invertForDensity) {
+    if (workflow.getInvertForDensity()) {
 	//grad_density=vp^2*gradBulk + (sum(i) (dt Vadj,i * dVfw,i/dt))
         density = model.getVelocityP();
         density *= model.getVelocityP();
