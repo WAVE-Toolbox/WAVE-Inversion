@@ -14,10 +14,10 @@ bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm,
 {
     bool breakLoop = false;
     
-    if ( (workflow.iteration > 1) && ( std::abs( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration-2) )/(misfit.getMisfitSum(workflow.iteration - 2)) < workflow.relativeMisfitChange) ) 
+    if ( (workflow.iteration > 1) && ( std::abs( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration-2) )/(misfit.getMisfitSum(workflow.iteration - 2)) < workflow.getRelativeMisfitChange()) ) 
     {        
         HOST_PRINT(comm, "\nAbort criterion fulfilled \n");
-        HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.relativeMisfitChange << "\n");
+        HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.getRelativeMisfitChange() << "\n");
         
         if(workflow.workflowStage != workflow.maxStage-1){
             HOST_PRINT(comm, "\nChange workflow stage\n");

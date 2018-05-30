@@ -84,7 +84,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     SourceTaper.apply(gradient);
 
     if(config.get<IndexType>("WriteGradientPerShot"))
-       gradient.getVelocityP().writeToFile(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration + 1) + ".Shot_" + std::to_string(shotNumber) + ".vp" + ".mtx");
+        gradient.write(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration + 1) + ".Shot_" + std::to_string(shotNumber), config.get<IndexType>("PartitionedOut"), workflow);
 
 //     receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/rec_adjoint.mtx");
     
