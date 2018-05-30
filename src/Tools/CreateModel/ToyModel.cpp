@@ -16,38 +16,44 @@ int main(int argc, char *argv[])
 {
     typedef double ValueType;
 
-    ValueType vpTopLeftScale=1.0, vpTopRightScale=1.0, vpBottomLeftScale=1.0, vpBottomRightScale=1.0, vsTopLeftScale=1.0, vsTopRightScale=1.0, vsBottomLeftScale=1.0, vsBottomRightScale=1.0, rhoTopLeftScale=1.0, rhoTopRightScale=1.0, rhoBottomLeftScale=1.0, rhoBottomRightScale=1.0;
+    ValueType vp1, vp2, vp3, vp4, vs1, vs2, vs3, vs4, density1, density2, density3, density4;
+    int depth=1.0;
     
     if (argc != 2) {
         std::cout << "\n\nNo configuration file given!\n\n"
                   << std::endl;
         return (2);
     }
-
-    // box
-    int width=20;
-    int height=20;	
-
-
-//    permutations in box
-    
-    vpTopLeftScale=0.8;
-    vpTopRightScale=1.0;
-    vpBottomLeftScale=0.9;
-    vpBottomRightScale=0.9;
-//     
-//     vsTopLeftScale=0.8;
-//     vsTopRightScale=0.8;
-//     vsBottomLeftScale=1.6;
-//     vsBottomRightScale=1.6;
-    
-     rhoTopLeftScale=1.0;
-     rhoTopRightScale=1.2;
-     rhoBottomLeftScale=0.9;
-     rhoBottomRightScale=0.9;
-
     // read configuration parameter from file
     KITGPI::Configuration::Configuration config(argv[1]);
+    
+    //background value
+    ValueType vp0=config.get<ValueType>("velocityP");
+    ValueType vs0=config.get<ValueType>("velocityS");
+    ValueType density0=config.get<ValueType>("rho");
+    
+     // box
+    int width=config.get<IndexType>("boxWidth");
+    int height=config.get<IndexType>("boxHeight");
+    
+    if (config.get<std::string>("dimension")=="3D")
+    depth=config.get<IndexType>("boxDepth");
+
+//    permutations in box
+    try {vp1=config.get<ValueType>("vp1");} catch (...) { vp1=vp0;};
+    try {vp2=config.get<ValueType>("vp2");} catch (...) { vp2=vp0;};
+    try {vp3=config.get<ValueType>("vp3");} catch (...) { vp3=vp0;};
+    try {vp4=config.get<ValueType>("vp4");} catch (...) { vp4=vp0;};
+
+    try {vs1=config.get<ValueType>("vs1");} catch (...) { vs1=vs0;};
+    try {vs2=config.get<ValueType>("vs2");} catch (...) { vs2=vs0;};
+    try {vs3=config.get<ValueType>("vs3");} catch (...) { vs3=vs0;};
+    try {vs4=config.get<ValueType>("vs4");} catch (...) { vs4=vs0;};
+    
+    try {density1=config.get<ValueType>("density1");} catch (...) { density1=density0;};
+    try {density2=config.get<ValueType>("density2");} catch (...) { density2=density0;};
+    try {density3=config.get<ValueType>("density3");} catch (...) { density3=density0;};
+    try {density4=config.get<ValueType>("density4");} catch (...) { density4=density0;};
 
     // estimate grid with parameters out of the configuration
     int NX = config.get<IndexType>("NX");
@@ -59,53 +65,79 @@ int main(int argc, char *argv[])
     lama::GridVector<ValueType> vp(grid);
     lama::GridVector<ValueType> vs(grid);
     lama::GridVector<ValueType> rho(grid);
+    lama::GridVector<ValueType> tauP(grid);
+    lama::GridVector<ValueType> tauS(grid);
+    
 
-    //set models to values specified in configuration
-    vp = config.get<ValueType>("velocityP");;
-    vs = config.get<ValueType>("velocityS");
-    rho = config.get<ValueType>("rho");
-
+    //set background value
+    vp = vp0;
+    vs = vs0;
+    rho = density0;
+    tauP = config.get<ValueType>("tauP");
+    tauS = config.get<ValueType>("tauS");
+    
     
    //top-left
   for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
     for (IndexType y = NY/2-height/2; y < NY/2; ++y) {
-	  vp(lama::Range(), y, x) *= vpTopLeftScale; 
-	  vs(lama::Range(), y, x) *= vsTopLeftScale; 
-          rho(lama::Range(), y, x) *= rhoTopLeftScale;
+	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
+	  vp(z, y, x) = vp1; 
+	  vs(z, y, x) = vs1; 
+          rho(z, y, x) = density1;
+	}
     }
    }
 
     //top-right
   for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2-height/2; y < NY/2; ++y) {    
-	  vp(lama::Range(), y, x) *= vpTopRightScale; 
-	  vs(lama::Range(), y, x) *= vsTopRightScale; 
-          rho(lama::Range(), y, x) *= rhoTopRightScale;
+	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {      
+	  vp(z, y, x) = vp2; 
+	  vs(z, y, x) = vs2; 
+          rho(z, y, x) = density2;
+	}
     }
    }      
 
  //bottom left        
  for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
   for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
-	  vp(lama::Range(), y, x) *= vpBottomLeftScale; 
-	  vs(lama::Range(), y, x) *= vsBottomLeftScale; 
-          rho(lama::Range(), y, x) *= rhoBottomLeftScale;
+      for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
+	  vp(z, y, x) = vp3; 
+	  vs(z, y, x) = vs3; 
+          rho(z, y, x) = density3;
+      }
   }                                                               
  }
 
     //bottom right
   for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
-	  vp(lama::Range(), y, x) *= vpBottomRightScale; 
-	  vs(lama::Range(), y, x) *= vsBottomRightScale; 
-          rho(lama::Range(), y, x) *= rhoBottomRightScale;
+	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
+	  vp(z, y, x) = vp4; 
+	  vs(z, y, x) = vs4; 
+          rho(z, y, x) = density4;
+	}
     }
    }      
 
+   std::string type = config.get<std::string>("equationType");
+   
     //write model to file specified in configuration
     std::string filename = config.get<std::string>("ModelFilename");
-    vp.writeToFile(filename + ".vp.mtx");
-    vs.writeToFile(filename + ".vs.mtx");
+    
     rho.writeToFile(filename + ".density.mtx");
+
+    if (type.compare("sh") != 0) {
+        vp.writeToFile(filename + ".vp.mtx");
+    }
+
+    if (type.compare("acoustic") != 0) {
+        vs.writeToFile(filename + ".vs.mtx");
+    }
+    if (type.compare("visco") == 0) {
+        tauP.writeToFile(filename + ".tauP.mtx");
+        tauS.writeToFile(filename + ".tauS.mtx");
+    }
     return 0;
 }

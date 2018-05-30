@@ -73,3 +73,20 @@ SeismogramFilename=../seismograms/ToyExample.true      # target location of seis
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
+
+snapType=0
+
+#ToyModel specification 
+
+boxWidth=20;
+boxHeight=20;
+
+vp1=3800
+vp2=3800
+vp3=3300
+vp4=2900
+
+#density1=3000
+#density2=3000
+#density3=3000
+#density4=3000
