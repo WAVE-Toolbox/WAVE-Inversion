@@ -20,6 +20,8 @@ template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configuration config)
 {
     workflowFile.open(config.get<std::string>("workflowFilename"));
+    if(!workflowFile){
+        COMMON_THROWEXCEPTION("Workflow file not found! Abort program...")}
     maxStage = std::count(std::istreambuf_iterator<char>(workflowFile), std::istreambuf_iterator<char>(), '\n');
     maxStage = maxStage-2; // substract comment lines
     workflowFile.close();
