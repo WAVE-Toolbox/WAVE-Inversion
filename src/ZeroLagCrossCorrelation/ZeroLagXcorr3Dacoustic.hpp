@@ -37,6 +37,11 @@ namespace KITGPI
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
+	    /* Getter routines for non-required wavefields: Will throw an error */
+            scai::lama::DenseVector<ValueType> const &getShearStress() const override;
+            scai::lama::DenseVector<ValueType> const &getNormalStressDiff() const override;
+            scai::lama::DenseVector<ValueType> const &getNormalStressSum() const override;
+	    
             scai::hmemo::ContextPtr getContextPtr() override;
 
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
@@ -51,7 +56,10 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::P;
 
             /* non-required wavefields */
-
+            using ZeroLagXcorr<ValueType>::ShearStress;
+            using ZeroLagXcorr<ValueType>::NormalStressDiff;
+            using ZeroLagXcorr<ValueType>::NormalStressSum;
+	    
             std::string type = "Acoustic3D";
         };
     }

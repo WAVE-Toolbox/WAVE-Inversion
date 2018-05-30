@@ -2,6 +2,20 @@
 
 using namespace scai;
 
+/*! \brief Constructor which will set context, allocate and set the wavefields to zero.
+ *
+ * Initialisation of 2D acoustic wavefields
+ *
+ \param ctx Context
+ \param dist Distribution
+ */
+template <typename ValueType>
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    init(ctx, dist, workflow);
+}
+
+
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
@@ -19,18 +33,6 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>:
     return (VSum.getContextPtr());
 }
 
-/*! \brief Constructor which will set context, allocate and set the wavefields to zero.
- *
- * Initialisation of 2D acoustic wavefields
- *
- \param ctx Context
- \param dist Distribution
- */
-template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    init(ctx, dist, workflow);
-}
 
 /*! \brief override Methode tor write Wavefield Snapshot to file
  *
