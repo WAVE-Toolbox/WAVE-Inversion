@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
             
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+                if (workflow.lowerCornerFreq != 0.0 || workflow.upperCornerFreq != 0.0)
+                    receiversTrue.getSeismogramHandler().filter(workflow.filterOrder, workflow.lowerCornerFreq, workflow.upperCornerFreq);
                 
                 /* Reset approximated Hessian per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1){
@@ -261,6 +263,8 @@ int main(int argc, char *argv[])
                 wavefields->resetWavefields();
 
                 sources.init(config, ctx, dist, shotNumber);
+                if (workflow.lowerCornerFreq != 0.0 || workflow.upperCornerFreq != 0.0)
+                    sources.getSeismogramHandler().filter(workflow.filterOrder, workflow.lowerCornerFreq, workflow.upperCornerFreq);
             
                 ValueType DTinv=1/config.get<ValueType>("DT");
             

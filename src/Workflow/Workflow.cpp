@@ -67,7 +67,7 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
         workflowFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');}
         
     /* Extract variables from current workflow stage */
-    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange;
+    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq;
     
     workflowFile.close();
 }
@@ -84,6 +84,9 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
     HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
     HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
+    HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
+    HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");
+    HOST_PRINT(comm, "upperCornerFreq = " << upperCornerFreq << "\n");
 }
 
 template class KITGPI::Workflow::Workflow<double>;

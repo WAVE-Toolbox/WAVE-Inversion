@@ -44,6 +44,9 @@ namespace KITGPI
             bool invertForVs = false;
             bool invertForDensity = false;
             ValueType relativeMisfitChange = 0.01; 
+            scai::IndexType filterOrder;
+            ValueType lowerCornerFreq;
+            ValueType upperCornerFreq;
             
         private:
 
