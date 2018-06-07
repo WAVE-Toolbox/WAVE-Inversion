@@ -308,7 +308,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     gradBulk *= gradBulk; 
     gradBulk *= 4; 
     gradBulk = 1 / gradBulk;
-    Common::replaceInvalid<ValueType,IndexType>(gradBulk,0.0);
+    Common::replaceInvalid<ValueType>(gradBulk,0.0);
     
     gradBulk *= correlatedWavefields.getP();
     gradBulk *= -DT;
