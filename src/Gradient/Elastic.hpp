@@ -63,7 +63,7 @@ namespace KITGPI
                 this->resetParameter(density);
             };
 
-            void write(std::string filename, scai::IndexType partitionedOut) const override;
+            void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
             /* Getter methods for not requiered parameters */
             scai::lama::Vector<ValueType> const &getTauP() override;

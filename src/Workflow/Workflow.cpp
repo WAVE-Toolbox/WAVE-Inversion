@@ -20,6 +20,8 @@ template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configuration config)
 {
     workflowFile.open(config.get<std::string>("workflowFilename"));
+    if(!workflowFile){
+        COMMON_THROWEXCEPTION("Workflow file not found! Abort program...")}
     maxStage = std::count(std::istreambuf_iterator<char>(workflowFile), std::istreambuf_iterator<char>(), '\n');
     maxStage = maxStage-2; // substract comment lines
     workflowFile.close();
@@ -79,7 +81,8 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
 template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::CommunicatorPtr comm)
 {
-    HOST_PRINT(comm, "Set parameters: \n");
+    HOST_PRINT(comm, "=================================================\n");
+    HOST_PRINT(comm, "Workflow stage parameters: \n");
     HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
     HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
     HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
@@ -89,5 +92,62 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "upperCornerFreq = " << upperCornerFreq << "\n");
 }
 
+/*! \brief Return copy of invertForVp
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVp() const
+{
+    return invertForVp;
+}
+
+/*! \brief Return copy of invertForVs
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVs() const
+{
+    return invertForVs;
+}
+
+/*! \brief Return copy of invertForDensity
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForDensity() const
+{
+    return invertForDensity;
+}
+
+/*! \brief Return copy of relativeMisfitChange
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getRelativeMisfitChange() const
+{
+    return relativeMisfitChange;
+}
+
+/*! \brief Return copy of filterOrder
+ */
+template <typename ValueType>
+scai::IndexType KITGPI::Workflow::Workflow<ValueType>::getFilterOrder() const
+{
+    return filterOrder;
+}
+
+/*! \brief Return copy of lowerCornerFreq
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getLowerCornerFreq() const
+{
+    return lowerCornerFreq;
+}
+
+/*! \brief Return copy of upperCornerFreq
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getUpperCornerFreq() const
+{
+    return upperCornerFreq;
+}
+            
+ 
 template class KITGPI::Workflow::Workflow<double>;
 template class KITGPI::Workflow::Workflow<float>;

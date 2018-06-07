@@ -34,24 +34,31 @@ namespace KITGPI
             void changeStage(KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType &steplengthInit);
             void readFromFile(std::string workflowFilename);
             void printParameters(scai::dmemo::CommunicatorPtr comm);
-      
+            
+            bool getInvertForVp() const;
+            bool getInvertForVs() const;
+            bool getInvertForDensity() const;
+            ValueType getRelativeMisfitChange() const;
+            scai::IndexType getFilterOrder() const;
+            ValueType getLowerCornerFreq() const;
+            ValueType getUpperCornerFreq() const;
+            
             int maxStage;
             scai::IndexType workflowStage;
             scai::IndexType iteration;
             scai::IndexType skipCount;
-            
-            bool invertForVp = false;
-            bool invertForVs = false;
-            bool invertForDensity = false;
-            ValueType relativeMisfitChange = 0.01; 
-            scai::IndexType filterOrder;
-            ValueType lowerCornerFreq;
-            ValueType upperCornerFreq;
-            
+
         private:
 
             std::ifstream workflowFile;
-   
+            
+            bool invertForVp;
+            bool invertForVs;
+            bool invertForDensity;
+            ValueType relativeMisfitChange; 
+            scai::IndexType filterOrder;
+            ValueType lowerCornerFreq;
+            ValueType upperCornerFreq;
             
         };
     }

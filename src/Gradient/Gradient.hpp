@@ -75,7 +75,7 @@ namespace KITGPI
              \param filename filename to write parameters (endings will be added by derived classes)
              \param partitionedOut Partitioned output
              */
-            virtual void write(std::string filename, scai::IndexType partitionedOut) const = 0;
+            virtual void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
             virtual scai::lama::Vector<ValueType> const &getDensity();
             virtual scai::lama::Vector<ValueType> const &getDensity() const;

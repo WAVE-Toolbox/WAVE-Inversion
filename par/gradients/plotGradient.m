@@ -19,7 +19,7 @@ Y=0:DH:(NY*DH-DH);
 %% Plot gradient
 figure
 colormap(seismic);
-imagesc(X,Y,gradient(:,:,LAYER)/max(max(abs(gradient))))
+imagesc(X,Y,gradient(:,:,LAYER)/max(max(max(abs(gradient)))))
 colorbar
  caxis([-1 1])
 xlabel('X in meter')

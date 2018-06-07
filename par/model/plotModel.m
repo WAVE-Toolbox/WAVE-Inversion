@@ -47,8 +47,10 @@ LAYER=geometry.LAYER; % Define layer of 3D model to display as 2D slice
 
 
 %% Read model
+if iteration > 0
 filename=[inversionModel '.stage_' num2str(stage) '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the model
 model=readModelfromMtx(filename,NX,NY,NZ);
+end
 X=0:DH:(NX*DH-DH);
 Y=0:DH:(NY*DH-DH);
 
@@ -62,9 +64,13 @@ subplot(1,2,2)
 case default
  subplot(1,1,1)     
 end
+
+if iteration > 0
 imagesc(X,Y,model(:,:,LAYER))
+end
 caxis([Min Max])
 colorbar('location','southoutside');
+colormap('jet')
 xlabel('X in meter')
 ylabel('Y in meter')
 title([parameter ' model at iteration ' num2str(iteration)])

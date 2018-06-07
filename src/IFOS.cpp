@@ -210,10 +210,6 @@ int main(int argc, char *argv[])
     
     for (workflow.workflowStage = 0; workflow.workflowStage < workflow.maxStage; workflow.workflowStage++) {
         
-        HOST_PRINT(comm, "\n=================================================");
-        HOST_PRINT(comm, "\n============ Workflow stage " << workflow.workflowStage+1 << " of " << workflow.maxStage << " ==============");    
-        HOST_PRINT(comm, "\n=================================================\n\n");
-        
         workflow.printParameters(comm);
         
         gradientCalculation.allocate(config, dist, ctx, workflow); 
@@ -225,7 +221,8 @@ int main(int argc, char *argv[])
         for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
             
             HOST_PRINT(comm, "\n=================================================");
-            HOST_PRINT(comm, "\n================ Iteration " << workflow.iteration+1 << " ====================");    
+            HOST_PRINT(comm, "\n============ Workflow stage " << workflow.workflowStage+1 << " of " << workflow.maxStage << " ==============");    
+            HOST_PRINT(comm, "\n============     Iteration " << workflow.iteration+1 << "       ==============");    
             HOST_PRINT(comm, "\n=================================================\n\n");
             start_t = common::Walltime::get();
             
@@ -242,8 +239,8 @@ int main(int argc, char *argv[])
             
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
-                if (workflow.lowerCornerFreq != 0.0 || workflow.upperCornerFreq != 0.0)
-                    receiversTrue.getSeismogramHandler().filter(workflow.filterOrder, workflow.lowerCornerFreq, workflow.upperCornerFreq);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    receiversTrue.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
                 
                 /* Reset approximated Hessian per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1){
@@ -263,8 +260,8 @@ int main(int argc, char *argv[])
                 wavefields->resetWavefields();
 
                 sources.init(config, ctx, dist, shotNumber);
-                if (workflow.lowerCornerFreq != 0.0 || workflow.upperCornerFreq != 0.0)
-                    sources.getSeismogramHandler().filter(workflow.filterOrder, workflow.lowerCornerFreq, workflow.upperCornerFreq);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
             
                 ValueType DTinv=1/config.get<ValueType>("DT");
             
@@ -326,14 +323,14 @@ int main(int argc, char *argv[])
             
             /* Output of gradient */
             if(config.get<IndexType>("WriteGradient"))
-                gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("PartitionedOut"));
+                gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("PartitionedOut"), workflow);
 
             dataMisfit->addToStorage(misfitPerIt);
             
             SLsearch.appendToLogFile(comm, workflow.workflowStage+1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration));
             
             /* Check abort criteria */
-            HOST_PRINT(comm, "\nMisfit after stage " << workflow.workflowStage << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
+            HOST_PRINT(comm, "\nMisfit after stage " << workflow.workflowStage+1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
             
             bool breakLoop = abortCriterion.check(comm, *dataMisfit, config, steplengthInit, workflow);
             if (breakLoop == true){break;}

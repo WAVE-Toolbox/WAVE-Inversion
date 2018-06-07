@@ -34,14 +34,14 @@ seismogramtrue=readSeismogram(filename);
 T=1*DT:DT:size(seismogramtrue,2)*DT;
 %% Plot seismogram
 figure
-for(trace=1:skipTraces:size(seismogramtrue,1))
+for trace=1:skipTraces:size(seismogramtrue,1)
 plot(T,seismogramtrue(trace,:)/max(abs(seismogramtrue(trace,:)))+trace,'black');
 hold on
 end
 title(['field data (black) and modeled data (red): iteration ' num2str(iteration) ' shot ' num2str(shot)])
 xlabel('Time in seconds')
 ylabel('Traces')
-axis([0.7 size(seismogramtrue,2)*DT 0 size(seismogramtrue,1)+1])
+axis([0.0 size(seismogramtrue,2)*DT 0 size(seismogramtrue,1)+1])
 
 
 %% Read seismogram
@@ -50,7 +50,7 @@ seismogram=readSeismogram(filename);
 
 %% Plot seismogram
 
-for(trace=1:skipTraces:size(seismogram,1))
+for trace=1:skipTraces:size(seismogram,1)
 plot(T,seismogram(trace,:)/max(abs(seismogram(trace,:)))+trace,'red');
 hold on
 end
