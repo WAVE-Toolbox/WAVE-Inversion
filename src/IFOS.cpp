@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm,"\n===========================================" );
             HOST_PRINT(comm,"\n======== Start step length search =========\n" );
         
-            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration));
+            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow);
         
             HOST_PRINT(comm, "=========== Update Model ============\n\n");
             /* Apply model update */
@@ -376,6 +376,8 @@ int main(int argc, char *argv[])
                 wavefields->resetWavefields();
 
                 sources.init(config, ctx, dist, shotNumber);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
             
                 start_t_shot = common::Walltime::get();
  
