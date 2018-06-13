@@ -7,7 +7,7 @@ using namespace scai;
 template <typename ValueType>
 scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getContextPtr()
 {
-    return (VSum.getContextPtr());
+    return (xcorrRho.getContextPtr());
 }
 
 /*! \brief Constructor which will set context, allocate and set the wavefields to zero.
@@ -24,10 +24,19 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::ZeroLagXcorr3Delastic(sc
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    this->initWavefield(VSum, ctx, dist);
-    COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.")
+    if (workflow.getInvertForDensity())
+        this->initWavefield(xcorrRho, ctx, dist);
+
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity()))
+        this->initWavefield(xcorrLambda, ctx, dist);
+
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        this->initWavefield(xcorrMuA, ctx, dist);
+        this->initWavefield(xcorrMuB, ctx, dist);
+        this->initWavefield(xcorrMuC, ctx, dist);
+    }
 }
 
 /*! \brief override Methode tor write Wavefield Snapshot to file
@@ -37,10 +46,10 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::C
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
-    this->writeWavefield(VSum, "VSum", type, t);
-    COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.")
+    this->writeWavefield(xcorrRho, "xcorrRho", type, t);
+    COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.");
 }
 
 /*! \brief Wrapper Function to Write Snapshot of the Wavefield
@@ -57,18 +66,86 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::writeSnapshot(Index
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    this->resetWavefield(VSum);
-    COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.")
+    if (workflow.getInvertForDensity())
+        this->resetWavefield(xcorrRho);
+
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        this->resetWavefield(xcorrMuA);
+        this->resetWavefield(xcorrMuB);
+        this->resetWavefield(xcorrMuC);
+    }
+
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        this->resetWavefield(xcorrLambda);
+    }
 }
 
-//! \brief Not valid in the 3D elastic case
+/*! \brief function to update the result of the zero lag cross-correlation for per timestep 
+ */
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getP() const
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    COMMON_THROWEXCEPTION("There is no p wavefield in the 3D elastic case.")
-    return (P);
+    //temporary wavefields allocated for every timestep (might be inefficient)
+    lama::DenseVector<ValueType> temp1;
+    lama::DenseVector<ValueType> temp2;
+
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        temp1 = forwardWavefield.getRefSxx() + forwardWavefield.getRefSyy();
+        temp1 += forwardWavefield.getRefSzz();
+        temp2 = adjointWavefield.getRefSxx() + adjointWavefield.getRefSyy();
+        temp2 += adjointWavefield.getRefSzz();
+        temp1 *= temp2;
+        xcorrLambda += temp1;
+    }
+
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        temp1 = forwardWavefield.getRefSxx();
+        temp1 *= adjointWavefield.getRefSxx();
+        xcorrMuA += temp1;
+        temp1 = forwardWavefield.getRefSyy();
+        temp1 *= adjointWavefield.getRefSyy();
+        xcorrMuA += temp1;
+        temp1 = forwardWavefield.getRefSzz();
+        temp1 *= adjointWavefield.getRefSzz();
+        xcorrMuA += temp1;
+
+        temp1 = forwardWavefield.getRefSyy();
+        temp1 += forwardWavefield.getRefSzz();
+        temp1 *= adjointWavefield.getRefSxx();
+        xcorrMuB += temp1;
+        temp1 = forwardWavefield.getRefSxx();
+        temp1 += forwardWavefield.getRefSzz();
+        temp1 *= adjointWavefield.getRefSyy();
+        xcorrMuB += temp1;
+        temp1 = forwardWavefield.getRefSxx();
+        temp1 += forwardWavefield.getRefSyy();
+        temp1 *= adjointWavefield.getRefSzz();
+        xcorrMuB += temp1;
+
+        temp1 = forwardWavefield.getRefSxy();
+        temp1 *= adjointWavefield.getRefSxy();
+        xcorrMuC += temp1;
+        temp1 = forwardWavefield.getRefSyz();
+        temp1 *= adjointWavefield.getRefSyz();
+        xcorrMuC += temp1;
+        temp1 = forwardWavefield.getRefSxz();
+        temp1 *= adjointWavefield.getRefSxz();
+        xcorrMuC += temp1;
+    }
+
+    if (workflow.getInvertForDensity()) {
+        temp1 = forwardWavefield.getRefVX();
+        temp1 *= adjointWavefield.getRefVX();
+        xcorrRho += temp1;
+        temp1 = forwardWavefield.getRefVY();
+        temp1 *= adjointWavefield.getRefVY();
+        xcorrRho += temp1;
+        temp1 = forwardWavefield.getRefVZ();
+        temp1 *= adjointWavefield.getRefVZ();
+        xcorrRho += temp1;
+    }
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<float>;

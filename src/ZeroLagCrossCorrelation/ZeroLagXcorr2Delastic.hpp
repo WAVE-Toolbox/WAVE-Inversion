@@ -37,9 +37,6 @@ namespace KITGPI
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            /* Getter routines for non-required wavefields: Will throw an error */
-            scai::lama::DenseVector<ValueType> const &getP() const override;
-
             scai::hmemo::ContextPtr getContextPtr() override;
 
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
@@ -49,12 +46,11 @@ namespace KITGPI
 
           private:
             /* required wavefields */
-            using ZeroLagXcorr<ValueType>::VSum;
-            using ZeroLagXcorr<ValueType>::ShearStress;
-            using ZeroLagXcorr<ValueType>::NormalStressDiff;
-            using ZeroLagXcorr<ValueType>::NormalStressSum;
-            /* non-required wavefields */
-            using ZeroLagXcorr<ValueType>::P;
+            using ZeroLagXcorr<ValueType>::xcorrRho;
+            using ZeroLagXcorr<ValueType>::xcorrMuA;
+            using ZeroLagXcorr<ValueType>::xcorrMuB;
+            using ZeroLagXcorr<ValueType>::xcorrMuC;
+            using ZeroLagXcorr<ValueType>::xcorrLambda;
 
             std::string type = "Elastic2D";
         };

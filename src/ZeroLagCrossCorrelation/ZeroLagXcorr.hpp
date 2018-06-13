@@ -41,11 +41,11 @@ namespace KITGPI
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
-            virtual scai::lama::DenseVector<ValueType> const &getVSum() const;
-            virtual scai::lama::DenseVector<ValueType> const &getP() const;
-            virtual scai::lama::DenseVector<ValueType> const &getShearStress() const;
-            virtual scai::lama::DenseVector<ValueType> const &getNormalStressDiff() const;
-            virtual scai::lama::DenseVector<ValueType> const &getNormalStressSum() const;
+            scai::lama::DenseVector<ValueType> const &getXcorrRho() const;
+            scai::lama::DenseVector<ValueType> const &getXcorrLambda() const;
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrMuA() const;
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrMuB() const;
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrMuC() const;
 
             //! Declare getter variable for context pointer
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
@@ -60,11 +60,12 @@ namespace KITGPI
             void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
             void writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, scai::IndexType t);
 
-            scai::lama::DenseVector<ValueType> ShearStress;      //!< (sum of) correlated shear stresses
-            scai::lama::DenseVector<ValueType> NormalStressDiff; //!<correlated difference of normal stress components  2D: (sxxF-syyF)*(sxxB-syyB)
-            scai::lama::DenseVector<ValueType> NormalStressSum;  //!<correlated sum        of normal stress components  2D: (sxxF+syyF)*(sxxB+syyB)
-            scai::lama::DenseVector<ValueType> VSum;             //!< sum of the correlated velocity wavefields sum_i (viF*viB)
-            scai::lama::DenseVector<ValueType> P;                //!< correlated pressure Wavefield
+            scai::lama::DenseVector<ValueType> xcorrMuA; //!< correlated Wavefields for the Mu gradient
+            scai::lama::DenseVector<ValueType> xcorrMuB; //!< correlated Wavefields for the Mu gradient
+            scai::lama::DenseVector<ValueType> xcorrMuC; //!< correlated Wavefields for the Mu gradient
+
+            scai::lama::DenseVector<ValueType> xcorrRho;    //!< correlated Wavefields for the rho gradient
+            scai::lama::DenseVector<ValueType> xcorrLambda; //!< correlated Wavefields for the lambda gradient
         };
     }
 }
