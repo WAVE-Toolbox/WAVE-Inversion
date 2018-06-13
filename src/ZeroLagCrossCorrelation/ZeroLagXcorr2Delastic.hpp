@@ -39,9 +39,6 @@ namespace KITGPI
 
             int getNumDimension();
             std::string getEquationType();
-            
-            /* Getter routines for non-required wavefields: Will throw an error */
-            scai::lama::DenseVector<ValueType> const &getP() const override;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
