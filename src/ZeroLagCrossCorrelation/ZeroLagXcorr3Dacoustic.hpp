@@ -26,7 +26,7 @@ namespace KITGPI
 
           public:
             //! Default constructor
-            ZeroLagXcorr3Dacoustic(){};
+            ZeroLagXcorr3Dacoustic(){equationType="acoustic"; numDimension=3;};
 
             //! Default destructor
             ~ZeroLagXcorr3Dacoustic(){};
@@ -37,7 +37,10 @@ namespace KITGPI
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-	    /* Getter routines for non-required wavefields: Will throw an error */
+            int getNumDimension();
+            std::string getEquationType();
+            
+            /* Getter routines for non-required wavefields: Will throw an error */
             scai::lama::DenseVector<ValueType> const &getShearStress() const override;
             scai::lama::DenseVector<ValueType> const &getNormalStressDiff() const override;
             scai::lama::DenseVector<ValueType> const &getNormalStressSum() const override;
@@ -51,6 +54,9 @@ namespace KITGPI
 
           private:
 	    
+            using ZeroLagXcorr<ValueType>::numDimension;
+            using ZeroLagXcorr<ValueType>::equationType; 
+              
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::VSum;
             using ZeroLagXcorr<ValueType>::P;

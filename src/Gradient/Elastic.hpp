@@ -40,7 +40,7 @@ namespace KITGPI
         {
           public:
             //! Default constructor.
-            Elastic(){};
+            Elastic(){equationType = "elastic";};
 
             //! Destructor, releases all allocated resources.
             ~Elastic(){};
@@ -65,6 +65,8 @@ namespace KITGPI
 
             void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
+            std::string getEquationType();
+            
             /* Getter methods for not requiered parameters */
             scai::lama::Vector<ValueType> const &getTauP() override;
             scai::lama::Vector<ValueType> const &getTauS() override;
@@ -91,6 +93,8 @@ namespace KITGPI
             void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
           private:
+              
+            using Gradient<ValueType>::equationType;
 
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;

@@ -76,6 +76,8 @@ namespace KITGPI
              */
             virtual void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
+            virtual std::string getEquationType() = 0;
+            
             virtual scai::lama::Vector<ValueType> const &getDensity();
             virtual scai::lama::Vector<ValueType> const &getDensity() const;
             virtual scai::lama::Vector<ValueType> const &getVelocityP();
@@ -133,6 +135,8 @@ namespace KITGPI
             scai::IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
             scai::IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files
 
+            std::string equationType;  
+            
             scai::lama::DenseVector<ValueType> density; //!< Vector storing Density.
 
             scai::lama::DenseVector<ValueType> velocityP; //!< Vector storing P-wave velocity.
@@ -153,6 +157,7 @@ namespace KITGPI
             scai::IndexType getPartitionedOut();
 
           private:
+              
             void allocateParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             void readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, scai::dmemo::DistributionPtr dist, scai::IndexType partitionedIn);

@@ -11,6 +11,7 @@ using namespace KITGPI;
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
+    equationType = "acoustic";
     init(ctx, dist,0.0,0.0);
 }
 
@@ -47,6 +48,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, sc
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
 {
+    equationType = rhs.equationType;
     velocityP = rhs.velocityP;
     density = rhs.density;
 }
@@ -70,6 +72,14 @@ void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexTyp
     }
     
 };
+
+/*! \brief Get equationType (acoustic)
+ */
+template <typename ValueType>
+std::string KITGPI::Gradient::Acoustic<ValueType>::getEquationType()
+{
+    return (equationType);
+}
 
 /*! \brief Get reference to S-wave velocity
  */

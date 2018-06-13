@@ -10,6 +10,7 @@ using namespace scai;
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
+    equationType = "elastic";
     init(ctx, dist,0.0, 0.0, 0.0);
 }
 
@@ -47,6 +48,7 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
 {
+    equationType = rhs.equationType;
     velocityP = rhs.velocityP;
     velocityS = rhs.velocityS;
     density = rhs.density;
@@ -76,6 +78,14 @@ void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType
     }
     
 };
+
+/*! \brief Get equationType (elastic)
+ */
+template <typename ValueType>
+std::string KITGPI::Gradient::Elastic<ValueType>::getEquationType()
+{
+    return (equationType);
+}
 
 /*! \brief Get reference to tauP
  *

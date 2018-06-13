@@ -41,6 +41,9 @@ namespace KITGPI
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
+            virtual int getNumDimension() = 0;
+            virtual std::string getEquationType() = 0;
+            
             virtual scai::lama::DenseVector<ValueType> const &getVSum() const;
             virtual scai::lama::DenseVector<ValueType> const &getP() const;
             virtual scai::lama::DenseVector<ValueType> const &getShearStress() const;
@@ -60,6 +63,9 @@ namespace KITGPI
             void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
             void writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, scai::IndexType t);
 
+            int numDimension;
+            std::string equationType; 
+            
             scai::lama::DenseVector<ValueType> ShearStress;      //!< (sum of) correlated shear stresses
             scai::lama::DenseVector<ValueType> NormalStressDiff; //!<correlated difference of normal stress components  2D: (sxxF-syyF)*(sxxB-syyB)
             scai::lama::DenseVector<ValueType> NormalStressSum;  //!<correlated sum        of normal stress components  2D: (sxxF+syyF)*(sxxB+syyB)

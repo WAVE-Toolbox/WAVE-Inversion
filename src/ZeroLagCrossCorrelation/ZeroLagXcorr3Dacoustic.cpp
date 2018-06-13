@@ -14,6 +14,8 @@ using namespace scai;
 template <typename ValueType>
 KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::ZeroLagXcorr3Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    equationType="acoustic"; 
+    numDimension=3;
     init(ctx, dist, workflow);
 }
 
@@ -91,10 +93,26 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::update(Wavefields:
         temp = forwardWavefield.getRefVY();
         temp *= adjointWavefield.getRefVY();
         VSum += temp;
-	temp = forwardWavefield.getRefVZ();
+        temp = forwardWavefield.getRefVZ();
         temp *= adjointWavefield.getRefVZ();
         VSum += temp;
     }
+}
+
+/*! \brief Get numDimension (3)
+ */
+template <typename ValueType>
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::getNumDimension()
+{
+    return (numDimension);
+}
+
+/*! \brief Get equationType (acoustic)
+ */
+template <typename ValueType>
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::getEquationType()
+{
+    return (equationType);
 }
 
 //! \brief Not valid in the 2D acoustic case

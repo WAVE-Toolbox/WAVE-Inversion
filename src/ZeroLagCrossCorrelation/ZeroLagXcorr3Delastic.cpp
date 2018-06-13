@@ -20,6 +20,8 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::
 template <typename ValueType>
 KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::ZeroLagXcorr3Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    equationType="elastic"; 
+    numDimension=3;
     init(ctx, dist, workflow);
 }
 
@@ -61,6 +63,22 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::resetXcorr(KITGPI::
 {
     this->resetWavefield(VSum);
     COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.")
+}
+
+/*! \brief Get numDimension (3)
+ */
+template <typename ValueType>
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getNumDimension()
+{
+    return (numDimension);
+}
+
+/*! \brief Get equationType (elastic)
+ */
+template <typename ValueType>
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getEquationType()
+{
+    return (equationType);
 }
 
 //! \brief Not valid in the 3D elastic case

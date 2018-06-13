@@ -35,6 +35,8 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getCon
 template <typename ValueType>
 KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    equationType="elastic"; 
+    numDimension=2;
     init(ctx, dist, workflow);
 }
 
@@ -113,6 +115,22 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::
         temp1 *= adjointWavefield.getRefVY();
         VSum += temp1;
     }
+}
+
+/*! \brief Get numDimension (2)
+ */
+template <typename ValueType>
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getNumDimension()
+{
+    return (numDimension);
+}
+
+/*! \brief Get equationType (elastic)
+ */
+template <typename ValueType>
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getEquationType()
+{
+    return (equationType);
 }
 
 //! \brief Not valid in the 2D elastic case
