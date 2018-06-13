@@ -35,13 +35,10 @@ namespace KITGPI
 
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void update(Wavefields::Wavefields<ValueType> &/*forwardWavefield*/, Wavefields::Wavefields<ValueType> &/*adjointWavefield*/, KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/) override{COMMON_THROWEXCEPTION("elastic convolution is not implemented yet.")};
+            void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             int getNumDimension();
             std::string getEquationType();
-            
-            /* Getter routines for non-required wavefields: Will throw an error */
-            scai::lama::DenseVector<ValueType> const &getP() const override;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
@@ -49,17 +46,18 @@ namespace KITGPI
 
             void write(std::string type, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             void writeSnapshot(scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow);
-	    
+
           private:
               
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType; 
             
             /* required wavefields */
-            using ZeroLagXcorr<ValueType>::VSum;
-
-            /* non-required wavefields */
-            using ZeroLagXcorr<ValueType>::P;
+            using ZeroLagXcorr<ValueType>::xcorrRho;
+            using ZeroLagXcorr<ValueType>::xcorrLambda;
+            using ZeroLagXcorr<ValueType>::xcorrMuA;
+            using ZeroLagXcorr<ValueType>::xcorrMuB;
+            using ZeroLagXcorr<ValueType>::xcorrMuC;
 
             std::string type = "Elastic3D";
         };

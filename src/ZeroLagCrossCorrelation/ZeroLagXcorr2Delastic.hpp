@@ -56,12 +56,11 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::equationType; 
               
             /* required wavefields */
-            using ZeroLagXcorr<ValueType>::VSum;
-            using ZeroLagXcorr<ValueType>::ShearStress;
-            using ZeroLagXcorr<ValueType>::NormalStressDiff;
-            using ZeroLagXcorr<ValueType>::NormalStressSum;
-            /* non-required wavefields */
-            using ZeroLagXcorr<ValueType>::P;
+            using ZeroLagXcorr<ValueType>::xcorrRho;
+            using ZeroLagXcorr<ValueType>::xcorrMuA;
+            using ZeroLagXcorr<ValueType>::xcorrMuB;
+            using ZeroLagXcorr<ValueType>::xcorrMuC;
+            using ZeroLagXcorr<ValueType>::xcorrLambda;
 
             std::string type = "Elastic2D";
         };
