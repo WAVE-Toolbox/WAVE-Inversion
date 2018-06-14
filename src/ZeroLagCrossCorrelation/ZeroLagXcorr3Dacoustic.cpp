@@ -102,7 +102,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::update(Wavefields:
 /*! \brief Get numDimension (3)
  */
 template <typename ValueType>
-int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::getNumDimension()
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::getNumDimension() const
 {
     return (numDimension);
 }
@@ -110,7 +110,7 @@ int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::getNumDimension()
 /*! \brief Get equationType (acoustic)
  */
 template <typename ValueType>
-std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::getEquationType()
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::getEquationType() const
 {
     return (equationType);
 }

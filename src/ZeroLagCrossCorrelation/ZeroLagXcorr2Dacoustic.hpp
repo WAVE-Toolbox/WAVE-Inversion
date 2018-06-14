@@ -37,8 +37,8 @@ namespace KITGPI
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            int getNumDimension();
-            std::string getEquationType();
+            int getNumDimension() const;
+            std::string getEquationType() const;
             
             /* Getter routines for non-required wavefields: Will throw an error */
             scai::lama::DenseVector<ValueType> const &getXcorrMuA() const override;

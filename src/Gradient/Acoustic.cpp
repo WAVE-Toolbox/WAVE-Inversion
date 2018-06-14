@@ -76,7 +76,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexTyp
 /*! \brief Get equationType (acoustic)
  */
 template <typename ValueType>
-std::string KITGPI::Gradient::Acoustic<ValueType>::getEquationType()
+std::string KITGPI::Gradient::Acoustic<ValueType>::getEquationType() const
 {
     return (equationType);
 }

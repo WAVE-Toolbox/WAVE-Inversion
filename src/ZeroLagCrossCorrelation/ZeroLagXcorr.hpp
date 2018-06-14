@@ -41,8 +41,8 @@ namespace KITGPI
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
-            virtual int getNumDimension() = 0;
-            virtual std::string getEquationType() = 0;
+            virtual int getNumDimension() const = 0;
+            virtual std::string getEquationType() const = 0;
 
             scai::lama::DenseVector<ValueType> const &getXcorrRho() const;
             scai::lama::DenseVector<ValueType> const &getXcorrLambda() const;

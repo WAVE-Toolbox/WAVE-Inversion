@@ -65,7 +65,7 @@ namespace KITGPI
 
             void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
-            std::string getEquationType();
+            std::string getEquationType() const;
             
             /* Getter methods for not requiered parameters */
             scai::lama::Vector<ValueType> const &getVelocityS() override;

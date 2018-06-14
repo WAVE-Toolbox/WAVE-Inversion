@@ -76,7 +76,7 @@ namespace KITGPI
              */
             virtual void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
-            virtual std::string getEquationType() = 0;
+            virtual std::string getEquationType() const = 0;
             
             virtual scai::lama::Vector<ValueType> const &getDensity();
             virtual scai::lama::Vector<ValueType> const &getDensity() const;

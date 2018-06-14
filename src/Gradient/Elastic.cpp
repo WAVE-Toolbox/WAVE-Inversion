@@ -82,7 +82,7 @@ void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType
 /*! \brief Get equationType (elastic)
  */
 template <typename ValueType>
-std::string KITGPI::Gradient::Elastic<ValueType>::getEquationType()
+std::string KITGPI::Gradient::Elastic<ValueType>::getEquationType() const
 {
     return (equationType);
 }
@@ -328,7 +328,6 @@ void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelpa
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    // Only implementedfor 2D!
     //dt should be in cross correlation!
 
     scai::lama::DenseVector<ValueType> gradLambda;
@@ -339,7 +338,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::lama::DenseVector<ValueType> mu;
 
     //dimension
-    int N = 2;
+    int N = correlatedWavefields.getNumDimension();
 
     mu = scai::lama::pow(model.getVelocityS(), 2);
     mu *= model.getDensity();

@@ -37,8 +37,8 @@ namespace KITGPI
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            int getNumDimension();
-            std::string getEquationType();
+            int getNumDimension() const;
+            std::string getEquationType() const;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 

@@ -132,7 +132,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::
 /*! \brief Get numDimension (2)
  */
 template <typename ValueType>
-int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getNumDimension()
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getNumDimension() const
 {
     return (numDimension);
 }
@@ -140,7 +140,7 @@ int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getNumDimension()
 /*! \brief Get equationType (elastic)
  */
 template <typename ValueType>
-std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getEquationType()
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getEquationType() const
 {
     return (equationType);
 }

@@ -87,7 +87,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::resetXcorr(KITGPI::
 /*! \brief Get numDimension (3)
  */
 template <typename ValueType>
-int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getNumDimension()
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getNumDimension() const
 {
     return (numDimension);
 }
@@ -95,7 +95,7 @@ int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getNumDimension()
 /*! \brief Get equationType (elastic)
  */
 template <typename ValueType>
-std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getEquationType()
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::getEquationType() const
 {
     return (equationType);
 }
