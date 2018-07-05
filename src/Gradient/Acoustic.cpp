@@ -314,7 +314,7 @@ template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     //dt should be in cross correlation!
-    //gradBulk = -dt*Padj*dPfw/dt / (rho*vp^2)^2
+    //gradBulk = -dt*Padj*dPfw/dt / 4(rho*vp^2)^2
     scai::lama::DenseVector<ValueType> gradBulk;
     gradBulk = model.getVelocityP();
     gradBulk *= model.getVelocityP();

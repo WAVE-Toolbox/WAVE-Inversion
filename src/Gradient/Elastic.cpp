@@ -25,7 +25,6 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
     init(ctx, dist, 0.0, 0.0, 0.0);
 }
 
-
 /*! \brief Initialisation that is generating a homogeneous model
  *
  *  Generates a homogeneous model, which will be initialized by the two given scalar values.
@@ -42,7 +41,6 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
     this->initParameterisation(velocityS, ctx, dist, velocityS_const);
     this->initParameterisation(density, ctx, dist, rho);
 }
-
 
 //! \brief Copy constructor
 template <typename ValueType>
@@ -76,7 +74,6 @@ void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType
         std::string filenamedensity = filename + ".density.mtx";
         this->writeParameterisation(density, filenamedensity, partitionedOut);
     }
-    
 };
 
 /*! \brief Get equationType (elastic)
@@ -302,7 +299,6 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
     lhs.setVelocityS(temp);
     temp = lhs.getDensity() - rhs.getDensity();
     lhs.setDensity(temp);
-    
 };
 
 /*! \brief function for scaling the gradients with the model parameter 
@@ -354,7 +350,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     gradLambda = scai::lama::pow(gradLambda, -2);
 
     gradLambda *= correlatedWavefields.getXcorrLambda();
-    gradLambda *= DT;
+    gradLambda *= -DT;
 
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
@@ -435,10 +431,11 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 
         temp = scai::lama::pow(model.getVelocityS(), 2);
         temp *= gradMu;
-
         density += temp;
 
-        density += DT * correlatedWavefields.getXcorrRho();
+        temp = DT * correlatedWavefields.getXcorrRho();
+        density -= temp;
+
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }
