@@ -274,7 +274,7 @@ $(wave.docdir)/guide/WAVE_guide_EN.pdf: $(wave.dir)/doc/guide/WAVE_guide_EN.tex
 	sed -e '/\\author{}/ a\\\graphicspath{{$(wave.dir)/doc/guide/}}' $< \
 	    -e 's#\\bibliography{WAVE_guide}#\\bibliography{$(wave.dir)/doc/guide/WAVE_guide}#g' > WAVE_guide_EN.tex && \
 	pdflatex WAVE_guide_EN > /dev/null && bibtex WAVE_guide_EN > /dev/null && \
-	pdflatex WAVE_guide_EN > /dev/null && pdflatex WAVE_guide_EN > log
+	pdflatex WAVE_guide_EN > /dev/null && pdflatex WAVE_guide_EN > log && rm WAVE_guide_EN.tex
 	@echo "   [DOC]   pdflatex log file: $(wave.docdir)/guide/log"
 
 $(wave.objdir)/%.o: $(wave.srcdir)/%.cpp

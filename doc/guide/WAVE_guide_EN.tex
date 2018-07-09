@@ -246,27 +246,29 @@ IFOS++ is distributed in the hope that it will be useful, but WITHOUT ANY WARRAN
 
 The authors of IFOS++ are listed in file \lstinline{AUTHORS}.
 
+% -----------------------------------------------------------------------------------------------
 \cleardoublepage
 \chapter*{Introduction}
 \addcontentsline{toc}{chapter}{Introduction}
-
+% -----------------------------------------------------------------------------------------------
  
+The aim of full-waveform inversion (FWI) is to estimate the elastic material parameters in the underground. This can be achieved by minimizing the misfit energy between the modeled and field data using a gradient optimization
+approach. Because the FWI uses the full information content of each seismogram, structures below the seismic wave length can be resolved. This is a tremendous improvement in resolution compared to travel time tomography \citep{pratt:02}. The concept of full waveform tomography was originally developed by Albert Tarantola in the 1980s for the acoustic, isotropic elastic, and viscoelastic case \citep{tarantola:84a,tarantola:84b,tarantola:86,tarantola:88}. First numerical implementations were realized at the end of the 1980s \citep{gauthier:86,mora:87,pica:90}, but due to limited computational resources, the application was restricted to simple 2D synthetic test problems and small near offset datasets. At the begining of the 1990s the original time domain formulation was transfered to a robust frequency domain approach \citep{pratt:90a,pratt:90b}. With the increasing performance of supercomputers moderately sized problems could be inverted with frequency domain approaches. A spectacular result to prove the application of acoustic FWI on laboratory scale was presented by \cite{pratt:99} for ultrasonic tomography measurements on a simple block model. In a numerical blind test \cite{brenders:07} achieved a very good agreement between their inversion result and the unkown true P-wave velocity model. The parallelization and performance optimizations of the frequency domain approach \citep[see e.g. ][]{sourbier:09a,sourbier:09b} lead to a wide range of acoustic FWI applications for problems on different scales, from the global scale, crustal scale over engineering and near surface scale, down to laboratory scale \citep{pratt:04}. Beside the application to geophysical problems, the acoustic FWI is also used to improve the resolution in medical cancer diagnostics \citep{pratt:07}. However, all these examples are restricted to the inversion of the acoustic material parameters: P-wave velocity, density and additionally the viscoacoustic damping Q p for the P-waves. Even today the independent 2D FWI of all three isotropic elastic material parameters is still a challenge. Most elastic approaches invert for P-wave velocity only and use empirical relationships to deduce the distribution of S-wave velocity and density \citep{shipp:02,sheen:06}. Recently some authors also investigated the independent multiparameter FWI in the frequency domain \citep{choi:08a,choi:08b,brossier:09}.
+In order to extract information about the structure and composition of the crust from seismic observations, it is necessary to be able to predict how seismic wavefields are affected by complex structures. Since exact analytical
+solutions to the wave equations do not exist for most subsurface configurations, the solutions can be obtained only by numerical methods. 
 
+For iterative calculations of synthetic seismograms with limited computer resources fast and accurate modeling methods are needed. The FWI program IFOS++ (Inversion of Full Observed Seismograms with C++) is using the finite difference simulation software SOFI++ (insert link). It is also possible to use the IFOS++ library with different simulation software.
 
-
-
-
-
-
+% -----------------------------------------------------------------------------------------------
 \cleardoublepage
 \part{Theory of Full-Waveform Inversion}
 \chapter{Derivation of the gradients of the objective function}
+% -----------------------------------------------------------------------------------------------
 
-
-
+% -----------------------------------------------------------------------------------------------
 \section{Elastic}
 \label{kap:el}
-
+% -----------------------------------------------------------------------------------------------
 
 3D elastic Wave Equation:
 \begin{align}
@@ -381,8 +383,10 @@ With:
 \end{align}
 
 
+% -----------------------------------------------------------------------------------------------
 \section{Acoustic}
 \label{kap:ac}
+% -----------------------------------------------------------------------------------------------
 
 3D acoustic Wave Equation:
 
@@ -452,7 +456,7 @@ IFOS++ is developed as a part of the WAVE-project (\url{http://wave-toolbox.org}
 
 \section{Software Requirements}
 
-To begin with, a \CC-compiler has to be available. A compiler with  \CC[11]-standard support is needed. To compile FDSimulation\_LAMA, make sure a couple of libraries are installed and running properly. All necessary libraries for proper usage and a short description can be seen in table \ref{tab:pack}. A \CC-compiler and LAMA are mandatory whereas the other libraries and software is optional to execute FDSimulation\_LAMA.
+To begin with, a \CC-compiler has to be available. A compiler with  \CC[11]-standard support is needed. To compile IFOS++, make sure a couple of libraries are installed and running properly. All necessary libraries for proper usage and a short description can be seen in table \ref{tab:pack}. A \CC-compiler and LAMA are mandatory whereas the other libraries and software is optional to execute IFOS++.
 As the software is meant for high performance computing (HPC) on cluster networks, it is primarily designed to run on Linux-platforms. The code has been tested using \gCC[4.9.3], \clang[3.9] as a  \CC-compiler and using OpenMPI(1.7.2, 1.10.0) as MPI implementation.
 
 \begin{table}[h!]
@@ -492,31 +496,31 @@ LAMA 				& The LAMA-framework for high performance			& \url{https://www.libama.o
 \section{Quick Guide}
 
 \subsection{Installation}
-To get started Download, FDSimulation\_LAMA. 
+To get started Download, IFOS++. 
 
-You can either download the software directly from \url{https://git.scc.kit.edu/WAVE/FDSimulation_LAMA/repository/archive.zip?ref=master} and unzip the folder (e.g. by entering \shellcmd{tar -zxvf FDSimulation\_LAMA.tgz}).
+You can either download the software directly from \url{https://git.scc.kit.edu/WAVE/IFOS/repository/archive.zip?ref=master} and unzip the folder (e.g. by entering \shellcmd{tar -zxvf IFOS.tgz}).
 
-Alternatively you can also get FDSimulation\_LAMA by entering the command: \\\shellcmdline{git clone https://git.scc.kit.edu/WAVE/FDSimulation\_LAMA.git}
+Alternatively you can also get IFOS++ by entering the command: \\\shellcmdline{git clone https://git.scc.kit.edu/WAVE/IFOS.git}
 
 As preparatory steps environment variables have to be linked to LAMA. Add the following lines to the \shellcmd{{\char`\~}/.bashrc}:
 \\\shellcmdline{ `export SCAI\_ROOT=[PATH\_TO\_LAMA\_BUILD]`}
 \\\shellcmdline{ `export DYLD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{DYLD\_LIBRARY\_PATH\}`}
 \\\shellcmdline{ `export LD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{LD\_LIBRARY\_PATH\}`}
 \\\shellcmdline{ `export OMP\_NUM\_THREADS=1`}\\
-You can also find the instructions in \shellcmd{FDSimulation\_LAMA/par/README.md}. 
+You can also find the instructions in \shellcmd{IFOS/par/README.md}. 
 
-Change to the directory: \\\shellcmdline{FDSimulation\_LAMA/build/}
+Change to the directory: \\\shellcmdline{IFOS/build/}
 
-You can compile the source code by simply entering: \\\shellcmdline{make prog}\\ in your command line. \gCC is set to be the default \CC-compiler. To use an alternative compiler, the compiler setting can be change in the \shellcmd{Makefile}, or otherwise by executing:\\\shellcmdline{make CXX=<yourCompiler> sofi}
+You can compile the source code by simply entering: \\\shellcmdline{make prog}\\ in your command line. \gCC is set to be the default \CC-compiler. To use an alternative compiler, the compiler setting can be change in the \shellcmd{Makefile}, or otherwise by executing:\\\shellcmdline{make CXX=<yourCompiler> prog}
 
-The runtime configuration (such as the FD grid) can be changed in the \shellcmd{configuration.txt} file, located in the directory \shellcmd{FDSimulation\_LAMA/par/configuration/}. A list of all input variables and their dependencies can be found in section \ref{sec:config}. 
+The runtime configuration (such as the FD grid) can be changed in the \shellcmd{configuration.txt} file, located in the directory \shellcmd{IFOS/par/configuration/}. A list of all input variables and their dependencies can be found in section \ref{sec:config}. 
 
-To create a html and LaTeX or Pdf documentation of the software code itself, you can generate a doxygen documentation. Therefore change the directory to \shellcmd{FDSimulation\_LAMA/build/} and run the command \shellcmd{make doc}. After running doxygen, the html, LaTeX and Pdf version of the reference manual can be found in \shellcmd{build/doc/doxygen/} and \shellcmd{build/doc/guide/}.
+To create a html and LaTeX or Pdf documentation of the software code itself, you can generate a doxygen documentation. Therefore change the directory to \shellcmd{IFOS/build/} and run the command \shellcmd{make doc}. After running doxygen, the html, LaTeX and Pdf version of the reference manual can be found in \shellcmd{build/doc/doxygen/} and \shellcmd{build/doc/guide/}.
 
 \subsection{Example}
 
-To run the simulation change the directory to: \\\shellcmdline{FDSimulation\_LAMA/par/}\\
-and start the program by running the shell script \shellcmd{start\_FDSimulation.sh} with  \\\shellcmdline{source start\_FDSimulation.sh}\\
+To run the simulation change the directory to: \\\shellcmdline{IFOS/par/}\\
+and start the program by running the shell script \shellcmd{start\_Inversion.sh} with  \\\shellcmdline{source start\_Inversion.sh}\\
 
 The synthetic Seismogram data is saved in \shellcmd{par/seismograms/} and can be plotted by either using either the \shellcmd{plotSeismogram.m} Matlab-script or by executing the Python-script \shellcmd{plotSeismogram.py}.
 As a first test, run the default example by following the commands to obtain the seismogram. You can compare the seismogram to the seismogram shown in figure.
@@ -530,66 +534,39 @@ As a first test, run the default example by following the commands to obtain the
 \begin{adjustbox}{width=1\textwidth,center=\textwidth}
 	\begin{tabular}{llll}
 	\toprule
-	Variable & Short description & Type & Example value \\
+         Variable                 & Short description                                                   & Type   & Example value \\
 	\midrule
-	dimension & Dimension of the model  & string & 3D\\
-	equationType & Type of the wave equations & string & acoustic \\
-	NX & Number of grid points in $x$-direction & int & \num{100} \\
-	NY & Number of grid points in $y$-direction & int & \num{100} \\
-	NZ & Number of grid points in $z$-direction & int & \num{100} \\
-	DH & Distance between two grid points & double & \SI{50}{m}\\
-	DT & Temporal sampling & double & \SI{2.0e-3}{s}\\
-	T & Total simulation time & double & \SI{2}{s}\\
-	UseCubePartitioning & Use cubes to partition the wave fields & int & \num{0}\\
-	ProcNX & Number of cores in $x$-direction & int & \num{2}\\
-	ProcNY & Number of cores in $y$-direction & int & \num{1}\\
-	ProcNZ & Number of cores in $z$-direction & int & \num{1}\\
-	spatialFDorder & Define order of spatial FD operator & int & \num{2}\\
-	\midrule	 
-	 ModelRead& Read model from File  & int & \num{0}\\
-	 PartitioningIn&  Read model from distributed file & int & \num{0}\\
-	 ModelWrite& Write model to file  & int & \num{0}\\
-	 PartitioningOut& Write model to distributed file-block & int & \num{0}\\
-	  ModelParametrisation & Parametrisation of read model & int & \num{2}\\
-	 ModelFilename& Filename-prefix to read model & int & \shellcmd{model/model}\\
-	 SourceFilename& Filename to read source configuration & string & \begin{tabular}{@{}l@{}}\shellcmd{acquisition/} \\\shellcmd{sources.mtx}\end{tabular}  \\
-	 ReceiverFilename	 & Filename to read receiver configuration & string & \begin{tabular}{@{}l@{}}\shellcmd{acquisition/} \\\shellcmd{reciever.mtx}\end{tabular}  \\
-	 SeismogramFilename & Filename to write seismograms & string & \begin{tabular}{@{}l@{}}\shellcmd{seismograms/} \\\shellcmd{seismogram.mtx}\end{tabular}  \\
-	 SeismogramFormat & Seismogram format & int & \num{1}\\
-	 NormalizeTraces & Normalize the seismogram-traces & int & \num{0}\\
-	\midrule
-	 velocityP& P-wave velocity $v_p$ & double & \SI{3500}{m\per s} \\
-	 velocityS& S-wave velocity $v_s$ & double  &  \SI{0}{m\per s}\\
-	 rho& Density $\rho$ & double &  \SI{2000}{kg\per\cubic\metre}\\
-	 tauP& $\tau$ value for P-waves & double & \num{0.0}\\
-	 tauS& $\tau$ value for S-waves & double & \num{0.0}\\
-	 numRelaxationMechanisms & Number of relaxation mechanisms & int & \num{0}\\
-	 relaxationFrequency& Relaxation frequency for first & double & \SI{0}{Hz}\\
-	 & relaxation mechanism& & \\
-	  \bottomrule
+         fieldSeisName            & Name of field data                                                  & string & ci/rectangle.true  \\    
+         writeGradient            & Write gradient to file                                              &  int   & 1 (=yes) \\
+         writeGradientPerShot     & Write gradient of each shot separately to file                      &  int   & 0 (=0) \\
+         gradientFilename         & Name of gradients                                                   & string & gradients/grad \\     
+         logFilename              & Name of log file                                                    & string & logs/steplengthSearch.log  \\
+        \midrule
+         maxIterations            & Maximum number of inversion iterations (per workflow stage if used) &  int   & 20  \\                 
+         misfitType               & Type of misfit                                                      & string & L2  \\
+         optimizationType         & Type of optimization                                                & string & conjugateGradient \\
+         workflowFilename         & Name of workflow file                                               & string & workflow/workflow.txt \\
+        \midrule
+         steplengthInit           & Initial step length used in the first iteration of each stage       & double & 0.03  \\
+         steplengthMin            & Minimum step length                                                 & double & 0.001 \\
+         steplengthMax            & Maximum step length                                                 & double & 0.1 \\                     
+         maxStepCalc              & Maximum number of additional step length calculations               &  int   & 4 \\                         
+         scalingFactor            & Factor for multiplication or division of test step length           & double & 2.0 \\                       
+         testShotStart            & Shot number of first test shot                                      &  int   & 0 \\                        
+         testShotEnd              & Shot number of last test shot                                       &  int   & 17 \\                        
+         testShotIncr             & Increment of test shots                                             &  int   & 1 \\                       
+        \midrule
+         sourceTaperRadius        & Circular source taper: Radius in grid points                        &  int   & 20 \\ 
+         receiverTaperRadius      & Circular receiver taper: Radius in grid points                      &  int   & 20 \\
+         useEnergyPreconditioning & Approximated diagonal of Hessian is applied to gradient per shot    &  int   & 1 (=yes) \\ 
+         epsilonHessian           & Water level to stabilize matrix inversion (recommended: 0.005)      & double & 0.005 \\      
+         saveApproxHessian        & Save approximated diagonal of Hessian                               &  int   & 0 (=no) \\
+         approxHessianName        & Name of file for approximated diagonal of Hessian                   & string & gradients/Hessian \\
+	\bottomrule
 	\end{tabular}
 	\end{adjustbox}
 \end{table}	
-	 \begin{table}[h!]
-\centering
-\begin{adjustbox}{width=1\textwidth,center=\textwidth}
-	\begin{tabular}{llll}
-	\toprule
-	  Variable & Short description & Type &Example value\;\;\;\\
-	\midrule
-	 FreeSurface& Use the free surface & int & \num{0}\\
-	 DampingBoundary& Use the Damping Boundary & int & \num{0}\\
-	 DampingBoundaryType& Type of damping boundary & int & \num{1}\\
-	 BoundaryWidth& Width of damping boundary & int & \num{10}\\
-	 DampingCoeff& Damping coefficient & double & \num{8.0}\\
-	 VMaxCPML& Maximum velocity of the CPML & double &\SI{3500}{m\per s}\\
-	 CenterFrequencyCPML\;\;\;\;& Center frequency inside the boundaries\;\;\;  & double &\SI{5}{Hz}\\
-	 NPower& Degree of the damping profile & int &\num{4}\\
-	 KMaxCPML& ?????? & double &\num{1.0}\\
-    \bottomrule
-	\end{tabular}
-	\end{adjustbox}
-\end{table}	
+
 
 As mentioned in the quick guide, the configuration can be found in \shellcmd{par/configuration/}. In the \shellcmd{configuration.txt} file Input variables can be added or changed. A list of all variables and config parameters that can be added and changed can be found in table \ref{tab:config}.
 
@@ -610,20 +587,20 @@ To merge a fileblock \shellcmd{filename\_\%r.mtx} to a single vector-file, the c
 In this case the name of the file-block and its size is written fist and then the name of the single output-file.
 
 \section{Unit Tests}
-To guarantee a functioning framework, FDSimulation\_LAMA includes unit-tests using the googletest framework. To run all unit-tests, you first have to install googletest (e.g. from \url{http://code.google.com/p/googletest}). 
+To guarantee a functioning framework, IFOS++ includes unit-tests using the googletest framework. To run all unit-tests, you first have to install googletest (e.g. from \url{http://code.google.com/p/googletest}). 
 
 As preparatory steps environment variables have to be linked to googletest. Add the following lines to the \shellcmd{{\char`\~}/.bashrc}:
 \\\shellcmdline{ `export GTEST\_DIR=[PATH\_TO\_GTEST\_DIRECTORY]`}
 \\\shellcmdline{ `export LD\_LIBRARY\_PATH=\$\{GTEST\_DIR\}:\$\{LD\_LIBRARY\_PATH\}`}
 \\\shellcmdline{ `export DYLD\_LIBRARY\_PATH=\$\{GTEST\_DIR\}:\$\{DYLD\_LIBRARY\_PATH\}}
 
-To compile all tests, change the directory: \\\shellcmdline{FDSimulation\_LAMA/src/} \\ and compile the tests by simply entering:\\\shellcmdline{make utest} and \shellcmdline{make itest}
+To compile all tests, change the directory: \\\shellcmdline{IFOS/src/} \\ and compile the tests by simply entering:\\\shellcmdline{make utest} and \shellcmdline{make itest}
 
 The executable file is located in the directory:
-\\\shellcmdline{FDSimulation\_LAMA/build/bin}\\
+\\\shellcmdline{IFOS/build/bin}\\
 To execute the unit-tests change to the \shellcmd{/par} folder and run the \shellcmd{Test\_unit} file by entering:
 \\\shellcmdline{./../bin/Tests/Test\_unit}\\ 
-For faultless function of FDSimulation\_LAMA all tests should execute without failure.
+For faultless function of IFOS++ all tests should execute without failure.
 
 \section{Benchmark}
 
@@ -637,6 +614,6 @@ For faultless function of FDSimulation\_LAMA all tests should execute without fa
 \addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
 \addcontentsline{toc}{chapter}{List of Tables}
 \cleardoublepage
-% \bibliography{WAVE_guide}
-% \bibliographystyle{apalike}
+\bibliography{WAVE_guide}
+\bibliographystyle{apalike}
 \end{document}
