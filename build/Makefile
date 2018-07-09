@@ -256,9 +256,9 @@ distclean: clean
 vinfo: prog
 	$(Q)strings $(wave.bindir)/$(wave.exe) | grep _KITGPI_LINK_
 
-doc: doxygen #guide
+doc: doxygen guide
 doxygen: $(wave.docdir)/doxygen/html/index.html
-#guide: $(wave.docdir)/guide/WAVE_guide_EN.pdf
+guide: $(wave.docdir)/guide/WAVE_guide_EN.pdf
 
 $(wave.docdir)/doxygen/html/index.html: $(wave.dir)/doc/doxygen/Doxyfile $(wave.libsrc)
 	@echo "   [DOC]   $@"
