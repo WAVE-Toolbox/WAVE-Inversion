@@ -6,14 +6,15 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity())
-        this->initWavefield(VSum, ctx, dist);
+        this->initWavefield(xcorrRho, ctx, dist);
 
-    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity())) 
-        this->initWavefield(NormalStressSum, ctx, dist);
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity()))
+        this->initWavefield(xcorrLambda, ctx, dist);
 
-    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())){
-        this->initWavefield(ShearStress, ctx, dist);
-        this->initWavefield(NormalStressDiff, ctx, dist);
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        this->initWavefield(xcorrMuA, ctx, dist);
+        this->initWavefield(xcorrMuB, ctx, dist);
+        this->initWavefield(xcorrMuC, ctx, dist);
     }
 }
 
@@ -22,7 +23,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::init(scai::hmemo::C
 template <typename ValueType>
 hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getContextPtr()
 {
-    return (VSum.getContextPtr());
+    return (xcorrRho.getContextPtr());
 }
 
 /*! \brief Constructor which will set context, allocate and set the wavefields to zero.
@@ -35,6 +36,8 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getCon
 template <typename ValueType>
 KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    equationType="elastic"; 
+    numDimension=2;
     init(ctx, dist, workflow);
 }
 
@@ -45,9 +48,9 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::ZeroLagXcorr2Delastic(sc
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &/*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
-    this->writeWavefield(VSum, "VSum", type, t);
+    this->writeWavefield(xcorrRho, "xcorrRho", type, t);
     COMMON_THROWEXCEPTION("write correlated elastic wavefields is not implemented yet.")
 }
 
@@ -68,15 +71,16 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity())
-    this->resetWavefield(VSum);
+        this->resetWavefield(xcorrRho);
 
-    if ((workflow.getInvertForVs())|| (workflow.getInvertForDensity())) {
-    this->resetWavefield(ShearStress);
-    this->resetWavefield(NormalStressDiff);
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        this->resetWavefield(xcorrMuA);
+        this->resetWavefield(xcorrMuB);
+        this->resetWavefield(xcorrMuC);
     }
-    
-    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs())|| (workflow.getInvertForDensity())){
-    this->resetWavefield(NormalStressSum);
+
+    if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        this->resetWavefield(xcorrLambda);
     }
 }
 
@@ -92,35 +96,53 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update(Wavefields::
         temp1 = forwardWavefield.getRefSxx() + forwardWavefield.getRefSyy();
         temp2 = adjointWavefield.getRefSxx() + adjointWavefield.getRefSyy();
         temp1 *= temp2;
-        NormalStressSum += temp1;
+        xcorrLambda += temp1;
     }
 
-    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())){
-        temp1 = forwardWavefield.getRefSxx() - forwardWavefield.getRefSyy();
-        temp2 = adjointWavefield.getRefSxx() - adjointWavefield.getRefSyy();
-        temp1 *= temp2;
-        NormalStressDiff += temp1;
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        temp1 = forwardWavefield.getRefSxx();
+        temp1 *= adjointWavefield.getRefSxx();
+        xcorrMuA += temp1;
+        temp1 = forwardWavefield.getRefSyy();
+        temp1 *= adjointWavefield.getRefSyy();
+        xcorrMuA += temp1;
+
+        temp1 = forwardWavefield.getRefSyy();
+        temp1 *= adjointWavefield.getRefSxx();
+        xcorrMuB += temp1;
+        temp1 = forwardWavefield.getRefSxx();
+        temp1 *= adjointWavefield.getRefSyy();
+        xcorrMuB += temp1;
+
         temp1 = forwardWavefield.getRefSxy();
         temp1 *= adjointWavefield.getRefSxy();
-        ShearStress += temp1;
+        xcorrMuC += temp1;
     }
 
     if (workflow.getInvertForDensity()) {
         temp1 = forwardWavefield.getRefVX();
         temp1 *= adjointWavefield.getRefVX();
-        VSum += temp1;
+        xcorrRho += temp1;
         temp1 = forwardWavefield.getRefVY();
         temp1 *= adjointWavefield.getRefVY();
-        VSum += temp1;
+        xcorrRho += temp1;
     }
 }
 
-//! \brief Not valid in the 2D elastic case
+/*! \brief Get numDimension (2)
+ */
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getP() const
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getNumDimension() const
 {
-    COMMON_THROWEXCEPTION("There is no p wavefield in the 2D elastic case.");
-    return (P);
+    return (numDimension);
+}
+
+/*! \brief Get equationType (elastic)
+ */
+template <typename ValueType>
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getEquationType() const
+{
+    return (equationType);
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<float>;

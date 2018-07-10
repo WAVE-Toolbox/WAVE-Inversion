@@ -26,7 +26,7 @@ namespace KITGPI
 
           public:
             //! Default constructor
-            ZeroLagXcorr2Delastic(){};
+            ZeroLagXcorr2Delastic(){equationType="elastic"; numDimension=2;};
 
             //! Default destructor
             ~ZeroLagXcorr2Delastic(){};
@@ -37,8 +37,8 @@ namespace KITGPI
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            /* Getter routines for non-required wavefields: Will throw an error */
-            scai::lama::DenseVector<ValueType> const &getP() const override;
+            int getNumDimension() const;
+            std::string getEquationType() const;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
@@ -48,13 +48,16 @@ namespace KITGPI
             void writeSnapshot(scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
           private:
+              
+            using ZeroLagXcorr<ValueType>::numDimension;
+            using ZeroLagXcorr<ValueType>::equationType; 
+              
             /* required wavefields */
-            using ZeroLagXcorr<ValueType>::VSum;
-            using ZeroLagXcorr<ValueType>::ShearStress;
-            using ZeroLagXcorr<ValueType>::NormalStressDiff;
-            using ZeroLagXcorr<ValueType>::NormalStressSum;
-            /* non-required wavefields */
-            using ZeroLagXcorr<ValueType>::P;
+            using ZeroLagXcorr<ValueType>::xcorrRho;
+            using ZeroLagXcorr<ValueType>::xcorrMuA;
+            using ZeroLagXcorr<ValueType>::xcorrMuB;
+            using ZeroLagXcorr<ValueType>::xcorrMuC;
+            using ZeroLagXcorr<ValueType>::xcorrLambda;
 
             std::string type = "Elastic2D";
         };

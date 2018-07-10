@@ -11,7 +11,8 @@ using namespace KITGPI;
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist,0.0,0.0);
+    equationType = "acoustic";
+    init(ctx, dist, 0.0, 0.0);
 }
 
 /*! \brief Initialisation that is using the configuration class
@@ -23,7 +24,7 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(scai::hmemo::ContextPtr ctx, sca
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-  init(ctx, dist,0.0,0.0);
+    init(ctx, dist, 0.0, 0.0);
 }
 
 
@@ -47,6 +48,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, sc
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
 {
+    equationType = rhs.equationType;
     velocityP = rhs.velocityP;
     density = rhs.density;
 }
@@ -59,17 +61,25 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
-    if(workflow.getInvertForVp() == 1){
+    if (workflow.getInvertForVp() == 1) {
         std::string filenameP = filename + ".vp.mtx";
         this->writeParameterisation(velocityP, filenameP, partitionedOut);
     }
-    
-    if(workflow.getInvertForDensity() == 1){
+
+    if (workflow.getInvertForDensity() == 1) {
         std::string filenamedensity = filename + ".density.mtx";
         this->writeParameterisation(density, filenamedensity, partitionedOut);
     }
     
 };
+
+/*! \brief Get equationType (acoustic)
+ */
+template <typename ValueType>
+std::string KITGPI::Gradient::Acoustic<ValueType>::getEquationType() const
+{
+    return (equationType);
+}
 
 /*! \brief Get reference to S-wave velocity
  */
@@ -303,39 +313,36 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-	//dt should be in cross correlation!
-    //gradBulk = -dt*Padj*dPfw/dt / (rho*vp^2)^2
+    //dt should be in cross correlation!
+    //gradBulk = -dt * Padj * dPfw/dt / lambda^2
     scai::lama::DenseVector<ValueType> gradBulk;
-    gradBulk = model.getVelocityP();
-    gradBulk *= model.getVelocityP();
+    gradBulk = scai::lama::pow(model.getVelocityP(), 2);
     gradBulk *= model.getDensity();
-    
-    gradBulk *= gradBulk; 
-    gradBulk *= 4; 
-    gradBulk = 1 / gradBulk;
+    gradBulk = scai::lama::pow(gradBulk, -2);
     Common::replaceInvalid<ValueType>(gradBulk,0.0);
-    
-    gradBulk *= correlatedWavefields.getP();
+
+    gradBulk *= correlatedWavefields.getXcorrLambda();
+
     gradBulk *= -DT;
-    
+
     scai::hmemo::ContextPtr ctx = gradBulk.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradBulk.getDistributionPtr();
 
     if (workflow.getInvertForVp()) {
-	//grad_vp = 2*rho*vp*gradBulk
+        //grad_vp = 2 * rho *vp * gradBulk
         velocityP = 2 * gradBulk;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
     } else {
         this->initParameterisation(velocityP, ctx, dist, 0.0);
     }
-    
+
     if (workflow.getInvertForDensity()) {
-	//grad_density=vp^2*gradBulk + (sum(i) (dt Vadj,i * dVfw,i/dt))
-        density = model.getVelocityP();
-        density *= model.getVelocityP();
+	//grad_densityRaw
+        //grad_density' = vp^2 * gradBulk + (-) (sum(i) (dt Vadj,i * dVfw,i/dt))
+        density = scai::lama::pow(model.getVelocityP(), 2);
         density *= gradBulk;
-        density += DT * correlatedWavefields.getVSum();
+        density -= DT * correlatedWavefields.getXcorrRho();
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }

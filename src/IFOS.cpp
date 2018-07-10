@@ -100,8 +100,10 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Acquisition geometry                    */
     /* --------------------------------------- */
-    Acquisition::Receivers<ValueType> receivers(config, ctx, dist);
     Acquisition::Sources<ValueType> sources(config, ctx, dist);
+    Acquisition::Receivers<ValueType> receivers;
+    if (!config.get<bool>("useReceiversPerShot"))
+        receivers.init(config, ctx, dist);
 
     /* --------------------------------------- */
     /* Modelparameter                          */
@@ -142,7 +144,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* True data                               */
     /* --------------------------------------- */
-    Acquisition::Receivers<ValueType> receiversTrue(config, ctx, dist);
+    Acquisition::Receivers<ValueType> receiversTrue;
+    if (!config.get<bool>("useReceiversPerShot"))
+        receiversTrue.init(config, ctx, dist);
     
     /* --------------------------------------- */
     /* Misfit                                  */
@@ -153,7 +157,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Adjoint sources                         */
     /* --------------------------------------- */
-    Acquisition::Receivers<ValueType> adjointSources(config, ctx, dist);
+    Acquisition::Receivers<ValueType> adjointSources;
+    if (!config.get<bool>("useReceiversPerShot"))
+        adjointSources.init(config, ctx, dist);
     
     /* --------------------------------------- */
     /* Workflow                                */
@@ -237,6 +243,11 @@ int main(int argc, char *argv[])
 
             for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
             
+                if (config.get<bool>("useReceiversPerShot")) {
+                    receivers.init(config, ctx, dist, shotNumber);
+                    receiversTrue.init(config, ctx, dist, shotNumber);
+                    adjointSources.init(config, ctx, dist, shotNumber);
+                }
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)

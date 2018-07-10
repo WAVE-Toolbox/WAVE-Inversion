@@ -22,9 +22,9 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::resetWavefield(scai::lama::D
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    // NOTE_TB: why is this an own method, 
+    // NOTE_TB: why is this an own method,
 
-    vector = lama::zero<lama::DenseVector<ValueType>>( dist, ctx );
+    vector = lama::zero<lama::DenseVector<ValueType>>(dist, ctx);
 
     // vector.setContextPtr(ctx);
     // vector.allocate(dist);
@@ -48,37 +48,37 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::writeWavefield(scai::lama::D
 
 //! \brief Getter routine for VSum wavefield
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getVSum() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrRho() const
 {
-    return (VSum);
+    return (xcorrRho);
 }
 
-//! \brief Getter routine for P
+//! \brief Getter routine for XcorrLambda
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getP() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrLambda() const
 {
-    return (P);
+    return (xcorrLambda);
 }
 
-//! \brief Getter routine for ShearStress
+//! \brief Getter routine for xcorrMuA
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getShearStress() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrMuA() const
 {
-    return (ShearStress);
+    return (xcorrMuA);
 }
 
-//! \brief Getter routine for NormalStressDiff
+//! \brief Getter routine for xcorrMuB
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getNormalStressDiff() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrMuB() const
 {
-    return (NormalStressDiff);
+    return (xcorrMuB);
 }
 
-//! \brief Getter routine for NormalStressSum
+//! \brief Getter routine for xcorrMuB
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getNormalStressSum() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrMuC() const
 {
-    return (NormalStressSum);
+    return (xcorrMuC);
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr<float>;

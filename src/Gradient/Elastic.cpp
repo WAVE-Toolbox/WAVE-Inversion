@@ -10,7 +10,8 @@ using namespace scai;
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist,0.0, 0.0, 0.0);
+    equationType = "elastic";
+    init(ctx, dist, 0.0, 0.0, 0.0);
 }
 
 /*! \brief Initialisation with zeros
@@ -23,7 +24,6 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
 {
     init(ctx, dist, 0.0, 0.0, 0.0);
 }
-
 
 /*! \brief Initialisation that is generating a homogeneous model
  *
@@ -42,11 +42,11 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
     this->initParameterisation(density, ctx, dist, rho);
 }
 
-
 //! \brief Copy constructor
 template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
 {
+    equationType = rhs.equationType;
     velocityP = rhs.velocityP;
     velocityS = rhs.velocityS;
     density = rhs.density;
@@ -60,22 +60,29 @@ KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
-    if(workflow.getInvertForVp() == 1){
+    if (workflow.getInvertForVp() == 1) {
         std::string filenameP = filename + ".vp.mtx";
         this->writeParameterisation(velocityP, filenameP, partitionedOut);
     }
-    
-    if(workflow.getInvertForVs() == 1){
+
+    if (workflow.getInvertForVs() == 1) {
         std::string filenameS = filename + ".vs.mtx";
         this->writeParameterisation(velocityS, filenameS, partitionedOut);
     }
-    
-    if(workflow.getInvertForDensity() == 1){
+
+    if (workflow.getInvertForDensity() == 1) {
         std::string filenamedensity = filename + ".density.mtx";
         this->writeParameterisation(density, filenamedensity, partitionedOut);
     }
-    
 };
+
+/*! \brief Get equationType (elastic)
+ */
+template <typename ValueType>
+std::string KITGPI::Gradient::Elastic<ValueType>::getEquationType() const
+{
+    return (equationType);
+}
 
 /*! \brief Get reference to tauP
  *
@@ -283,7 +290,8 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector<ValueT
  \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs){
+void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs)
+{
     scai::lama::DenseVector<ValueType> temp;
     temp = lhs.getVelocityP() - rhs.getVelocityP();
     lhs.setVelocityP(temp);
@@ -291,7 +299,6 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
     lhs.setVelocityS(temp);
     temp = lhs.getDensity() - rhs.getDensity();
     lhs.setDensity(temp);
-    
 };
 
 /*! \brief function for scaling the gradients with the model parameter 
@@ -304,11 +311,11 @@ void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelpa
     if (workflow.getInvertForVp()) {
         velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
     }
-    
+
     if (workflow.getInvertForVs()) {
         velocityS *= 1 / velocityS.maxNorm() * model.getVelocityS().maxNorm();
-    }   
-    
+    }
+
     if (workflow.getInvertForDensity()) {
         density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
     }
@@ -317,64 +324,84 @@ void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelpa
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    // Only implementedfor 2D!
     //dt should be in cross correlation!
 
-   // Lambda and Mu gradients
-	
     scai::lama::DenseVector<ValueType> gradLambda;
-    scai::lama::DenseVector<ValueType> gradMu;  
+    scai::lama::DenseVector<ValueType> gradMu;
     scai::lama::DenseVector<ValueType> temp;
-    
-    gradLambda = model.getVelocityP();
-    gradLambda *= model.getVelocityP();
-    temp = model.getVelocityS();
-    temp *= model.getVelocityS();
-    gradLambda-=temp;
-    gradLambda*=gradLambda;
-    gradLambda*=model.getDensity();
-    gradLambda*=model.getDensity();
-    gradLambda*=4;
-    gradLambda=1/gradLambda;
-    Common::replaceInvalid<ValueType>(gradLambda,0.0);
-    
-    gradLambda *= correlatedWavefields.getNormalStressSum();
+    scai::lama::DenseVector<ValueType> temp2;
+    scai::lama::DenseVector<ValueType> lambda;
+    scai::lama::DenseVector<ValueType> mu;
+
+    //dimension
+    int N = correlatedWavefields.getNumDimension();
+
+    mu = scai::lama::pow(model.getVelocityS(), 2);
+    mu *= model.getDensity();
+
+    lambda = scai::lama::pow(model.getVelocityP(), 2);
+    lambda *= model.getDensity();
+    lambda -= 2 * mu;
+
+    // Lambda and Mu gradients
+    //-1/(N*lambda+2mu)^2)
+    gradLambda = N * lambda;
+    gradLambda += 2 * mu;
+    gradLambda = scai::lama::pow(gradLambda, -2);
+
+    gradLambda *= correlatedWavefields.getXcorrLambda();
     gradLambda *= -DT;
-    
+    Common::replaceInvalid<ValueType>(gradLambda,0.0);
+
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
 
-    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())){
-	  gradMu=gradLambda;
- 
-	  temp = model.getVelocityS();
-      temp *= model.getVelocityS();
-	  temp *= model.getDensity();
-	  temp *= temp;
-	  temp*=4;
-	  temp = 1/temp;
-          Common::replaceInvalid<ValueType>(temp,0.0);
-	  temp *= correlatedWavefields.getNormalStressDiff();
-	  temp *= -DT;
-	  
-	  gradMu += temp;
-	
-	  temp = model.getVelocityS();
-      temp *= model.getVelocityS();
-	  temp *= model.getDensity();
-	  temp *= temp;
-	  temp = 1/temp;
-          Common::replaceInvalid<ValueType>(temp,0.0);
-	  temp *= correlatedWavefields.getShearStress();
-	  temp *= -DT;
-	  
-	  gradMu += temp;
+    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+        //(N*lambda^2+4mu*lambda)/(2mu^2(N*lambda+2mu)^2)
+
+        //temp2=>B
+        temp2 = scai::lama::pow(lambda, 2);
+        temp2 *= N;
+        temp = 4 * mu;
+        temp *= lambda;
+        temp2 += temp;
+
+        temp = scai::lama::pow(mu, 2);
+        temp *= 2;
+        temp2 /= temp;
+
+        temp = N * lambda;
+        temp += 2 * mu;
+        temp = scai::lama::pow(temp, 2);
+        temp2 /= temp;
+
+        gradMu = temp2;
+        gradMu *= correlatedWavefields.getXcorrMuB();
+
+        //temp2=>A
+        temp = scai::lama::pow(mu, -2);
+        temp /= -2;
+        temp2 += temp;
+
+        temp2 *= correlatedWavefields.getXcorrMuA();
+        gradMu += temp2;
+
+        //temp2=>C
+        temp2 = mu;
+        temp2 *= mu;
+        temp2 = 1 / temp2;
+        temp2 *= correlatedWavefields.getXcorrMuC();
+        gradMu -= temp2;
+
+        gradMu *= DT;
+        Common::replaceInvalid<ValueType>(gradMu,0.0);
+
     }
-    
+
     // vp, vs , rho gradients
-    
+
     if (workflow.getInvertForVp()) {
-	//grad_vp = 2*rho*vp*grad_bulk
+        //grad_vp = 2*rho*vp*grad_lambda
         velocityP = 2 * gradLambda;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
@@ -387,32 +414,31 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         velocityS = -4 * gradLambda;
         velocityS *= model.getDensity();
         velocityS *= model.getVelocityS();
-	
-	temp=2*gradMu;
-	temp*=model.getDensity();
-	temp*=model.getVelocityS();
-	
-	velocityS+=temp;
+
+        temp = 2 * gradMu;
+        temp *= model.getDensity();
+        temp *= model.getVelocityS();
+
+        velocityS += temp;
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }
-    
+
     if (workflow.getInvertForDensity()) {
 
-        density = model.getVelocityP();
-        density *= model.getVelocityP();
-        temp = 2 * model.getVelocityS();
-        temp *= model.getVelocityS();
-        density-=temp;
-        density*=gradLambda;
-	
-        temp = model.getVelocityS();
-        temp*= model.getVelocityS();
-        temp*= gradMu;
+        density = scai::lama::pow(model.getVelocityP(), 2);
+        temp = scai::lama::pow(model.getVelocityS(), 2);
+        temp *= 2;
+        density -= temp;
+        density *= gradLambda;
 
-        density+=temp;
+        temp = scai::lama::pow(model.getVelocityS(), 2);
+        temp *= gradMu;
+        density += temp;
 
-        density += DT * correlatedWavefields.getVSum();
+        temp = DT * correlatedWavefields.getXcorrRho();
+        density -= temp;
+
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }

@@ -42,7 +42,7 @@ namespace KITGPI
         {
           public:
             //! Default constructor.
-            Acoustic(){};
+            Acoustic(){equationType = "acoustic";};
 
             //! Destructor, releases all allocated resources.
             ~Acoustic(){};
@@ -65,6 +65,8 @@ namespace KITGPI
 
             void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
+            std::string getEquationType() const;
+            
             /* Getter methods for not requiered parameters */
             scai::lama::Vector<ValueType> const &getVelocityS() override;
             scai::lama::Vector<ValueType> const &getTauP() override;
@@ -110,6 +112,8 @@ namespace KITGPI
 
           private:
 
+            using Gradient<ValueType>::equationType;  
+              
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;
 

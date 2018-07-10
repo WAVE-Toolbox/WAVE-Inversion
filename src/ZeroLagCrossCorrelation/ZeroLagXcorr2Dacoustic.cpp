@@ -12,6 +12,8 @@ using namespace scai;
 template <typename ValueType>
 KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    equationType="acoustic"; 
+    numDimension=2;
     init(ctx, dist, workflow);
 }
 
@@ -20,9 +22,9 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity())
-        this->initWavefield(VSum, ctx, dist);
+        this->initWavefield(xcorrRho, ctx, dist);
     if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity()))
-        this->initWavefield(P, ctx, dist);
+        this->initWavefield(xcorrLambda, ctx, dist);
 }
 
 /*! \brief Returns hmemo::ContextPtr from this wavefields
@@ -30,7 +32,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(scai::hmemo::
 template <typename ValueType>
 scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getContextPtr()
 {
-    return (VSum.getContextPtr());
+    return (xcorrRho.getContextPtr());
 }
 
 
@@ -44,9 +46,9 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity())
-    this->writeWavefield(VSum, "VSum", type, t);
+        this->writeWavefield(xcorrRho, "xcorrRho", type, t);
     if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity()))
-    this->writeWavefield(P, "P", type, t);
+        this->writeWavefield(xcorrLambda, "xcorrLambda", type, t);
 }
 
 /*! \brief Wrapper Function to Write Snapshot of the Wavefield
@@ -66,9 +68,9 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity())
-    this->resetWavefield(VSum);
+        this->resetWavefield(xcorrRho);
     if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity()))
-    this->resetWavefield(P);
+        this->resetWavefield(xcorrLambda);
 }
 
 /*! \brief function to update the result of the zero lag cross-correlation for per timestep 
@@ -81,40 +83,56 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
     if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity())) {
         temp = forwardWavefield.getRefP();
         temp *= adjointWavefield.getRefP();
-        P += temp;
+        xcorrLambda += temp;
     }
     if (workflow.getInvertForDensity()) {
         temp = forwardWavefield.getRefVX();
         temp *= adjointWavefield.getRefVX();
-        VSum += temp;
+        xcorrRho += temp;
         temp = forwardWavefield.getRefVY();
         temp *= adjointWavefield.getRefVY();
-        VSum += temp;
+        xcorrRho += temp;
     }
 }
 
-//! \brief Not valid in the 2D acoustic case
+/*! \brief Get numDimension (2)
+ */
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getShearStress() const
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getNumDimension() const
 {
-    COMMON_THROWEXCEPTION("There is no ShearStress in the 2D acoustic case.");
-    return (ShearStress);
+    return (numDimension);
+}
+
+/*! \brief Get equationType (acoustic)
+ */
+template <typename ValueType>
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getEquationType() const
+{
+    return (equationType);
+}
+
+//! \brief Not valid in the acoustic case
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getXcorrMuA() const
+{
+    COMMON_THROWEXCEPTION("There is no Mu Gradient in the acoustic case.");
+    return (xcorrMuA);
+}
+
+//! \brief Not valid in the acoustic case
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getXcorrMuB() const
+{
+    COMMON_THROWEXCEPTION("There is no Mu Gradient in the acoustic case.");
+    return (xcorrMuB);
 }
 
 //! \brief Not valid in the 2D acoustic case
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getNormalStressDiff() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getXcorrMuC() const
 {
-    COMMON_THROWEXCEPTION("There is no ShearStress in the 2D acoustic case.");
-    return (NormalStressDiff);
-}
-
-//! \brief Not valid in the 2D acoustic case
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::getNormalStressSum() const
-{
-    COMMON_THROWEXCEPTION("There is no ShearStress in the 2D acoustic case.");
-    return (NormalStressSum);
+    COMMON_THROWEXCEPTION("There is no Mu Gradient in the acoustic case.");
+    return (xcorrMuC);
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<double>;
