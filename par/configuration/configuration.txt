@@ -66,8 +66,8 @@ tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
 
 # Acquisition
-SourceFilename=acquisition/sources.mtx         # location of source file
-ReceiverFilename=acquisition/receiver.mtx      # location of receiver file
+SourceFilename=acquisition/sources         # location of source file
+ReceiverFilename=acquisition/receiver      # location of receiver file
 SeismogramFilename=seismograms/seismogram      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
