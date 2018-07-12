@@ -319,8 +319,10 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     gradBulk = scai::lama::pow(model.getVelocityP(), 2);
     gradBulk *= model.getDensity();
     gradBulk = scai::lama::pow(gradBulk, -2);
+    Common::replaceInvalid<ValueType>(gradBulk,0.0);
 
     gradBulk *= correlatedWavefields.getXcorrLambda();
+
     gradBulk *= -DT;
 
     scai::hmemo::ContextPtr ctx = gradBulk.getContextPtr();

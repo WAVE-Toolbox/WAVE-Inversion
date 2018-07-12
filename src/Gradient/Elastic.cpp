@@ -351,6 +351,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 
     gradLambda *= correlatedWavefields.getXcorrLambda();
     gradLambda *= -DT;
+    Common::replaceInvalid<ValueType>(gradLambda,0.0);
 
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
@@ -393,6 +394,8 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         gradMu -= temp2;
 
         gradMu *= DT;
+        Common::replaceInvalid<ValueType>(gradMu,0.0);
+
     }
 
     // vp, vs , rho gradients

@@ -100,8 +100,10 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Acquisition geometry                    */
     /* --------------------------------------- */
-    Acquisition::Receivers<ValueType> receivers(config, ctx, dist);
     Acquisition::Sources<ValueType> sources(config, ctx, dist);
+    Acquisition::Receivers<ValueType> receivers;
+    if (!config.get<bool>("useReceiversPerShot"))
+        receivers.init(config, ctx, dist);
 
     /* --------------------------------------- */
     /* Modelparameter                          */
@@ -142,7 +144,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* True data                               */
     /* --------------------------------------- */
-    Acquisition::Receivers<ValueType> receiversTrue(config, ctx, dist);
+    Acquisition::Receivers<ValueType> receiversTrue;
+    if (!config.get<bool>("useReceiversPerShot"))
+        receiversTrue.init(config, ctx, dist);
     
     /* --------------------------------------- */
     /* Misfit                                  */
@@ -153,7 +157,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Adjoint sources                         */
     /* --------------------------------------- */
-    Acquisition::Receivers<ValueType> adjointSources(config, ctx, dist);
+    Acquisition::Receivers<ValueType> adjointSources;
+    if (!config.get<bool>("useReceiversPerShot"))
+        adjointSources.init(config, ctx, dist);
     
     /* --------------------------------------- */
     /* Workflow                                */
@@ -237,8 +243,15 @@ int main(int argc, char *argv[])
 
             for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
             
+                if (config.get<bool>("useReceiversPerShot")) {
+                    receivers.init(config, ctx, dist, shotNumber);
+                    receiversTrue.init(config, ctx, dist, shotNumber);
+                    adjointSources.init(config, ctx, dist, shotNumber);
+                }
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    receiversTrue.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
                 
                 /* Reset approximated Hessian per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1){
@@ -258,6 +271,8 @@ int main(int argc, char *argv[])
                 wavefields->resetWavefields();
 
                 sources.init(config, ctx, dist, shotNumber);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
             
                 ValueType DTinv=1/config.get<ValueType>("DT");
             
@@ -310,6 +325,13 @@ int main(int argc, char *argv[])
             
             gradientOptimization->apply(*gradient, workflow, *model);
             
+            if (config.get<IndexType>("FreeSurface") == 2) {
+                lama::DenseVector<ValueType> mask;
+                mask = model->getVelocityP();
+                mask.unaryOp(mask,common::UnaryOp::SIGN);
+                *gradient *= mask;
+            }
+            
             /* Output of gradient */
             if(config.get<IndexType>("WriteGradient"))
                 gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("PartitionedOut"), workflow);
@@ -327,7 +349,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm,"\n===========================================" );
             HOST_PRINT(comm,"\n======== Start step length search =========\n" );
         
-            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration));
+            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow);
         
             HOST_PRINT(comm, "=========== Update Model ============\n\n");
             /* Apply model update */
@@ -365,6 +387,8 @@ int main(int argc, char *argv[])
                 wavefields->resetWavefields();
 
                 sources.init(config, ctx, dist, shotNumber);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
             
                 start_t_shot = common::Walltime::get();
  

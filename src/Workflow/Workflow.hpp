@@ -39,12 +39,15 @@ namespace KITGPI
             bool getInvertForVs() const;
             bool getInvertForDensity() const;
             ValueType getRelativeMisfitChange() const;
+            scai::IndexType getFilterOrder() const;
+            ValueType getLowerCornerFreq() const;
+            ValueType getUpperCornerFreq() const;
             
             int maxStage;
             scai::IndexType workflowStage;
             scai::IndexType iteration;
             scai::IndexType skipCount;
-            
+
         private:
 
             std::ifstream workflowFile;
@@ -53,7 +56,9 @@ namespace KITGPI
             bool invertForVs;
             bool invertForDensity;
             ValueType relativeMisfitChange; 
-   
+            scai::IndexType filterOrder;
+            ValueType lowerCornerFreq;
+            ValueType upperCornerFreq;
             
         };
     }
