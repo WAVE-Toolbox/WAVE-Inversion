@@ -113,12 +113,6 @@ int main(int argc, char *argv[])
     model->init(config, ctx, dist);
     
     /* --------------------------------------- */
-    /* Forward solver                          */
-    /* --------------------------------------- */
-    ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
-    solver->prepareBoundaryConditions(config, *derivatives, dist, ctx);
-    
-    /* --------------------------------------- */
     /* Wavefields                              */
     /* --------------------------------------- */
     Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields = Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -140,6 +134,12 @@ int main(int argc, char *argv[])
 
         wavefieldrecord.push_back(wavefieldsTemp);
     }
+    
+    /* --------------------------------------- */
+    /* Forward solver                          */
+    /* --------------------------------------- */
+    ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
+    solver->initForwardSolver(config, *derivatives, *wavefields, *model, ctx, config.get<ValueType>("DT"));
     
     /* --------------------------------------- */
     /* True data                               */
@@ -234,6 +234,7 @@ int main(int argc, char *argv[])
             
             /* Update model for fd simulation (averaging, inverse Density ...) */
             model->prepareForModelling(config, ctx, dist, comm);
+            solver->prepareForModelling(*model, config.get<ValueType>("DT"));
             
             /* --------------------------------------- */
             /*        Loop over shots                  */
@@ -310,7 +311,9 @@ int main(int argc, char *argv[])
                 if (config.get<bool>("useEnergyPreconditioning") == 1){
                     energyPrecond.apply(*gradientPerShot, shotNumber);}
                 
-                *gradient += *gradientPerShot; 
+                *gradient += *gradientPerShot;
+                
+                solver->resetCPML();
                 
                 end_t_shot = common::Walltime::get();
                 HOST_PRINT(comm, "\nFinished shot in " << end_t_shot - start_t_shot << " sec.\n\n");
