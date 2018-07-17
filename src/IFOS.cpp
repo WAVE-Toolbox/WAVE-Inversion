@@ -27,6 +27,7 @@
 #include "Misfit/MisfitFactory.hpp"
 #include "Misfit/AbortCriterion.hpp"
 #include "StepLengthSearch/StepLengthSearch.hpp"
+#include "SourceEstimation/SourceEstimation.hpp"
 #include "Preconditioning/EnergyPreconditioning.hpp"
 #include "Optimization/OptimizationFactory.hpp"
 #include "Workflow/Workflow.hpp"
@@ -178,6 +179,11 @@ int main(int argc, char *argv[])
     SLsearch.initLogFile(comm, logFilename, misfitType);
     
     /* --------------------------------------- */
+    /* Source estimation                       */
+    /* --------------------------------------- */
+    SourceEstimation<ValueType> sourceEst(config.get<ValueType>("waterLevel"));
+    
+    /* --------------------------------------- */
     /* Gradients                               */
     /* --------------------------------------- */
     Gradient::Gradient<ValueType>::GradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
@@ -255,8 +261,17 @@ int main(int argc, char *argv[])
                     receiversTrue.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
                 
                 /* Reset approximated Hessian per shot */
-                if (config.get<bool>("useEnergyPreconditioning") == 1){
-                    energyPrecond.resetApproxHessian();}
+                if (config.get<bool>("useEnergyPreconditioning") == 1)
+                    energyPrecond.resetApproxHessian();
+                
+                sources.init(config, ctx, dist, shotNumber);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+                
+                /* Source time function inversion */
+                if (config.get<bool>("useSourceSignalInversion") == 1 && workflow.iteration == 0) {
+                    sourceEst.estimateSourceSignal(*solver, receivers, receiversTrue, sources, *model, *wavefields, *derivatives, tStepEnd);
+                }
                 
                 HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
             
@@ -270,10 +285,6 @@ int main(int argc, char *argv[])
                                                                     << "Total Number of time steps: " << tStepEnd << "\n");
                                                                     
                 wavefields->resetWavefields();
-
-                sources.init(config, ctx, dist, shotNumber);
-                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
             
                 ValueType DTinv=1/config.get<ValueType>("DT");
             
