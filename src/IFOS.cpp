@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Source estimation                       */
     /* --------------------------------------- */
-    SourceEstimation<ValueType> sourceEst(config.get<ValueType>("waterLevel"));
+    SourceEstimation<ValueType> sourceEst(config.get<ValueType>("waterLevel"), tStepEnd);
     
     /* --------------------------------------- */
     /* Gradients                               */
@@ -270,7 +270,8 @@ int main(int argc, char *argv[])
                 
                 /* Source time function inversion */
                 if (config.get<bool>("useSourceSignalInversion") == 1 && workflow.iteration == 0) {
-                    sourceEst.estimateSourceSignal(*solver, receivers, receiversTrue, sources, *model, *wavefields, *derivatives, tStepEnd);
+                    HOST_PRINT(comm, "\n=====Start Source Time Function Inversion========\n");
+                    sourceEst.estimateSourceSignal(*solver, receivers, receiversTrue, sources, *model, *wavefields, *derivatives);
                 }
                 
                 HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");

@@ -28,19 +28,21 @@ namespace KITGPI
     class SourceEstimation{
         
     public: 
-        explicit SourceEstimation(ValueType waterLvl) : waterLevel(waterLvl) {};
+        SourceEstimation(ValueType waterLvl, scai::IndexType nt) : waterLevel(waterLvl), tStepEnd(nt) {nFFT = Common::calcNextPowTwo<ValueType>(nt-1);}
         ~SourceEstimation(){};
         
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
         
-        void estimateSourceSignal(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, Wavefields::Wavefields<ValueType> &wavefield, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, scai::IndexType tStepEnd);
+        void estimateSourceSignal(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, Wavefields::Wavefields<ValueType> &wavefield, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives);
         
     private:
         ValueType waterLevel;
-        scai::lama::CSRSparseMatrix<ComplexValueType> filter;
+        scai::IndexType nFFT; // filter length
+        scai::IndexType tStepEnd; // seismogram length + 1
+        scai::lama::DenseVector<ComplexValueType> filter;
         
-        void fftMult(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B);
-        void addComponents(scai::lama::DenseVector<ComplexValueType> sum, KITGPI::Acquisition::Receivers<ValueType> &receiversA, KITGPI::Acquisition::Receivers<ValueType> &receiversB);
+        void matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B);
+        void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources);
     };
 }
