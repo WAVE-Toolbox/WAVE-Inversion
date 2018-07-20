@@ -1,5 +1,16 @@
 #include "SourceEstimation.hpp"
 
+/*! \brief Constructor which sets the water level and filter length
+ \param waterLevel water level
+ \param nt last time step + 1
+ */
+template <typename ValueType>
+KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::IndexType nt) {
+    tStepEnd = nt;
+    nFFT = Common::calcNextPowTwo<ValueType>(nt-1);
+    waterLevel = scai::common::Math::pow<ValueType>(waterLvl,2.0) / nFFT; 
+}
+
 /*! \brief Calculate the Wiener filter
  \param solver Forward solver
  \param receivers Synthetic receivers
@@ -26,7 +37,7 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::ForwardSo
     scai::lama::DenseVector<ComplexValueType> filterTmp2(colDist, 0.0);
     
     addComponents(filterTmp1, receivers, receivers);
-    filterTmp1 += scai::common::Math::pow<ValueType>(waterLevel,2.0);
+    filterTmp1 += waterLevel;
     filterTmp1.unaryOp(filterTmp1, scai::common::UnaryOp::RECIPROCAL);
     addComponents(filterTmp2, receivers, receiversTrue);
     filterTmp1 *= filterTmp2;

@@ -28,7 +28,7 @@ namespace KITGPI
     class SourceEstimation{
         
     public: 
-        SourceEstimation(ValueType waterLvl, scai::IndexType nt) : waterLevel(waterLvl), tStepEnd(nt) {nFFT = Common::calcNextPowTwo<ValueType>(nt-1);}
+        SourceEstimation(ValueType waterLvl, scai::IndexType nt);
         ~SourceEstimation(){};
         
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
