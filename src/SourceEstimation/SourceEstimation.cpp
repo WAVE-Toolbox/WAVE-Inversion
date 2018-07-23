@@ -81,7 +81,7 @@ void KITGPI::SourceEstimation<ValueType>::matCorr(scai::lama::DenseVector<Comple
         
     scai::lama::fft<ComplexValueType>(ATmp, 1);
     scai::lama::fft<ComplexValueType>(BTmp, 1);
-    BTmp.conj();
+    ATmp.conj();
     ATmp.binaryOp(ATmp, scai::common::BinaryOp::MULT, BTmp);
     ATmp.reduce(prod, 1, scai::common::BinaryOp::ADD, scai::common::UnaryOp::COPY);
 }
