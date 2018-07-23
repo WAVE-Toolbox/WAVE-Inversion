@@ -46,14 +46,11 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     seismoTrans = scai::lama::cast<ComplexValueType>(seismo);
     
     // scale to power of two
-    auto rowDist = std::make_shared<scai::dmemo::NoDistribution>(seismo.getNumRows());
-    seismoTrans.resize(rowDist,filter.getDistributionPtr());
+    seismoTrans.resize(seismo.getRowDistributionPtr(),filter.getDistributionPtr());
     
     // apply filter in frequency domain
     scai::lama::fft<ComplexValueType>(seismoTrans, 1);
-    seismoTrans = scai::lama::transpose<ComplexValueType>(seismoTrans);
-    seismoTrans.scaleRows(filter);
-    seismoTrans = scai::lama::transpose<ComplexValueType>(seismoTrans);
+    seismoTrans.scaleColumns(filter);
     scai::lama::ifft<ComplexValueType>(seismoTrans, 1);
     seismoTrans *= 1.0/nFFT;
     
