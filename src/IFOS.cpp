@@ -271,7 +271,15 @@ int main(int argc, char *argv[])
                 /* Source time function inversion */
                 if (config.get<bool>("useSourceSignalInversion") == 1 && workflow.iteration == 0) {
                     HOST_PRINT(comm, "\n=====Start Source Time Function Inversion========\n");
-                    sourceEst.estimateSourceSignal(*solver, receivers, receiversTrue, sources, *model, *wavefields, *derivatives);
+                    
+                    wavefields->resetWavefields();
+    
+                    for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                        solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                    }
+                    
+                    receivers.getSeismogramHandler().normalize();
+                    sourceEst.estimateSourceSignal(receivers, receiversTrue, sources);
                 }
                 
                 HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");

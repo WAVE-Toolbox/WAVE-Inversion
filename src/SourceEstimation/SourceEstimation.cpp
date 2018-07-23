@@ -6,7 +6,6 @@
  */
 template <typename ValueType>
 KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::IndexType nt) {
-    tStepEnd = nt;
     nFFT = Common::calcNextPowTwo<ValueType>(nt-1);
     waterLevel = scai::common::Math::pow<ValueType>(waterLvl,2.0) / nFFT; 
 }
@@ -22,15 +21,7 @@ KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::
  \param tStepEnd Number of time steps
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, Wavefields::Wavefields<ValueType> &wavefield, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives){
-
-    wavefield.resetWavefields();
-    
-    for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
-        solver.run(receivers, sources, model, wavefield, derivatives, tStep);
-    }
-    
-    receivers.getSeismogramHandler().normalize();
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Acquisition::Sources<ValueType> &sources){
 
     auto colDist = std::make_shared<scai::dmemo::NoDistribution>(nFFT);
     scai::lama::DenseVector<ComplexValueType> filterTmp1(colDist, 0.0);
@@ -70,11 +61,11 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     seismoTrans.scaleRows(filter);
     seismoTrans = scai::lama::transpose<ComplexValueType>(seismoTrans);
     scai::lama::ifft<ComplexValueType>(seismoTrans, 1);
+    seismoTrans *= 1.0/nFFT;
     
     // return to time domain
     seismoTrans.resize(seismo.getRowDistributionPtr(), seismo.getColDistributionPtr());
     seismo = scai::lama::real(seismoTrans);
-    COMMON_THROWEXCEPTION("finished")
 }
 
 /*! \brief Correlate the rows of two matrices.

@@ -106,8 +106,8 @@ testShotEnd=17                         # shot number of last test shot
 testShotIncr=1                         # increment of test shots
 
 # Source time function inversion
-useSourceSignalInversion=1
-waterLevel=0.1
+useSourceSignalInversion=0             # 1= use source time inversion
+waterLevel=0.01                        # water level of source time inversion
 
 # Preconditioning
 sourceTaperRadius=20    # circular source taper: Radius in gridpoints
