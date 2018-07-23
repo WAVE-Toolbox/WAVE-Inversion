@@ -5,9 +5,8 @@
  \param nt last time step + 1
  */
 template <typename ValueType>
-KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::IndexType nt) {
-    nFFT = Common::calcNextPowTwo<ValueType>(nt-1);
-    waterLevel = scai::common::Math::pow<ValueType>(waterLvl,2.0) / nFFT; 
+KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::IndexType nt) : nFFT(Common::calcNextPowTwo<ValueType>(nt-1)), filter(std::make_shared<scai::dmemo::NoDistribution>(nFFT), 0.0) {
+    waterLevel = scai::common::Math::pow<ValueType>(waterLvl,2.0) / nFFT;
 }
 
 /*! \brief Calculate the Wiener filter
@@ -23,17 +22,14 @@ KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::
 template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Acquisition::Sources<ValueType> &sources){
 
-    auto colDist = std::make_shared<scai::dmemo::NoDistribution>(nFFT);
-    scai::lama::DenseVector<ComplexValueType> filterTmp1(colDist, 0.0);
-    scai::lama::DenseVector<ComplexValueType> filterTmp2(colDist, 0.0);
+    scai::lama::DenseVector<ComplexValueType> filterTmp(filter.getDistributionPtr(), 0.0);
     
-    addComponents(filterTmp1, receivers, receivers);
-    filterTmp1 += waterLevel;
-    filterTmp1.unaryOp(filterTmp1, scai::common::UnaryOp::RECIPROCAL);
-    addComponents(filterTmp2, receivers, receiversTrue);
-    filterTmp1 *= filterTmp2;
-    
-    filter = filterTmp1; 
+    addComponents(filter, receivers, receivers);
+    filter += waterLevel;
+    filter.unaryOp(filter, scai::common::UnaryOp::RECIPROCAL);
+    addComponents(filterTmp, receivers, receiversTrue);
+    filter *= filterTmp;
+
     applyFilter(sources);
 }
 
@@ -47,13 +43,11 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     auto sourceType = Acquisition::SeismogramType(sources.getSeismogramTypes().getValue(0)-1);
     scai::lama::DenseMatrix<ValueType> &seismo = sources.getSeismogramHandler().getSeismogram(sourceType).getData();
     scai::lama::DenseMatrix<ComplexValueType> seismoTrans;
-    scai::lama::DenseMatrix<ComplexValueType> seismoTransRepl;
     seismoTrans = scai::lama::cast<ComplexValueType>(seismo);
     
     // scale to power of two
-    auto colDist = std::make_shared<scai::dmemo::NoDistribution>(nFFT);
     auto rowDist = std::make_shared<scai::dmemo::NoDistribution>(seismo.getNumRows());
-    seismoTrans.resize(rowDist,colDist);
+    seismoTrans.resize(rowDist,filter.getDistributionPtr());
     
     // apply filter in frequency domain
     scai::lama::fft<ComplexValueType>(seismoTrans, 1);
