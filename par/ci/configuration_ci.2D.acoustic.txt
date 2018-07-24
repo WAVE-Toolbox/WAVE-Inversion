@@ -102,6 +102,10 @@ testShotStart=0                                 # shot number of first test shot
 testShotEnd=17                                  # shot number of last test shot
 testShotIncr=1                                  # increment of test shots
 
+# Source time function inversion
+useSourceSignalInversion=0
+waterLevel=0.01
+
 # Preconditioning
 sourceTaperRadius=20                            # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20                          # Circular receiver taper: Radius in gridpoints

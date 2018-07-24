@@ -27,6 +27,7 @@
 #include "Misfit/MisfitFactory.hpp"
 #include "Misfit/AbortCriterion.hpp"
 #include "StepLengthSearch/StepLengthSearch.hpp"
+#include "SourceEstimation/SourceEstimation.hpp"
 #include "Preconditioning/EnergyPreconditioning.hpp"
 #include "Optimization/OptimizationFactory.hpp"
 #include "Workflow/Workflow.hpp"
@@ -113,12 +114,6 @@ int main(int argc, char *argv[])
     model->init(config, ctx, dist);
     
     /* --------------------------------------- */
-    /* Forward solver                          */
-    /* --------------------------------------- */
-    ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
-    solver->prepareBoundaryConditions(config, *derivatives, dist, ctx);
-    
-    /* --------------------------------------- */
     /* Wavefields                              */
     /* --------------------------------------- */
     Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields = Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -140,6 +135,12 @@ int main(int argc, char *argv[])
 
         wavefieldrecord.push_back(wavefieldsTemp);
     }
+    
+    /* --------------------------------------- */
+    /* Forward solver                          */
+    /* --------------------------------------- */
+    ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
+    solver->initForwardSolver(config, *derivatives, *wavefields, *model, ctx, config.get<ValueType>("DT"));
     
     /* --------------------------------------- */
     /* True data                               */
@@ -176,6 +177,11 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     StepLengthSearch<ValueType> SLsearch;
     SLsearch.initLogFile(comm, logFilename, misfitType);
+    
+    /* --------------------------------------- */
+    /* Source estimation                       */
+    /* --------------------------------------- */
+    SourceEstimation<ValueType> sourceEst(config.get<ValueType>("waterLevel"), tStepEnd);
     
     /* --------------------------------------- */
     /* Gradients                               */
@@ -234,6 +240,7 @@ int main(int argc, char *argv[])
             
             /* Update model for fd simulation (averaging, inverse Density ...) */
             model->prepareForModelling(config, ctx, dist, comm);
+            solver->prepareForModelling(*model, config.get<ValueType>("DT"));
             
             /* --------------------------------------- */
             /*        Loop over shots                  */
@@ -254,8 +261,26 @@ int main(int argc, char *argv[])
                     receiversTrue.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
                 
                 /* Reset approximated Hessian per shot */
-                if (config.get<bool>("useEnergyPreconditioning") == 1){
-                    energyPrecond.resetApproxHessian();}
+                if (config.get<bool>("useEnergyPreconditioning") == 1)
+                    energyPrecond.resetApproxHessian();
+                
+                sources.init(config, ctx, dist, shotNumber);
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+                
+                /* Source time function inversion */
+                if (config.get<bool>("useSourceSignalInversion") == 1 && workflow.iteration == 0) {
+                    HOST_PRINT(comm, "\n=====Start Source Time Function Inversion========\n");
+                    
+                    wavefields->resetWavefields();
+    
+                    for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                        solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                    }
+                    
+                    receivers.getSeismogramHandler().normalize();
+                    sourceEst.estimateSourceSignal(receivers, receiversTrue, sources);
+                }
                 
                 HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
             
@@ -269,10 +294,6 @@ int main(int argc, char *argv[])
                                                                     << "Total Number of time steps: " << tStepEnd << "\n");
                                                                     
                 wavefields->resetWavefields();
-
-                sources.init(config, ctx, dist, shotNumber);
-                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
             
                 ValueType DTinv=1/config.get<ValueType>("DT");
             
@@ -310,7 +331,9 @@ int main(int argc, char *argv[])
                 if (config.get<bool>("useEnergyPreconditioning") == 1){
                     energyPrecond.apply(*gradientPerShot, shotNumber);}
                 
-                *gradient += *gradientPerShot; 
+                *gradient += *gradientPerShot;
+                
+                solver->resetCPML();
                 
                 end_t_shot = common::Walltime::get();
                 HOST_PRINT(comm, "\nFinished shot in " << end_t_shot - start_t_shot << " sec.\n\n");
