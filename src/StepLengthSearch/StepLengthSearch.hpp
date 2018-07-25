@@ -16,6 +16,7 @@
 #include "../Gradient/GradientFactory.hpp"
 #include "../Misfit/Misfit.hpp"
 #include "../Misfit/MisfitFactory.hpp"
+#include <Filter/Filter.hpp>
 
 namespace KITGPI
 {

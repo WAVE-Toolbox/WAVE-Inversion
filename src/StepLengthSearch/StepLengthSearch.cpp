@@ -222,7 +222,19 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
     *testgradient *= steplength;  
     *testmodel -= *testgradient;
         
-    testmodel->prepareForModelling(config, ctx, dist, comm); 
+    testmodel->prepareForModelling(config, ctx, dist, comm);
+    
+    Filter::Filter<ValueType> freqFilter;
+    std::string transFcnFmly = "butterworth";
+    if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+        freqFilter.init(config.get<ValueType>("DT"), tStepEnd-1);
+    
+    if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() != 0.0)
+        freqFilter.calc(transFcnFmly, "bp", workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+    else if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() == 0.0)
+        freqFilter.calc(transFcnFmly, "lp", workflow.getFilterOrder(), workflow.getLowerCornerFreq());
+    else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
+        freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());
     
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = testShotStart ; shotNumber <= testShotEnd; shotNumber+=testShotIncr) {
@@ -234,7 +246,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
 
         sources.init(config, ctx, dist, shotNumber);
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+                    sources.getSeismogramHandler().filter(freqFilter);
         
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
             solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);
@@ -242,7 +254,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
         
         receiversTrue.getSeismogramHandler().readFromFileRaw(config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    receiversTrue.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+                    receiversTrue.getSeismogramHandler().filter(freqFilter);
         
         misfitTest.setValue(shotNumber, dataMisfit.calc(receivers, receiversTrue));
         
