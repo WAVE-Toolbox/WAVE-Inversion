@@ -18,6 +18,7 @@
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
 #include <ForwardSolver/ForwardSolverFactory.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
+#include <Filter/Filter.hpp>
 
 #include <Wavefields/WavefieldsFactory.hpp>
 
@@ -184,6 +185,14 @@ int main(int argc, char *argv[])
     SourceEstimation<ValueType> sourceEst(config.get<ValueType>("waterLevel"), tStepEnd);
     
     /* --------------------------------------- */
+    /* Frequency filter                        */
+    /* --------------------------------------- */
+    Filter::Filter<ValueType> freqFilter;
+    std::string transFcnFmly = "butterworth";
+    if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+        freqFilter.init(config.get<ValueType>("DT"), tStepEnd-1);
+    
+    /* --------------------------------------- */
     /* Gradients                               */
     /* --------------------------------------- */
     Gradient::Gradient<ValueType>::GradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
@@ -224,8 +233,15 @@ int main(int argc, char *argv[])
         
         workflow.printParameters(comm);
         
-        gradientCalculation.allocate(config, dist, ctx, workflow); 
+        gradientCalculation.allocate(config, dist, ctx, workflow);
         
+        if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() != 0.0)
+            freqFilter.calc(transFcnFmly, "bp", workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+        else if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() == 0.0)
+            freqFilter.calc(transFcnFmly, "lp", workflow.getFilterOrder(), workflow.getLowerCornerFreq());
+        else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
+            freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());
+              
         /* --------------------------------------- */
         /*        Loop over iterations             */
         /* --------------------------------------- */
@@ -258,7 +274,7 @@ int main(int argc, char *argv[])
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    receiversTrue.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+                    receiversTrue.getSeismogramHandler().filter(freqFilter);
                 
                 /* Reset approximated Hessian per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1)
@@ -266,7 +282,7 @@ int main(int argc, char *argv[])
                 
                 sources.init(config, ctx, dist, shotNumber);
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+                    sources.getSeismogramHandler().filter(freqFilter);
                 
                 /* Source time function inversion */
                 if (config.get<bool>("useSourceSignalInversion") == 1 && workflow.iteration == 0) {
@@ -411,7 +427,7 @@ int main(int argc, char *argv[])
 
                 sources.init(config, ctx, dist, shotNumber);
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    sources.getSeismogramHandler().filter(workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+                    sources.getSeismogramHandler().filter(freqFilter);
             
                 start_t_shot = common::Walltime::get();
  
