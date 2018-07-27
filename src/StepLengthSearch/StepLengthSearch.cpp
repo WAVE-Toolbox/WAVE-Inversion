@@ -227,7 +227,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
     Filter::Filter<ValueType> freqFilter;
     std::string transFcnFmly = "butterworth";
     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-        freqFilter.init(config.get<ValueType>("DT"), tStepEnd-1);
+        freqFilter.init(config.get<ValueType>("DT"), tStepEnd);
     
     if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() != 0.0)
         freqFilter.calc(transFcnFmly, "bp", workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());

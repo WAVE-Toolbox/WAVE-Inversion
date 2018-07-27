@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     Filter::Filter<ValueType> freqFilter;
     std::string transFcnFmly = "butterworth";
     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-        freqFilter.init(config.get<ValueType>("DT"), tStepEnd-1);
+        freqFilter.init(config.get<ValueType>("DT"), tStepEnd);
     
     /* --------------------------------------- */
     /* Gradients                               */
