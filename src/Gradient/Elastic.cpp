@@ -321,6 +321,26 @@ void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelpa
     }
 }
 
+/*! \brief function for calculating the elastic gradients from the cross correlation and the model parameter 
+ *
+ \param model Abstract model.
+ \param correlatedWavefields Abstract xCorr.
+ \param DT Temporal discretization 
+ \param workflow 
+ *
+ \f{eqnarray*}
+   \nabla_{\lambda} E &=& - \mathrm{d}t \frac{1}{(N \cdot \lambda+2\mu)^2} \cdot X_{\lambda} \\
+   \nabla_{\mu} E &=& \mathrm{d}t \left[ \frac{N \lambda^2 + 4 \mu^2}{2 \mu^2} - \frac{1}{2 \mu^2} \right] \cdot X_{\mu,A} + \mathrm{d}t \frac{N \lambda^2 + 4 \mu^2}{2 \mu^2} \cdot X_{\mu,B} - \mathrm{d}t  \frac{1}{\mu^2} \cdot X_{\mu,C} \\ \\
+   \nabla_{v_{\mathrm{p}}} E &=& 2 v_{\mathrm{p}} \rho \cdot \nabla_{\lambda} E \\
+   \nabla_{v_{\mathrm{s}}} E &=& 2 v_{\mathrm{s}} \rho \cdot \nabla_{\mu} E - 4 v_{\mathrm{s}} \rho \nabla_{\lambda} E \\
+   \nabla_{\rho} E &=& ( v_{\mathrm{p}}^2-2v_{\mathrm{s}}^2 ) \cdot \nabla_{\lambda} E + v_{\mathrm{s}}^2 \cdot \nabla_{\mu} E - \mathrm{d}t \cdot X_{\rho}
+ \f}
+ *
+ * \f$ N \f$ denotes the number of dimensions.
+ *
+ \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 2D 
+ \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 3D
+ */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
