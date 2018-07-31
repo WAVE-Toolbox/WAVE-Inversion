@@ -331,23 +331,22 @@ template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     //dt should be in cross correlation!
-    //gradBulk = -dt*Padj*dPfw/dt / 4(rho*vp^2)^2
+    //gradBulk = -dt * Padj * dPfw/dt / lambda^2
     scai::lama::DenseVector<ValueType> gradBulk;
-    gradBulk = model.getVelocityP();
-    gradBulk *= model.getVelocityP();
+    gradBulk = scai::lama::pow(model.getVelocityP(), 2);
     gradBulk *= model.getDensity();
-    gradBulk *= gradBulk;
-    gradBulk *= 4;
-    gradBulk = 1 / gradBulk;
+    gradBulk = scai::lama::pow(gradBulk, -2);
+    Common::replaceInvalid<ValueType>(gradBulk,0.0);
 
     gradBulk *= correlatedWavefields.getXcorrLambda();
+
     gradBulk *= -DT;
 
     scai::hmemo::ContextPtr ctx = gradBulk.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradBulk.getDistributionPtr();
 
     if (workflow.getInvertForVp()) {
-        //grad_vp = 2*rho*vp*gradBulk
+        //grad_vp = 2 * rho *vp * gradBulk
         velocityP = 2 * gradBulk;
         velocityP *= model.getDensity();
         velocityP *= model.getVelocityP();
@@ -356,11 +355,11 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     }
 
     if (workflow.getInvertForDensity()) {
-        //grad_density=vp^2*gradBulk + (sum(i) (dt Vadj,i * dVfw,i/dt))
-        density = model.getVelocityP();
-        density *= model.getVelocityP();
+	//grad_densityRaw
+        //grad_density' = vp^2 * gradBulk + (-) (sum(i) (dt Vadj,i * dVfw,i/dt))
+        density = scai::lama::pow(model.getVelocityP(), 2);
         density *= gradBulk;
-        density += DT * correlatedWavefields.getXcorrRho();
+        density -= DT * correlatedWavefields.getXcorrRho();
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }

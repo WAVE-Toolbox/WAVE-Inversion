@@ -66,11 +66,12 @@ tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
 
 # Acquisition
-SourceFilename=acquisition/sources.mtx         # location of source file
-ReceiverFilename=acquisition/receiver.mtx      # location of receiver file
+SourceFilename=acquisition/sources         # location of source file
+ReceiverFilename=acquisition/receiver      # location of receiver file
 SeismogramFilename=seismograms/seismogram      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
 runSimultaneousShots=0
 runForward=0
 
@@ -103,6 +104,10 @@ scalingFactor=2                        # factor for multiplication or division o
 testShotStart=0                        # shot number of first test shot
 testShotEnd=17                         # shot number of last test shot
 testShotIncr=1                         # increment of test shots
+
+# Source time function inversion
+useSourceSignalInversion=0             # 1= use source time inversion
+waterLevel=0.01                        # water level of source time inversion
 
 # Preconditioning
 sourceTaperRadius=20    # circular source taper: Radius in gridpoints
