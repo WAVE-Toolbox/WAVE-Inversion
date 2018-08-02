@@ -318,9 +318,9 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
  \param workflow 
  *
  \f{eqnarray*}
-   \nabla_K E &=& -\mathrm{d}t \frac{1}{4 v_{\mathrm{p}}^4 \rho^2} \cdot X_{\lambda} \\ 
+   \nabla_K E &=& -\mathrm{d}t \frac{1}{v_{\mathrm{p}}^4 \rho^2} \cdot X_{\lambda} \\ 
    \nabla_{v_{\mathrm{p}}} E &=& 2 v_{\mathrm{p}} \rho \cdot \nabla_K E \\
-   \nabla_{\rho} E &=& v_{\mathrm{p}}^2 \cdot \nabla_K E + \mathrm{d}t \cdot X_{\rho}
+   \nabla_{\rho} E &=& v_{\mathrm{p}}^2 \cdot \nabla_K E - \mathrm{d}t \cdot X_{\rho}
  \f}
  *
  \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho}) \f$ in 2D 

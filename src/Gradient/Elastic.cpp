@@ -131,7 +131,7 @@ KITGPI::Gradient::Elastic<ValueType> KITGPI::Gradient::Elastic<ValueType>::opera
     return result;
 }
 
-/*! \brief free function to multiply
+/*! \brief Free function to multiply
  *
  \param lhs Scalar factor with which the vectors are multiplied.
  \param rhs Vector
@@ -222,7 +222,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     return *this;
 }
 
-/*! \brief function for overloading -= Operation (called in base class)
+/*! \brief Function for overloading -= Operation (called in base class)
  *
  \param rhs Abstract gradient which is assigned.
  */
@@ -234,7 +234,7 @@ void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<Val
     velocityS = rhs.getVelocityS();
 }
 
-/*! \brief function for overloading -= Operation (called in base class)
+/*! \brief Function for overloading -= Operation (called in base class)
  *
  \param rhs Abstract gradient which is subtractet.
  */
@@ -247,7 +247,7 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Gradient::Gradien
     velocityS -= rhs.getVelocityS();
 }
 
-/*! \brief function for overloading += Operation (called in base class)
+/*! \brief Function for overloading += Operation (called in base class)
  *
  \param rhs Abstract gradient which is subtractet.
  */
@@ -260,7 +260,7 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
     velocityS += rhs.getVelocityS();
 }
 
-/*! \brief function for overloading *= Operation (called in base class)
+/*! \brief Function for overloading *= Operation (called in base class)
  *
  \param rhs Abstract gradient which is subtracted.
  */
@@ -272,7 +272,7 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(ValueType const &rhs)
     velocityS *= rhs;
 }
 
-/*! \brief function for overloading *= Operation (called in base class)
+/*! \brief Function for overloading *= Operation (called in base class)
  *
  \param rhs Abstract gradient which is subtracted.
  */
@@ -284,7 +284,7 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector<ValueT
     velocityS *= rhs;
 }
 
-/*! \brief function for overloading -= Operation (called in base class)
+/*! \brief Function for overloading -= Operation (called in base class)
  *
  \param lhs Abstract model.
  \param rhs Abstract gradient which is assigned.
@@ -301,7 +301,7 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
     lhs.setDensity(temp);
 };
 
-/*! \brief function for scaling the gradients with the model parameter 
+/*! \brief Function for scaling the gradients with the model parameter 
  *
  \param model Abstract model.
  */
@@ -321,7 +321,7 @@ void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelpa
     }
 }
 
-/*! \brief function for calculating the elastic gradients from the cross correlation and the model parameter 
+/*! \brief Function for calculating the elastic gradients from the cross correlation and the model parameter 
  *
  \param model Abstract model.
  \param correlatedWavefields Abstract xCorr.
@@ -329,14 +329,14 @@ void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelpa
  \param workflow 
  *
  \f{eqnarray*}
-   \nabla_{\lambda} E &=& - \mathrm{d}t \frac{1}{(N \cdot \lambda+2\mu)^2} \cdot X_{\lambda} \\
-   \nabla_{\mu} E &=& \mathrm{d}t \left[ \frac{N \lambda^2 + 4 \mu^2}{2 \mu^2} - \frac{1}{2 \mu^2} \right] \cdot X_{\mu,A} + \mathrm{d}t \frac{N \lambda^2 + 4 \mu^2}{2 \mu^2} \cdot X_{\mu,B} - \mathrm{d}t  \frac{1}{\mu^2} \cdot X_{\mu,C} \\ \\
-   \nabla_{v_{\mathrm{p}}} E &=& 2 v_{\mathrm{p}} \rho \cdot \nabla_{\lambda} E \\
-   \nabla_{v_{\mathrm{s}}} E &=& 2 v_{\mathrm{s}} \rho \cdot \nabla_{\mu} E - 4 v_{\mathrm{s}} \rho \nabla_{\lambda} E \\
+   \nabla_{\lambda} E &=& - \mathrm{d}t \frac{1}{(N \lambda+2\mu)^2} \cdot X_{\lambda} \\
+   \nabla_{\mu} E &=& \mathrm{d}t \left[ \frac{N \lambda^2 + 4 \mu \lambda}{2 \mu^2 (N \lambda+2\mu)^2} - \frac{1}{2 \mu^2} \right] \cdot X_{\mu,A} + \mathrm{d}t \frac{N \lambda^2 + 4 \mu \lambda}{2 \mu^2 (N \lambda+2\mu)^2} \cdot X_{\mu,B} - \mathrm{d}t  \frac{1}{\mu^2} \cdot X_{\mu,C} \\ \\
+   \nabla_{v_{\mathrm{p}}} E &=& 2 \rho v_{\mathrm{p}} \cdot \nabla_{\lambda} E \\
+   \nabla_{v_{\mathrm{s}}} E &=& 2 \rho v_{\mathrm{s}} \cdot \nabla_{\mu} E - 4 \rho v_{\mathrm{s}} \nabla_{\lambda} E \\
    \nabla_{\rho} E &=& ( v_{\mathrm{p}}^2-2v_{\mathrm{s}}^2 ) \cdot \nabla_{\lambda} E + v_{\mathrm{s}}^2 \cdot \nabla_{\mu} E - \mathrm{d}t \cdot X_{\rho}
  \f}
  *
- * \f$ N \f$ denotes the number of dimensions.
+ * with \f$ N \f$ as the number of dimensions, \f$ \mu = \rho v_{\mathrm{s}}^2 \f$ and \f$ \lambda = \rho v_{\mathrm{p}}^2 - 2\mu\f$.
  *
  \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 2D 
  \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 3D
