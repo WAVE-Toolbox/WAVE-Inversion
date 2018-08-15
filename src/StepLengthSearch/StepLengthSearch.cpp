@@ -142,6 +142,9 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
         steplengthOptimum = steplengthMax;
         HOST_PRINT(comm,"\nVariable steplengthMax used to update the model");}
         
+    if (std::isnan(steplengthOptimum))
+        steplengthOptimum = steplengthMin;
+        
     HOST_PRINT(comm,"\nOptimum step length: " << steplengthOptimum << "\n");    
         
     end_t = scai::common::Walltime::get();

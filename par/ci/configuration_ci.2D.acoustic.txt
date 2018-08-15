@@ -114,3 +114,6 @@ useEnergyPreconditioning=1                      # approximated diagonal Hessian 
 epsilonHessian=0.005                            # parameter to stabilize matrix inversion (recommended: 0.005)
 saveApproxHessian=0
 approxHessianName=gradients/Hessian
+
+# Model thresholds
+useModelThresholds=0       # use thresholds for model parameters
