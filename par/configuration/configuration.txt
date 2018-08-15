@@ -118,4 +118,12 @@ epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommende
 saveApproxHessian=0        
 approxHessianName=gradients/Hessian
 
+# Model thresholds
+useModelThresholds=0       # use thresholds for model parameters
+lowerVPTh=1481             # lower vp threshold in meter per seconds
+upperVPTh=6000             # upper vp threshold in meter per seconds
+lowerDensityTh=1000        # lower density threshold in kilo gramms per cubic meter
+upperDensityTh=5000        # upper density threshold in kilo gramms per cubic meter
+lowerVSTh=700              # lower vs threshold in meter per seconds
+upperVSTh=3500             # upper vs threshold in meter per seconds
 

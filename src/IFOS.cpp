@@ -394,6 +394,9 @@ int main(int argc, char *argv[])
             /* Apply model update */
             *gradient *= SLsearch.getSteplength();
             *model -= *gradient;
+            
+            if (config.get<bool>("useModelThresholds"))
+                model->applyThresholds(config);
         
             model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration+1)), config.get<IndexType>("PartitionedOut"));
 
@@ -413,6 +416,7 @@ int main(int argc, char *argv[])
                 
                 /* Update model for fd simulation (averaging, inverse Density ...) */
                 model->prepareForModelling(config, ctx, dist, comm);
+                solver->prepareForModelling(*model, config.get<ValueType>("DT"));
                 
                 for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
                     
