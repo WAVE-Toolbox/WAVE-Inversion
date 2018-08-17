@@ -8,7 +8,7 @@ configTrue=conf('../ToyExample_3Dac/Input/configuration_true.txt');
 
 % general parameter ----------------------------------------------
 stage=1;
-iteration=1; % iteration number
+iteration=3; % iteration number
 
 % model parameter-------------------------------------------------
 geometry.LAYER=20; % Define layer of 3D model to display as 2D slice
@@ -41,10 +41,9 @@ inversionModel=config.getString('ModelFilename');
 startingModel=[config.getString('ModelFilename') '.out'];
 trueModel=configTrue.getString('ModelFilename');
 
-%acquisition=struct([]);
-load (config.getString('SourceFilename'));
+load ([config.getString('SourceFilename') '.mtx']);
 acquisition.sources=spconvert(sources(2:end,:));
-load (config.getString('ReceiverFilename'));
+load ([config.getString('ReceiverFilename') '.mtx']);
 acquisition.receiver=spconvert(receiver(2:end,:));
 
 plotModel (parameter,colorbarRange,stage,iteration,geometry,acquisition,...
