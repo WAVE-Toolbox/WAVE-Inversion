@@ -110,6 +110,7 @@ useSourceSignalInversion=0             # 1= use source time inversion
 waterLevel=0.01                        # water level of source time inversion
 
 # Preconditioning
+sourceReceiverTaperType # type of source and receiver tapers 1=log 2=cos^2
 sourceTaperRadius=20    # circular source taper: Radius in gridpoints
 receiverTaperRadius=20  # circular receiver taper: Radius in gridpoints
 
