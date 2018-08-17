@@ -9,7 +9,7 @@ configTrue=conf('../ToyExample_ac/Input/configuration_true.txt');
 % general parameter ----------------------------------------------
 
 stage=1;
-iteration=8; % iteration number
+iteration=3; % iteration number
 
 % model parameter-------------------------------------------------
 geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
@@ -38,15 +38,17 @@ geometry.DH=config.getValue('DH');   % Spatial grid sampling
 
 %% plot model
 
-inversionModel=config.getString('ModelFilename');
+inversionModel=config.getString('ModelFilename')
 startingModel=[config.getString('ModelFilename') '.out'];
 trueModel=configTrue.getString('ModelFilename');
 
-load (config.getString('SourceFilename'));
+%[config.getString('SourceFilename') '.mtx']
+load ([config.getString('SourceFilename') '.mtx']);
 acquisition.sources=spconvert(sources(2:end,:));
-load (config.getString('ReceiverFilename'));
+%[config.getString('ReceiverFilename') '.mtx']
+load ([config.getString('ReceiverFilename') '.mtx']);
 acquisition.receiver=spconvert(receiver(2:end,:));
-
+%%
 plotModel (parameter,colorbarRange,stage,iteration,geometry,acquisition,...
     inversionModel,startingModel,trueModel)
 
