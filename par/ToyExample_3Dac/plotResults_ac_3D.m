@@ -8,7 +8,7 @@ configTrue=conf('../ToyExample_3Dac/Input/configuration_true.txt');
 
 % general parameter ----------------------------------------------
 stage=1;
-iteration=3; % iteration number
+iteration=0; % iteration number
 
 % model parameter-------------------------------------------------
 geometry.LAYER=20; % Define layer of 3D model to display as 2D slice

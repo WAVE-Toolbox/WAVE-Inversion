@@ -22,7 +22,7 @@ DH=50                     # in meter
 
 # define temporal sampling
 DT=2.0e-03                # temporal sampling in seconds
-T=1                       # total simulation time in seconds 
+T=1.5                       # total simulation time in seconds 
 
 # define order of spatial FD operator
 spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
@@ -66,12 +66,13 @@ tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
 
 # Acquisition
-SourceFilename=Input/sources.mtx         # location of source file
-ReceiverFilename=Input/receiver.mtx      # location of receiver file
+SourceFilename=Input/sources         # location of source file
+ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample.true      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
+useReceiversPerShot=0
 
 snapType=0
 
