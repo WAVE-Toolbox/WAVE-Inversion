@@ -1,13 +1,29 @@
 #include "SourceEstimation.hpp"
 
+/*! \brief default constructor
+ */
+template <typename ValueType>
+KITGPI::SourceEstimation<ValueType>::SourceEstimation(scai::IndexType nt) : waterLevel(0.0), nFFT(Common::calcNextPowTwo<ValueType>(nt-1)), filter(std::make_shared<scai::dmemo::NoDistribution>(nFFT), 0.0){
+}
+
 /*! \brief Constructor which sets the water level and filter length
  \param waterLevel water level
  \param nt last time step + 1
  */
 template <typename ValueType>
-KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::IndexType nt) : nFFT(Common::calcNextPowTwo<ValueType>(nt-1)), filter(std::make_shared<scai::dmemo::NoDistribution>(nFFT), 0.0) {
+KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl,scai::IndexType nt) : nFFT(Common::calcNextPowTwo<ValueType>(nt-1)), filter(std::make_shared<scai::dmemo::NoDistribution>(nFFT), 0.0) {
     waterLevel = scai::common::Math::pow<ValueType>(waterLvl,2.0) / nFFT;
 }
+
+
+/*! \brief setter function for the water level
+ \param waterLevel water level
+ */
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::setWaterLevel(ValueType waterLvl){
+    waterLevel = scai::common::Math::pow<ValueType>(waterLvl,2.0) / nFFT;
+}
+
 
 /*! \brief Calculate the Wiener filter
  \param solver Forward solver
