@@ -31,7 +31,6 @@ spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
 ModelRead=1               # 1=Model will be read from file, 0=generated on the fly
 ModelWrite=0              # 1=Model will be written to disk, 0=not
 ModelFilename=../model/ToyModel_true # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
-ModelParametrisation=2    # 1=Module, 2=Velocity
 
 # parallel input-output
 PartitionedIn=0           # 1=Read files parallel, 0=serial 
