@@ -38,14 +38,12 @@ geometry.DH=config.getValue('DH');   % Spatial grid sampling
 
 %% plot model
 
-inversionModel=config.getString('ModelFilename')
+inversionModel=config.getString('ModelFilename');
 startingModel=[config.getString('ModelFilename') '.out'];
 trueModel=configTrue.getString('ModelFilename');
 
-%[config.getString('SourceFilename') '.mtx']
 load ([config.getString('SourceFilename') '.mtx']);
 acquisition.sources=spconvert(sources(2:end,:));
-%[config.getString('ReceiverFilename') '.mtx']
 load ([config.getString('ReceiverFilename') '.mtx']);
 acquisition.receiver=spconvert(receiver(2:end,:));
 %%

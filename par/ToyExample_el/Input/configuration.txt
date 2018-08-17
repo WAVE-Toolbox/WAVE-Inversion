@@ -69,12 +69,13 @@ tFirstSnapshot=0
 tLastSnapshot=0
 
 # Acquisition
-SourceFilename=Input/sources.mtx         # location of source file
-ReceiverFilename=Input/receiver.mtx      # location of receiver file
+SourceFilename=Input/sources         # location of source file
+ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
+useReceiversPerShot=0
 
 #---------------------------------------------------------#
 #                Inversion Parameters                     #
@@ -88,20 +89,23 @@ gradientFilename=../gradients/ToyExample.grad        # location/basename of outp
 logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
 
 # General settings
-maxIterations=20                       # maximum number of inversion iterations
+maxIterations=3                      # maximum number of inversion iterations
 misfitType=L2                          # type of misfit (L2, etc.) 
 
 workflowFilename=./Input/workflow.txt # location/basename of workflow file
 
 # Step length search
 steplengthInit=0.05                    # starting steplength
-maxStepCalc=1                          # maximum number of additional forward calculations to find a proper step length
+maxStepCalc=2                          # maximum number of additional forward calculations to find a proper step length
 scalingFactor=2                        # factor for multiplication or division of test step length
 steplengthMin=0.001                    # minimum step length
 steplengthMax=0.3                      # maximum step length
 testShotStart=0                        # shot number of first test shot
 testShotEnd=8                         # shot number of last test shot
 testShotIncr=3                         # increment of test shots
+
+useSourceSignalInversion=0
+useModelThresholds=0
 
 optimizationType=steepestdescent     # type of optimization method
 useEnergyPreconditioning=0

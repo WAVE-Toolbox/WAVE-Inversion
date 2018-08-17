@@ -69,12 +69,13 @@ tIncSnapshot=0.5          # Time increment between snapshot in seconds
 
 
 # Acquisition
-SourceFilename=Input/sources.mtx         # location of source file
-ReceiverFilename=Input/receiver.mtx      # location of receiver file
+SourceFilename=Input/sources         # location of source file
+ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample.true      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
+useReceiversPerShot=0
 
 boxWidth=20
 boxHeight=20
