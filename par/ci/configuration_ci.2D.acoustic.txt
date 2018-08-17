@@ -66,11 +66,12 @@ tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
 
 # Acquisition
-SourceFilename=ci/sources_ci.2D.mtx         # location of source file
-ReceiverFilename=ci/receiver_ci.2D.mtx      # location of receiver file
+SourceFilename=ci/sources_ci.2D         # location of source file
+ReceiverFilename=ci/receiver_ci.2D      # location of receiver file
 SeismogramFilename=seismograms/seismogram      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
 runSimultaneousShots=0
 runForward=0
 
@@ -101,6 +102,10 @@ testShotStart=0                                 # shot number of first test shot
 testShotEnd=17                                  # shot number of last test shot
 testShotIncr=1                                  # increment of test shots
 
+# Source time function inversion
+useSourceSignalInversion=0
+waterLevel=0.01
+
 # Preconditioning
 sourceTaperRadius=20                            # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20                          # Circular receiver taper: Radius in gridpoints
@@ -109,3 +114,6 @@ useEnergyPreconditioning=1                      # approximated diagonal Hessian 
 epsilonHessian=0.005                            # parameter to stabilize matrix inversion (recommended: 0.005)
 saveApproxHessian=0
 approxHessianName=gradients/Hessian
+
+# Model thresholds
+useModelThresholds=0       # use thresholds for model parameters

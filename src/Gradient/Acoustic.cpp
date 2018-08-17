@@ -310,6 +310,23 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
     }
 }
 
+/*! \brief function for calculating the acoustic gradients from the cross-correlation and the model parameter 
+ *
+ \param model Abstract model.
+ \param correlatedWavefields Abstract xCorr.
+ \param DT Temporal discretization 
+ \param workflow 
+ *
+ \f{eqnarray*}
+   \nabla_K E &=& -\mathrm{d}t \frac{1}{v_{\mathrm{p}}^4 \rho^2} \cdot X_{\lambda} \\ 
+   \nabla_{v_{\mathrm{p}}} E &=& 2 v_{\mathrm{p}} \rho \cdot \nabla_K E \\
+   \nabla_{\rho} E &=& v_{\mathrm{p}}^2 \cdot \nabla_K E - \mathrm{d}t \cdot X_{\rho}
+ \f}
+ *
+ \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho}) \f$ in 2D 
+ \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho}) \f$ in 3D
+ *
+ */
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
@@ -319,8 +336,10 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     gradBulk = scai::lama::pow(model.getVelocityP(), 2);
     gradBulk *= model.getDensity();
     gradBulk = scai::lama::pow(gradBulk, -2);
+    Common::replaceInvalid<ValueType>(gradBulk,0.0);
 
     gradBulk *= correlatedWavefields.getXcorrLambda();
+
     gradBulk *= -DT;
 
     scai::hmemo::ContextPtr ctx = gradBulk.getContextPtr();

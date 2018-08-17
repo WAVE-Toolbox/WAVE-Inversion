@@ -69,7 +69,7 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
         workflowFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');}
         
     /* Extract variables from current workflow stage */
-    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange;
+    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq;
     
     workflowFile.close();
 }
@@ -87,6 +87,9 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
     HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
     HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
+    HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
+    HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");
+    HOST_PRINT(comm, "upperCornerFreq = " << upperCornerFreq << "\n");
 }
 
 /*! \brief Return copy of invertForVp
@@ -119,6 +122,30 @@ template <typename ValueType>
 ValueType KITGPI::Workflow::Workflow<ValueType>::getRelativeMisfitChange() const
 {
     return relativeMisfitChange;
+}
+
+/*! \brief Return copy of filterOrder
+ */
+template <typename ValueType>
+scai::IndexType KITGPI::Workflow::Workflow<ValueType>::getFilterOrder() const
+{
+    return filterOrder;
+}
+
+/*! \brief Return copy of lowerCornerFreq
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getLowerCornerFreq() const
+{
+    return lowerCornerFreq;
+}
+
+/*! \brief Return copy of upperCornerFreq
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getUpperCornerFreq() const
+{
+    return upperCornerFreq;
 }
             
  
