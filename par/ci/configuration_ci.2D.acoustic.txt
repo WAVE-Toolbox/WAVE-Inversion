@@ -107,7 +107,7 @@ useSourceSignalInversion=0
 waterLevel=0.01
 
 # Preconditioning
-sourceReceiverTyperType=1                       # type of source and receiver typers 1=log 2=cos^2
+sourceReceiverTaperType=1                       # type of source and receiver typers 1=log 2=cos^2
 sourceTaperRadius=20                            # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20                          # Circular receiver taper: Radius in gridpoints
 
