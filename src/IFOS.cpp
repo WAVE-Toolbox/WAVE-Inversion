@@ -211,8 +211,9 @@ int main(int argc, char *argv[])
     /* Gradient taper                          */
     /* --------------------------------------- */
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
-    ReceiverTaper.init(dist, ctx, receivers, config, config.get<IndexType>("SourceTaperRadius"));
-
+    if (!config.get<bool>("useReceiversPerShot"))
+        ReceiverTaper.init(dist, ctx, receivers, config, config.get<IndexType>("receiverTaperRadius"));
+    
     /* --------------------------------------- */
     /* Gradient preconditioning                */
     /* --------------------------------------- */
@@ -272,6 +273,8 @@ int main(int argc, char *argv[])
                     receivers.init(config, ctx, dist, shotNumber);
                     receiversTrue.init(config, ctx, dist, shotNumber);
                     adjointSources.init(config, ctx, dist, shotNumber);
+                    
+                    ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("receiverTaperRadius"));
                 }
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);

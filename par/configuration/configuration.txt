@@ -110,8 +110,9 @@ useSourceSignalInversion=0             # 1= use source time inversion
 waterLevel=0.01                        # water level of source time inversion
 
 # Preconditioning
-sourceTaperRadius=20    # circular source taper: Radius in gridpoints
-receiverTaperRadius=20  # circular receiver taper: Radius in gridpoints
+sourceReceiverTaperType=1  # type of source and receiver tapers 1=log 2=cos^2
+sourceTaperRadius=20       # circular source taper: Radius in gridpoints
+receiverTaperRadius=20     # circular receiver taper: Radius in gridpoints
 
 useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradient per shot
 epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)
