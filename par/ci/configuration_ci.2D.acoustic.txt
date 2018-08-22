@@ -70,6 +70,7 @@ SourceFilename=ci/sources_ci.2D         # location of source file
 ReceiverFilename=ci/receiver_ci.2D      # location of receiver file
 SeismogramFilename=seismograms/seismogram      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
+seismoSampleCoeff=1                            # Seismogram subsampling coefficient (setting this to e.g. 2 will only write every second time step)
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
 runSimultaneousShots=0
