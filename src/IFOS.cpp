@@ -181,9 +181,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Source estimation                       */
     /* --------------------------------------- */
-    SourceEstimation<ValueType> sourceEst(tStepEnd);
+    SourceEstimation<ValueType> sourceEst;
     if (config.get<bool>("useSourceSignalInversion"))
-        sourceEst.setWaterLevel(config.get<ValueType>("waterLevel"));
+        sourceEst.init(tStepEnd, sources.getCoordinates().getDistributionPtr(), config.get<ValueType>("waterLevel"));
 
     /* --------------------------------------- */
     /* Frequency filter                        */
@@ -291,16 +291,19 @@ int main(int argc, char *argv[])
                     sources.getSeismogramHandler().filter(freqFilter);
 
                 /* Source time function inversion */
-                if (config.get<bool>("useSourceSignalInversion") == 1 && workflow.iteration == 0) {
-                    HOST_PRINT(comm, "\n=====Start Source Time Function Inversion========\n");
+                if (config.get<bool>("useSourceSignalInversion") == 1) {
+                    if( workflow.iteration == 0) {
+                        HOST_PRINT(comm, "\n=====Start Source Time Function Inversion========\n");
 
-                    wavefields->resetWavefields();
+                        wavefields->resetWavefields();
 
-                    for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
-                        solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                        for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                            solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                        }
+
+                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
                     }
-
-                    sourceEst.estimateSourceSignal(receivers, receiversTrue, sources);
+                    sourceEst.applyFilter(sources, shotNumber);
                 }
 
                 HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");

@@ -1,29 +1,16 @@
 #include "SourceEstimation.hpp"
 
-/*! \brief default constructor
+/*! \brief Initialize
+ \param nt Number of time steps
+ \param sourceDistribution Source distribution pointer
+ \param waterLvl Water level
  */
 template <typename ValueType>
-KITGPI::SourceEstimation<ValueType>::SourceEstimation(scai::IndexType nt) : waterLevel(0.0), nFFT(Common::calcNextPowTwo<ValueType>(nt - 1)), filter(std::make_shared<scai::dmemo::NoDistribution>(nFFT), 0.0)
+void KITGPI::SourceEstimation<ValueType>::init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl)
 {
-}
-
-/*! \brief Constructor which sets the water level and filter length
- \param waterLevel water level
- \param nt last time step + 1
- */
-template <typename ValueType>
-KITGPI::SourceEstimation<ValueType>::SourceEstimation(ValueType waterLvl, scai::IndexType nt) : nFFT(Common::calcNextPowTwo<ValueType>(nt - 1)), filter(std::make_shared<scai::dmemo::NoDistribution>(nFFT), 0.0)
-{
+    nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
     waterLevel = scai::common::Math::pow<ValueType>(waterLvl, 2.0) / nFFT;
-}
-
-/*! \brief setter function for the water level
- \param waterLevel water level
- */
-template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::setWaterLevel(ValueType waterLvl)
-{
-    waterLevel = scai::common::Math::pow<ValueType>(waterLvl, 2.0) / nFFT;
+    filter.allocate(sourceDistribution,std::make_shared<scai::dmemo::NoDistribution>(nFFT));
 }
 
 /*! \brief Calculate the Wiener filter
@@ -37,25 +24,26 @@ void KITGPI::SourceEstimation<ValueType>::setWaterLevel(ValueType waterLvl)
  \param tStepEnd Number of time steps
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Acquisition::Sources<ValueType> &sources)
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, scai::IndexType shotNumber)
 {
 
-    scai::lama::DenseVector<ComplexValueType> filterTmp(filter.getDistributionPtr(), 0.0);
+    scai::lama::DenseVector<ComplexValueType> filterTmp1(filter.getColDistributionPtr(), 0.0);
+    scai::lama::DenseVector<ComplexValueType> filterTmp2(filter.getColDistributionPtr(), 0.0);
 
-    addComponents(filter, receivers, receivers);
-    filter += waterLevel;
-    filter.unaryOp(filter, scai::common::UnaryOp::RECIPROCAL);
-    addComponents(filterTmp, receivers, receiversTrue);
-    filter *= filterTmp;
+    addComponents(filterTmp1, receivers, receivers);
+    filterTmp1 += waterLevel;
+    filterTmp1.unaryOp(filterTmp1, scai::common::UnaryOp::RECIPROCAL);
+    addComponents(filterTmp2, receivers, receiversTrue);
+    filterTmp1 *= filterTmp2;
 
-    applyFilter(sources);
+    filter.setRow(filterTmp1, shotNumber, scai::common::BinaryOp::COPY);
 }
 
 /*! \brief Apply the Wiener filter to a synthetic source
  \param sources Synthetic source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources)
+void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber)
 {
 
     //get seismogram that corresponds to source type
@@ -65,11 +53,15 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     seismoTrans = scai::lama::cast<ComplexValueType>(seismo);
 
     // scale to power of two
-    seismoTrans.resize(seismo.getRowDistributionPtr(), filter.getDistributionPtr());
+    seismoTrans.resize(seismo.getRowDistributionPtr(), filter.getColDistributionPtr());
 
     // apply filter in frequency domain
     scai::lama::fft<ComplexValueType>(seismoTrans, 1);
-    seismoTrans.scaleColumns(filter);
+    
+    scai::lama::DenseVector<ComplexValueType> filterTmp;
+    filter.getRow(filterTmp, shotNumber);
+    seismoTrans.scaleColumns(filterTmp);
+    
     scai::lama::ifft<ComplexValueType>(seismoTrans, 1);
     seismoTrans *= 1.0 / nFFT;
 
