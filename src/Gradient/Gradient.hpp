@@ -48,7 +48,7 @@ namespace KITGPI
         {
           public:
             //! Default constructor.
-            Gradient() : numRelaxationMechanisms(0){};
+            Gradient() : numRelaxationMechanisms(0), normalizeGradient(false){};
 
             //! Default destructor.
             ~Gradient(){};
@@ -90,6 +90,7 @@ namespace KITGPI
             virtual scai::lama::Vector<ValueType> const &getTauP() const;
             virtual scai::lama::Vector<ValueType> const &getTauS();
             virtual scai::lama::Vector<ValueType> const &getTauS() const;
+            bool getNormalizeGradient() const;
 
             virtual scai::IndexType getNumRelaxationMechanisms() const;
             virtual ValueType getRelaxationFrequency() const;
@@ -103,8 +104,11 @@ namespace KITGPI
 
             virtual void setNumRelaxationMechanisms(scai::IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
+            
+            void setNormalizeGradient(bool const &normGrad);
 
             virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void normalize() = 0;
 
             virtual void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
             virtual void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
@@ -156,6 +160,7 @@ namespace KITGPI
 
             scai::IndexType getPartitionedIn();
             scai::IndexType getPartitionedOut();
+            bool normalizeGradient;
 
           private:
               

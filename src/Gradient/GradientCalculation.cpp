@@ -80,7 +80,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     /* ---------------------------------- */
     HOST_PRINT(comm, "\nCalculate Gradient\n");
     gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);
-    SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("SourceTaperRadius"));
+    SourceTaper.init(dist,ctx,sources,config,config.get<IndexType>("sourceTaperRadius"));
     SourceTaper.apply(gradient);
 
     if(config.get<IndexType>("WriteGradientPerShot"))

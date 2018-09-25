@@ -95,6 +95,9 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogram(KITGPI::Acquisit
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
     seismogramAdj = seismogramSyn - seismogramObs; 
+    
+    if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P){
+        seismogramAdj *= -1;}
 
 }
 

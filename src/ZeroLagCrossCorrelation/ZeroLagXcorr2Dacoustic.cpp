@@ -73,7 +73,15 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr(KITGPI:
         this->resetWavefield(xcorrLambda);
 }
 
-/*! \brief function to update the result of the zero lag cross-correlation for per timestep 
+/*! \brief Function to update the result of the zero lag cross-correlation per timestep 
+ * 
+ * The zero lag cross-correlation, \f$ X \f$, is updated with the following equations where index "forw" refers to the forward propagated wavefield and "adj" to the adjoint wavefield:
+ \f{eqnarray*}
+   X_{\lambda} &+=& P_{\mathrm{forw}} \cdot P_{\mathrm{adj}}  \\ 
+   X_{\rho} &+=& V_{x,\mathrm{forw}} \cdot V_{x,\mathrm{adj}} + V_{y,\mathrm{forw}} \cdot V_{y,\mathrm{adj}}
+ \f}
+ *
+ *  Note that the forwardWavefield is actually the derivative of the forward wavefield (see variable wavefieldrecord in IFOS.cpp).
  */
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)

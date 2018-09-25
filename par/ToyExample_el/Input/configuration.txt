@@ -27,7 +27,6 @@ DH=50                     # in meter
 # define temporal sampling
 DT=2.0e-03                # temporal sampling in seconds
 T=2.5                       # total simulation time in seconds 
-
 # define order of spatial FD operator
 spatialFDorder=4          # possible values 2, 4, 6, 8, 10 and 12
 
@@ -35,7 +34,6 @@ spatialFDorder=4          # possible values 2, 4, 6, 8, 10 and 12
 ModelRead=0               # 1=Model will be read from file, 0=generated on the fly
 ModelWrite=1              # 1=Model will be written to disk, 0=not
 ModelFilename=../model/ToyModel # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
-ModelParametrisation=2    # 1=Module, 2=Velocity
 
 # parallel input-output
 PartitionedIn=0           # 1=Read files parallel, 0=serial 
@@ -60,7 +58,7 @@ relaxationFrequency=0     # Relaxation frequency
 
 # generate homogeneous model
 velocityP=3500            # P-wave velocity in meter per seconds
-velocityS=2000               # S-wave velocity in meter per seconds
+velocityS=2000            # S-wave velocity in meter per seconds
 rho=2000                  # Density in kilo gramms per cubic meter
 tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
@@ -71,12 +69,13 @@ tFirstSnapshot=0
 tLastSnapshot=0
 
 # Acquisition
-SourceFilename=Input/sources.mtx         # location of source file
-ReceiverFilename=Input/receiver.mtx      # location of receiver file
+SourceFilename=Input/sources         # location of source file
+ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
+useReceiversPerShot=0
 
 #---------------------------------------------------------#
 #                Inversion Parameters                     #
@@ -90,14 +89,14 @@ gradientFilename=../gradients/ToyExample.grad        # location/basename of outp
 logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
 
 # General settings
-maxIterations=20                       # maximum number of inversion iterations
+maxIterations=3                      # maximum number of inversion iterations
 misfitType=L2                          # type of misfit (L2, etc.) 
 
 workflowFilename=./Input/workflow.txt # location/basename of workflow file
 
 # Step length search
 steplengthInit=0.05                    # starting steplength
-maxStepCalc=4                          # maximum number of additional forward calculations to find a proper step length
+maxStepCalc=2                          # maximum number of additional forward calculations to find a proper step length
 scalingFactor=2                        # factor for multiplication or division of test step length
 steplengthMin=0.001                    # minimum step length
 steplengthMax=0.3                      # maximum step length
@@ -105,7 +104,10 @@ testShotStart=0                        # shot number of first test shot
 testShotEnd=8                         # shot number of last test shot
 testShotIncr=3                         # increment of test shots
 
-optimizationType=conjugateGradient     # type of optimization method
+useSourceSignalInversion=0
+useModelThresholds=0
+
+optimizationType=steepestdescent     # type of optimization method
 useEnergyPreconditioning=0
 epsilonHessian=0.005
 saveApproxHessian=0
@@ -113,4 +115,4 @@ approxHessianName=hessian
 
 # Tapers
 sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
-receiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
+receiverTaperRadius=0  # Circular receiver taper: Radius in gridpoints
