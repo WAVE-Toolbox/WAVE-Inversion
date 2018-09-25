@@ -75,6 +75,7 @@ namespace KITGPI
 
             void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            void normalize();
 
             /* Overloading Operators */
             KITGPI::Gradient::Elastic<ValueType> operator*(ValueType rhs);

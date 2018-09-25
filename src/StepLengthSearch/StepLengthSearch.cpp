@@ -250,6 +250,12 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
         HOST_PRINT(comm, "\n--------------- Start Test Forward -------------------\n");
 
         sources.init(config, ctx, dist, shotNumber);
+        
+        if (config.get<bool>("useReceiversPerShot")) {
+            receivers.init(config, ctx, dist, shotNumber);
+            receiversTrue.init(config, ctx, dist, shotNumber);
+        }
+        
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                     sources.getSeismogramHandler().filter(freqFilter);
         
@@ -261,6 +267,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                     receiversTrue.getSeismogramHandler().filter(freqFilter);
         
+        
+        /* Normalize observed and synthetic data */
+        receivers.getSeismogramHandler().normalize();
+        receiversTrue.getSeismogramHandler().normalize();
+                
         misfitTest.setValue(shotNumber, dataMisfit.calc(receivers, receiversTrue));
         
     }
@@ -338,7 +349,6 @@ ValueType const &KITGPI::StepLengthSearch<ValueType>::getSteplength()
 {
     return (steplengthOptimum);
 }
-
 
 template class KITGPI::StepLengthSearch<double>;
 template class KITGPI::StepLengthSearch<float>;

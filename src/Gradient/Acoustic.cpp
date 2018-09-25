@@ -310,6 +310,21 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
     }
 }
 
+/*! \brief Function for normalizing the gradient
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::normalize()
+{
+    if (this->getNormalizeGradient()) {
+        ValueType gradientMax = velocityP.maxNorm();
+        if (gradientMax != 0)
+            velocityP *= 1 / gradientMax;
+        gradientMax = density.maxNorm();
+        if (gradientMax != 0)
+            density *= 1 / gradientMax;
+    }
+}
+
 /*! \brief function for calculating the acoustic gradients from the cross-correlation and the model parameter 
  *
  \param model Abstract model.

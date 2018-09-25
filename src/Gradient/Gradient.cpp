@@ -259,12 +259,28 @@ scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getT
     return (tauS);
 }
 
+/*! \brief Get parameter normalizeGradient
+ */
+template <typename ValueType>
+bool KITGPI::Gradient::Gradient<ValueType>::getNormalizeGradient() const
+{
+    return (normalizeGradient);
+}
+
 /*! \brief Set tauS velocity  parameter
  */
 template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::setTauS(scai::lama::Vector<ValueType> const &setTauS)
 {
     tauS = setTauS;
+}
+
+/*! \brief Set normalizeGradient parameter
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Gradient<ValueType>::setNormalizeGradient(bool const &gradNorm)
+{
+    normalizeGradient = gradNorm;
 }
 
 /*! \brief Overloading = Operation

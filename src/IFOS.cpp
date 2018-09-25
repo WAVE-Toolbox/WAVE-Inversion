@@ -201,6 +201,7 @@ int main(int argc, char *argv[])
 
     Gradient::Gradient<ValueType>::GradientPtr gradientPerShot(Gradient::Factory<ValueType>::Create(equationType));
     gradientPerShot->init(ctx, dist);
+    gradientPerShot->setNormalizeGradient(config.get<bool>("normalizeGradient"));
 
     /* --------------------------------------- */
     /* Gradient calculation                    */
@@ -299,7 +300,6 @@ int main(int argc, char *argv[])
                         solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                     }
 
-                    receivers.getSeismogramHandler().normalize();
                     sourceEst.estimateSourceSignal(receivers, receiversTrue, sources);
                 }
 
@@ -338,6 +338,10 @@ int main(int argc, char *argv[])
                 receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber));
 
                 HOST_PRINT(comm, "\nCalculate misfit and adjoint sources\n");
+                
+                /* Normalize observed and synthetic data */
+                receivers.getSeismogramHandler().normalize();
+                receiversTrue.getSeismogramHandler().normalize();
 
                 /* Calculate misfit of one shot */
                 misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));
@@ -353,6 +357,10 @@ int main(int argc, char *argv[])
                     energyPrecond.apply(*gradientPerShot, shotNumber);
                 }
 
+                if (config.get<bool>("useReceiversPerShot"))
+                    ReceiverTaper.apply(*gradientPerShot);
+                
+                gradientPerShot->normalize();
                 *gradient += *gradientPerShot;
 
                 solver->resetCPML();
@@ -366,7 +374,8 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm, "\n===========================================\n");
 
             /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-            ReceiverTaper.apply(*gradient);
+            if (!config.get<bool>("useReceiversPerShot"))
+                ReceiverTaper.apply(*gradient);
 
             gradientOptimization->apply(*gradient, workflow, *model);
 
@@ -428,6 +437,10 @@ int main(int argc, char *argv[])
                 for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
 
                     /* Read field data (or pseudo-observed data, respectively) */
+                    if (config.get<bool>("useReceiversPerShot")) {
+                        receivers.init(config, ctx, dist, shotNumber);
+                        receiversTrue.init(config, ctx, dist, shotNumber);
+                    }
                     receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
 
                     HOST_PRINT(comm, "\n================Start Forward====================\n");
@@ -447,6 +460,10 @@ int main(int argc, char *argv[])
                     }
 
                     receivers.getSeismogramHandler().write(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber));
+                    
+                    /* Normalize observed and synthetic data */
+                    receivers.getSeismogramHandler().normalize();
+                    receiversTrue.getSeismogramHandler().normalize();
 
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));
