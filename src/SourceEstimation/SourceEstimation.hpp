@@ -38,7 +38,7 @@ namespace KITGPI
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
 
         void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, scai::IndexType shotNumber);
-        void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber);
+        void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber) const;
 
       private:
         ValueType waterLevel;

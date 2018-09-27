@@ -43,7 +43,7 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
  \param sources Synthetic source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber)
+void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber) const
 {
 
     //get seismogram that corresponds to source type
