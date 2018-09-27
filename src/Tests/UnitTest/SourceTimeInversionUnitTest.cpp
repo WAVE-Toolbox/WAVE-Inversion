@@ -33,7 +33,7 @@ TEST(SourceTimeInversionTest, TestSourceEstimation)
     lama::DenseMatrix<ValueType> &sourcesData = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData();
     sourcesData.readFromFile("../src/Tests/Testfiles/testSourceTimeInversion_sourceSignal.mtx");
     
-    sourceEst.init(500,sources.getCoordinates().getDistributionPtr(),0.01);
+    sourceEst.init(500,sources.getCoordinates().getDistributionPtr(),1.0e-10);
     sourceEst.estimateSourceSignal(receivers, receiversTrue, 0);
     sourceEst.applyFilter(sources, 0);
             

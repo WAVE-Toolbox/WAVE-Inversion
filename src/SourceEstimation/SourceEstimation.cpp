@@ -9,7 +9,7 @@ template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl)
 {
     nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
-    waterLevel = scai::common::Math::pow<ValueType>(waterLvl, 2.0) / nFFT;
+    waterLevel = scai::common::Math::pow<ValueType>(waterLvl, 2.0) * nFFT;
     filter.allocate(sourceDistribution,std::make_shared<scai::dmemo::NoDistribution>(nFFT));
 }
 
@@ -31,7 +31,7 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
     scai::lama::DenseVector<ComplexValueType> filterTmp2(filter.getColDistributionPtr(), 0.0);
 
     addComponents(filterTmp1, receivers, receivers);
-    filterTmp1 += waterLevel;
+    filterTmp1 += waterLevel * receivers.getSeismogramHandler().getNumTracesTotal();
     filterTmp1.unaryOp(filterTmp1, scai::common::UnaryOp::RECIPROCAL);
     addComponents(filterTmp2, receivers, receiversTrue);
     filterTmp1 *= filterTmp2;

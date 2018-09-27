@@ -269,6 +269,8 @@ int main(int argc, char *argv[])
             gradient->resetGradient(); // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
 
             for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
+                
+                HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
 
                 if (config.get<bool>("useReceiversPerShot")) {
                     receivers.init(config, ctx, dist, shotNumber);
@@ -300,13 +302,18 @@ int main(int argc, char *argv[])
                         for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                         }
-
+                        
+                        solver->resetCPML();
+                        
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
+                        sourceEst.applyFilter(sources, shotNumber);
+                        
+                        if (config.get<bool>("writeInvertedSource") == 1)
+                            sources.getSeismogramHandler().write(config, config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) +  ".shot_" + std::to_string(shotNumber));
                     }
-                    sourceEst.applyFilter(sources, shotNumber);
+                    else
+                        sourceEst.applyFilter(sources, shotNumber);
                 }
-
-                HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
 
                 /* --------------------------------------- */
                 /*        Forward modelling                */
