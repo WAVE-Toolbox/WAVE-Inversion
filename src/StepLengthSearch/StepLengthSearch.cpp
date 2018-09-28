@@ -225,7 +225,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
     *testgradient *= steplength;  
     *testmodel -= *testgradient;
     if (config.get<bool>("useModelThresholds"))
-                testmodel->applyThresholds(config);
+        testmodel->applyThresholds(config);
         
     testmodel->prepareForModelling(config, ctx, dist, comm);
     

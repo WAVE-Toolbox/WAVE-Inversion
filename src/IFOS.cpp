@@ -462,6 +462,9 @@ int main(int argc, char *argv[])
                     sources.init(config, ctx, dist, shotNumber);
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                         sources.getSeismogramHandler().filter(freqFilter);
+                    
+                    if (config.get<bool>("useSourceSignalInversion") == 1)
+                        sourceEst.applyFilter(sources, shotNumber);
 
                     start_t_shot = common::Walltime::get();
 
