@@ -14,14 +14,9 @@ void KITGPI::SourceEstimation<ValueType>::init(scai::IndexType nt, scai::dmemo::
 }
 
 /*! \brief Calculate the Wiener filter
- \param solver Forward solver
  \param receivers Synthetic receivers
  \param receiversTrue Observed receivers
- \param sources Synthetic source
- \param model Model
- \param wavefield Wavefield
- \param derivatives Derivatives
- \param tStepEnd Number of time steps
+ \param shotNumber Shot number of source
  */
 template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, scai::IndexType shotNumber)
@@ -41,6 +36,7 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
 
 /*! \brief Apply the Wiener filter to a synthetic source
  \param sources Synthetic source
+ \param shotNumber Shot number of source
  */
 template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber) const
