@@ -246,6 +246,17 @@ IFOS++ is distributed in the hope that it will be useful, but WITHOUT ANY WARRAN
 
 The authors of IFOS++ are listed in file \lstinline{AUTHORS}.
 
+\chapter*{Acknowledgments}
+
+We would like to thank the German Ministry of Education and Research (BMBF) who financially supported this full-waveform inversion toolbox through the project WAVE, grant 01IH15004A.
+
+We would also like to acknowledge the developers of the FWI code IFOS2D (\url{http://www.gpi.kit.edu/Software-FWI.php}). IFOS2D served as a reference for our new implementation and we further used parts of the user manual of IFOS2D in this manual.
+
+\chapter*{References}
+
+A list of publications where IFOS++ was used
+
+
 % -----------------------------------------------------------------------------------------------
 \cleardoublepage
 \chapter*{Introduction}
@@ -253,7 +264,7 @@ The authors of IFOS++ are listed in file \lstinline{AUTHORS}.
 % -----------------------------------------------------------------------------------------------
  
 The aim of full-waveform inversion (FWI) is to estimate the elastic material parameters in the underground. This can be achieved by minimizing the misfit energy between the modeled and field data using a gradient optimization
-approach. Because the FWI uses the full information content of each seismogram, structures below the seismic wave length can be resolved. This is a tremendous improvement in resolution compared to travel time tomography \citep{pratt:02}. The concept of full waveform tomography was originally developed by Albert Tarantola in the 1980s for the acoustic, isotropic elastic, and viscoelastic case \citep{tarantola:84a,tarantola:84b,tarantola:86,tarantola:88}. First numerical implementations were realized at the end of the 1980s \citep{gauthier:86,mora:87,pica:90}, but due to limited computational resources, the application was restricted to simple 2D synthetic test problems and small near offset datasets. At the begining of the 1990s the original time domain formulation was transfered to a robust frequency domain approach \citep{pratt:90a,pratt:90b}. With the increasing performance of supercomputers moderately sized problems could be inverted with frequency domain approaches. A spectacular result to prove the application of acoustic FWI on laboratory scale was presented by \cite{pratt:99} for ultrasonic tomography measurements on a simple block model. In a numerical blind test \cite{brenders:07} achieved a very good agreement between their inversion result and the unkown true P-wave velocity model. The parallelization and performance optimizations of the frequency domain approach \citep[see e.g. ][]{sourbier:09a,sourbier:09b} lead to a wide range of acoustic FWI applications for problems on different scales, from the global scale, crustal scale over engineering and near surface scale, down to laboratory scale \citep{pratt:04}. Beside the application to geophysical problems, the acoustic FWI is also used to improve the resolution in medical cancer diagnostics \citep{pratt:07}. However, all these examples are restricted to the inversion of the acoustic material parameters: P-wave velocity, density and additionally the viscoacoustic damping Q p for the P-waves. Even today the independent 2D FWI of all three isotropic elastic material parameters is still a challenge. Most elastic approaches invert for P-wave velocity only and use empirical relationships to deduce the distribution of S-wave velocity and density \citep{shipp:02,sheen:06}. Recently some authors also investigated the independent multiparameter FWI in the frequency domain \citep{choi:08a,choi:08b,brossier:09}.
+approach. Because FWI uses the full information content of each seismogram, structures below the seismic wave length can be resolved. This is a tremendous improvement in resolution compared to travel time tomography \citep{pratt:02}. The concept of FWI was originally developed by Albert Tarantola in the 1980s for the acoustic, isotropic elastic, and viscoelastic case \citep{tarantola:84a,tarantola:84b,tarantola:86,tarantola:88}. First numerical implementations were realized at the end of the 1980s \citep{gauthier:86,mora:87,pica:90}, but due to limited computational resources, the application was restricted to simple 2D synthetic test problems and small near offset datasets. At the begining of the 1990s the original time domain formulation was transfered to a robust frequency domain approach \citep{pratt:90a,pratt:90b}. With the increasing performance of supercomputers moderately sized problems could be inverted with frequency domain approaches. A spectacular result to prove the application of acoustic FWI on laboratory scale was presented by \cite{pratt:99} for ultrasonic tomography measurements on a simple block model. In a numerical blind test \cite{brenders:07} achieved a very good agreement between their inversion result and the unknown true P-wave velocity model. The parallelization and performance optimizations of the frequency domain approach \citep[see e.g. ][]{sourbier:09a,sourbier:09b} led to a wide range of acoustic FWI applications for problems on different scales, from the global scale, crustal scale over engineering and near surface scale, down to laboratory scale \citep{pratt:04}. Beside the application to geophysical problems, the acoustic FWI is also used to improve the resolution in medical cancer diagnostics \citep{pratt:07}. However, all these examples are restricted to the inversion of the acoustic material parameters: P-wave velocity, density and additionally the viscoacoustic damping $Q_p$ for the P-waves. Even today the independent 2D FWI of all three isotropic elastic material parameters is still a challenge. Most elastic approaches invert for P-wave velocity only and use empirical relationships to deduce the distribution of S-wave velocity and density \citep{shipp:02,sheen:06}. Recently some authors also investigated the independent multiparameter FWI in the frequency domain \citep{choi:08a,choi:08b,brossier:09}.
 In order to extract information about the structure and composition of the crust from seismic observations, it is necessary to be able to predict how seismic wavefields are affected by complex structures. Since exact analytical
 solutions to the wave equations do not exist for most subsurface configurations, the solutions can be obtained only by numerical methods. 
 
@@ -452,12 +463,12 @@ M=
 \part{Software Guide to IFOS++}
 \chapter{Software Requirements and Quick Guide}
 
-IFOS++ is developed as a part of the WAVE-project (\url{http://wave-toolbox.org}) and is a Seismic Full-Wavfrom Inversion framework. 
+IFOS++ is developed as a part of the WAVE-project (\url{http://wave-toolbox.org}) and is a seismic full-waveform inversion framework. 
 
 \section{Software Requirements}
 
 To begin with, a \CC-compiler has to be available. A compiler with  \CC[11]-standard support is needed. To compile IFOS++, make sure a couple of libraries are installed and running properly. All necessary libraries for proper usage and a short description can be seen in table \ref{tab:pack}. A \CC-compiler and LAMA are mandatory whereas the other libraries and software is optional to execute IFOS++.
-As the software is meant for high performance computing (HPC) on cluster networks, it is primarily designed to run on Linux-platforms. The code has been tested using \gCC[4.9.3], \clang[3.9] as a  \CC-compiler and using OpenMPI(1.7.2, 1.10.0) as MPI implementation.
+As the software is meant for high performance computing (HPC) on cluster networks, it is primarily designed to run on Linux-platforms. The code has been tested using \gCC[4.9.3], \clang[3.9] as a  \CC-compiler and using OpenMPI (1.7.2, 1.10.0) as MPI implementation.
 
 \begin{table}[h!]
 \caption{List of necessary libraries, packages and compiler.}\label{tab:pack}
@@ -522,8 +533,8 @@ To create a html and LaTeX or Pdf documentation of the software code itself, you
 To run the simulation change the directory to: \\\shellcmdline{IFOS/par/}\\
 and start the program by running the shell script \shellcmd{start\_Inversion.sh} with  \\\shellcmdline{source start\_Inversion.sh}\\
 
-The synthetic Seismogram data is saved in \shellcmd{par/seismograms/} and can be plotted by either using either the \shellcmd{plotSeismogram.m} Matlab-script or by executing the Python-script \shellcmd{plotSeismogram.py}.
-As a first test, run the default example by following the commands to obtain the seismogram. You can compare the seismogram to the seismogram shown in figure.
+The synthetic Seismogram data is saved in \shellcmd{par/seismograms/} and can be plotted by using either the \shellcmd{plotSeismogram.m} Matlab-script or by executing the Python-script \shellcmd{plotSeismogram.py}.
+As a first test, run the default example by following the commands to obtain the seismogram. You can compare the seismogram to the seismogram shown in figure (add figure).
 
 
 \section{Configuration}\label{sec:config}
@@ -538,9 +549,10 @@ As a first test, run the default example by following the commands to obtain the
 	\midrule
          fieldSeisName            & Name of field data                                                  & string & ci/rectangle.true  \\    
          writeGradient            & Write gradient to file                                              &  int   & 1 (=yes) \\
-         writeGradientPerShot     & Write gradient of each shot separately to file                      &  int   & 0 (=0) \\
+         writeGradientPerShot     & Write gradient of each shot separately to file                      &  int   & 0 (=no) \\
          gradientFilename         & Name of gradients                                                   & string & gradients/grad \\     
          logFilename              & Name of log file                                                    & string & logs/steplengthSearch.log  \\
+         verbose                  & only in lbfgs branch!, use detailed output                          &  int   & 0 (=no) \\
         \midrule
          maxIterations            & Maximum number of inversion iterations (per workflow stage if used) &  int   & 20  \\                 
          misfitType               & Type of misfit                                                      & string & L2  \\
@@ -556,6 +568,9 @@ As a first test, run the default example by following the commands to obtain the
          testShotEnd              & Shot number of last test shot                                       &  int   & 17 \\                        
          testShotIncr             & Increment of test shots                                             &  int   & 1 \\                       
         \midrule
+         useSourceSignalInversion & Use source time inversion                                           &  int   & 0 (=no) \\
+         waterLevel               & Water level of source time inversion                                & double & 0.01 \\                        
+        \midrule
          sourceTaperRadius        & Circular source taper: Radius in grid points                        &  int   & 20 \\ 
          receiverTaperRadius      & Circular receiver taper: Radius in grid points                      &  int   & 20 \\
          useEnergyPreconditioning & Approximated diagonal of Hessian is applied to gradient per shot    &  int   & 1 (=yes) \\ 
@@ -568,7 +583,89 @@ As a first test, run the default example by following the commands to obtain the
 \end{table}	
 
 
-As mentioned in the quick guide, the configuration can be found in \shellcmd{par/configuration/}. In the \shellcmd{configuration.txt} file Input variables can be added or changed. A list of all variables and config parameters that can be added and changed can be found in table \ref{tab:config}.
+As mentioned in the quick guide, the configuration can be found in \shellcmd{par/configuration/}. In the \shellcmd{configuration.txt} file Input variables can be added or changed. A list of all variables and config parameters that can be added and changed can be found in table \ref{tab:config}. In the following subsection you can find a detailed description of all parameters.
+
+\subsection{General in- and output}
+
+Full-waveform inversion is an algorithm which needs and produces a lot of data. In this part, the general in- and output is described. Some in-/output options are very specific and therefore described in the corresponding section.
+
+The core of every FWI is the field data that should be inverted. The folder and basename of the field data has to be defined with the parameter \verb+fieldSeisName+. The program is automatically appending the shot number and the seismogram type (p,vx,vy,vz). For example, if the parameter \verb+fieldSeisName+ is set to \verb+seismograms/fieldData+ and pressure seismograms are inverted, the complete file name that is tried to be read is \verb+seismograms/fieldData.shot_0.p.mtx+. Shots are counted from 0.
+Synthetic seismograms are saved in the same way with the filename \verb+SeismogramFilename+. Note that seismograms with \verb+.It_0.+ correspond to the seismograms of the initial model of each workflow stage.
+
+With the parameters \verb+writeGradientPerShot+ and \verb+writeGradient+, it can be decided whether the gradients per shot and the summed gradients over all shots should be saved to disc. If yes, the gradients are stored with the name \verb+gradientFilename+. The workflow stage and iteration number and the parameter class are automatically appended, e.g. with \verb+gradients/grad+ as \verb+gradientFilename+ the first gradient with respect to the P-wave velocity will be \verb+gradients/grad.stage_1.It_1.vp.mtx+.
+
+The program will create a log file with the name specified by \verb+logFilename+. The file contains the misfit evolution (last column) for each stage and iteration (first two columns). The third column (optimum step length) is the step length which was used for the model update. The next three columns correspond to the three step length of the inexact line search and the subsequent three columns are the corresponding misfits. Note that these three misfits could be calculated only for a subset of the shots depending on the setting. Rows with iteration 0 denote the initial misfit of the corresponding workflow stage.
+
+Additional to the configuration file a workflow file has to be used because some parameters are only defined there and are not available in the configuration file! The name is set by the parameter \verb+workflowFilename+. At the moment, the workflow file contains the following parameters: \verb+invertForVp+, \verb+invertForVs+, \verb+invertForDensity+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+, \verb+upperCornerFreq+. With the first three parameters it can be decided which model parameter class should be updated. The parameter \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of SOFI++ (insert link). 
+
+The \verb+verbose+ option for detailed output is not available yet, but will be implemented in the future.
+
+
+\subsection{Misfit definition}
+
+The misfit definition has to be specified with the parameter \verb+misfitType+. Currently, only L2 misfit is available and can be chosen by setting \verb+misfitType+ to \verb+L2+. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources. This option is recommended for field data.
+
+\subsection{Step length estimation}
+
+For gradient-based, local optimization algorithms usually a step length estimation is necessary. In the case the steepest descent or conjugate gradient method is used (with or without preconditioning), IFOS++ performs an inexact line search using a parabolic fit of the misfit function. For the parabolic fit three step length/misfit pairs are used. To save computation time the first pair is given by the step length zero and the misfit of the current model. The second pair is given by the parameter \verb+steplengthInit+ and the misfit calculated from the updated model with \verb+steplengthInit+. For the third pair two cases are distinguished: 1) if the misfit was decreased, the step length is multiplied with the parameter \verb+scalingFactor+ and a third step length is searched which gives a larger misfit than the second step length. If the misfit is still decreasing, the step length will again be multiplied with \verb+scalingFactor+ until it increases or the parameter \verb+maxStepCalc+ is reached. 2) If the misfit was increased, the step length is divided by the parameter \verb+scalingFactor+ and a third step length is searched which gives a smaller misfit than the first step length. If the misfit is too large, the step length will again be divided by \verb+scalingFactor+ until it sufficiently decreases or the parameter \verb+maxStepCalc+ is reached.
+Note that the parameter \verb+steplengthInit+ is decreased by 2\% after each iteration within each workflow stage. The parameter is reset at the beginning of each stage to the value specified in the configuration file.
+After calculating three step length/misfit pairs, four cases are distinguished to choose a proper step length:
+
+\begin{enumerate}
+ \item $E_2$ < $E_1 \land E_3 > E_2$: apply parabolic fit to find step length or use \verb+steplengthMax+ 
+ \item $E_2$ < $E_1 \land E_3 < E_2$: use third step length or \verb+steplengthMax+
+ \item $E_2$ > $E_1 \land E_3 < E_1$: use third step length 
+ \item $E_2$ > $E_1 \land E_3 > E_1$: use \verb+steplengthMin+
+\end{enumerate}
+
+Here, $E$ stands for misfit. Note that the parameter \verb+steplengthMax+ is used if the third step length (cases 1 and 2) exceeds the specified value.
+To save computation time, the step length estimation can be performed with a subset of the sources. The sources that are used can be specified with the parameters \verb+testShotStart+, \verb+testShotIncr+ and \verb+testShotEnd+. The first shot that is used is \verb+testShotStart+. It is incremented by \verb+testShotIncr+ until it reaches \verb+testShotEnd+.
+
+Currently it is only possible to use one common step length for all model parameter classes (P-wave velocity, S-wave velocity, etc.). In the case of steepest descent or conjugate gradient method (with or without preconditioning) the model is updated in the following way
+\begin{equation}
+ \vec{m}_{k+1} = \vec{m}_k - \alpha \cdot \frac{\mathrm{max}(\vec{m}_k)}{\mathrm{max}(\nabla_{\vec{m}} E_k)} \nabla_{\vec{m}} E_k   
+\end{equation}
+with $k$ as iteration number and $\alpha$ as step length. Thus, a step length of 0.01 results in a maximum model update of 1\% of the maximum of the corresponding model parameter.
+
+\subsection{Gradient preconditioning}
+\label{config:precond}
+
+Usually it is helpful to manipulate the gradient, e.g. to mitigate artifcats close to the source and receiver positions. There are currently three possibilities for gradient preconditioning: source and receiver tapers and energy preconditioning.
+
+Circular tapers around the source and receiver positions can be used by setting \verb+sourceTaperRadius+ > 0 and \verb+receiverTaperRadius+ > 0, respectively. The number corresponds to the radius of the taper in grid points. The taper is zero in the middle and increases logarithmically to one at the outside of the circle. 
+
+Energy preconditioning can be used by setting \verb+useEnergyPreconditioning+ to 1. It is based on migration weight $K^{(1)}$ from \cite{plessix:04} (see also \cite{shin:01}) which is the inverse of an approximation of the diagonal of the Hessian. This type of preconditioning has also the effect of mitigating source/receiver artifacts. Moreover, it increases model updates in less illuminated areas of the model and can improve the convergence behaviour of the inversion. It is calculated by squaring and adding all available velocity wavefields summed over all time steps. The taper is calculated and applied for each shot separately. To stabilize the approximated Hessian a water level has to be set with the parameter \verb+epsilonHessian+. From experience, we recommend a value of 0.005.
+The taper can be saved to disc with the file name \verb+approxHessianName+ by setting \verb+saveApproxHessian+ to 1.
+
+
+\subsection{Optimization}
+
+Currently, there are two different optimization methods available, the steepest descent and the conjugate gradient method. Both can be used with gradient preconditioning (see subsection \ref{config:precond}). The method has to be chosen with the parameter \verb+optimizationType+. Possible values are \verb+steepestDescent+ and \verb+conjugateGradient+. The characters are internally transformed to lowercase letters, so \verb+STEEPESTDESCENT+ would also be valid.
+
+The conjugate gradient direction at iteration $k$, $c_k$, is calculated in the following way:
+\begin{equation*}
+ c_k =  \nabla_{\vec{m}} E_k + \beta_k \cdot c_{k-1}
+\end{equation*}
+
+The weight, $\beta_k$, is calculated after Polak and Ribi\'{e}re:
+\begin{equation*}
+ \beta_k^{\mathrm{PR}} = \frac{ \nabla_{\vec{m}}^T E_k (\nabla_{\vec{m}} E_k - \nabla_{\vec{m}} E_{k-1}) }{\nabla_{\vec{m}}^T E_{k-1} \nabla_{\vec{m}} E_{k-1}}
+\end{equation*}
+
+Note that a steepest descent update is performed in the first iteration of every workflow stage.
+
+\subsection{Source time function inversion}
+
+\subsection{Abort criterion}
+\label{config:abort}
+
+Currently, there are two abort criteria implemented. The first criterion determines the maximum iteration number per workflow stage which can be set with the parameter \verb+maxIterations+. The second criterion measures the relative misfit change, $\Delta E$, between the current iteration and the second last iteration:
+
+\begin{equation*}
+ \Delta E = \frac{|E_k-E_{k-2}|}{E_{k-2}}
+\end{equation*}
+
+If this value is smaller than the parameter \verb+relativeMisfitChange+ the workflow stage is changed or - if it is the last stage - the inversion stops.
 
 
 \clearpage

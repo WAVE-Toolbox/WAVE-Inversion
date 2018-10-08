@@ -40,6 +40,8 @@ template <typename ValueType>
 void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
     
+    /* Should an automatic direction reset be implemented? -> beta = max{beta^PR, 0} */
+    
     if(workflow.iteration==0){
         
         if(workflow.getInvertForVp() == 1){
