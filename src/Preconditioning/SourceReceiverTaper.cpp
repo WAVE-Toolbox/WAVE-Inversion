@@ -33,6 +33,8 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 
     //gets coordinate index for first source to be changed
     IndexType SourceCoordinate;
+    
+    IndexType taperType = config.get<IndexType>("sourceReceiverTaperType");
 
     
     //loop over all shots or receivers
@@ -67,9 +69,17 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 	    // taper area:
             if (distance <= radius) {
                 if (distance >= 1) {
-                    /*normalized logarithmic function : log(i)/log(max) for log(i)>1 
-			-1 is needed because sparseVector=Densevector sets zero element to 0 for (grad * taper) the zero element should be 1 -> sparsevector+1  */
-                    write_taperValues_temp[i] = std::log(distance) / std::log(radius) - 1;
+                    //-1 is needed because sparseVector=Densevector sets zero element to 0 for (grad * taper) the zero element should be 1 -> sparsevector+1  
+                    switch (taperType) {
+                        case 1:
+                            //normalized logarithmic function : log(i)/log(max) for log(i)>1 
+                            write_taperValues_temp[i] = std::log(distance) / std::log(radius) - 1;
+                            break;
+                        case 2:
+                            //cos^2 function : cos(i*pi/(2*max))^2
+                            write_taperValues_temp[i] = common::Math::pow<ValueType>(common::Math::sin<ValueType>(distance * M_PI / (2.0 * radius)), 2.0) - 1;
+                    }
+                            
                 } else {
                     write_taperValues_temp[i] = -1;
                 }

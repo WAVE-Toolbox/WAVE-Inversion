@@ -3,25 +3,25 @@ close all
 clear all
 
 addpath('../configuration')
-config=conf('../ToyExample_ac/Input/configuration.txt');
-configTrue=conf('../ToyExample_ac/Input/configuration_true.txt');
+config=conf('../ToyExample_el/Input/configuration.txt');
+configTrue=conf('../ToyExample_el/Input/configuration_true.txt');
 
 % general parameter ----------------------------------------------
 
 stage=1;
-iteration=8; % iteration number
+iteration=3; % iteration number
 
 % model parameter-------------------------------------------------
 geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
-parameter='vp';   % model parameter
+parameter='vs';   % model parameter
 
-colorbarRange.min=1900; %lower clip of the colorbar 
-colorbarRange.max=4000; %upper clip of the colorbar
+colorbarRange.min=1800; %lower clip of the colorbar 
+colorbarRange.max=2800; %upper clip of the colorbar
 
 % seismogram parameter--------------------------------------------
 skipTraces=3;  % every 'skipTraces' trace will be displayed
-shot=5;        % shot number
-component='p'; % seismogram component
+shot=0;        % shot number
+component='vy'; % seismogram component
 
 
 %% Usually, there is no need to change anything below this line
@@ -42,9 +42,9 @@ inversionModel=config.getString('ModelFilename');
 startingModel=[config.getString('ModelFilename') '.out'];
 trueModel=configTrue.getString('ModelFilename');
 
-load (config.getString('SourceFilename'));
+load ([config.getString('SourceFilename') '.mtx']);
 acquisition.sources=spconvert(sources(2:end,:));
-load (config.getString('ReceiverFilename'));
+load ([config.getString('ReceiverFilename') '.mtx']);
 acquisition.receiver=spconvert(receiver(2:end,:));
 
 plotModel (parameter,colorbarRange,stage,iteration,geometry,acquisition,...

@@ -70,6 +70,7 @@ SourceFilename=ci/sources_ci.2D         # location of source file
 ReceiverFilename=ci/receiver_ci.2D      # location of receiver file
 SeismogramFilename=seismograms/seismogram      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
+seismoDT=2.0e-03                               # Seismogram sampling in seconds
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
 runSimultaneousShots=0
@@ -107,6 +108,7 @@ useSourceSignalInversion=0
 waterLevel=0.01
 
 # Preconditioning
+sourceReceiverTaperType=1                       # type of source and receiver typers 1=log 2=cos^2
 sourceTaperRadius=20                            # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20                          # Circular receiver taper: Radius in gridpoints
 
@@ -114,3 +116,7 @@ useEnergyPreconditioning=1                      # approximated diagonal Hessian 
 epsilonHessian=0.005                            # parameter to stabilize matrix inversion (recommended: 0.005)
 saveApproxHessian=0
 approxHessianName=gradients/Hessian
+normalizeGradient=0        # normalize gradient of each shot
+
+# Model thresholds
+useModelThresholds=0       # use thresholds for model parameters
