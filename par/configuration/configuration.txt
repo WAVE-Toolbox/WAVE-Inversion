@@ -121,6 +121,7 @@ useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradien
 epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)
 saveApproxHessian=0        
 approxHessianName=gradients/Hessian
+normalizeGradient=0        # normalize gradient of each shot
 
 # Model thresholds
 useModelThresholds=0       # use thresholds for model parameters
