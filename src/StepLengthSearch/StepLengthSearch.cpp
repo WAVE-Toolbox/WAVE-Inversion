@@ -60,12 +60,11 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
     /* Try to find a second step length which gives a smaller misfit and a third step length which gives again a larger misfit.
        The first step length is zero so the misfit from the gradient calculation can be used to save computation time.
        
-       Separate 5 cases: 
+       Separate 4 cases: 
        1) misfit 2 < misfit 1 AND misfit 3 > misfit 2: SL = minimum of parabola or SL = SLmax
        2) misfit 2 < misfit 1 AND misfit 3 < misfit 2: SL = SL3 or SL = SLmax 
        3) misfit 2 > misfit 1 AND misfit 3 < misfit 2 AND misfit 3 < misfit 1: SL = SL3 
-       4) misfit 2 > misfit 1 AND misfit 3 < misfit 2 AND misfit 3 > misfit 1: SL = very small SL -> not used
-       5) misfit 2 > misfit 1 AND misfit 3 > misfit 2: SL = very small SL */
+       4) misfit 2 > misfit 1 AND misfit 3 > misfit 1: SL = very small SL */
     /* ------------------------------------------------------------------------------------------------------ */
     
     start_t = scai::common::Walltime::get();
