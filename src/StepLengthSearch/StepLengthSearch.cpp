@@ -19,7 +19,7 @@ using scai::IndexType;
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, scai::lama::DenseVector<ValueType> currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::SourceEstimation<ValueType> const &sourceEst)
+void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, scai::lama::DenseVector<ValueType> currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper<ValueType> const &sourceSignalTaper)
 {
     double start_t, end_t; /* For timing */
     /* ------------------------------------------- */
@@ -82,7 +82,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
    
     /* --- Save second step length (initial step length) in any case --- */
     HOST_PRINT(comm,"\nEstimation of 2nd steplength, forward test run no. " << stepCalcCount << " of maximum " << maxStepCalc <<"\n" );
-    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplengthInit, workflow, sourceEst);
+    misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplengthInit, workflow, freqFilter, sourceEst, sourceSignalTaper);
     steplengthParabola.setValue(1, steplengthInit); 
     misfitParabola.setValue(1, misfitTestSum);  
     if ( misfitParabola.getValue(0) > misfitParabola.getValue(1) ){
@@ -93,7 +93,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
     while( step2ok == true && stepCalcCount < maxStepCalc ){
         HOST_PRINT(comm,"\nEstimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc <<"\n" );
         steplength *= scalingFactor;
-        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength, workflow, sourceEst);
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength, workflow, freqFilter, sourceEst, sourceSignalTaper);
         steplengthParabola.setValue(2, steplength); 
         misfitParabola.setValue(2, misfitTestSum);
         if( misfitTestSum > misfitParabola.getValue(1)){
@@ -109,7 +109,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(KITGPI::ForwardSolver::ForwardSolv
     while( step2ok == false && stepCalcCount < maxStepCalc ){
         HOST_PRINT(comm,"Estimation of 3rd steplength, forward test run no. " << stepCalcCount +1 << " of maximum " << maxStepCalc << "\n" );
         steplength /= scalingFactor;
-        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength, workflow, sourceEst);
+        misfitTestSum = this->calcMisfit(solver, derivatives, receivers, sources, receiversTrue, model, *wavefields, config, scaledGradient, *dataMisfit, steplength, workflow, freqFilter, sourceEst, sourceSignalTaper);
         steplengthParabola.setValue(2, steplength); 
         misfitParabola.setValue(2, misfitTestSum);
         if( misfitTestSum < misfitParabola.getValue(0)){
@@ -196,7 +196,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVec
  \param steplength Steplength
  */
 template <typename ValueType>
-ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::SourceEstimation<ValueType> const &sourceEst)
+ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper<ValueType> const &sourceSignalTaper)
 {
     
     /* ------------------------------------------- */
@@ -228,19 +228,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
         testmodel->applyThresholds(config);
         
     testmodel->prepareForModelling(config, ctx, dist, comm);
-    
-    Filter::Filter<ValueType> freqFilter;
-    std::string transFcnFmly = "butterworth";
-    if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-        freqFilter.init(config.get<ValueType>("DT"), tStepEnd);
-    
-    if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() != 0.0)
-        freqFilter.calc(transFcnFmly, "bp", workflow.getFilterOrder(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
-    else if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() == 0.0)
-        freqFilter.calc(transFcnFmly, "lp", workflow.getFilterOrder(), workflow.getLowerCornerFreq());
-    else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
-        freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());
-    
+
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = testShotStart ; shotNumber <= testShotEnd; shotNumber+=testShotIncr) {
         
@@ -259,8 +247,10 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
             sources.getSeismogramHandler().filter(freqFilter);
         
-        if (config.get<bool>("useSourceSignalInversion") == 1)
+        if (config.get<bool>("useSourceSignalInversion") == 1) {
             sourceEst.applyFilter(sources, shotNumber);
+            sourceSignalTaper.apply(sources.getSeismogramHandler());
+        }
         
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
             solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);

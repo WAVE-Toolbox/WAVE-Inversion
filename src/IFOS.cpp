@@ -32,6 +32,7 @@
 #include "SourceEstimation/SourceEstimation.hpp"
 #include "StepLengthSearch/StepLengthSearch.hpp"
 #include "Workflow/Workflow.hpp"
+#include "Taper/TaperFactory.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -182,8 +183,17 @@ int main(int argc, char *argv[])
     /* Source estimation                       */
     /* --------------------------------------- */
     SourceEstimation<ValueType> sourceEst;
-    if (config.get<bool>("useSourceSignalInversion"))
+    Taper::Taper<ValueType>::TaperPtr sourceSignalTaper(Taper::Factory<ValueType>::Create("1D"));
+    if (config.get<bool>("useSourceSignalInversion")) {
         sourceEst.init(tStepEnd, sources.getCoordinates().getDistributionPtr(), config.get<ValueType>("waterLevel"));
+        if (config.get<bool>("useSourceSignalTaper")) {
+            sourceSignalTaper->init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
+            if (config.get<IndexType>("sourceSignalTaperStart2") == 0 && config.get<IndexType>("sourceSignalTaperEnd2") == 0)
+                sourceSignalTaper->calcCosineTaper(config.get<IndexType>("sourceSignalTaperStart1"), config.get<IndexType>("sourceSignalTaperEnd1"), 0);
+            else
+                sourceSignalTaper->calcCosineTaper(config.get<IndexType>("sourceSignalTaperStart1"), config.get<IndexType>("sourceSignalTaperEnd1"), config.get<IndexType>("sourceSignalTaperStart2"), config.get<IndexType>("sourceSignalTaperEnd2"), 0);
+        }
+    }
 
     /* --------------------------------------- */
     /* Frequency filter                        */
@@ -307,12 +317,15 @@ int main(int argc, char *argv[])
                         
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
                         sourceEst.applyFilter(sources, shotNumber);
+                        sourceSignalTaper->apply(sources.getSeismogramHandler());
                         
                         if (config.get<bool>("writeInvertedSource") == 1)
                             sources.getSeismogramHandler().write(config, config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) +  ".shot_" + std::to_string(shotNumber));
                     }
-                    else
+                    else {
                         sourceEst.applyFilter(sources, shotNumber);
+                        sourceSignalTaper->apply(sources.getSeismogramHandler());
+                    }
                 }
 
                 /* --------------------------------------- */
@@ -415,7 +428,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm, "\n===========================================");
             HOST_PRINT(comm, "\n======== Start step length search =========\n");
 
-            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, sourceEst);
+            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, *sourceSignalTaper);
 
             HOST_PRINT(comm, "=========== Update Model ============\n\n");
             /* Apply model update */
