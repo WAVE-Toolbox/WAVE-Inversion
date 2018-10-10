@@ -181,9 +181,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Source estimation                       */
     /* --------------------------------------- */
-    SourceEstimation<ValueType> sourceEst(tStepEnd);
+    SourceEstimation<ValueType> sourceEst;
     if (config.get<bool>("useSourceSignalInversion"))
-        sourceEst.setWaterLevel(config.get<ValueType>("waterLevel"));
+        sourceEst.init(tStepEnd, sources.getCoordinates().getDistributionPtr(), config.get<ValueType>("waterLevel"));
 
     /* --------------------------------------- */
     /* Frequency filter                        */
@@ -269,6 +269,8 @@ int main(int argc, char *argv[])
             gradient->resetGradient(); // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
 
             for (IndexType shotNumber = 0; shotNumber < sources.getNumShots(); shotNumber++) {
+                
+                HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
 
                 if (config.get<bool>("useReceiversPerShot")) {
                     receivers.init(config, ctx, dist, shotNumber);
@@ -291,19 +293,27 @@ int main(int argc, char *argv[])
                     sources.getSeismogramHandler().filter(freqFilter);
 
                 /* Source time function inversion */
-                if (config.get<bool>("useSourceSignalInversion") == 1 && workflow.iteration == 0) {
-                    HOST_PRINT(comm, "\n=====Start Source Time Function Inversion========\n");
+                if (config.get<bool>("useSourceSignalInversion") == 1) {
+                    if( workflow.iteration == 0) {
+                        HOST_PRINT(comm, "\n=====Start Source Time Function Inversion========\n");
 
-                    wavefields->resetWavefields();
+                        wavefields->resetWavefields();
 
-                    for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
-                        solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                        for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                            solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                        }
+                        
+                        solver->resetCPML();
+                        
+                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
+                        sourceEst.applyFilter(sources, shotNumber);
+                        
+                        if (config.get<bool>("writeInvertedSource") == 1)
+                            sources.getSeismogramHandler().write(config, config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) +  ".shot_" + std::to_string(shotNumber));
                     }
-
-                    sourceEst.estimateSourceSignal(receivers, receiversTrue, sources);
+                    else
+                        sourceEst.applyFilter(sources, shotNumber);
                 }
-
-                HOST_PRINT(comm, "\n=============== Shot " << shotNumber + 1 << " of " << sources.getNumShots() << " ===================\n");
 
                 /* --------------------------------------- */
                 /*        Forward modelling                */
@@ -405,7 +415,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(comm, "\n===========================================");
             HOST_PRINT(comm, "\n======== Start step length search =========\n");
 
-            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow);
+            SLsearch.run(*solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, sourceEst);
 
             HOST_PRINT(comm, "=========== Update Model ============\n\n");
             /* Apply model update */
@@ -452,6 +462,9 @@ int main(int argc, char *argv[])
                     sources.init(config, ctx, dist, shotNumber);
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                         sources.getSeismogramHandler().filter(freqFilter);
+                    
+                    if (config.get<bool>("useSourceSignalInversion") == 1)
+                        sourceEst.applyFilter(sources, shotNumber);
 
                     start_t_shot = common::Walltime::get();
 

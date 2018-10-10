@@ -11,7 +11,7 @@ typedef double ValueType;
 TEST(SourceTimeInversionTest, TestSourceEstimation)
 {
 
-    SourceEstimation<ValueType> sourceEst(0.01, 500);
+    SourceEstimation<ValueType> sourceEst;
     
     dmemo::DistributionPtr dist(new dmemo::NoDistribution(10000));
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr();
@@ -33,7 +33,9 @@ TEST(SourceTimeInversionTest, TestSourceEstimation)
     lama::DenseMatrix<ValueType> &sourcesData = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData();
     sourcesData.readFromFile("../src/Tests/Testfiles/testSourceTimeInversion_sourceSignal.mtx");
     
-    sourceEst.estimateSourceSignal(receivers, receiversTrue, sources);
+    sourceEst.init(500,sources.getCoordinates().getDistributionPtr(),1.0e-10);
+    sourceEst.estimateSourceSignal(receivers, receiversTrue, 0);
+    sourceEst.applyFilter(sources, 0);
             
     lama::DenseMatrix<ValueType> sourceSignalInv = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData();
     

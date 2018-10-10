@@ -107,8 +107,10 @@ testShotEnd=17                         # shot number of last test shot
 testShotIncr=1                         # increment of test shots
 
 # Source time function inversion
-useSourceSignalInversion=0             # 1= use source time inversion
-waterLevel=0.01                        # water level of source time inversion
+useSourceSignalInversion=0                        # 1= use source time inversion
+waterLevel=1.0e-10                                # water level of source time inversion
+writeInvertedSource=0                             # 1=Inverted source signal will be written to disk, 0=not
+sourceSeismogramFilename=sourceInversion/invSrc   # location/basename of output source
 
 # Preconditioning
 sourceReceiverTaperType=1  # type of source and receiver tapers 1=log 2=cos^2

@@ -29,24 +29,23 @@ namespace KITGPI
     {
 
       public:
-        SourceEstimation(scai::IndexType nt);
-        SourceEstimation(ValueType waterLvl, scai::IndexType nt);
+        SourceEstimation() = default;
 
-        void setWaterLevel(ValueType waterLvl);
+        void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl);
 
         ~SourceEstimation(){};
 
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
 
-        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Acquisition::Sources<ValueType> &sources);
+        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, scai::IndexType shotNumber);
+        void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber) const;
 
       private:
         ValueType waterLevel;
         scai::IndexType nFFT; // filter length
-        scai::lama::DenseVector<ComplexValueType> filter;
+        scai::lama::DenseMatrix<ComplexValueType> filter;
 
         void matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B);
         void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB);
-        void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources);
     };
 }
