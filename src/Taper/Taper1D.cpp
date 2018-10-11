@@ -52,8 +52,8 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, Index
     SCAI_ASSERT_ERROR(iStart1 >= 0 && iEnd2 < data.size() && iStart1 < iEnd1 && iStart2 < iEnd2 && iEnd1 <= iStart2, "invalid taper edges");
     
     lama::DenseVector<ValueType> helpTaper;
-    calcCosineTaperDown(data, iStart1, iEnd1);
-    calcCosineTaperUp(helpTaper, iStart2, iEnd2);
+    calcCosineTaperUp(helpTaper, iStart1, iEnd1);
+    calcCosineTaperDown(data, iStart2, iEnd2);
     data *= helpTaper;
     
     if (reverse)
