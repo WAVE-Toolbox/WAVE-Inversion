@@ -305,6 +305,9 @@ int main(int argc, char *argv[])
                         
                         solver->resetCPML();
                         
+                        if (config.get<bool>("useSourceEstOffsetLim") == 1)
+                            sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"));
+                        
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
                         sourceEst.applyFilter(sources, shotNumber);
                         

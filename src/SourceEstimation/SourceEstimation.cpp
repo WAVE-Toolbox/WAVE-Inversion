@@ -72,7 +72,7 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
  \param B Second matrix
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B)
+void KITGPI::SourceEstimation<ValueType>::matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B, scai::IndexType iComponent)
 {
     scai::lama::DenseMatrix<ComplexValueType> ATmp;
     scai::lama::DenseMatrix<ComplexValueType> BTmp;
@@ -88,6 +88,10 @@ void KITGPI::SourceEstimation<ValueType>::matCorr(scai::lama::DenseVector<Comple
     scai::lama::fft<ComplexValueType>(BTmp, 1);
     ATmp.conj();
     ATmp.binaryOp(ATmp, scai::common::BinaryOp::MULT, BTmp);
+    
+    if (useOffsetMutes)  // this has to be done here because fft on zero traces is a bad idea
+        ATmp.scaleRows(scai::lama::eval<scai::lama::DenseVector<ComplexValueType>>(scai::lama::cast<ComplexValueType>(mutes[iComponent])));
+    
     ATmp.reduce(prod, 1, scai::common::BinaryOp::ADD, scai::common::UnaryOp::COPY);
 }
 
@@ -101,12 +105,54 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(scai::lama::DenseVector<
 {
     scai::lama::DenseVector<ComplexValueType> filterTmp;
 
-    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+    for (scai::IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (receiversA.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             scai::lama::DenseMatrix<ValueType> const &seismoA = receiversA.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
             scai::lama::DenseMatrix<ValueType> const &seismoB = receiversB.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
-            matCorr(filterTmp, seismoA, seismoB);
+            matCorr(filterTmp, seismoA, seismoB, iComponent);
             sum += filterTmp;
+        }
+    }
+}
+
+/*! \brief Sets mutes vector needed to exclude offsets greater than a threshold from the source estimation
+ \param sources Sources
+ \param receivers Receivers
+ \param maxOffset Offset threshold
+ \param NX Number of grid points in x-direction
+ \param NY Number of grid points in y-direction
+ \param NZ Number of grid points in z-direction
+ */
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, scai::IndexType NX, scai::IndexType NY, scai::IndexType NZ) {
+    
+    scai::lama::DenseVector<ValueType> offsets;
+    scai::lama::DenseVector<scai::IndexType> sourceIndexVec;
+    scai::IndexType sourceIndex(0);
+    
+    bool sourceIndexSet(false);
+    
+    // get index of source position
+    for (scai::IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+        if (sources.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            sourceIndexVec = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getCoordinates();
+            
+            if (sourceIndexVec.size() > 1 || (sourceIndexSet && sourceIndexVec.getValue(0) != sourceIndex))
+                COMMON_THROWEXCEPTION("offset not defined for more than one source position");
+
+            sourceIndex = sourceIndexVec.getValue(0);  
+        }
+    }
+    
+    // get indices of receiver position and calc mutes
+    for (scai::IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+        if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getCoordinates(), NX, NY, NZ);
+            offsets /= maxOffset;
+            offsets.unaryOp(offsets, scai::common::UnaryOp::FLOOR);
+            offsets.unaryOp(offsets, scai::common::UnaryOp::SIGN);
+            
+            mutes[iComponent] = offsets;
         }
     }
 }
