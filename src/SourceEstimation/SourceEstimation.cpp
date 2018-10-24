@@ -148,9 +148,11 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
     for (scai::IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getCoordinates(), NX, NY, NZ);
-            offsets /= maxOffset;
-            offsets.unaryOp(offsets, scai::common::UnaryOp::FLOOR);
+            
+            offsets /= -maxOffset;
+            offsets.unaryOp(offsets, scai::common::UnaryOp::CEIL);
             offsets.unaryOp(offsets, scai::common::UnaryOp::SIGN);
+            offsets += 1.0;
             
             mutes[iComponent] = offsets;
         }

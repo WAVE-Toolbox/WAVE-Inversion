@@ -29,32 +29,32 @@ namespace KITGPI
             Acquisition::Coordinates coords;
             Acquisition::coordinate3D sourceCoords = coords.index2coordinate(sourceIndex, NX, NY, 0);
             
-            scai::lama::DenseVector<scai::IndexType> recX;
-            scai::lama::DenseVector<scai::IndexType> recY;
-            scai::lama::DenseVector<scai::IndexType> recZ;
-            scai::lama::DenseVector<scai::IndexType> RecCoordinates;
+            scai::lama::DenseVector<ValueType> recX;
+            scai::lama::DenseVector<ValueType> recY;
+            scai::lama::DenseVector<ValueType> recZ;
+            scai::lama::DenseVector<ValueType> RecCoordinates;
             
-            RecCoordinates = receiverIndices;
+            RecCoordinates = scai::lama::cast<ValueType>(receiverIndices);
 
-            recZ = RecCoordinates / (NX * NY);
+            recZ = scai::lama::floor<ValueType>(scai::lama::eval<scai::lama::DenseVector<ValueType>>(RecCoordinates / (NX * NY)));
             RecCoordinates -= recZ * (NX * NY);
 
-            recY = RecCoordinates / (NX);
+            recY = scai::lama::floor<ValueType>(scai::lama::eval<scai::lama::DenseVector<ValueType>>(RecCoordinates / (NX)));
             RecCoordinates -= recY * (NX);
 
             recX = RecCoordinates;
             
-            recX -= sourceCoords.x;
-            recY -= sourceCoords.y;
-            recZ -= sourceCoords.z;
+            recX -= ValueType(sourceCoords.x);
+            recY -= ValueType(sourceCoords.y);
+            recZ -= ValueType(sourceCoords.z);
             
-            recX.binaryOpScalar(recX, 2, scai::common::BinaryOp::POW, false);
-            recY.binaryOpScalar(recY, 2, scai::common::BinaryOp::POW, false);
-            recZ.binaryOpScalar(recZ, 2, scai::common::BinaryOp::POW, false);
+            recX.binaryOpScalar(recX, 2.0, scai::common::BinaryOp::POW, false);
+            recY.binaryOpScalar(recY, 2.0, scai::common::BinaryOp::POW, false);
+            recZ.binaryOpScalar(recZ, 2.0, scai::common::BinaryOp::POW, false);
             
             recX += recY;
             recX += recZ;
-            result.unaryOp(scai::lama::eval<scai::lama::DenseVector<ValueType>>(scai::lama::cast<ValueType>(recX)), scai::common::UnaryOp::SQR);
+            result.unaryOp(recX, scai::common::UnaryOp::SQRT);
             
         }
     }

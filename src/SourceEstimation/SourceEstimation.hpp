@@ -31,7 +31,7 @@ namespace KITGPI
     {
 
       public:
-        explicit SourceEstimation(): mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE) {};
+        explicit SourceEstimation(): useOffsetMutes(false), mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE) {};
 
         void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl);
 
