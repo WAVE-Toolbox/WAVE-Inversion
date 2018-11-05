@@ -248,7 +248,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
         
         if (config.get<bool>("useSourceSignalInversion") == 1) {
             sourceEst.applyFilter(sources, shotNumber);
-            sourceSignalTaper.apply(sources.getSeismogramHandler());
+            if (config.get<bool>("useSourceSignalTaper"))
+                sourceSignalTaper.apply(sources.getSeismogramHandler());
         }
         
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {

@@ -320,7 +320,8 @@ int main(int argc, char *argv[])
                         
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
                         sourceEst.applyFilter(sources, shotNumber);
-                        sourceSignalTaper->apply(sources.getSeismogramHandler());
+                        if (config.get<bool>("useSourceSignalTaper"))
+                            sourceSignalTaper->apply(sources.getSeismogramHandler());
                         
                         if (config.get<bool>("writeInvertedSource") == 1)
                             sources.getSeismogramHandler().write(config, config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) +  ".shot_" + std::to_string(shotNumber));
@@ -479,8 +480,11 @@ int main(int argc, char *argv[])
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                         sources.getSeismogramHandler().filter(freqFilter);
                     
-                    if (config.get<bool>("useSourceSignalInversion") == 1)
+                    if (config.get<bool>("useSourceSignalInversion") == 1) {
                         sourceEst.applyFilter(sources, shotNumber);
+                        if (config.get<bool>("useSourceSignalTaper"))
+                            sourceSignalTaper->apply(sources.getSeismogramHandler());
+                    }
 
                     start_t_shot = common::Walltime::get();
 
