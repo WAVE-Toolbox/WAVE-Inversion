@@ -113,6 +113,7 @@ sourceReceiverTaperType=1                       # type of source and receiver ty
 sourceTaperRadius=20                            # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20                          # Circular receiver taper: Radius in gridpoints
 normalizeGradient=0
+useGradientTaper=0                             # use a taper for the gradient
 
 useEnergyPreconditioning=1                      # approximated diagonal Hessian is applied to gradient per shot
 epsilonHessian=0.005                            # parameter to stabilize matrix inversion (recommended: 0.005)

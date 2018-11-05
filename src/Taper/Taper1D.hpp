@@ -27,6 +27,9 @@ namespace KITGPI
             bool getDirection() const override;
             
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
+            void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const override;
+            
+            void readTaper(std::string filename, scai::IndexType partitionedIn) override;
             
         private:
             

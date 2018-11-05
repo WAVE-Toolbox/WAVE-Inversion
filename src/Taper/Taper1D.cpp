@@ -128,5 +128,39 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<Va
         seismogramData.scaleColumns(data);
 }
 
+/*! \brief Apply taper to a single vector
+ \param seismogram Seismogram
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const {
+    grad *= data;
+}
+
+/*! \brief Read a taper from file
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::readTaper(std::string filename, IndexType partitionedIn)
+{
+
+    PartitionedInOut::PartitionedInOut<ValueType> partitionIn;
+    lama::DenseVector<ValueType> dataTmp;
+
+    switch (partitionedIn) {
+    case false:
+        partitionIn.readFromOneFile(dataTmp, filename, data.getDistributionPtr());
+        break;
+
+    case true:
+        partitionIn.readFromDistributedFiles(dataTmp, filename, data.getDistributionPtr());
+        break;
+
+    default:
+        COMMON_THROWEXCEPTION("Unexpected input option!")
+        break;
+    }
+    
+    data = dataTmp;
+}
+
 template class KITGPI::Taper::Taper1D<double>;
 template class KITGPI::Taper::Taper1D<float>;

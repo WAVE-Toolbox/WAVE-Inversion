@@ -224,6 +224,11 @@ int main(int argc, char *argv[])
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     if (!config.get<bool>("useReceiversPerShot"))
         ReceiverTaper.init(dist, ctx, receivers, config, config.get<IndexType>("receiverTaperRadius"));
+    Taper::Taper<ValueType>::TaperPtr gradientTaper(Taper::Factory<ValueType>::Create("1D"));
+    if (config.get<bool>("useGradientTaper")) {
+        gradientTaper->init(dist, ctx, 1);
+        gradientTaper->readTaper(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
+    }
     
     /* --------------------------------------- */
     /* Gradient preconditioning                */
@@ -412,6 +417,9 @@ int main(int argc, char *argv[])
                 mask.unaryOp(mask, common::UnaryOp::SIGN);
                 *gradient *= mask;
             }
+            
+            if (config.get<bool>("useGradientTaper"))
+                gradientTaper->apply(*gradient);
 
             /* Output of gradient */
             if (config.get<IndexType>("WriteGradient"))

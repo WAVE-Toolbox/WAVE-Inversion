@@ -50,5 +50,15 @@ void KITGPI::Taper::Taper<ValueType>::calcCosineTaperDown(lama::DenseVector<Valu
     COMMON_THROWEXCEPTION("cosine unsupported for this taper type")
 }
 
+template <typename ValueType>
+void KITGPI::Taper::Taper<ValueType>::readTaper(std::string , IndexType ) {
+    COMMON_THROWEXCEPTION("reading of this taper type not supported yet")
+}
+
+template <typename ValueType>
+void KITGPI::Taper::Taper<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> & ) const{
+    COMMON_THROWEXCEPTION("this taper can't be applied to a gradient")
+}
+
 template class KITGPI::Taper::Taper<double>;
 template class KITGPI::Taper::Taper<float>;

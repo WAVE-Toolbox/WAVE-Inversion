@@ -5,6 +5,8 @@
 
 #include <Configuration/Configuration.hpp>
 #include <Acquisition/SeismogramHandler.hpp>
+#include <PartitionedInOut/PartitionedInOut.hpp>
+#include "../Gradient/Gradient.hpp"
 
 namespace KITGPI
 {
@@ -37,6 +39,9 @@ namespace KITGPI
                 
                 void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
                 virtual void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const = 0;
+                virtual void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const;
+                
+                virtual void readTaper(std::string filename, scai::IndexType partitionedIn);
                 
             private:
                 
