@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
                     ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("receiverTaperRadius"));
                 }
                 /* Read field data (or pseudo-observed data, respectively) */
-                receiversTrue.getSeismogramHandler().read(config, fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+                receiversTrue.getSeismogramHandler().read(config, fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                     receiversTrue.getSeismogramHandler().filter(freqFilter);
 

@@ -256,7 +256,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
             solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);
         }
         
-        receiversTrue.getSeismogramHandler().read(config, config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+        receiversTrue.getSeismogramHandler().read(config, config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber), 1);
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
             receiversTrue.getSeismogramHandler().filter(freqFilter);
         
