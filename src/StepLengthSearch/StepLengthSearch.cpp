@@ -248,14 +248,15 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(KITGPI::ForwardSolver:
         
         if (config.get<bool>("useSourceSignalInversion") == 1) {
             sourceEst.applyFilter(sources, shotNumber);
-            sourceSignalTaper.apply(sources.getSeismogramHandler());
+            if (config.get<bool>("useSourceSignalTaper"))
+                sourceSignalTaper.apply(sources.getSeismogramHandler());
         }
         
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
             solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);
         }
         
-        receiversTrue.getSeismogramHandler().readFromFileRaw(config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+        receiversTrue.getSeismogramHandler().read(config, config.get<std::string>("FieldSeisName")  + ".shot_" + std::to_string(shotNumber), 1);
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
             receiversTrue.getSeismogramHandler().filter(freqFilter);
         

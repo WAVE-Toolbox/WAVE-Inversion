@@ -42,11 +42,10 @@ PartitionedIn=0           # 1=Read files parallel, 0=serial
 PartitionedOut=0          # 1=Write files parallel, 0=serial
 
 # Apply the free surface condition
-FreeSurface=0             # 1=ON, 0=OFF
+FreeSurface=2             # 0=OFF, 1=mirror method, 2=improved vacuum formulation
 
 # Damping Boundary
-DampingBoundary=1         # 1=ON, 0=OFF
-DampingBoundaryType=1     # Type of damping boundary: 1=ABS 2=CPML
+DampingBoundary=1         # Type of damping boundary: 0=OFF 1=ABS 2=CPML
 BoundaryWidth=10          # Width of damping boundary in grid points
 DampingCoeff=8.0          # Damping coefficient 
 VMaxCPML=3500.0           # Maximum velocity of the CPML
@@ -69,7 +68,10 @@ tauS=0.0                  # Tau value for S-waves
 SourceFilename=acquisition/sources         # location of source file
 ReceiverFilename=acquisition/receiver      # location of receiver file
 SeismogramFilename=seismograms/seismogram      # target location of seismogram
+SourceSignalFilename=acquisition/signal        # location of the source signal file
 SeismogramFormat=1                             # 1=MTX, 2=SU
+initSourcesFromSU=0                            # 1=initialize sources from SU file 0=not (one file per component, filename=SourceSignalFilename+.<component> + .SU)
+initReceiverFromSU=0                           # 1=initialize receiver from SU file 0=not (one file per component, filename=ReceiverFilename+.<component> + .SU)
 seismoDT=2.0e-03                               # Seismogram sampling in seconds
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
@@ -116,17 +118,19 @@ sourceSignalTaperStart1=0                          # start index of first cosine
 sourceSignalTaperEnd1=100                          # end index of first cosine taper
 sourceSignalTaperStart2=0                          # start index of second cosine taper (0=no second transition zone)
 sourceSignalTaperEnd2=0                            # end index of second cosine taper (0=no second transition zone)
+maxOffsetSrcEst=0                                  # maximum offset in grid points to allow (0=no offset limits)
 
 # Preconditioning
-sourceReceiverTaperType=1  # type of source and receiver tapers 1=log 2=cos^2
-sourceTaperRadius=20       # circular source taper: Radius in gridpoints
-receiverTaperRadius=20     # circular receiver taper: Radius in gridpoints
-
-useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradient per shot
-epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)
-saveApproxHessian=0        
-approxHessianName=gradients/Hessian
-normalizeGradient=0        # normalize gradient of each shot
+sourceReceiverTaperType=1                      # type of source and receiver tapers 1=log 2=cos^2
+sourceTaperRadius=20                           # circular source taper: Radius in gridpoints
+receiverTaperRadius=20                         # circular receiver taper: Radius in gridpoints
+useGradientTaper=0                             # use a taper for the gradient
+gradientTaperFilename=gradients/gradientTaper  # location of gradient taper
+useEnergyPreconditioning=1                     # approximated diagonal Hessian is applied to gradient per shot
+epsilonHessian=0.005                           # parameter to stabilize matrix inversion (recommended: 0.005)
+saveApproxHessian=0                            # water level for hessian approximation
+approxHessianName=gradients/Hessian            # target location of approximated hessian
+normalizeGradient=0                            # normalize gradient of each shot
 
 # Model thresholds
 useModelThresholds=0       # use thresholds for model parameters

@@ -19,6 +19,7 @@
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
 #include <ForwardSolver/ForwardSolverFactory.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
+#include <CheckParameter/CheckParameter.hpp>
 
 #include <Wavefields/WavefieldsFactory.hpp>
 
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
     /* Acquisition geometry                    */
     /* --------------------------------------- */
     Acquisition::Sources<ValueType> sources(config, ctx, dist);
+    CheckParameter::checkSources<ValueType>(config, sources, comm);
     Acquisition::Receivers<ValueType> receivers;
     if (!config.get<bool>("useReceiversPerShot"))
         receivers.init(config, ctx, dist);
@@ -147,8 +149,10 @@ int main(int argc, char *argv[])
     /* True data                               */
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receiversTrue;
-    if (!config.get<bool>("useReceiversPerShot"))
+    if (!config.get<bool>("useReceiversPerShot")) {
         receiversTrue.init(config, ctx, dist);
+        CheckParameter::checkReceivers<ValueType>(config, receiversTrue, comm);
+    }
 
     /* --------------------------------------- */
     /* Misfit                                  */
@@ -224,6 +228,11 @@ int main(int argc, char *argv[])
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     if (!config.get<bool>("useReceiversPerShot"))
         ReceiverTaper.init(dist, ctx, receivers, config, config.get<IndexType>("receiverTaperRadius"));
+    Taper::Taper<ValueType>::TaperPtr gradientTaper(Taper::Factory<ValueType>::Create("1D"));
+    if (config.get<bool>("useGradientTaper")) {
+        gradientTaper->init(dist, ctx, 1);
+        gradientTaper->readTaper(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
+    }
     
     /* --------------------------------------- */
     /* Gradient preconditioning                */
@@ -287,10 +296,12 @@ int main(int argc, char *argv[])
                     receiversTrue.init(config, ctx, dist, shotNumber);
                     adjointSources.init(config, ctx, dist, shotNumber);
                     
+                    CheckParameter::checkReceivers<ValueType>(config, receivers, comm);
+                    
                     ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("receiverTaperRadius"));
                 }
                 /* Read field data (or pseudo-observed data, respectively) */
-                receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+                receiversTrue.getSeismogramHandler().read(config, fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                     receiversTrue.getSeismogramHandler().filter(freqFilter);
 
@@ -315,9 +326,13 @@ int main(int argc, char *argv[])
                         
                         solver->resetCPML();
                         
+                        if (config.get<bool>("maxOffsetSrcEst") == 1)
+                            sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"));
+                        
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
                         sourceEst.applyFilter(sources, shotNumber);
-                        sourceSignalTaper->apply(sources.getSeismogramHandler());
+                        if (config.get<bool>("useSourceSignalTaper"))
+                            sourceSignalTaper->apply(sources.getSeismogramHandler());
                         
                         if (config.get<bool>("writeInvertedSource") == 1)
                             sources.getSeismogramHandler().write(config, config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) +  ".shot_" + std::to_string(shotNumber));
@@ -408,6 +423,9 @@ int main(int argc, char *argv[])
                 mask.unaryOp(mask, common::UnaryOp::SIGN);
                 *gradient *= mask;
             }
+            
+            if (config.get<bool>("useGradientTaper"))
+                gradientTaper->apply(*gradient);
 
             /* Output of gradient */
             if (config.get<IndexType>("WriteGradient"))
@@ -464,7 +482,7 @@ int main(int argc, char *argv[])
                         receivers.init(config, ctx, dist, shotNumber);
                         receiversTrue.init(config, ctx, dist, shotNumber);
                     }
-                    receiversTrue.getSeismogramHandler().readFromFileRaw(fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+                    receiversTrue.getSeismogramHandler().read(config, fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
 
                     HOST_PRINT(comm, "\n================Start Forward====================\n");
                     HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"
@@ -476,8 +494,11 @@ int main(int argc, char *argv[])
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                         sources.getSeismogramHandler().filter(freqFilter);
                     
-                    if (config.get<bool>("useSourceSignalInversion") == 1)
+                    if (config.get<bool>("useSourceSignalInversion") == 1) {
                         sourceEst.applyFilter(sources, shotNumber);
+                        if (config.get<bool>("useSourceSignalTaper"))
+                            sourceSignalTaper->apply(sources.getSeismogramHandler());
+                    }
 
                     start_t_shot = common::Walltime::get();
 
