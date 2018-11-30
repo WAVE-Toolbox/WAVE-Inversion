@@ -26,8 +26,8 @@ namespace KITGPI
         template<typename ValueType>
         void calcOffsets(scai::lama::DenseVector<ValueType> &result, scai::IndexType sourceIndex, scai::lama::DenseVector<scai::IndexType> const &receiverIndices, scai::IndexType NX, scai::IndexType NY, scai::IndexType /*NZ*/) {
             
-            Acquisition::Coordinates coords;
-            Acquisition::coordinate3D sourceCoords = coords.index2coordinate(sourceIndex, NX, NY, 0);
+            Acquisition::Coordinates coords(NX, NY, 0);
+            Acquisition::coordinate3D sourceCoords = coords.index2coordinate(sourceIndex);
             
             scai::lama::DenseVector<ValueType> recX;
             scai::lama::DenseVector<ValueType> recY;

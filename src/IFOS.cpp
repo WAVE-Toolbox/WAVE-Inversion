@@ -19,6 +19,7 @@
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
 #include <ForwardSolver/ForwardSolverFactory.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
+#include <CheckParameter/CheckParameter.hpp>
 
 #include <Wavefields/WavefieldsFactory.hpp>
 
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
     /* Acquisition geometry                    */
     /* --------------------------------------- */
     Acquisition::Sources<ValueType> sources(config, ctx, dist);
+    CheckParameter::checkSources<ValueType>(config, sources, comm);
     Acquisition::Receivers<ValueType> receivers;
     if (!config.get<bool>("useReceiversPerShot"))
         receivers.init(config, ctx, dist);
@@ -147,8 +149,10 @@ int main(int argc, char *argv[])
     /* True data                               */
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receiversTrue;
-    if (!config.get<bool>("useReceiversPerShot"))
+    if (!config.get<bool>("useReceiversPerShot")) {
         receiversTrue.init(config, ctx, dist);
+        CheckParameter::checkReceivers<ValueType>(config, receiversTrue, comm);
+    }
 
     /* --------------------------------------- */
     /* Misfit                                  */
@@ -291,6 +295,8 @@ int main(int argc, char *argv[])
                     receivers.init(config, ctx, dist, shotNumber);
                     receiversTrue.init(config, ctx, dist, shotNumber);
                     adjointSources.init(config, ctx, dist, shotNumber);
+                    
+                    CheckParameter::checkReceivers<ValueType>(config, receivers, comm);
                     
                     ReceiverTaper.init(dist,ctx,receivers,config,config.get<IndexType>("receiverTaperRadius"));
                 }
@@ -476,7 +482,7 @@ int main(int argc, char *argv[])
                         receivers.init(config, ctx, dist, shotNumber);
                         receiversTrue.init(config, ctx, dist, shotNumber);
                     }
-                    receiversTrue.getSeismogramHandler().read(config, fieldSeisName + ".shot_" + std::to_string(shotNumber) + ".mtx", 1);
+                    receiversTrue.getSeismogramHandler().read(config, fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
 
                     HOST_PRINT(comm, "\n================Start Forward====================\n");
                     HOST_PRINT(comm, "Start time stepping for shot " << shotNumber + 1 << " of " << sources.getNumShots() << "\n"

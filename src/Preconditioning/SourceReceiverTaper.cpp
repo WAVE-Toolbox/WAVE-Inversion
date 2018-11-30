@@ -43,12 +43,12 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 	// get 1D coordinate
         SourceCoordinate = Acquisition.getCoordinates().getValue(srcRecNum);
 
-        KITGPI::Acquisition::Coordinates coordTransform;
+        KITGPI::Acquisition::Coordinates coordTransform(config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"));
         KITGPI::Acquisition::coordinate3D coord;
         KITGPI::Acquisition::coordinate3D centerCoord;
 
 	// get 3D coordinate of source or receiver position
-        centerCoord = coordTransform.index2coordinate(SourceCoordinate, config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"));
+        centerCoord = coordTransform.index2coordinate(SourceCoordinate);
         ValueType distance;
 
         hmemo::ReadAccess<IndexType> read_globalIndices(globalIndices); // Get read access to localy stored global indices
@@ -61,7 +61,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
             write_taperValues_temp[i] = 0;
 	    
 	    // get 3D coordinate of current local position i
-            coord = coordTransform.index2coordinate(read_globalIndices[i], config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"));
+            coord = coordTransform.index2coordinate(read_globalIndices[i]);
         
 	    // distance between src/rec position and current local gridpoint
             distance = sqrt((centerCoord.x - coord.x) * (centerCoord.x - coord.x) + (centerCoord.y - coord.y) * (centerCoord.y - coord.y) + (centerCoord.z - coord.z) * (centerCoord.z - coord.z));

@@ -10,3 +10,8 @@ seismoDT=1.0e-03                               # Seismogram sampling in seconds
 
 SourceFilename=../src/Tests/Testfiles/testSourceTimeInversion_sources
 ReceiverFilename=../src/Tests/Testfiles/testSourceTimeInversion_receiver
+
+initSourcesFromSU=0                            # 1=initialize sources from SU file 0=not (one file per component, filename=SourceSignalFilename+.<component> + .SU)
+initReceiverFromSU=0                           # 1=initialize receiver from SU file 0=not (one file per component, filename=ReceiverFilename+.<component> + .SU)
+
+runSimultaneousShots=0
