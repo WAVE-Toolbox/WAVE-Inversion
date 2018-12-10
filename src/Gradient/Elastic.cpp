@@ -301,6 +301,18 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
     lhs.setDensity(temp);
 };
 
+/*! \brief Function for summing the gradients of all shot domains
+ *
+ \param commInterShot inter shot communication pointer
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
+{
+    commInterShot->sumArray(velocityP.getLocalValues());
+    commInterShot->sumArray(velocityS.getLocalValues());
+    commInterShot->sumArray(density.getLocalValues());
+}
+
 /*! \brief Function for scaling the gradients with the model parameter 
  *
  \param model Abstract model.
@@ -389,7 +401,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 
     gradLambda *= correlatedWavefields.getXcorrLambda();
     gradLambda *= -DT;
-    Common::replaceInvalid<ValueType>(gradLambda,0.0);
+    Common::replaceInvalid<ValueType>(gradLambda, 0.0);
 
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
@@ -432,8 +444,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         gradMu -= temp2;
 
         gradMu *= DT;
-        Common::replaceInvalid<ValueType>(gradMu,0.0);
-
+        Common::replaceInvalid<ValueType>(gradMu, 0.0);
     }
 
     // vp, vs , rho gradients

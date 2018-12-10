@@ -24,8 +24,8 @@
 #include "Gradient.hpp"
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
-#include <Modelparameter/Acoustic.hpp>
 #include "../Workflow/Workflow.hpp"
+#include <Modelparameter/Acoustic.hpp>
 
 namespace KITGPI
 {
@@ -42,7 +42,7 @@ namespace KITGPI
         {
           public:
             //! Default constructor.
-            Acoustic(){equationType = "acoustic";};
+            Acoustic() { equationType = "acoustic"; };
 
             //! Destructor, releases all allocated resources.
             ~Acoustic(){};
@@ -66,7 +66,7 @@ namespace KITGPI
             void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
             std::string getEquationType() const;
-            
+
             /* Getter methods for not requiered parameters */
             scai::lama::Vector<ValueType> const &getVelocityS() override;
             scai::lama::Vector<ValueType> const &getTauP() override;
@@ -111,10 +111,11 @@ namespace KITGPI
             void timesAssign(ValueType const &rhs);
             void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
-          private:
+            void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
 
-            using Gradient<ValueType>::equationType;  
-              
+          private:
+            using Gradient<ValueType>::equationType;
+
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;
 
