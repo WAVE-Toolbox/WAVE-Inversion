@@ -20,6 +20,7 @@ UseCubePartitioning=1     # 1=ON, 0=OFF
 ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=1                  # Number of processes in Z direction
+ProcNS=1                  # Number of shot domains
 
 # distance between two grid points
 DH=50                     # in meter
@@ -125,3 +126,6 @@ normalizeGradient=0        # normalize gradient of each shot
 
 # Model thresholds
 useModelThresholds=0       # use thresholds for model parameters
+
+# console output
+verbose=0                 # 0=normal output 1=verbose output (shows additional status messages which can be confusing if shots are run in parallel)

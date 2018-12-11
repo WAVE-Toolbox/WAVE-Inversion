@@ -21,9 +21,9 @@
 
 #include <iostream>
 
+#include "../Workflow/Workflow.hpp"
 #include "Gradient.hpp"
 #include <PartitionedInOut/PartitionedInOut.hpp>
-#include "../Workflow/Workflow.hpp"
 
 namespace KITGPI
 {
@@ -40,7 +40,7 @@ namespace KITGPI
         {
           public:
             //! Default constructor.
-            Elastic(){equationType = "elastic";};
+            Elastic() { equationType = "elastic"; };
 
             //! Destructor, releases all allocated resources.
             ~Elastic(){};
@@ -52,7 +52,6 @@ namespace KITGPI
 
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType pWaveModulus, ValueType sWaveModulus, ValueType rho);
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
-
 
             /*! \brief Set all wavefields to zero.
             */
@@ -66,7 +65,7 @@ namespace KITGPI
             void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
             std::string getEquationType() const;
-            
+
             /* Getter methods for not requiered parameters */
             scai::lama::Vector<ValueType> const &getTauP() override;
             scai::lama::Vector<ValueType> const &getTauS() override;
@@ -93,8 +92,9 @@ namespace KITGPI
             void timesAssign(ValueType const &rhs);
             void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
+            void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
+
           private:
-              
             using Gradient<ValueType>::equationType;
 
             using Gradient<ValueType>::density;
