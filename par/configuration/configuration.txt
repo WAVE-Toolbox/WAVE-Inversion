@@ -140,3 +140,5 @@ upperDensityTh=5000        # upper density threshold in kilo gramms per cubic me
 lowerVSTh=700              # lower vs threshold in meter per seconds
 upperVSTh=3500             # upper vs threshold in meter per seconds
 
+# console output
+verbose=0                 # 0=normal output 1=verbose output (shows additional status messages which can be confusing if shots are run in parallel)

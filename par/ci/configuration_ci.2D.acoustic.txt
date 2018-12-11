@@ -126,3 +126,6 @@ normalizeGradient=0        # normalize gradient of each shot
 
 # Model thresholds
 useModelThresholds=0       # use thresholds for model parameters
+
+# console output
+verbose=0                 # 0=normal output 1=verbose output (shows additional status messages which can be confusing if shots are run in parallel)
