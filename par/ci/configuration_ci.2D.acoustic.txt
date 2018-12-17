@@ -110,6 +110,7 @@ testShotIncr=1                                  # increment of test shots
 useSourceSignalInversion=0
 waterLevel=0.01
 writeInvertedSource=0
+useSeismogramTaper=0                            # 1=taper seismograms for source time function inversion 0=not
 
 # Preconditioning
 sourceReceiverTaperType=1                       # type of source and receiver typers 1=log 2=cos^2

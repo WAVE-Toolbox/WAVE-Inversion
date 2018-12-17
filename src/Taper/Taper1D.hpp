@@ -28,6 +28,7 @@ namespace KITGPI
             
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
             void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const override;
+            void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
             
             void readTaper(std::string filename, scai::IndexType partitionedIn) override;
             

@@ -122,18 +122,26 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperDown(lama::DenseVector<Va
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const {
     lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
-    if (direction == 0)
-        seismogramData.scaleRows(data); // scaleRows means, that every row is scaled with one entry in data
-    else
-        seismogramData.scaleColumns(data);
+    apply(seismogramData);
 }
 
-/*! \brief Apply taper to a single vector
+/*! \brief Apply taper to a Gradient
  \param seismogram Seismogram
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const {
     grad *= data;
+}
+
+/*! \brief Apply taper to a DenseMatrix
+ \param seismogram Seismogram
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat) const {
+    if (direction == 0)
+        mat.scaleRows(data); // scaleRows means, that every row is scaled with one entry in data
+    else
+        mat.scaleColumns(data);
 }
 
 /*! \brief Read a taper from file

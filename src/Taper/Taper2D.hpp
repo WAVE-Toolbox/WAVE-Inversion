@@ -22,6 +22,9 @@ namespace KITGPI
             void init(scai::dmemo::DistributionPtr rowDist, scai::dmemo::DistributionPtr colDist, scai::hmemo::ContextPtr ctx) override;
             
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
+            void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
+            
+            void readTaper(std::string filename, scai::IndexType partitionedIn);
             
         private:
             

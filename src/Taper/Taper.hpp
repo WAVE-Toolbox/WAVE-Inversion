@@ -40,8 +40,9 @@ namespace KITGPI
                 void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
                 virtual void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const = 0;
                 virtual void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const;
+                virtual void apply(scai::lama::DenseMatrix<ValueType> &mat) const = 0;
                 
-                virtual void readTaper(std::string filename, scai::IndexType partitionedIn);
+                virtual void readTaper(std::string filename, scai::IndexType partitionedIn) = 0;
                 
             private:
                 
