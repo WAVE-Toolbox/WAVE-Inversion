@@ -26,10 +26,10 @@
 #include <Configuration/Configuration.hpp>
 #include <PartitionedInOut/PartitionedInOut.hpp>
 
-#include "../ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
-#include <Modelparameter/Modelparameter.hpp>
 #include "../Workflow/Workflow.hpp"
+#include "../ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
 #include <Common/Common.hpp>
+#include <Modelparameter/Modelparameter.hpp>
 
 namespace KITGPI
 {
@@ -56,7 +56,6 @@ namespace KITGPI
             //! \brief Gradient pointer
             typedef std::shared_ptr<Gradient<ValueType>> GradientPtr;
 
-
             /*! \brief Abstract initialisation function
              * Standard initialisation function
              \param ctx Context
@@ -78,7 +77,7 @@ namespace KITGPI
             virtual void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
             virtual std::string getEquationType() const = 0;
-            
+
             virtual scai::lama::Vector<ValueType> const &getDensity();
             virtual scai::lama::Vector<ValueType> const &getDensity() const;
             virtual scai::lama::Vector<ValueType> const &getVelocityP();
@@ -104,7 +103,7 @@ namespace KITGPI
 
             virtual void setNumRelaxationMechanisms(scai::IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
-            
+
             void setNormalizeGradient(bool const &normGrad);
 
             virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
@@ -116,6 +115,8 @@ namespace KITGPI
             virtual void timesAssign(ValueType const &rhs) = 0;
             virtual void timesAssign(scai::lama::Vector<ValueType> const &rhs) = 0;
 
+            virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
+
             /* Operator overloading */
             /*lhs Base rhs Base */
             KITGPI::Gradient::Gradient<ValueType> &operator=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
@@ -123,7 +124,7 @@ namespace KITGPI
             KITGPI::Gradient::Gradient<ValueType> &operator+=(KITGPI::Gradient::Gradient<ValueType> const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator*=(ValueType const &rhs);
             KITGPI::Gradient::Gradient<ValueType> &operator*=(scai::lama::Vector<ValueType> const &rhs);
-            
+
             /*lhs: fd-Model-Base rhs: gradient Base */
             friend KITGPI::Modelparameter::Modelparameter<ValueType> &operator-=(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> &rhs)
             {
@@ -132,16 +133,15 @@ namespace KITGPI
             };
 
             virtual void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
-	    
-          protected:
 
-            void resetParameter(scai::lama::DenseVector<ValueType> &vector) { vector.setScalar( 0 ); }
+          protected:
+            void resetParameter(scai::lama::DenseVector<ValueType> &vector) { vector.setScalar(0); }
 
             scai::IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
             scai::IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files
 
-            std::string equationType;  
-            
+            std::string equationType;
+
             scai::lama::DenseVector<ValueType> density; //!< Vector storing Density.
 
             scai::lama::DenseVector<ValueType> velocityP; //!< Vector storing P-wave velocity.
@@ -151,7 +151,7 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> tauS; //!< Vector storing tauS for visco-elastic modelling.
 
             scai::IndexType numRelaxationMechanisms; //!< Number of relaxation mechanisms
-            ValueType relaxationFrequency;     //!< Relaxation Frequency
+            ValueType relaxationFrequency;           //!< Relaxation Frequency
 
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType value);
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, scai::IndexType partitionedIn);
@@ -163,7 +163,6 @@ namespace KITGPI
             bool normalizeGradient;
 
           private:
-              
             void allocateParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             void readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, scai::dmemo::DistributionPtr dist, scai::IndexType partitionedIn);
