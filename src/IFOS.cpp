@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
     Taper::Taper<ValueType>::TaperPtr sourceSignalTaper(Taper::Factory<ValueType>::Create("1D"));
     if (config.get<bool>("useSourceSignalInversion"))
         sourceEst.init(config, ctx, sources.getCoordinates().getDistributionPtr(), sourceSignalTaper);
-    
+
     /* --------------------------------------- */
     /* Frequency filter                        */
     /* --------------------------------------- */
@@ -359,9 +359,9 @@ int main(int argc, char *argv[])
 
                         if (config.get<bool>("maxOffsetSrcEst") == 1)
                             sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), nx, ny, nz);
-                        
+
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
-                        
+
                         sourceEst.applyFilter(sources, shotNumber);
                         if (config.get<bool>("useSourceSignalTaper"))
                             sourceSignalTaper->apply(sources.getSeismogramHandler());

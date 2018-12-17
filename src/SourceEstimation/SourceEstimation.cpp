@@ -12,12 +12,12 @@ template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration const &config, hmemo::ContextPtr ctx, dmemo::DistributionPtr sourceDistribution, std::shared_ptr<Taper::Taper<ValueType>> sourceSignalTaper)
 {
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-    
+
     if (config.get<bool>("useSeismogramTaper"))
         init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"), config.get<std::string>("seismogramTaperName"));
     else
         init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"));
-    
+
     if (config.get<bool>("useSourceSignalTaper")) {
         sourceSignalTaper->init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
         if (config.get<IndexType>("sourceSignalTaperStart2") == 0 && config.get<IndexType>("sourceSignalTaperEnd2") == 0)
@@ -38,7 +38,7 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
 {
     nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
     waterLevel = common::Math::pow<ValueType>(waterLvl, 2.0) * nFFT;
-    filter.allocate(sourceDistribution,std::make_shared<dmemo::NoDistribution>(nFFT));
+    filter.allocate(sourceDistribution, std::make_shared<dmemo::NoDistribution>(nFFT));
     if (!tprName.empty()) {
         readTaper = true;
         taperName = tprName;
@@ -85,11 +85,11 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
 
     // apply filter in frequency domain
     lama::fft<ComplexValueType>(seismoTrans, 1);
-    
+
     lama::DenseVector<ComplexValueType> filterTmp;
     filter.getRow(filterTmp, shotNumber);
     seismoTrans.scaleColumns(filterTmp);
-    
+
     lama::ifft<ComplexValueType>(seismoTrans, 1);
     seismoTrans *= 1.0 / nFFT;
 
@@ -120,10 +120,10 @@ void KITGPI::SourceEstimation<ValueType>::matCorr(lama::DenseVector<ComplexValue
     lama::fft<ComplexValueType>(BTmp, 1);
     ATmp.conj();
     ATmp.binaryOp(ATmp, common::BinaryOp::MULT, BTmp);
-    
+
     if (useOffsetMutes)
         ATmp.scaleRows(lama::eval<lama::DenseVector<ComplexValueType>>(lama::cast<ComplexValueType>(mutes[iComponent])));
-    
+
     ATmp.reduce(prod, 1, common::BinaryOp::ADD, common::UnaryOp::COPY);
 }
 
@@ -146,13 +146,12 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
                 lama::DenseMatrix<ValueType> seismoB_tmp(seismoA);
                 auto seismoTaper(Taper::Factory<ValueType>::Create("2D"));
                 seismoTaper->init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
-                std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber)+ "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]) + ".mtx";
+                std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber) + "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]) + ".mtx";
                 seismoTaper->readTaper(taperName, 1);
                 seismoTaper->apply(seismoA_tmp);
                 seismoTaper->apply(seismoB_tmp);
                 matCorr(filterTmp, seismoA_tmp, seismoB_tmp, iComponent);
-            }
-            else
+            } else
                 matCorr(filterTmp, seismoA, seismoB, iComponent);
             sum += filterTmp;
         }
@@ -168,36 +167,37 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
  \param NZ Number of grid points in z-direction
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, IndexType NX, IndexType NY, IndexType NZ) {
-    
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, IndexType NX, IndexType NY, IndexType NZ)
+{
+
     lama::DenseVector<ValueType> offsets;
     lama::DenseVector<IndexType> sourceIndexVec;
     IndexType sourceIndex(0);
-    
+
     bool sourceIndexSet(false);
-    
+
     // get index of source position
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (sources.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             sourceIndexVec = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getCoordinates();
-            
+
             if (sourceIndexVec.size() > 1 || (sourceIndexSet && sourceIndexVec.getValue(0) != sourceIndex))
                 COMMON_THROWEXCEPTION("offset not defined for more than one source position");
 
-            sourceIndex = sourceIndexVec.getValue(0);  
+            sourceIndex = sourceIndexVec.getValue(0);
         }
     }
-    
+
     // get indices of receiver position and calc mutes
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getCoordinates(), NX, NY, NZ);
-            
+
             offsets /= -maxOffset;
             offsets.unaryOp(offsets, common::UnaryOp::CEIL);
             offsets.unaryOp(offsets, common::UnaryOp::SIGN);
             offsets += 1.0;
-            
+
             mutes[iComponent] = offsets;
         }
     }
