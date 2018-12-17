@@ -4,13 +4,18 @@
  \param nt Number of time steps
  \param sourceDistribution Source distribution pointer
  \param waterLvl Water level
+ \param tprName if true a taper 
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl)
+void KITGPI::SourceEstimation<ValueType>::init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl, std::string tprName)
 {
     nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
     waterLevel = scai::common::Math::pow<ValueType>(waterLvl, 2.0) * nFFT;
     filter.allocate(sourceDistribution,std::make_shared<scai::dmemo::NoDistribution>(nFFT));
+    if (!tprName.empty()) {
+        readTaper = true;
+        taperName = tprName;
+    }
 }
 
 /*! \brief Calculate the Wiener filter
@@ -25,10 +30,10 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
     scai::lama::DenseVector<ComplexValueType> filterTmp1(filter.getColDistributionPtr(), 0.0);
     scai::lama::DenseVector<ComplexValueType> filterTmp2(filter.getColDistributionPtr(), 0.0);
 
-    addComponents(filterTmp1, receivers, receivers);
+    addComponents(filterTmp1, receivers, receivers, shotNumber);
     filterTmp1 += waterLevel * receivers.getSeismogramHandler().getNumTracesTotal();
     filterTmp1.unaryOp(filterTmp1, scai::common::UnaryOp::RECIPROCAL);
-    addComponents(filterTmp2, receivers, receiversTrue);
+    addComponents(filterTmp2, receivers, receiversTrue, shotNumber);
     filterTmp1 *= filterTmp2;
 
     filter.setRow(filterTmp1, shotNumber, scai::common::BinaryOp::COPY);
@@ -89,7 +94,7 @@ void KITGPI::SourceEstimation<ValueType>::matCorr(scai::lama::DenseVector<Comple
     ATmp.conj();
     ATmp.binaryOp(ATmp, scai::common::BinaryOp::MULT, BTmp);
     
-    if (useOffsetMutes)  // this has to be done here because fft on zero traces is a bad idea
+    if (useOffsetMutes)
         ATmp.scaleRows(scai::lama::eval<scai::lama::DenseVector<ComplexValueType>>(scai::lama::cast<ComplexValueType>(mutes[iComponent])));
     
     ATmp.reduce(prod, 1, scai::common::BinaryOp::ADD, scai::common::UnaryOp::COPY);
@@ -101,7 +106,7 @@ void KITGPI::SourceEstimation<ValueType>::matCorr(scai::lama::DenseVector<Comple
  \param receiversB Second receivers
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB)
+void KITGPI::SourceEstimation<ValueType>::addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB, scai::IndexType shotNumber)
 {
     scai::lama::DenseVector<ComplexValueType> filterTmp;
 
@@ -109,7 +114,19 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(scai::lama::DenseVector<
         if (receiversA.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             scai::lama::DenseMatrix<ValueType> const &seismoA = receiversA.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
             scai::lama::DenseMatrix<ValueType> const &seismoB = receiversB.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
-            matCorr(filterTmp, seismoA, seismoB, iComponent);
+            if (readTaper) {
+                scai::lama::DenseMatrix<ValueType> seismoA_tmp(seismoA);
+                scai::lama::DenseMatrix<ValueType> seismoB_tmp(seismoA);
+                Taper::Taper<ValueType>::TaperPtr seismoTaper(Taper::Factory<ValueType>::Create("2D"));
+                seismoTaper->init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getRowDistributionPtr()->getContextPtr());
+                std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber)+ "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]) + ".mtx";
+                seismoTaper->read(taperName);
+                seismoTaper->apply(seismoA_tmp);
+                seismoTaper->apply(seismoB_tmp);
+                matCorr(filterTmp, seismoA_tmp, seismoB_tmp, iComponent);
+            }
+            else
+                matCorr(filterTmp, seismoA, seismoB, iComponent);
             sum += filterTmp;
         }
     }

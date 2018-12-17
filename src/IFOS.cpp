@@ -323,7 +323,11 @@ int main(int argc, char *argv[])
                         if (config.get<bool>("maxOffsetSrcEst") == 1)
                             sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"));
                         
-                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
+                        if (config.get<bool>("useSeismogramTaper"))
+                            sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber, config.get<std::string>("seismogramTaperName"));
+                        else
+                            sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
+                        
                         sourceEst.applyFilter(sources, shotNumber);
                         if (config.get<bool>("useSourceSignalTaper"))
                             sourceSignalTaper->apply(sources.getSeismogramHandler());

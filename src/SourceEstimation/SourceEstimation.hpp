@@ -17,6 +17,7 @@
 #include <scai/lama/fft.hpp>
 
 #include "../Common/Common.hpp"
+#include "../Taper/TaperFactory.hpp"
 
 namespace KITGPI
 {
@@ -31,9 +32,9 @@ namespace KITGPI
     {
 
       public:
-        explicit SourceEstimation(): useOffsetMutes(false), mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE) {};
+        explicit SourceEstimation(): useOffsetMutes(false), mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE), readTaper(false), taperName("") {};
 
-        void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl);
+        void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl, std::string tprName = "");
 
         ~SourceEstimation(){};
 
@@ -46,12 +47,14 @@ namespace KITGPI
       private:
         ValueType waterLevel;
         scai::IndexType nFFT; // filter length
+        bool readTaper;
+        std::string taperName;
         scai::lama::DenseMatrix<ComplexValueType> filter;
         
         bool useOffsetMutes;
         std::vector<scai::lama::DenseVector<ValueType>> mutes;
 
         void matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B, scai::IndexType iComponent);
-        void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB);
+        void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB, scai::IndexType shotNumber);
     };
 }
