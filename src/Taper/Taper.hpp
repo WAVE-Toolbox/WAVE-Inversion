@@ -42,7 +42,7 @@ namespace KITGPI
             virtual void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const;
             virtual void apply(scai::lama::DenseMatrix<ValueType> &mat) const = 0;
 
-            virtual void readTaper(std::string filename, scai::IndexType partitionedIn) = 0;
+            virtual void read(std::string filename, scai::IndexType partitionedIn) = 0;
 
           private:
             virtual void calcCosineTaperUp(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd);

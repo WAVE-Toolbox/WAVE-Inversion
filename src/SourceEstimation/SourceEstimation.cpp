@@ -142,14 +142,16 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
             lama::DenseMatrix<ValueType> const &seismoA = receiversA.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
             lama::DenseMatrix<ValueType> const &seismoB = receiversB.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
             if (readTaper) {
-                lama::DenseMatrix<ValueType> seismoA_tmp(seismoA);
-                lama::DenseMatrix<ValueType> seismoB_tmp(seismoA);
+                lama::DenseMatrix<ValueType> seismoA_tmp(seismoA); // tmps needed so real seismograms don't get tapered
+                lama::DenseMatrix<ValueType> seismoB_tmp(seismoB);
+                
                 auto seismoTaper(Taper::Factory<ValueType>::Create("2D"));
                 seismoTaper->init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
                 std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber) + "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]) + ".mtx";
-                seismoTaper->readTaper(taperName, 1);
+                seismoTaper->read(taperNameTmp, 1);
                 seismoTaper->apply(seismoA_tmp);
                 seismoTaper->apply(seismoB_tmp);
+                
                 matCorr(filterTmp, seismoA_tmp, seismoB_tmp, iComponent);
             } else
                 matCorr(filterTmp, seismoA, seismoB, iComponent);

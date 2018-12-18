@@ -38,7 +38,7 @@ void KITGPI::Taper::Taper2D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
  * \param filename taper filename
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::readTaper(std::string filename, IndexType /*partitionedIn*/)
+void KITGPI::Taper::Taper2D<ValueType>::read(std::string filename, IndexType /*partitionedIn*/)
 {
     scai::dmemo::DistributionPtr distTraces(data.getRowDistributionPtr());
     scai::dmemo::DistributionPtr distSamples(data.getColDistributionPtr());

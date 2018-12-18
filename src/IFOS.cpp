@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
     Taper::Taper<ValueType>::TaperPtr gradientTaper(Taper::Factory<ValueType>::Create("1D"));
     if (config.get<bool>("useGradientTaper")) {
         gradientTaper->init(dist, ctx, 1);
-        gradientTaper->readTaper(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
+        gradientTaper->read(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
     }
 
     /* --------------------------------------- */

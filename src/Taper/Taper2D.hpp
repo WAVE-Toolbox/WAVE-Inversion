@@ -24,7 +24,7 @@ namespace KITGPI
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
 
-            void readTaper(std::string filename, scai::IndexType partitionedIn);
+            void read(std::string filename, scai::IndexType partitionedIn);
 
           private:
             scai::lama::DenseMatrix<ValueType> data;

@@ -156,7 +156,7 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
 /*! \brief Read a taper from file
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::readTaper(std::string filename, IndexType partitionedIn)
+void KITGPI::Taper::Taper1D<ValueType>::read(std::string filename, IndexType partitionedIn)
 {
 
     PartitionedInOut::PartitionedInOut<ValueType> partitionIn;

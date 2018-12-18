@@ -30,7 +30,7 @@ namespace KITGPI
             void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const override;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
 
-            void readTaper(std::string filename, scai::IndexType partitionedIn) override;
+            void read(std::string filename, scai::IndexType partitionedIn) override;
 
           private:
             void calcCosineTaperUp(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd) override;
