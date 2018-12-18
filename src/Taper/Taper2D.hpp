@@ -12,21 +12,22 @@ namespace KITGPI
         class Taper2D : public Taper<ValueType>
         {
 
-        public:
+          public:
             //! Default constructor
             Taper2D(){};
 
             //! Default destructor
             ~Taper2D(){};
-            
+
             void init(scai::dmemo::DistributionPtr rowDist, scai::dmemo::DistributionPtr colDist, scai::hmemo::ContextPtr ctx) override;
-            
+
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
-            
-        private:
-            
+            void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
+
+            void read(std::string filename, scai::IndexType partitionedIn);
+
+          private:
             scai::lama::DenseMatrix<ValueType> data;
-            
         };
     }
 }
