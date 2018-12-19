@@ -5,7 +5,11 @@
 
 using namespace scai;
 using namespace KITGPI;
- typedef double ValueType;
+
+typedef double ValueType;
+ 
+bool verbose; // global variable definition
+ 
 TEST(StepLengthSearchTest, TestParabolicFit)
 {
 lama::DenseVector<ValueType> xValues(3,1,scai::hmemo::Context::getContextPtr());

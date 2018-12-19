@@ -27,7 +27,6 @@ void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, sc
     init(ctx, dist, 0.0, 0.0);
 }
 
-
 /*! \brief Initialisation that is generating a homogeneous gradient
  *
  *  Generates a homogeneous gradient, which will be initialized by the two given scalar values.
@@ -42,7 +41,6 @@ void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, sc
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(density, ctx, dist, rho_const);
 }
-
 
 //! \brief Copy constructor
 template <typename ValueType>
@@ -70,7 +68,6 @@ void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexTyp
         std::string filenamedensity = filename + ".density.mtx";
         this->writeParameterisation(density, filenamedensity, partitionedOut);
     }
-    
 };
 
 /*! \brief Get equationType (acoustic)
@@ -295,6 +292,17 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::
     lhs.setDensity(temp);
 };
 
+/*! \brief Function for summing the gradients of all shot domains
+ *
+ \param commInterShot inter shot communication pointer
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
+{
+    commInterShot->sumArray(velocityP.getLocalValues());
+    commInterShot->sumArray(density.getLocalValues());
+}
+
 /*! \brief function for scaling the gradients with the model parameter 
  *
  \param model Abstract model.
@@ -351,7 +359,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     gradBulk = scai::lama::pow(model.getVelocityP(), 2);
     gradBulk *= model.getDensity();
     gradBulk = scai::lama::pow(gradBulk, -2);
-    Common::replaceInvalid<ValueType>(gradBulk,0.0);
+    Common::replaceInvalid<ValueType>(gradBulk, 0.0);
 
     gradBulk *= correlatedWavefields.getXcorrLambda();
 
@@ -370,7 +378,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     }
 
     if (workflow.getInvertForDensity()) {
-	//grad_densityRaw
+        //grad_densityRaw
         //grad_density' = vp^2 * gradBulk + (-) (sum(i) (dt Vadj,i * dVfw,i/dt))
         density = scai::lama::pow(model.getVelocityP(), 2);
         density *= gradBulk;

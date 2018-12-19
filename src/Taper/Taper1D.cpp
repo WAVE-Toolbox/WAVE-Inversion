@@ -8,8 +8,9 @@ using namespace scai;
  \param dir Direction (0=taper columns, 1=taper rows)
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::init(dmemo::DistributionPtr dist, hmemo::ContextPtr ctx, bool dir) {
-    
+void KITGPI::Taper::Taper1D<ValueType>::init(dmemo::DistributionPtr dist, hmemo::ContextPtr ctx, bool dir)
+{
+
     direction = dir;
     data.allocate(dist);
     data = 1.0; // in this state the taper does nothing when applied
@@ -19,8 +20,9 @@ void KITGPI::Taper::Taper1D<ValueType>::init(dmemo::DistributionPtr dist, hmemo:
 /*! \brief Get direction of taper
  */
 template <typename ValueType>
-bool KITGPI::Taper::Taper1D<ValueType>::getDirection() const {
-    return(direction);
+bool KITGPI::Taper::Taper1D<ValueType>::getDirection() const
+{
+    return (direction);
 }
 
 /*! \brief Wrapper to calculate a cosine taper with one transition zone
@@ -29,10 +31,11 @@ bool KITGPI::Taper::Taper1D<ValueType>::getDirection() const {
  \param reverse 0 = Taper starts at 0 and ends with 1 (slope >= 0), 1 = Taper starts at 1 and ends with 0 (slope <= 0)
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart, IndexType iEnd, bool reverse) {
-    
+void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart, IndexType iEnd, bool reverse)
+{
+
     SCAI_ASSERT_ERROR(iStart >= 0 && iEnd < data.size() && iStart < iEnd, "invalid taper edges");
-    
+
     if (reverse)
         calcCosineTaperDown(data, iStart, iEnd);
     else
@@ -47,15 +50,16 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart, IndexT
  \param reverse 0 = Taper starts at 0 and ends with 0 , 1 = Taper starts at 1 and ends with 1
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, IndexType iEnd1, IndexType iStart2, IndexType iEnd2, bool reverse) {
-    
+void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, IndexType iEnd1, IndexType iStart2, IndexType iEnd2, bool reverse)
+{
+
     SCAI_ASSERT_ERROR(iStart1 >= 0 && iEnd2 < data.size() && iStart1 < iEnd1 && iStart2 < iEnd2 && iEnd1 <= iStart2, "invalid taper edges");
-    
+
     lama::DenseVector<ValueType> helpTaper;
-    calcCosineTaperDown(data, iStart1, iEnd1);
-    calcCosineTaperUp(helpTaper, iStart2, iEnd2);
+    calcCosineTaperUp(helpTaper, iStart1, iEnd1);
+    calcCosineTaperDown(data, iStart2, iEnd2);
     data *= helpTaper;
-    
+
     if (reverse)
         data = -data + 1;
 }
@@ -66,26 +70,27 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, Index
  \param iEnd End index of transition zone
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperUp(lama::DenseVector<ValueType> &result, IndexType iStart, IndexType iEnd) {
-    
+void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperUp(lama::DenseVector<ValueType> &result, IndexType iStart, IndexType iEnd)
+{
+
     // first part of taper
-    lama::DenseVector<ValueType> firstPart(iStart,0.0);
+    lama::DenseVector<ValueType> firstPart(iStart, 0.0);
     lama::DenseVector<ValueType> tmpResult;
-    
+
     // second part of taper
     lama::DenseVector<ValueType> secondPart = lama::linearDenseVector<ValueType>(iEnd - iStart, 1.0, -1.0 / (iEnd - iStart));
     secondPart *= M_PI / 2.0;
     secondPart.unaryOp(secondPart, common::UnaryOp::COS);
     secondPart.binaryOpScalar(secondPart, 2.0, common::BinaryOp::POW, false);
     tmpResult.cat(firstPart, secondPart);
-    
+
     // third part of taper
     firstPart = tmpResult;
-    secondPart.allocate(data.size()-iEnd);
+    secondPart.allocate(data.size() - iEnd);
     secondPart = 1.0;
-    tmpResult.cat(firstPart,secondPart);
-    
-    result.assignDistribute(tmpResult,data.getDistributionPtr());
+    tmpResult.cat(firstPart, secondPart);
+
+    result.assignDistribute(tmpResult, data.getDistributionPtr());
 }
 
 /*! \brief Calculate cosine taper which starts with 1 and ends with 0 (slope <= 0)
@@ -94,38 +99,84 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperUp(lama::DenseVector<Valu
  \param iEnd End index of transition zone
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperDown(lama::DenseVector<ValueType> &result, IndexType iStart, IndexType iEnd) {
-    
+void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperDown(lama::DenseVector<ValueType> &result, IndexType iStart, IndexType iEnd)
+{
+
     // first part of taper
-    lama::DenseVector<ValueType> firstPart(iStart,1.0);
+    lama::DenseVector<ValueType> firstPart(iStart, 1.0);
     lama::DenseVector<ValueType> tmpResult;
-    
+
     // second part of taper
     lama::DenseVector<ValueType> secondPart = lama::linearDenseVector<ValueType>(iEnd - iStart, 0.0, 1.0 / (iEnd - iStart));
     secondPart *= M_PI / 2.0;
     secondPart.unaryOp(secondPart, common::UnaryOp::COS);
     secondPart.binaryOpScalar(secondPart, 2.0, common::BinaryOp::POW, false);
     tmpResult.cat(firstPart, secondPart);
-    
+
     // third part of taper
     firstPart = tmpResult;
-    secondPart.allocate(data.size()-iEnd);
+    secondPart.allocate(data.size() - iEnd);
     secondPart = 0.0;
-    tmpResult.cat(firstPart,secondPart);
-    
-    result.assignDistribute(tmpResult,data.getDistributionPtr());
+    tmpResult.cat(firstPart, secondPart);
+
+    result.assignDistribute(tmpResult, data.getDistributionPtr());
 }
 
 /*! \brief Apply taper to a single seismogram
  \param seismogram Seismogram
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const {
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const
+{
     lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
+    apply(seismogramData);
+}
+
+/*! \brief Apply taper to a Gradient
+ \param seismogram Seismogram
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
+{
+    grad *= data;
+}
+
+/*! \brief Apply taper to a DenseMatrix
+ \param seismogram Seismogram
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat) const
+{
     if (direction == 0)
-        seismogramData.scaleRows(data); // scaleRows means, that every row is scaled with one entry in data
+        mat.scaleRows(data); // scaleRows means, that every row is scaled with one entry in data
     else
-        seismogramData.scaleColumns(data);
+        mat.scaleColumns(data);
+}
+
+/*! \brief Read a taper from file
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::read(std::string filename, IndexType partitionedIn)
+{
+
+    PartitionedInOut::PartitionedInOut<ValueType> partitionIn;
+    lama::DenseVector<ValueType> dataTmp;
+
+    switch (partitionedIn) {
+    case false:
+        partitionIn.readFromOneFile(dataTmp, filename, data.getDistributionPtr());
+        break;
+
+    case true:
+        partitionIn.readFromDistributedFiles(dataTmp, filename, data.getDistributionPtr());
+        break;
+
+    default:
+        COMMON_THROWEXCEPTION("Unexpected input option!")
+        break;
+    }
+
+    data = dataTmp;
 }
 
 template class KITGPI::Taper::Taper1D<double>;
