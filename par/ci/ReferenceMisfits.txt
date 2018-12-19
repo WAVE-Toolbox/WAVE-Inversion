@@ -1,0 +1,2 @@
+# Dimension EquationType Misfit
+2D  acoustic    97.5

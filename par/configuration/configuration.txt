@@ -1,0 +1,146 @@
+# Input file IFOS
+# The format has to be name=value (without any white spaces)
+# Use the hashtag "#" for comments
+
+#---------------------------------------------------------#
+#             Forward modelling parameters                #
+#---------------------------------------------------------#
+
+# Type of forward simulation
+dimension=2D              # Dimension: 2D or 3D
+equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
+
+# define spatial sampling: number of grid points in direction
+NX=100                    # horizontal 1
+NY=100                    # depth
+NZ=1                    # horizontal 2
+
+# define Partitioning
+UseCubePartitioning=1     # 1=ON, 0=OFF
+ProcNX=2                  # Number of processes in X direction
+ProcNY=2                  # Number of processes in Y direction
+ProcNZ=1                  # Number of processes in Z direction
+ProcNS=1                  # Number of shot domains
+
+# distance between two grid points
+DH=50                     # in meter
+
+# define temporal sampling
+DT=2.0e-03                # temporal sampling in seconds
+T=2                       # total simulation time in seconds 
+
+# define order of spatial FD operator
+spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
+
+# define material parameter
+ModelRead=0               # 1=Model will be read from file, 0=generated on the fly
+ModelWrite=0              # 1=Model will be written to disk, 0=not
+ModelFilename=model/model # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
+ModelParametrisation=2    # 1=Module, 2=Velocity
+
+# parallel input-output
+PartitionedIn=0           # 1=Read files parallel, 0=serial 
+PartitionedOut=0          # 1=Write files parallel, 0=serial
+
+# Apply the free surface condition
+FreeSurface=2             # 0=OFF, 1=mirror method, 2=improved vacuum formulation
+
+# Damping Boundary
+DampingBoundary=1         # Type of damping boundary: 0=OFF 1=ABS 2=CPML
+BoundaryWidth=10          # Width of damping boundary in grid points
+DampingCoeff=8.0          # Damping coefficient 
+VMaxCPML=3500.0           # Maximum velocity of the CPML
+CenterFrequencyCPML=5.0   # Center frequency inside the boundaries
+NPower=4.0
+KMaxCPML=1.0
+    
+# Viscoelastic modelling
+numRelaxationMechanisms=0 # Number of relaxation mechanisms 
+relaxationFrequency=0     # Relaxation frequency
+
+# generate homogeneous model
+velocityP=3500            # P-wave velocity in meter per seconds
+velocityS=0               # S-wave velocity in meter per seconds
+rho=2000                  # Density in kilo gramms per cubic meter
+tauP=0.0                  # Tau value for P-waves
+tauS=0.0                  # Tau value for S-waves
+
+# Acquisition
+SourceFilename=acquisition/sources         # location of source file
+ReceiverFilename=acquisition/receiver      # location of receiver file
+SeismogramFilename=seismograms/seismogram      # target location of seismogram
+SourceSignalFilename=acquisition/signal        # location of the source signal file
+SeismogramFormat=1                             # 1=MTX, 2=SU
+initSourcesFromSU=0                            # 1=initialize sources from SU file 0=not (one file per component, filename=SourceSignalFilename+.<component> + .SU)
+initReceiverFromSU=0                           # 1=initialize receiver from SU file 0=not (one file per component, filename=ReceiverFilename+.<component> + .SU)
+seismoDT=2.0e-03                               # Seismogram sampling in seconds
+NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
+runSimultaneousShots=0
+runForward=0
+
+#---------------------------------------------------------#
+#                Inversion Parameters
+#---------------------------------------------------------#
+# note: more (obligatory!) inversion parameters are defined 
+#       in the workflow file
+#---------------------------------------------------------#
+
+# Input/Output
+fieldSeisName=ci/rectangle.true        # location/basename of input seismograms
+writeGradient=1                        # 1=Gradient will be written to disk, 0=not
+writeGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
+gradientFilename=gradients/grad        # location/basename of output gradients
+logFilename=logs/steplengthSearch.log  # target location of log file
+
+# General settings
+maxIterations=20                       # maximum number of inversion iterations (per workflow stage if used)
+misfitType=L2                          # type of misfit (L2, etc.) 
+optimizationType=conjugateGradient     # type of optimization method
+workflowFilename=workflow/workflow.txt # location/basename of workflow file
+
+# Step length search
+steplengthInit=0.03                    # initial steplength
+steplengthMin=0.001                    # minimum step length
+steplengthMax=0.1                      # maximum step length
+maxStepCalc=4                          # maximum number of additional forward calculations to find a proper step length
+scalingFactor=2                        # factor for multiplication or division of test step length
+testShotIncr=1                         # increment of test shots
+
+# Source time function inversion
+useSourceSignalInversion=0                         # 1= use source time inversion
+waterLevel=1e-10                                   # water level of source time inversion
+writeInvertedSource=1                              # 1=source signal will be written to disk, 0=not
+sourceSeismogramFilename=sourceInversion/invSource # location/basename of output source signal
+useSourceSignalTaper=1                             # use cosine taper for source signal
+sourceSignalTaperStart1=0                          # start index of first cosine taper
+sourceSignalTaperEnd1=100                          # end index of first cosine taper
+sourceSignalTaperStart2=0                          # start index of second cosine taper (0=no second transition zone)
+sourceSignalTaperEnd2=0                            # end index of second cosine taper (0=no second transition zone)
+maxOffsetSrcEst=0                                  # maximum offset in grid points to allow (0=no offset limits)
+useSeismogramTaper=0                               # 1=taper seismograms for source time function inversion 0=not
+seismogramTaperName=taper/seismoTaper              # location/basename of seismogram taper
+
+# Preconditioning
+sourceReceiverTaperType=1                      # type of source and receiver tapers 1=log 2=cos^2
+sourceTaperRadius=20                           # circular source taper: Radius in gridpoints
+receiverTaperRadius=20                         # circular receiver taper: Radius in gridpoints
+useGradientTaper=0                             # use a taper for the gradient
+gradientTaperFilename=gradients/gradientTaper  # location of gradient taper
+useEnergyPreconditioning=1                     # approximated diagonal Hessian is applied to gradient per shot
+epsilonHessian=0.005                           # parameter to stabilize matrix inversion (recommended: 0.005)
+saveApproxHessian=0                            # water level for hessian approximation
+approxHessianName=gradients/Hessian            # target location of approximated hessian
+normalizeGradient=0                            # normalize gradient of each shot
+
+# Model thresholds
+useModelThresholds=0       # use thresholds for model parameters
+lowerVPTh=1481             # lower vp threshold in meter per seconds
+upperVPTh=6000             # upper vp threshold in meter per seconds
+lowerDensityTh=1000        # lower density threshold in kilo gramms per cubic meter
+upperDensityTh=5000        # upper density threshold in kilo gramms per cubic meter
+lowerVSTh=700              # lower vs threshold in meter per seconds
+upperVSTh=3500             # upper vs threshold in meter per seconds
+
+# console output
+verbose=0                 # 0=normal output 1=verbose output (shows additional status messages which can be confusing if shots are run in parallel)

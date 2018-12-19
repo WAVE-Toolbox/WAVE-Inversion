@@ -1,0 +1,92 @@
+# Input file SOFI
+# The format has to be name=value (without any white spaces)
+# Use the hashtag "#" for comments
+
+# Type of forward simulation
+dimension=2D              # Dimension: 2D or 3D
+equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
+
+# define spatial sampling: number of grid points in direction
+NX=100                    # horizontal 1
+NY=100                    # depth
+NZ=1                    # horizontal 2
+
+# define Partitioning
+UseCubePartitioning=1     # 1=ON, 0=OFF
+ProcNX=2                  # Number of processes in X direction
+ProcNY=2                  # Number of processes in Y direction
+ProcNZ=1                  # Number of processes in Z direction
+
+# distance between two grid points
+DH=50                     # in meter
+
+# define temporal sampling
+DT=2.0e-03                # temporal sampling in seconds
+T=2                       # total simulation time in seconds 
+
+# define order of spatial FD operator
+spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
+
+# define material parameter
+ModelRead=1               # 1=Model will be read from file, 0=generated on the fly
+ModelWrite=0              # 1=Model will be written to disk, 0=not
+ModelFilename=../model/ToyModel_true # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
+
+# parallel input-output
+PartitionedIn=0           # 1=Read files parallel, 0=serial 
+PartitionedOut=0          # 1=Write files parallel, 0=serial
+
+# Apply the free surface condition
+FreeSurface=0             # 1=ON, 0=OFF
+
+# Damping Boundary
+DampingBoundary=1         # 1=ON, 0=OFF
+DampingBoundaryType=1     # Type of damping boundary: 1=ABS 2=CPML
+BoundaryWidth=10          # Width of damping boundary in grid points
+DampingCoeff=8.0          # Damping coefficient 
+VMaxCPML=3500.0           # Maximum velocity of the CPML
+CenterFrequencyCPML=5.0   # Center frequency inside the boundaries
+NPower=4.0
+KMaxCPML=1.0
+
+saveSnapshots=0
+tincSnapshot=0
+tFirstSnapshot=0
+tLastSnapshot=0
+    
+# Viscoelastic modelling
+numRelaxationMechanisms=0 # Number of relaxation mechanisms 
+relaxationFrequency=0     # Relaxation frequency
+
+# generate homogeneous model
+velocityP=3500            # P-wave velocity in meter per seconds
+velocityS=0               # S-wave velocity in meter per seconds
+rho=2000                  # Density in kilo gramms per cubic meter
+tauP=0.0                  # Tau value for P-waves
+tauS=0.0                  # Tau value for S-waves
+
+# Acquisition
+SourceFilename=Input/sources         # location of source file
+ReceiverFilename=Input/receiver      # location of receiver file
+SeismogramFilename=../seismograms/ToyExample.true      # target location of seismogram
+SeismogramFormat=1                             # 1=MTX, 2=SU
+NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+runSimultaneousShots=0
+useReceiversPerShot=0
+
+snapType=0
+
+#ToyModel specification 
+
+boxWidth=20;
+boxHeight=20;
+
+vp1=3800
+vp2=3800
+vp3=3300
+vp4=2900
+
+#density1=3000
+#density2=3000
+#density3=3000
+#density4=3000
