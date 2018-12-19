@@ -259,10 +259,6 @@ int main(int argc, char *argv[])
     if (!config.get<bool>("useReceiversPerShot"))
         ReceiverTaper.init(dist, ctx, receivers, config, config.get<IndexType>("receiverTaperRadius"));
     Taper::Taper<ValueType>::TaperPtr gradientTaper(Taper::Factory<ValueType>::Create("1D"));
-    if (config.get<bool>("useGradientTaper")) {
-        gradientTaper->init(dist, ctx, 1);
-        gradientTaper->read(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
-    }
 
     /* --------------------------------------- */
     /* Gradient preconditioning                */
@@ -294,6 +290,11 @@ int main(int argc, char *argv[])
             freqFilter.calc(transFcnFmly, "lp", workflow.getFilterOrder(), workflow.getLowerCornerFreq());
         else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
             freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());
+        
+        if (workflow.getUseGradientTaper()) {
+            gradientTaper->init(dist, ctx, 1);
+            gradientTaper->read(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
+        }
 
         /* --------------------------------------- */
         /*        Loop over iterations             */
@@ -458,7 +459,7 @@ int main(int argc, char *argv[])
                 *gradient *= mask;
             }
 
-            if (config.get<bool>("useGradientTaper"))
+            if (workflow.getUseGradientTaper())
                 gradientTaper->apply(*gradient);
 
             /* Output of gradient */
