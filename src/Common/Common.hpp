@@ -24,10 +24,10 @@ namespace KITGPI
         \param NZ Number of grid points in z-direction
         */
         template<typename ValueType>
-        void calcOffsets(scai::lama::DenseVector<ValueType> &result, scai::IndexType sourceIndex, scai::lama::DenseVector<scai::IndexType> const &receiverIndices, scai::IndexType NX, scai::IndexType NY, scai::IndexType /*NZ*/) {
+        void calcOffsets(scai::lama::DenseVector<ValueType> &result, scai::IndexType sourceIndex, scai::lama::DenseVector<scai::IndexType> const &receiverIndices, scai::IndexType NX, scai::IndexType NY, scai::IndexType /*NZ*/,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates) {
             
-            Acquisition::Coordinates coords(NX, NY, 0);
-            Acquisition::coordinate3D sourceCoords = coords.index2coordinate(sourceIndex);
+
+            Acquisition::coordinate3D sourceCoords = modelCoordinates.index2coordinate(sourceIndex);
             
             scai::lama::DenseVector<ValueType> recX;
             scai::lama::DenseVector<ValueType> recY;

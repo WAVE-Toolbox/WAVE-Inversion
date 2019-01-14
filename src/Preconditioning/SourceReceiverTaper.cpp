@@ -14,7 +14,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::apply(KITGPI::Grad
 }
 
 template <typename ValueType>
-void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config,IndexType radius)
+void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates,IndexType radius)
 {
     
     lama::DenseVector<ValueType> taperTmp(dist, 0.0);
@@ -38,17 +38,16 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 
     
     //loop over all shots or receivers
-    for (IndexType srcRecNum = 0; srcRecNum < Acquisition.getCoordinates().size(); srcRecNum++) {
+    for (IndexType srcRecNum = 0; srcRecNum < Acquisition.get1DCoordinates().size(); srcRecNum++) {
 
 	// get 1D coordinate
-        SourceCoordinate = Acquisition.getCoordinates().getValue(srcRecNum);
+        SourceCoordinate = Acquisition.get1DCoordinates().getValue(srcRecNum);
 
-        KITGPI::Acquisition::Coordinates coordTransform(config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"));
         KITGPI::Acquisition::coordinate3D coord;
         KITGPI::Acquisition::coordinate3D centerCoord;
 
 	// get 3D coordinate of source or receiver position
-        centerCoord = coordTransform.index2coordinate(SourceCoordinate);
+        centerCoord = modelCoordinates.index2coordinate(SourceCoordinate);
         ValueType distance;
 
         hmemo::ReadAccess<IndexType> read_globalIndices(globalIndices); // Get read access to localy stored global indices
@@ -61,7 +60,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
             write_taperValues_temp[i] = 0;
 	    
 	    // get 3D coordinate of current local position i
-            coord = coordTransform.index2coordinate(read_globalIndices[i]);
+            coord = modelCoordinates.index2coordinate(read_globalIndices[i]);
         
 	    // distance between src/rec position and current local gridpoint
             distance = sqrt((centerCoord.x - coord.x) * (centerCoord.x - coord.x) + (centerCoord.y - coord.y) * (centerCoord.y - coord.y) + (centerCoord.z - coord.z) * (centerCoord.z - coord.z));

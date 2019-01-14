@@ -169,7 +169,7 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
  \param NZ Number of grid points in z-direction
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, IndexType NX, IndexType NY, IndexType NZ)
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, IndexType NX, IndexType NY, IndexType NZ,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates)
 {
 
     lama::DenseVector<ValueType> offsets;
@@ -181,7 +181,7 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
     // get index of source position
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (sources.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
-            sourceIndexVec = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getCoordinates();
+            sourceIndexVec = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates();
 
             if (sourceIndexVec.size() > 1 || (sourceIndexSet && sourceIndexVec.getValue(0) != sourceIndex))
                 COMMON_THROWEXCEPTION("offset not defined for more than one source position");
@@ -193,7 +193,7 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
     // get indices of receiver position and calc mutes
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
-            Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getCoordinates(), NX, NY, NZ);
+            Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates(), NX, NY, NZ,modelCoordinates);
 
             offsets /= -maxOffset;
             offsets.unaryOp(offsets, common::UnaryOp::CEIL);

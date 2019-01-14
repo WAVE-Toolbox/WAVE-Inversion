@@ -43,7 +43,7 @@ namespace KITGPI
 
         void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, scai::IndexType shotNumber);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotNumber) const;
-        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffsets, scai::IndexType NX, scai::IndexType NY, scai::IndexType NZ);
+        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffsets, scai::IndexType NX, scai::IndexType NY, scai::IndexType NZ,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
 
       private:
         ValueType waterLevel;

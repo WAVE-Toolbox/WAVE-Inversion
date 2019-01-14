@@ -18,22 +18,26 @@ TEST(SourceTimeInversionTest, TestSourceEstimation)
     
     Configuration::Configuration testConfig("../src/Tests/Testfiles/testSourceTimeInversion_config.txt");
     
+    // Create an object of the mapping (3D-1D) class Coordinates
+
+    Acquisition::Coordinates<ValueType> modelCoordinates(testConfig.get<IndexType>("NX"), testConfig.get<IndexType>("NY"), testConfig.get<IndexType>("NZ"), testConfig.get<ValueType>("DH"));
+    
     Acquisition::Receivers<ValueType> receivers;
-    receivers.init(testConfig, ctx, dist);
+    receivers.init(testConfig, modelCoordinates, ctx, dist);
     lama::DenseMatrix<ValueType> &receiversData = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData();
     receiversData.readFromFile("../src/Tests/Testfiles/testSourceTimeInversion_synth.shot_0.p.mtx");
     
     Acquisition::Receivers<ValueType> receiversTrue;
-    receiversTrue.init(testConfig, ctx, dist);
+    receiversTrue.init(testConfig, modelCoordinates, ctx, dist);
     lama::DenseMatrix<ValueType> &receiversTrueData = receiversTrue.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData();
     receiversTrueData.readFromFile("../src/Tests/Testfiles/testSourceTimeInversion_true.shot_0.p.mtx");
     
     Acquisition::Sources<ValueType> sources;
-    sources.init(testConfig, ctx, dist);
+    sources.init(testConfig,modelCoordinates, ctx, dist);
     lama::DenseMatrix<ValueType> &sourcesData = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData();
     sourcesData.readFromFile("../src/Tests/Testfiles/testSourceTimeInversion_sourceSignal.mtx");
     
-    sourceEst.init(500,sources.getCoordinates().getDistributionPtr(),1.0e-10);
+    sourceEst.init(500,sources.get1DCoordinates().getDistributionPtr(),1.0e-10);
     sourceEst.estimateSourceSignal(receivers, receiversTrue, 0);
     sourceEst.applyFilter(sources, 0);
             
