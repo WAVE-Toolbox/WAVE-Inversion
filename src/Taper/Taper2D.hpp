@@ -1,5 +1,6 @@
 #pragma once
-#include "Taper.hpp"
+#include <scai/lama.hpp>
+#include <Acquisition/SeismogramHandler.hpp>
 
 namespace KITGPI
 {
@@ -9,7 +10,7 @@ namespace KITGPI
 
         //! \brief 2-D Taper
         template <typename ValueType>
-        class Taper2D : public Taper<ValueType>
+        class Taper2D
         {
 
           public:
@@ -19,12 +20,13 @@ namespace KITGPI
             //! Default destructor
             ~Taper2D(){};
 
-            void init(scai::dmemo::DistributionPtr rowDist, scai::dmemo::DistributionPtr colDist, scai::hmemo::ContextPtr ctx) override;
+            void init(scai::dmemo::DistributionPtr rowDist, scai::dmemo::DistributionPtr colDist, scai::hmemo::ContextPtr ctx);
 
+            void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
 
-            void read(std::string filename, scai::IndexType partitionedIn);
+            void read(std::string filename);
 
           private:
             scai::lama::DenseMatrix<ValueType> data;

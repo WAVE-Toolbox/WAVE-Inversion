@@ -15,6 +15,21 @@ void KITGPI::Taper::Taper2D<ValueType>::init(dmemo::DistributionPtr rowDist, dme
     data.setContextPtr(ctx);
 }
 
+/*! \brief Wrapper to support SeismogramHandler
+ \param seismograms SeismogramHandler object
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
+{
+    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
+            apply(thisSeismogram);
+        }
+    }
+}
+
+
 /*! \brief Apply taper to a single seismogram
  \param seismogram Seismogram
  */
@@ -26,7 +41,7 @@ void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::Seismogram<Va
 }
 
 /*! \brief Apply taper to a DenseMatrix
- \param seismogram Seismogram
+ \param mat Seismogram
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat) const
@@ -38,7 +53,7 @@ void KITGPI::Taper::Taper2D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
  * \param filename taper filename
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::read(std::string filename, IndexType /*partitionedIn*/)
+void KITGPI::Taper::Taper2D<ValueType>::read(std::string filename)
 {
     scai::dmemo::DistributionPtr distTraces(data.getRowDistributionPtr());
     scai::dmemo::DistributionPtr distSamples(data.getColDistributionPtr());

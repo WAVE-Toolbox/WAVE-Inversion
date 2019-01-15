@@ -69,7 +69,7 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
         workflowFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');}
         
     /* Extract variables from current workflow stage */
-    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq;
+    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> useGradientTaper;
     
     workflowFile.close();
 }
@@ -90,6 +90,7 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
     HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");
     HOST_PRINT(comm, "upperCornerFreq = " << upperCornerFreq << "\n");
+    HOST_PRINT(comm, "useGradientTaper = " << useGradientTaper << "\n");
 }
 
 /*! \brief Return copy of invertForVp
@@ -147,7 +148,14 @@ ValueType KITGPI::Workflow::Workflow<ValueType>::getUpperCornerFreq() const
 {
     return upperCornerFreq;
 }
-            
+
+/*! \brief Return copy of invertForDensity
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getUseGradientTaper() const
+{
+    return useGradientTaper;
+}
  
 template class KITGPI::Workflow::Workflow<double>;
 template class KITGPI::Workflow::Workflow<float>;

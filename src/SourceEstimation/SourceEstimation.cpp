@@ -9,7 +9,7 @@ using namespace scai;
  \param sourceSignalTaper 1D TaperPtr
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration const &config, hmemo::ContextPtr ctx, dmemo::DistributionPtr sourceDistribution, std::shared_ptr<Taper::Taper<ValueType>> sourceSignalTaper)
+void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration const &config, hmemo::ContextPtr ctx, dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper)
 {
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
@@ -19,11 +19,11 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
         init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"));
 
     if (config.get<bool>("useSourceSignalTaper")) {
-        sourceSignalTaper->init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
+        sourceSignalTaper.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
         if (config.get<IndexType>("sourceSignalTaperStart2") == 0 && config.get<IndexType>("sourceSignalTaperEnd2") == 0)
-            sourceSignalTaper->calcCosineTaper(config.get<IndexType>("sourceSignalTaperStart1"), config.get<IndexType>("sourceSignalTaperEnd1"), 0);
+            sourceSignalTaper.calcCosineTaper(config.get<IndexType>("sourceSignalTaperStart1"), config.get<IndexType>("sourceSignalTaperEnd1"), 0);
         else
-            sourceSignalTaper->calcCosineTaper(config.get<IndexType>("sourceSignalTaperStart1"), config.get<IndexType>("sourceSignalTaperEnd1"), config.get<IndexType>("sourceSignalTaperStart2"), config.get<IndexType>("sourceSignalTaperEnd2"), 0);
+            sourceSignalTaper.calcCosineTaper(config.get<IndexType>("sourceSignalTaperStart1"), config.get<IndexType>("sourceSignalTaperEnd1"), config.get<IndexType>("sourceSignalTaperStart2"), config.get<IndexType>("sourceSignalTaperEnd2"), 0);
     }
 }
 
@@ -145,12 +145,12 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
                 lama::DenseMatrix<ValueType> seismoA_tmp(seismoA); // tmps needed so real seismograms don't get tapered
                 lama::DenseMatrix<ValueType> seismoB_tmp(seismoB);
                 
-                auto seismoTaper(Taper::Factory<ValueType>::Create("2D"));
-                seismoTaper->init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
+                Taper::Taper2D<ValueType> seismoTaper;
+                seismoTaper.init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
                 std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber) + "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]) + ".mtx";
-                seismoTaper->read(taperNameTmp, 1);
-                seismoTaper->apply(seismoA_tmp);
-                seismoTaper->apply(seismoB_tmp);
+                seismoTaper.read(taperNameTmp);
+                seismoTaper.apply(seismoA_tmp);
+                seismoTaper.apply(seismoB_tmp);
                 
                 matCorr(filterTmp, seismoA_tmp, seismoB_tmp, iComponent);
             } else
