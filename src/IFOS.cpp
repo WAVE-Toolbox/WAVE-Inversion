@@ -33,8 +33,9 @@
 #include "Preconditioning/EnergyPreconditioning.hpp"
 #include "SourceEstimation/SourceEstimation.hpp"
 #include "StepLengthSearch/StepLengthSearch.hpp"
-#include "Taper/TaperFactory.hpp"
 #include "Workflow/Workflow.hpp"
+#include "Taper/Taper1D.hpp"
+#include "Taper/Taper2D.hpp"
 
 #include <Common/HostPrint.hpp>
 #include <Partitioning/PartitioningCubes.hpp>
@@ -225,7 +226,7 @@ int main(int argc, char *argv[])
     /* Source estimation                       */
     /* --------------------------------------- */
     SourceEstimation<ValueType> sourceEst;
-    Taper::Taper<ValueType>::TaperPtr sourceSignalTaper(Taper::Factory<ValueType>::Create("1D"));
+    Taper::Taper1D<ValueType> sourceSignalTaper;
     if (config.get<bool>("useSourceSignalInversion"))
         sourceEst.init(config, ctx, sources.getCoordinates().getDistributionPtr(), sourceSignalTaper);
 
@@ -258,7 +259,7 @@ int main(int argc, char *argv[])
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     if (!config.get<bool>("useReceiversPerShot"))
         ReceiverTaper.init(dist, ctx, receivers, config, config.get<IndexType>("receiverTaperRadius"));
-    Taper::Taper<ValueType>::TaperPtr gradientTaper(Taper::Factory<ValueType>::Create("1D"));
+    Taper::Taper1D<ValueType> gradientTaper;
 
     /* --------------------------------------- */
     /* Gradient preconditioning                */
@@ -292,8 +293,8 @@ int main(int argc, char *argv[])
             freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());
         
         if (workflow.getUseGradientTaper()) {
-            gradientTaper->init(dist, ctx, 1);
-            gradientTaper->read(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
+            gradientTaper.init(dist, ctx, 1);
+            gradientTaper.read(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
         }
 
         /* --------------------------------------- */
@@ -365,13 +366,13 @@ int main(int argc, char *argv[])
 
                         sourceEst.applyFilter(sources, shotNumber);
                         if (config.get<bool>("useSourceSignalTaper"))
-                            sourceSignalTaper->apply(sources.getSeismogramHandler());
+                            sourceSignalTaper.apply(sources.getSeismogramHandler());
 
                         if (config.get<bool>("writeInvertedSource") == 1)
                             sources.getSeismogramHandler().write(config, config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber));
                     } else {
                         sourceEst.applyFilter(sources, shotNumber);
-                        sourceSignalTaper->apply(sources.getSeismogramHandler());
+                        sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }
                 }
 
@@ -460,7 +461,7 @@ int main(int argc, char *argv[])
             }
 
             if (workflow.getUseGradientTaper())
-                gradientTaper->apply(*gradient);
+                gradientTaper.apply(*gradient);
 
             /* Output of gradient */
             if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0)
@@ -482,7 +483,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(commAll, "\n===========================================");
             HOST_PRINT(commAll, "\n======== Start step length search =========\n");
 
-            SLsearch.run(commAll, *solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, *sourceSignalTaper);
+            SLsearch.run(commAll, *solver, *derivatives, receivers, sources, receiversTrue, *model, dist, config, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, sourceSignalTaper);
 
             HOST_PRINT(commAll, "=========== Update Model ============\n\n");
             /* Apply model update */
@@ -534,7 +535,7 @@ int main(int argc, char *argv[])
                     if (config.get<bool>("useSourceSignalInversion") == 1) {
                         sourceEst.applyFilter(sources, shotNumber);
                         if (config.get<bool>("useSourceSignalTaper"))
-                            sourceSignalTaper->apply(sources.getSeismogramHandler());
+                            sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }
 
                     start_t_shot = common::Walltime::get();

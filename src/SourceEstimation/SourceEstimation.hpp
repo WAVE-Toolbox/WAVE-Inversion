@@ -17,7 +17,8 @@
 #include <scai/lama/fft.hpp>
 
 #include "../Common/Common.hpp"
-#include "../Taper/TaperFactory.hpp"
+#include "../Taper/Taper1D.hpp"
+#include "../Taper/Taper2D.hpp"
 
 namespace KITGPI
 {
@@ -35,7 +36,7 @@ namespace KITGPI
         explicit SourceEstimation() : useOffsetMutes(false), mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE), readTaper(false), taperName(""){};
 
         void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl, std::string tprName = "");
-        void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, std::shared_ptr<Taper::Taper<ValueType>> sourceSignalTaper);
+        void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper);
 
         ~SourceEstimation(){};
 
