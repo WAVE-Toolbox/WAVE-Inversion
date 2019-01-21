@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     // Create an object of the mapping (3D-1D) class Coordinates
 
     Acquisition::Coordinates<ValueType> modelCoordinates(config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"), config.get<ValueType>("DH"));
-    
+
     /* --------------------------------------- */
     /* Context and Distribution                */
     /* --------------------------------------- */
@@ -138,19 +138,19 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     start_t = common::Walltime::get();
     ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr derivatives(ForwardSolver::Derivatives::Factory<ValueType>::Create(dimension));
-    derivatives->init(dist, ctx, config, commShot);
+    derivatives->init(dist, ctx, config, modelCoordinates, commShot);
     end_t = common::Walltime::get();
     HOST_PRINT(commAll, "", "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
 
     /* --------------------------------------- */
     /* Acquisition geometry                    */
     /* --------------------------------------- */
-    Acquisition::Sources<ValueType> sources(config,modelCoordinates, ctx, dist);
+    Acquisition::Sources<ValueType> sources(config, modelCoordinates, ctx, dist);
     CheckParameter::checkSources<ValueType>(config, sources, commShot);
     dmemo::BlockDistribution shotDist(sources.getNumShots(), commInterShot);
     Acquisition::Receivers<ValueType> receivers;
     if (!config.get<bool>("useReceiversPerShot"))
-        receivers.init(config,modelCoordinates, ctx, dist);
+        receivers.init(config, modelCoordinates, ctx, dist);
 
     /* --------------------------------------- */
     /* Modelparameter                          */
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receiversTrue;
     if (!config.get<bool>("useReceiversPerShot")) {
-        receiversTrue.init(config,modelCoordinates, ctx, dist);
+        receiversTrue.init(config, modelCoordinates, ctx, dist);
         CheckParameter::checkReceivers<ValueType>(config, receiversTrue, commShot);
     }
 
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> adjointSources;
     if (!config.get<bool>("useReceiversPerShot"))
-        adjointSources.init(config,modelCoordinates, ctx, dist);
+        adjointSources.init(config, modelCoordinates, ctx, dist);
 
     /* --------------------------------------- */
     /* Workflow                                */
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     if (!config.get<bool>("useReceiversPerShot"))
-        ReceiverTaper.init(dist, ctx, receivers, config,modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
+        ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
     Taper::Taper<ValueType>::TaperPtr gradientTaper(Taper::Factory<ValueType>::Create("1D"));
     if (config.get<bool>("useGradientTaper")) {
         gradientTaper->init(dist, ctx, 1);
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
             start_t = common::Walltime::get();
 
             /* Update model for fd simulation (averaging, inverse Density ...) */
-            model->prepareForModelling(config, ctx, dist, commShot);
+            model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
             solver->prepareForModelling(*model, config.get<ValueType>("DT"));
 
             /* --------------------------------------- */
@@ -328,13 +328,13 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << sources.getNumShots() << ": started\n");
 
                 if (config.get<bool>("useReceiversPerShot")) {
-                    receivers.init(config,modelCoordinates, ctx, dist, shotNumber);
+                    receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
                     receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
                     adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
 
                     CheckParameter::checkReceivers<ValueType>(config, receivers, commShot);
 
-                    ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates,config.get<IndexType>("receiverTaperRadius"));
+                    ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
                 }
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
                         solver->resetCPML();
 
                         if (config.get<bool>("maxOffsetSrcEst") == 1)
-                            sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), nx, ny, nz,modelCoordinates);
+                            sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), nx, ny, nz, modelCoordinates);
 
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
 
@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
                             sourceSignalTaper->apply(sources.getSeismogramHandler());
 
                         if (config.get<bool>("writeInvertedSource") == 1)
-                            sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber),modelCoordinates);
+                            sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     } else {
                         sourceEst.applyFilter(sources, shotNumber);
                         sourceSignalTaper->apply(sources.getSeismogramHandler());
@@ -424,7 +424,7 @@ int main(int argc, char *argv[])
                 /* Calculate gradient */
 
                 HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << sources.getNumShots() << ": Start Backward\n");
-                gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config,modelCoordinates, shotNumber, workflow);
+                gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
 
                 /* Apply energy preconditioning per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1) {
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "=== Do one more forward modelling to calculate misfit and save seismograms ===\n\n");
 
                 /* Update model for fd simulation (averaging, inverse Density ...) */
-                model->prepareForModelling(config, ctx, dist, commShot);
+                model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
                 solver->prepareForModelling(*model, config.get<ValueType>("DT"));
 
                 for (IndexType shotNumber = shotDist.lb(); shotNumber < shotDist.ub(); shotNumber++) {
@@ -547,7 +547,7 @@ int main(int argc, char *argv[])
                         solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                     }
 
-                    receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber),modelCoordinates);
+                    receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                     /* Normalize observed and synthetic data */
                     receivers.getSeismogramHandler().normalize();

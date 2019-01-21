@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <string>
 
-
 using scai::IndexType;
 
 /*! \brief Find the optimal steplength
@@ -23,12 +22,12 @@ template <typename ValueType>
 void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, scai::lama::DenseVector<ValueType> currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper<ValueType> const &sourceSignalTaper)
 {
     double start_t, end_t; /* For timing */
-    
+
     scai::dmemo::CommunicatorPtr commShot = dist->getCommunicatorPtr();
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
 
     scai::dmemo::BlockDistribution shotDist(sources.getNumShots(), commInterShot);
-    
+
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
@@ -80,7 +79,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
         misfitTestSum += currentMisfit.getValue(shotNumber);
     }
     misfitTestSum = commInterShot->sum(misfitTestSum);
-    
+
     misfitParabola.setValue(0, misfitTestSum);
 
     /* --- Save second step length (initial step length) in any case --- */
@@ -204,7 +203,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVec
  \param steplength Steplength
  */
 template <typename ValueType>
-ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper<ValueType> const &sourceSignalTaper)
+ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper<ValueType> const &sourceSignalTaper)
 {
 
     /* ------------------------------------------- */
@@ -238,7 +237,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     if (config.get<bool>("useModelThresholds"))
         testmodel->applyThresholds(config);
 
-    testmodel->prepareForModelling(config, ctx, dist, commShot);
+    testmodel->prepareForModelling(modelCoordinates, ctx, dist, commShot);
 
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotNumber = shotDist.lb(); shotNumber < shotDist.ub(); shotNumber += testShotIncr) {
@@ -247,11 +246,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
         HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << sources.getNumShots() << ": Start Test Forward\n");
 
-        sources.init(config,modelCoordinates, ctx, dist, shotNumber);
+        sources.init(config, modelCoordinates, ctx, dist, shotNumber);
 
         if (config.get<bool>("useReceiversPerShot")) {
-            receivers.init(config,modelCoordinates, ctx, dist, shotNumber);
-            receiversTrue.init(config,modelCoordinates, ctx, dist, shotNumber);
+            receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
+            receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
         }
 
         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("FieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
