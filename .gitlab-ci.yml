@@ -20,8 +20,6 @@ gcc:
 
 unittest-gcc:
   stage: unittest
-  before_script:
-     - LD_LIBRARY_PATH=${GTEST_DIR}/lib:${LD_LIBRARY_PATH}
   script:
     - cd par/    
     - ./../build/bin/Test_unit

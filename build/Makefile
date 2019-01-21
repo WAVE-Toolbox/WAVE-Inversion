@@ -236,7 +236,8 @@ $(wave.libdir)/lib$(wave.lib).a: $(wave.libobj)
 
 $(wave.unitobj): INCDIRS += -I$(GTEST_DIR)/include
 $(wave.unitobj): CXXFLAGS += -isystem -pthread
-$(wave.bindir)/$(wave.utst): LDFLAGS += -L$(GTEST_DIR)/lib -lgtest -lgtest_main
+$(wave.bindir)/$(wave.utst): LDFLAGS += -L$(GTEST_DIR)/lib -lgtest -lgtest_main \
+                                       -Wl,-rpath,$(GTEST_DIR)/lib:$(wave.libdir)
 $(wave.bindir)/$(wave.utst): $(wave.unitobj) $(wave.libdir)/lib$(wave.lib).a
 	$(call cmd,link)
 
