@@ -1,7 +1,23 @@
 stages:
+    - buildSofiLib
     - build
     - unittest
     - inversion
+
+gcc:
+  stage: buildSofiLib
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+    - SCAI_ROOT=/data14/software/scai_lama/build_dev
+  script:
+    - echo "g++ Version:" && g++ --version
+    - cd SOFI/build && make lib
+  artifacts:
+    when: on_success
+    expire_in: 30 min
+    paths:
+    - SOFI/build
 
 gcc:
   stage: build
