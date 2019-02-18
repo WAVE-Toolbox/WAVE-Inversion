@@ -4,7 +4,7 @@ stages:
     - unittest
     - inversion
 
-gcc:
+buildSofiLib-gcc:
   stage: buildSofiLib
   before_script:
     - git submodule sync --recursive
