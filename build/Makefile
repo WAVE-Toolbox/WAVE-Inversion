@@ -22,7 +22,7 @@ GTEST_DIR_DEFAULT := /data14/software/googletest/googletest
 
 CXX      := g++
 CPPFLAGS := -DSCAI_ASSERT_LEVEL_DEBUG -DSCAI_LOG_LEVEL_DEBUG -DSCAI_TRACE_OFF
-CXXFLAGS := -O2 -std=c++11 -fopenmp -Wall -Wextra -Werror
+CXXFLAGS := -O2 -std=c++11 -fopenmp -Wall -Wextra
 
 ################################################################################
 # Usually, there is no need to change anything below this line
