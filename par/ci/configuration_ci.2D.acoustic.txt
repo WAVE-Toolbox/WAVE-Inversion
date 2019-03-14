@@ -88,7 +88,7 @@ fieldSeisName=ci/rectangle.true                  # location/basename of input se
 writeGradient=1                                  # 1=Gradient will be written to disk, 0=not
 writeGradientPerShot=0                           # Write Gradient for Single Shots 1=Yes 0=No
 gradientFilename=gradients/grad                  # location/basename of output gradients
-logFilename=logs/steplengthSearch.log            # target location of log file
+logFilename=ci/steplengthSearch.ci.log            # target location of log file
 
 # General settings
 maxIterations=5                                 # maximum number of inversion itertions
