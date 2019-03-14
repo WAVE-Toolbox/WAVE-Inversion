@@ -39,7 +39,7 @@ wave.exe  := $(strip $(EXENAME))
 wave.lib  := $(strip $(LIBNAME))
 wave.utst := $(strip $(UTSTNAME))
 wave.itst := $(strip $(ITSTNAME))
-gtest     := $(strip $(shell gtest-config --version 2>/dev/null))
+gtest     := $(strip $(shell ls /usr/include/gtest))
 
 wave.blddir := $(realpath $(PWD))
 ifeq ($(realpath $(PWD)),$(wave.dir)/src)
@@ -83,8 +83,7 @@ endif
 
 ifndef GTEST_DIR
   ifeq ($(gtest),)   
-    GTEST_DIR := $(strip $(GTEST_DIR_DEFAULT))
-    $(warning GTEST: no local installation and no GTEST_DIR environment variable found; now set to $(GTEST_DIR))
+  $(warning GTEST: no local installation and no GTEST_DIR environment variable found;)
   endif
 endif
 
