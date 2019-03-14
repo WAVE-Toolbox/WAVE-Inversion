@@ -20,6 +20,7 @@ UseCubePartitioning=1     # 1=ON, 0=OFF
 ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=1                  # Number of processes in Z direction
+ProcNS=1
 
 # distance between two grid points
 DH=50                     # in meter
@@ -73,9 +74,12 @@ SourceFilename=Input/sources         # location of source file
 ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
+seismoDT=2.0e-03
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
 useReceiversPerShot=0
+initSourcesFromSU=0
+initReceiverFromSU=0
 
 #---------------------------------------------------------#
 #                Inversion Parameters                     #
@@ -108,11 +112,16 @@ useSourceSignalInversion=0
 useModelThresholds=0
 
 optimizationType=steepestdescent     # type of optimization method
+normalizeGradient=0
+useGradientTaper=0
 useEnergyPreconditioning=0
 epsilonHessian=0.005
 saveApproxHessian=0
 approxHessianName=hessian
 
+
 # Tapers
 sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
 receiverTaperRadius=0  # Circular receiver taper: Radius in gridpoints
+sourceReceiverTaperType=1
+verbose=0

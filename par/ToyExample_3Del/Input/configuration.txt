@@ -20,6 +20,7 @@ UseCubePartitioning=1     # 1=ON, 0=OFF
 ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=2                  # Number of processes in Z direction
+ProcNS=1
 
 # distance between two grid points
 DH=50                     # in meter
@@ -35,7 +36,6 @@ spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
 ModelRead=0               # 1=Model will be read from file, 0=generated on the fly
 ModelWrite=1              # 1=Model will be written to disk, 0=not
 ModelFilename=../model/ToyModel # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
-ModelParametrisation=2    # 1=Module, 2=Velocity
 
 # parallel input-output
 PartitionedIn=0           # 1=Read files parallel, 0=serial 
@@ -75,9 +75,12 @@ SourceFilename=Input/sources         # location of source file
 ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
+seismoDT=2.0e-03
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
 useReceiversPerShot=0
+initSourcesFromSU=0
+initReceiverFromSU=0
 
 #---------------------------------------------------------#
 #                Inversion Parameters                     #
@@ -111,11 +114,17 @@ testShotIncr=3                         # increment of test shots
 useSourceSignalInversion=0
 useModelThresholds=0
 
-# Preconditioning
-sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
-receiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
-
-useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradient per shot
-epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)
+optimizationType=steepestdescent     # type of optimization method
+normalizeGradient=0
+useGradientTaper=0
+useEnergyPreconditioning=0
+epsilonHessian=0.005
 saveApproxHessian=0
-approxHessianName=gradients/Hessian
+approxHessianName=hessian
+
+
+# Tapers
+sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
+receiverTaperRadius=0  # Circular receiver taper: Radius in gridpoints
+sourceReceiverTaperType=1
+verbose=0
