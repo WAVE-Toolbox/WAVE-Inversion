@@ -39,7 +39,6 @@
 #include "Taper/Taper2D.hpp"
 
 #include <Common/HostPrint.hpp>
-#include <Partitioning/PartitioningCubes.hpp>
 
 using namespace scai;
 using namespace KITGPI;
