@@ -94,7 +94,7 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperUp(lama::DenseVector<Valu
 }
 
 /*! \brief Calculate cosine taper which starts with 1 and ends with 0 (slope <= 0)
- * \param result Result vector
+ \param result Result vector
  \param iStart Start index of transition zone
  \param iEnd End index of transition zone
  */
@@ -122,6 +122,21 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperDown(lama::DenseVector<Va
     result.assignDistribute(tmpResult, data.getDistributionPtr());
 }
 
+/*! \brief Wrapper to support SeismogramHandler
+ \param seismograms SeismogramHandler object
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
+{
+    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
+            apply(thisSeismogram);
+        }
+    }
+}
+
+
 /*! \brief Apply taper to a single seismogram
  \param seismogram Seismogram
  */
@@ -133,7 +148,7 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<Va
 }
 
 /*! \brief Apply taper to a Gradient
- \param seismogram Seismogram
+ \param grad Seismogram
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
@@ -142,7 +157,7 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueTy
 }
 
 /*! \brief Apply taper to a DenseMatrix
- \param seismogram Seismogram
+ \param mat Seismogram
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat) const

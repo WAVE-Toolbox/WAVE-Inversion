@@ -39,7 +39,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
 
     IndexType t = 0;
@@ -74,7 +74,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     /*       Calculate gradients          */
     /* ---------------------------------- */
     gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);
-    SourceTaper.init(dist, ctx, sources, config, config.get<IndexType>("sourceTaperRadius"));
+    SourceTaper.init(dist, ctx, sources, config, modelCoordinates, config.get<IndexType>("sourceTaperRadius"));
     SourceTaper.apply(gradient);
 
     if (config.get<IndexType>("WriteGradientPerShot"))

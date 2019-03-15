@@ -42,6 +42,7 @@ namespace KITGPI
             scai::IndexType getFilterOrder() const;
             ValueType getLowerCornerFreq() const;
             ValueType getUpperCornerFreq() const;
+            bool getUseGradientTaper() const;
             
             int maxStage;
             scai::IndexType workflowStage;
@@ -59,6 +60,7 @@ namespace KITGPI
             scai::IndexType filterOrder;
             ValueType lowerCornerFreq;
             ValueType upperCornerFreq;
+            bool useGradientTaper;
             
         };
     }

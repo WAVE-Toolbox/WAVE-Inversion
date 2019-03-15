@@ -16,6 +16,7 @@ UseCubePartitioning=1     # 1=ON, 0=OFF
 ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=1                  # Number of processes in Z direction
+ProcNS=1
 
 # distance between two grid points
 DH=50                     # in meter
@@ -73,9 +74,13 @@ SourceFilename=Input/sources         # location of source file
 ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample.true      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
+seismoDT=2.0e-03
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
 useReceiversPerShot=0
+initSourcesFromSU=0
+initReceiverFromSU=0
+
 
 boxWidth=20
 boxHeight=20
@@ -90,3 +95,4 @@ vs4=2200
 #density1=...
 #...
 
+verbose=0

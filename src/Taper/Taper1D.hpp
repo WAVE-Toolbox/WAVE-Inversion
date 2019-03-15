@@ -1,5 +1,8 @@
 #pragma once
-#include "Taper.hpp"
+#include <scai/lama.hpp>
+#include <Acquisition/Seismogram.hpp>
+#include <Acquisition/SeismogramHandler.hpp>
+#include "../Gradient/Gradient.hpp"
 
 namespace KITGPI
 {
@@ -9,36 +12,36 @@ namespace KITGPI
 
         //! \brief 1-D Taper
         template <typename ValueType>
-        class Taper1D : public Taper<ValueType>
+        class Taper1D
         {
 
           public:
             //! Default constructor
-            Taper1D() : direction(0){};
+            Taper1D(){};
 
             //! Default destructor
             ~Taper1D(){};
 
-            void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool dir) override;
+            void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool dir);
 
-            void calcCosineTaper(scai::IndexType iStart, scai::IndexType iEnd, bool reverse) override;
-            void calcCosineTaper(scai::IndexType iStart1, scai::IndexType iEnd1, scai::IndexType iStart2, scai::IndexType iEnd2, bool reverse) override;
+            void calcCosineTaper(scai::IndexType iStart, scai::IndexType iEnd, bool reverse);
+            void calcCosineTaper(scai::IndexType iStart1, scai::IndexType iEnd1, scai::IndexType iStart2, scai::IndexType iEnd2, bool reverse);
 
-            bool getDirection() const override;
-
+            void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
-            void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const override;
+            void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
 
-            void read(std::string filename, scai::IndexType partitionedIn) override;
+            void read(std::string filename, scai::IndexType partitionedIn);
+            
+            bool getDirection() const;
 
           private:
-            void calcCosineTaperUp(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd) override;
-            void calcCosineTaperDown(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd) override;
-
-            bool direction; // 1D taper direction (0=vertical, 1=horizontal)
+            void calcCosineTaperUp(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd);
+            void calcCosineTaperDown(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd);
 
             scai::lama::DenseVector<ValueType> data;
+            bool direction;
         };
     }
 }
