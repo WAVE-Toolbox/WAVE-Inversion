@@ -17,9 +17,9 @@ NZ=1                    # horizontal 2
 
 # define Partitioning
 UseCubePartitioning=1     # 1=ON, 0=OFF
-ProcNX=2                  # Number of processes in X direction
-ProcNY=2                  # Number of processes in Y direction
-ProcNZ=1                  # Number of processes in Z direction
+ProcNX=2
+ProcNY=2
+ProcNZ=1
 ProcNS=1                  # Number of shot domains
 
 # distance between two grid points
@@ -76,7 +76,6 @@ initReceiverFromSU=0                           # 1=initialize receiver from SU f
 seismoDT=2.0e-03                               # Seismogram sampling in seconds
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
-runSimultaneousShots=0
 runForward=0
 
 #---------------------------------------------------------#
