@@ -35,15 +35,10 @@ int main(int argc, char *argv[])
     int NZ = config.get<IndexType>("NZ");
     common::Grid3D grid(NZ, NY, NX);
 
-    // construct model vectors
-    lama::GridVector<ValueType> vp(grid);
-    lama::GridVector<ValueType> vs(grid);
-    lama::GridVector<ValueType> rho(grid);
-
-    //set models to values specified in configuration
-    vp = config.get<ValueType>("velocityP");;
-    vs = config.get<ValueType>("velocityS");
-    rho = config.get<ValueType>("rho");
+    // construct model vectors and set value from configuration file
+    lama::GridVector<ValueType> vp(grid,config.get<ValueType>("velocityP"));
+    lama::GridVector<ValueType> vs(grid,config.get<ValueType>("velocityS"));
+    lama::GridVector<ValueType> rho(grid,config.get<ValueType>("rho"));
 
     
     //set velocities for second layer

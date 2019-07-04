@@ -61,20 +61,12 @@ int main(int argc, char *argv[])
     int NZ = config.get<IndexType>("NZ");
     common::Grid3D grid(NZ, NY, NX);
 
-    // construct model vectors
-    lama::GridVector<ValueType> vp(grid);
-    lama::GridVector<ValueType> vs(grid);
-    lama::GridVector<ValueType> rho(grid);
-    lama::GridVector<ValueType> tauP(grid);
-    lama::GridVector<ValueType> tauS(grid);
-    
-
-    //set background value
-    vp = vp0;
-    vs = vs0;
-    rho = density0;
-    tauP = config.get<ValueType>("tauP");
-    tauS = config.get<ValueType>("tauS");
+    // construct model vectors and set background value
+    lama::GridVector<ValueType> vp(grid,vp0);
+    lama::GridVector<ValueType> vs(grid,vs0);
+    lama::GridVector<ValueType> rho(grid,density0);
+    lama::GridVector<ValueType> tauP(grid,config.get<ValueType>("tauP"));
+    lama::GridVector<ValueType> tauS(grid,config.get<ValueType>("tauS"));
     
     
    //top-left
