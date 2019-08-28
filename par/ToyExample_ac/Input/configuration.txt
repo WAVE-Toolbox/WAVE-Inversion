@@ -21,6 +21,7 @@ ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=1                  # Number of processes in Z direction
 ProcNS=1
+ShotDomain=0
 
 # distance between two grid points
 DH=50                     # in meter
@@ -97,11 +98,11 @@ gradientFilename=../gradients/ToyExample.grad        # location/basename of outp
 logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
 
 # General settings
-workflowFilename=./Input/workflow.txt # location/basename of workflow file
 maxIterations=3                       # maximum number of inversion iterations
-misfitType=L2                          # type of misfit (L2, etc.) 
-
-
+misfitType=L2                          # type of misfit (L2, etc.)
+optimizationType=conjugateGradient     # type of optimization method
+DTInversion=1                           # factor of DT for cross-correlation in gradient calculation
+workflowFilename=Input/workflow.txt # location/basename of workflow file
 
 # Step length search
 steplengthInit=0.03                    # starting steplength
@@ -121,8 +122,6 @@ useModelThresholds=0
 sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
 sourceReceiverTaperType=1
-
-optimizationType=conjugateGradient     # type of optimization method
 
 useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradient per shot
 epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)

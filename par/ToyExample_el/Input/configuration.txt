@@ -14,6 +14,7 @@ equationType=elastic     # Type of wave equation: acoustic, elastic, visco
 NX=100                    # horizontal 1
 NY=100                    # depth
 NZ=1                    # horizontal 2
+ShotDomain=0
 
 # define Partitioning
 UseCubePartitioning=1     # 1=ON, 0=OFF
@@ -93,10 +94,11 @@ gradientFilename=../gradients/ToyExample.grad        # location/basename of outp
 logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
 
 # General settings
-maxIterations=3                      # maximum number of inversion iterations
-misfitType=L2                          # type of misfit (L2, etc.) 
-
-workflowFilename=./Input/workflow.txt # location/basename of workflow file
+maxIterations=3                       # maximum number of inversion iterations
+misfitType=L2                          # type of misfit (L2, etc.)
+optimizationType=steepestdescent     # type of optimization method
+DTInversion=1				# factor of DT for cross-correlation in gradient calculation
+workflowFilename=Input/workflow.txt # location/basename of workflow file
 
 # Step length search
 steplengthInit=0.05                    # starting steplength
@@ -111,7 +113,6 @@ testShotIncr=3                         # increment of test shots
 useSourceSignalInversion=0
 useModelThresholds=0
 
-optimizationType=steepestdescent     # type of optimization method
 normalizeGradient=0
 useGradientTaper=0
 useEnergyPreconditioning=0

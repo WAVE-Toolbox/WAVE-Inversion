@@ -21,6 +21,7 @@ ProcNX=2
 ProcNY=2
 ProcNZ=1
 ProcNS=1                  # Number of shot domains
+ShotDomain=0
 
 # distance between two grid points
 DH=50                     # in meter
@@ -96,6 +97,7 @@ logFilename=logs/steplengthSearch.log  # target location of log file
 maxIterations=20                       # maximum number of inversion iterations (per workflow stage if used)
 misfitType=L2                          # type of misfit (L2, etc.) 
 optimizationType=conjugateGradient     # type of optimization method
+DTInversion=1				# factor of DT for cross-correlation in gradient calculation
 workflowFilename=workflow/workflow.txt # location/basename of workflow file
 
 # Step length search

@@ -16,6 +16,7 @@ UseCubePartitioning=1     # 1=ON, 0=OFF
 ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=1                  # Number of processes in Z direction
+ShotDomain=0
 
 # distance between two grid points
 DH=50                     # in meter

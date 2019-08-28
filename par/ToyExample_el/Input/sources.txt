@@ -1,0 +1,10 @@
+#shot_number source_coordinate_(x) source_coordinate_(y) source_coordinate_(z) source_type wavelet_type wavelet_shape center_frequency amplitude time_shift
+0 25 30 0 3 1 1 5 5 0
+1 25 35 0 3 1 1 5 5 0
+2 25 40 0 3 1 1 5 5 0
+3 25 45 0 3 1 1 5 5 0
+4 25 50 0 3 1 1 5 5 0
+5 25 55 0 3 1 1 5 5 0
+6 25 60 0 3 1 1 5 5 0
+7 25 65 0 3 1 1 5 5 0
+8 25 70 0 3 1 1 5 5 0

@@ -21,6 +21,7 @@ ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=2                  # Number of processes in Z direction
 ProcNS=1
+ShotDomain=0
 
 # distance between two grid points
 DH=50                     # in meter
@@ -99,10 +100,9 @@ logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log fi
 # General settings
 maxIterations=3                       # maximum number of inversion iterations
 misfitType=L2                          # type of misfit (L2, etc.) 
-
 optimizationType=conjugateGradient     # type of optimization method
+DTInversion=1					# factor of DT for cross-correlation in gradient calculation
 workflowFilename=Input/workflow.txt # location/basename of workflow file
-
 
 # Step length search
 steplengthInit=0.03                    # starting steplength

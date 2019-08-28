@@ -47,7 +47,7 @@ bool verbose; // global variable definition
 
 int main(int argc, char *argv[])
 {
-    typedef double ValueType;
+    typedef float ValueType;
     double start_t, end_t, start_t_shot, end_t_shot; /* For timing */
 
     if (argc != 2) {
@@ -86,31 +86,51 @@ int main(int argc, char *argv[])
     common::Settings::setRank(commAll->getNodeRank());
     /* execution context */
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
-    // inter node distribution
-    // define the grid topology by sizes NX, NY, and NZ from configuration
-    // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
 
-    IndexType npS = config.get<IndexType>("ProcNS");
-    IndexType npX = config.get<IndexType>("ProcNX");
-    IndexType npY = config.get<IndexType>("ProcNY");
-    IndexType npZ = config.get<IndexType>("ProcNZ");
+    /* Definition of shot domains */
 
-    // following lines should be part of checkParameter.tpp
-    if (commAll->getSize() != npS * npX * npY * npZ) {
-        HOST_PRINT(commAll, "\n Error: Number of MPI processes (" << commAll->getSize() << ") doesn't match the number of processes specified in " << argv[1] << ": ProcNS * ProcNX * ProcNY * ProcNZ = " << npS * npX * npY * npZ << "\n")
-        return (2);
+    int shotDomain = config.get<int>("ShotDomain");
+
+    int domain; // will contain the domain to which this processor belongs
+
+    if (shotDomain == 0) {
+        // Definition by number of shot domains
+
+        IndexType numDomains = config.get<IndexType>("ProcNS"); // total number of shot domains
+        IndexType npDomain = commAll->getSize() / numDomains;   // number of processors for each shot domain
+
+        if (commAll->getSize() != numDomains * npDomain) {
+            HOST_PRINT(commAll, "\n Error: Number of MPI processes (" << commAll->getSize()
+                                                                      << ") is not multiple of shot domains in " << argv[1] << ": ProcNS = " << numDomains << "\n")
+            return (2);
+        }
+
+        domain = commAll->getRank() / npDomain;
+    } else if (shotDomain == 1) {
+        // All processors on one node build one domain
+
+        domain = commAll->getNodeId();
+    } else {
+        bool set = common::Settings::getEnvironment(domain, "DOMAIN");
+
+        if (!set) {
+            std::cout << *commAll << ", node = " << commAll->getNodeName()
+                      << ", node rank = " << commAll->getNodeRank() << " of " << commAll->getNodeSize()
+                      << ": environment variable DOMAIN not set" << std::endl;
+        }
+
+        set = commAll->all(set); // make sure that all processors will terminate
+
+        if (!set) {
+            return (2);
+        }
     }
+
+    CheckParameter::checkNumberOfProcesses(config, commAll);
 
     // Build subsets of processors for the shots
 
-    common::Grid2D procAllGrid(npS, npX * npY * npZ);
-    IndexType procAllGridRank[2];
-
-    procAllGrid.gridPos(procAllGridRank, commAll->getRank());
-
-    // communicator for set of processors that solve one shot
-
-    dmemo::CommunicatorPtr commShot = commAll->split(procAllGridRank[0]);
+    dmemo::CommunicatorPtr commShot = commAll->split(domain);
 
     // this communicator is used for reducing the solutions of problems
 
@@ -118,14 +138,17 @@ int main(int argc, char *argv[])
 
     SCAI_DMEMO_TASK(commShot)
 
+    // inter node distribution
+    // define the grid topology by sizes NX, NY, and NZ from configuration
+    // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
+
+    common::Grid3D grid(config.get<IndexType>("NZ"), config.get<IndexType>("NY"), config.get<IndexType>("NX"));
+    // distribute the grid onto available processors
+    dmemo::DistributionPtr dist(new dmemo::GridDistribution(grid, commShot));
+
     IndexType nx = config.get<IndexType>("NX");
     IndexType ny = config.get<IndexType>("NY");
     IndexType nz = config.get<IndexType>("NZ");
-
-    common::Grid3D grid(nz, ny, nx);
-    common::Grid3D procGrid(npZ, npY, npX);
-    // distribute the grid onto available processors, topology can be set by environment variable
-    dmemo::DistributionPtr dist(new dmemo::GridDistribution(grid, commShot, procGrid));
 
     verbose = config.get<bool>("verbose");
     HOST_PRINT(commAll, "\nIFOS" << dimension << " " << equationType << " - LAMA Version\n\n");
@@ -187,17 +210,20 @@ int main(int argc, char *argv[])
     typedef typename Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
     std::vector<wavefieldPtr> wavefieldrecord;
 
+    IndexType dtinversion = config.get<IndexType>("DTInversion");
     for (IndexType i = 0; i < tStepEnd; i++) {
-        wavefieldPtr wavefieldsTemp(Wavefields::Factory<ValueType>::Create(dimension, equationType));
-        wavefieldsTemp->init(ctx, dist);
-
-        wavefieldrecord.push_back(wavefieldsTemp);
+        if (i % dtinversion == 0) {
+            wavefieldPtr wavefieldsTemp(Wavefields::Factory<ValueType>::Create(dimension, equationType));
+            wavefieldsTemp->init(ctx, dist);
+            wavefieldrecord.push_back(wavefieldsTemp);
+        }
     }
 
     /* --------------------------------------- */
     /* Forward solver                          */
     /* --------------------------------------- */
     ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
+
     solver->initForwardSolver(config, *derivatives, *wavefields, *model, modelCoordinates, ctx, config.get<ValueType>("DT"));
 
     /* --------------------------------------- */
@@ -412,18 +438,20 @@ int main(int argc, char *argv[])
                 ValueType DTinv = 1 / config.get<ValueType>("DT");
 
                 start_t_shot = common::Walltime::get();
+                //IndexType WavefieldRecordIndex=0;
                 for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
 
                     *wavefieldsTemp = *wavefields;
 
                     solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
-
-                    // save wavefields in std::vector
-                    *wavefieldrecord[tStep] = *wavefields;
-                    //calculate temporal derivative of wavefield
-                    *wavefieldrecord[tStep] -= *wavefieldsTemp;
-                    *wavefieldrecord[tStep] *= DTinv;
-
+                    if (tStep % dtinversion == 0) {
+                        // save wavefields in std::vector
+                        *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = *wavefields;
+                        //calculate temporal derivative of wavefield
+                        *wavefieldrecord[floor(tStep / dtinversion + 0.5)] -= *wavefieldsTemp;
+                        *wavefieldrecord[floor(tStep / dtinversion + 0.5)] *= DTinv;
+                        //WavefieldRecordIndex++;
+                    }
                     if (config.get<bool>("useEnergyPreconditioning") == 1) {
                         energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
                     }

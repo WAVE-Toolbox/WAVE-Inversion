@@ -21,6 +21,7 @@ ProcNX=2                  # Number of processes in X direction
 ProcNY=2                  # Number of processes in Y direction
 ProcNZ=1                  # Number of processes in Z direction
 ProcNS=1                  # Number of shot domains
+ShotDomain=0
 
 # distance between two grid points
 DH=50                     # in meter
@@ -94,6 +95,7 @@ logFilename=ci/steplengthSearch.ci.log            # target location of log file
 maxIterations=5                                 # maximum number of inversion itertions
 misfitType=L2                                   # type of misfit (L2, etc.)
 optimizationType=steepestDescent                # type of optimization method
+DTInversion=1 		                        # factor of DT for cross-correlation in gradient calculation
 workflowFilename=ci/workflow_ci.2D.acoustic.txt # location/basename of workflow file
 
 # Step length search
