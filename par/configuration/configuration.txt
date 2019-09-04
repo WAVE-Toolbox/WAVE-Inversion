@@ -76,7 +76,11 @@ SourceFilename=acquisition/sources         # location of source file
 ReceiverFilename=acquisition/receiver      # location of receiver file
 SeismogramFilename=seismograms/seismogram      # target location of seismogram
 SourceSignalFilename=acquisition/signal        # location of the source signal file
-SeismogramFormat=1                             # 1=MTX, 2=SU
+SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(binary parallel) 3=frv (binary serial), 4=SU (parallel)
+# 1=mtx : formated ascii file - serial IO - 2 line ascii header
+# 2=lmf : binary file - parallel IO - float - little endian - 6 int header (24 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
+# 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
 initSourcesFromSU=0                            # 1=initialize sources from SU file 0=not (one file per component, filename=SourceSignalFilename+.<component> + .SU)
 initReceiverFromSU=0                           # 1=initialize receiver from SU file 0=not (one file per component, filename=ReceiverFilename+.<component> + .SU)
 seismoDT=2.0e-03                               # Seismogram sampling in seconds
