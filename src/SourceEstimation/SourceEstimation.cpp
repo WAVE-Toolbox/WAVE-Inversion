@@ -39,6 +39,7 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
     nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
     waterLevel = common::Math::pow<ValueType>(waterLvl, 2.0) * nFFT;
     filter.allocate(sourceDistribution, std::make_shared<dmemo::NoDistribution>(nFFT));
+    //std::cout << "alloc, " << *sourceDistribution << " " << filter.getLocalNumRows() << " " << filter.getLocalNumColumns() << std::endl;
     if (!tprName.empty()) {
         readTaper = true;
         taperName = tprName;
@@ -51,19 +52,18 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotNumber)
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr)
 {
-
     lama::DenseVector<ComplexValueType> filterTmp1(filter.getColDistributionPtr(), 0.0);
     lama::DenseVector<ComplexValueType> filterTmp2(filter.getColDistributionPtr(), 0.0);
 
-    addComponents(filterTmp1, receivers, receivers, shotNumber);
+    addComponents(filterTmp1, receivers, receivers, shotNr);
     filterTmp1 += waterLevel * receivers.getSeismogramHandler().getNumTracesTotal();
     filterTmp1.unaryOp(filterTmp1, common::UnaryOp::RECIPROCAL);
-    addComponents(filterTmp2, receivers, receiversTrue, shotNumber);
+    addComponents(filterTmp2, receivers, receiversTrue, shotNr);
     filterTmp1 *= filterTmp2;
-
-    filter.setRow(filterTmp1, shotNumber, common::BinaryOp::COPY);
+    
+    filter.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
 }
 
 /*! \brief Apply the Wiener filter to a synthetic source
@@ -71,7 +71,7 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, IndexType shotNumber) const
+void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, IndexType shotInd) const
 {
 
     //get seismogram that corresponds to source type
@@ -87,7 +87,7 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     lama::fft<ComplexValueType>(seismoTrans, 1);
 
     lama::DenseVector<ComplexValueType> filterTmp;
-    filter.getRow(filterTmp, shotNumber);
+    filter.getRow(filterTmp, shotInd);
     seismoTrans.scaleColumns(filterTmp);
 
     lama::ifft<ComplexValueType>(seismoTrans, 1);
@@ -147,7 +147,7 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
                 
                 Taper::Taper2D<ValueType> seismoTaper;
                 seismoTaper.init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
-                std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber) + "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]) + ".mtx";
+                std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber) + "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]);
                 seismoTaper.read(taperNameTmp);
                 seismoTaper.apply(seismoA_tmp);
                 seismoTaper.apply(seismoB_tmp);

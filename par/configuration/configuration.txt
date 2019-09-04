@@ -11,17 +11,19 @@ dimension=2D              # Dimension: 2D or 3D
 equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
 
 # define spatial sampling: number of grid points in direction
+useVariableGrid=0
+partitioning=1
+useVariableFDoperators=0
+
+coordinateWrite=0
+
 NX=100                    # horizontal 1
 NY=100                    # depth
 NZ=1                    # horizontal 2
 
 # define Partitioning
-UseCubePartitioning=1     # 1=ON, 0=OFF
-ProcNX=2
-ProcNY=2
-ProcNZ=1
-ProcNS=1                  # Number of shot domains
-ShotDomain=0
+ShotDomainDefinition=0              # 0 define domains by ProcNS, #1 define by node id, #2 define by env var DOMAIN
+NumShotDomains=1                  # Number of shot domains
 
 # distance between two grid points
 DH=50                     # in meter
@@ -36,12 +38,15 @@ spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
 # define material parameter
 ModelRead=0               # 1=Model will be read from file, 0=generated on the fly
 ModelWrite=0              # 1=Model will be written to disk, 0=not
-ModelFilename=model/model # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
-ModelParametrisation=2    # 1=Module, 2=Velocity
+ModelFilename=model/model # The ending vp.mtx, vs.mtx and density.mtx will be added automatically.
 
-# parallel input-output
-PartitionedIn=0           # 1=Read files parallel, 0=serial 
-PartitionedOut=0          # 1=Write files parallel, 0=serial
+#input-output
+FileFormat=1  # file format for input and output  of models and wavefields
+
+# Supported formats:
+# 1=mtx : formated ascii file - serial IO
+# 2=lmf : binary file - parallel IO - float - little endian - 5 int header (20 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
 
 # Apply the free surface condition
 FreeSurface=2             # 0=OFF, 1=mirror method, 2=improved vacuum formulation

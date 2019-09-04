@@ -55,24 +55,24 @@ KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
 /*! \brief Write model to an external file
  *
  \param filename For the P-wave modulus ".pWaveModulus.mtx" is added, for the second ".sWaveModulus.mtx" and for density ".density.mtx" is added.
- \param partitionedOut Partitioned output
+ \param fileFormat format of output file
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
+void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
     if (workflow.getInvertForVp() == 1) {
-        std::string filenameP = filename + ".vp.mtx";
-        this->writeParameterisation(velocityP, filenameP, partitionedOut);
+        std::string filenameP = filename + ".vp";
+        this->writeParameterisation(velocityP, filenameP, fileFormat);
     }
 
     if (workflow.getInvertForVs() == 1) {
-        std::string filenameS = filename + ".vs.mtx";
-        this->writeParameterisation(velocityS, filenameS, partitionedOut);
+        std::string filenameS = filename + ".vs";
+        this->writeParameterisation(velocityS, filenameS, fileFormat);
     }
 
     if (workflow.getInvertForDensity() == 1) {
-        std::string filenamedensity = filename + ".density.mtx";
-        this->writeParameterisation(density, filenamedensity, partitionedOut);
+        std::string filenamedensity = filename + ".density";
+        this->writeParameterisation(density, filenamedensity, fileFormat);
     }
 };
 

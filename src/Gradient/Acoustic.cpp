@@ -54,20 +54,21 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
 /*! \brief Write gradient to an external file
  *
  \param filename For the P-wave modulus ".pWaveModulus.mtx" is added and for density ".density.mtx" is added.
- \param partitionedOut Partitioned output
+ \param fileFormat format of output file
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
+void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
     if (workflow.getInvertForVp() == 1) {
-        std::string filenameP = filename + ".vp.mtx";
-        this->writeParameterisation(velocityP, filenameP, partitionedOut);
+        std::string filenameP = filename + ".vp";
+        this->writeParameterisation(velocityP, filenameP, fileFormat);
     }
 
     if (workflow.getInvertForDensity() == 1) {
-        std::string filenamedensity = filename + ".density.mtx";
-        this->writeParameterisation(density, filenamedensity, partitionedOut);
+        std::string filenamedensity = filename + ".density";
+        this->writeParameterisation(density, filenamedensity, fileFormat);
     }
+    
 };
 
 /*! \brief Get equationType (acoustic)

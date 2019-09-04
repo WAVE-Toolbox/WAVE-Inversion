@@ -23,6 +23,8 @@
 #include <ForwardSolver/ForwardSolverFactory.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
 
+#include <Partitioning/Partitioning.hpp>
+
 #include <Wavefields/WavefieldsFactory.hpp>
 
 #include "Gradient/GradientCalculation.hpp"
@@ -84,67 +86,26 @@ int main(int argc, char *argv[])
     /* inter node communicator */
     dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
     common::Settings::setRank(commAll->getNodeRank());
+    
     /* execution context */
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
 
-    /* Definition of shot domains */
-
-    int shotDomain = config.get<int>("ShotDomain");
-
-    int domain; // will contain the domain to which this processor belongs
-
-    if (shotDomain == 0) {
-        // Definition by number of shot domains
-
-        IndexType numDomains = config.get<IndexType>("ProcNS"); // total number of shot domains
-        IndexType npDomain = commAll->getSize() / numDomains;   // number of processors for each shot domain
-
-        if (commAll->getSize() != numDomains * npDomain) {
-            HOST_PRINT(commAll, "\n Error: Number of MPI processes (" << commAll->getSize()
-                                                                      << ") is not multiple of shot domains in " << argv[1] << ": ProcNS = " << numDomains << "\n")
-            return (2);
-        }
-
-        domain = commAll->getRank() / npDomain;
-    } else if (shotDomain == 1) {
-        // All processors on one node build one domain
-
-        domain = commAll->getNodeId();
-    } else {
-        bool set = common::Settings::getEnvironment(domain, "DOMAIN");
-
-        if (!set) {
-            std::cout << *commAll << ", node = " << commAll->getNodeName()
-                      << ", node rank = " << commAll->getNodeRank() << " of " << commAll->getNodeSize()
-                      << ": environment variable DOMAIN not set" << std::endl;
-        }
-
-        set = commAll->all(set); // make sure that all processors will terminate
-
-        if (!set) {
-            return (2);
-        }
-    }
-
-    CheckParameter::checkNumberOfProcesses(config, commAll);
+    IndexType shotDomain = Partitioning::getShotDomain(config, commAll); // will contain the domain to which this processor belongs
 
     // Build subsets of processors for the shots
 
-    dmemo::CommunicatorPtr commShot = commAll->split(domain);
-
-    // this communicator is used for reducing the solutions of problems
+    dmemo::CommunicatorPtr commShot = commAll->split(shotDomain);
 
     dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
-
     SCAI_DMEMO_TASK(commShot)
 
     // inter node distribution
     // define the grid topology by sizes NX, NY, and NZ from configuration
     // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
 
-    common::Grid3D grid(config.get<IndexType>("NZ"), config.get<IndexType>("NY"), config.get<IndexType>("NX"));
     // distribute the grid onto available processors
-    dmemo::DistributionPtr dist(new dmemo::GridDistribution(grid, commShot));
+    dmemo::DistributionPtr dist = Partitioning::gridPartition<ValueType>(config, commShot);
+
 
     IndexType nx = config.get<IndexType>("NX");
     IndexType ny = config.get<IndexType>("NY");
@@ -192,7 +153,8 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
     // load starting model
-    model->init(config, ctx, dist);
+    model->init(config, ctx, dist, modelCoordinates);
+    //model->init(config, ctx, dist);
 
     /* --------------------------------------- */
     /* Wavefields                              */
@@ -304,7 +266,7 @@ int main(int argc, char *argv[])
     Taper::Taper1D<ValueType> gradientTaper;
     if (config.get<bool>("useGradientTaper")) {
         gradientTaper.init(dist, ctx, 1);
-        gradientTaper.read(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
+        gradientTaper.read(config.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
     }
 
     /* --------------------------------------- */
@@ -340,7 +302,7 @@ int main(int argc, char *argv[])
 
         if (workflow.getUseGradientTaper()) {
             gradientTaper.init(dist, ctx, 1);
-            gradientTaper.read(config.get<std::string>("gradientTaperName") + ".mtx", config.get<IndexType>("PartitionedIn"));
+            gradientTaper.read(config.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
         }
 
         /* --------------------------------------- */
@@ -355,6 +317,7 @@ int main(int argc, char *argv[])
             HOST_PRINT(commAll, "\n=================================================\n\n");
             start_t = common::Walltime::get();
             /* Update model for fd simulation (averaging, inverse Density ...) */
+
             model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
             solver->prepareForModelling(*model, config.get<ValueType>("DT"));
 
@@ -403,17 +366,17 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << " : Source Time Function Inversion\n");
 
                         wavefields->resetWavefields();
-
+       
                         for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                         }
-
+                
                         solver->resetCPML();
 
                         if (config.get<bool>("maxOffsetSrcEst") == 1)
                             sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), nx, ny, nz, modelCoordinates);
 
-                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotNumber);
+                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
 
                         sourceEst.applyFilter(sources, shotNumber);
                         if (config.get<bool>("useSourceSignalTaper"))
@@ -518,7 +481,7 @@ int main(int argc, char *argv[])
 
             /* Output of gradient */
             if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0)
-                gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("PartitionedOut"), workflow);
+                gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
 
             dataMisfit->addToStorage(misfitPerIt);
             misfitPerIt = 0;
@@ -547,7 +510,7 @@ int main(int argc, char *argv[])
                 model->applyThresholds(config);
 
             if (commInterShot->getRank() == 0)
-                model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("PartitionedOut"));
+                model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
 
             steplengthInit *= 0.98;
 

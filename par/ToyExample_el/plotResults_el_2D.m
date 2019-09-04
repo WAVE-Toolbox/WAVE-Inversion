@@ -42,10 +42,17 @@ inversionModel=config.getString('ModelFilename');
 startingModel=[config.getString('ModelFilename') '.out'];
 trueModel=configTrue.getString('ModelFilename');
 
-load ([config.getString('SourceFilename') '.mtx']);
-acquisition.sources=spconvert(sources(2:end,:));
-load ([config.getString('ReceiverFilename') '.mtx']);
-acquisition.receiver=spconvert(receiver(2:end,:));
+delimiterIn = ' ';
+headerlinesIn = 1;
+
+filename_sources=[config.getString('SourceFilename') '.txt'];
+
+A = importdata(filename_sources,delimiterIn,headerlinesIn);
+acquisition.sources=A.data;
+
+filename_receiver=[config.getString('ReceiverFilename') '.txt'];
+B = importdata(filename_receiver,delimiterIn,headerlinesIn);
+acquisition.receiver=B.data;
 
 plotModel (parameter,colorbarRange,stage,iteration,geometry,acquisition,...
     inversionModel,startingModel,trueModel)

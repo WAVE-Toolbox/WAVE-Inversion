@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     int NX = config.get<IndexType>("NX");
     int NY = config.get<IndexType>("NY");
     int NZ = config.get<IndexType>("NZ");
-    common::Grid3D grid(NZ, NY, NX);
+    common::Grid3D grid(NY, NZ, NX);
 
     // construct model vectors and set background value
     lama::GridVector<ValueType> vp(grid,vp0);
@@ -73,9 +73,9 @@ int main(int argc, char *argv[])
   for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
     for (IndexType y = NY/2-height/2; y < NY/2; ++y) {
 	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
-	  vp(z, y, x) = vp1; 
-	  vs(z, y, x) = vs1; 
-          rho(z, y, x) = density1;
+	  vp(y, z, x) = vp1; 
+	  vs(y, z, x) = vs1; 
+          rho(y, z, x) = density1;
 	}
     }
    }
@@ -84,9 +84,9 @@ int main(int argc, char *argv[])
   for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2-height/2; y < NY/2; ++y) {    
 	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {      
-	  vp(z, y, x) = vp2; 
-	  vs(z, y, x) = vs2; 
-          rho(z, y, x) = density2;
+	  vp(y, z, x) = vp2; 
+	  vs(y, z, x) = vs2; 
+          rho(y, z, x) = density2;
 	}
     }
    }      
@@ -95,9 +95,9 @@ int main(int argc, char *argv[])
  for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
   for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
       for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
-	  vp(z, y, x) = vp3; 
-	  vs(z, y, x) = vs3; 
-          rho(z, y, x) = density3;
+	  vp(y, z, x) = vp3; 
+	  vs(y, z, x) = vs3; 
+          rho(y, z, x) = density3;
       }
   }                                                               
  }
@@ -106,9 +106,9 @@ int main(int argc, char *argv[])
   for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
 	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
-	  vp(z, y, x) = vp4; 
-	  vs(z, y, x) = vs4; 
-          rho(z, y, x) = density4;
+	  vp(y, z, x) = vp4; 
+	  vs(y, z, x) = vs4; 
+          rho(y, z, x) = density4;
 	}
     }
    }      

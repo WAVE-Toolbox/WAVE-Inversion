@@ -1,4 +1,5 @@
 #include "Taper1D.hpp"
+#include <IO/IO.hpp>
 
 using namespace scai;
 
@@ -171,27 +172,9 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
 /*! \brief Read a taper from file
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::read(std::string filename, IndexType partitionedIn)
+void KITGPI::Taper::Taper1D<ValueType>::read(std::string filename, IndexType fileFormat)
 {
-
-    PartitionedInOut::PartitionedInOut<ValueType> partitionIn;
-    lama::DenseVector<ValueType> dataTmp;
-
-    switch (partitionedIn) {
-    case false:
-        partitionIn.readFromOneFile(dataTmp, filename, data.getDistributionPtr());
-        break;
-
-    case true:
-        partitionIn.readFromDistributedFiles(dataTmp, filename, data.getDistributionPtr());
-        break;
-
-    default:
-        COMMON_THROWEXCEPTION("Unexpected input option!")
-        break;
-    }
-
-    data = dataTmp;
+    IO::readVector(data,filename,fileFormat);
 }
 
 template class KITGPI::Taper::Taper1D<double>;

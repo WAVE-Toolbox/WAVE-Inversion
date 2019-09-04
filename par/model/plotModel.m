@@ -94,7 +94,7 @@ colorbar('location','southoutside');
 xlabel('X in meter')
 ylabel('Y in meter')
 hold on
-plot(sources(:,1)*DH,sources(:,2)*DH,'*')
+plot(sources(:,2)*DH,sources(:,3)*DH,'*')
 plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' starting model'])
 end
@@ -112,7 +112,7 @@ colorbar('location','southoutside');
 xlabel('X in meter')
 ylabel('Y in meter')
 hold on
-plot(sources(:,1)*DH,sources(:,2)*DH,'*')
+plot(sources(:,2)*DH,sources(:,3)*DH,'*')
 plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' true model'])
 end

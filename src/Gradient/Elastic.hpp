@@ -23,7 +23,6 @@
 
 #include "../Workflow/Workflow.hpp"
 #include "Gradient.hpp"
-#include <PartitionedInOut/PartitionedInOut.hpp>
 
 namespace KITGPI
 {
@@ -62,7 +61,7 @@ namespace KITGPI
                 this->resetParameter(density);
             };
 
-            void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
+            void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
             std::string getEquationType() const;
 

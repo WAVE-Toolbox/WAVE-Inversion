@@ -1,20 +1,8 @@
 #include "Gradient.hpp"
+#include <IO/IO.hpp>
+
 using namespace scai;
 using namespace KITGPI;
-
-/*! \brief Getter method for partitionedIn */
-template <typename ValueType>
-IndexType KITGPI::Gradient::Gradient<ValueType>::getPartitionedIn()
-{
-    return (PartitionedIn);
-}
-
-/*! \brief Getter method for partitionedOut */
-template <typename ValueType>
-IndexType KITGPI::Gradient::Gradient<ValueType>::getPartitionedOut()
-{
-    return (PartitionedOut);
-}
 
 /*! \brief Getter method for relaxation frequency */
 template <typename ValueType>
@@ -71,12 +59,12 @@ void KITGPI::Gradient::Gradient<ValueType>::initParameterisation(scai::lama::Vec
  \param partitionedIn Partitioned input
  */
 template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType partitionedIn)
+void KITGPI::Gradient::Gradient<ValueType>::initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType fileFormat)
 {
 
     allocateParameterisation(vector, ctx, dist);
 
-    readParameterisation(vector, filename, dist, partitionedIn);
+    readParameterisation(vector, filename, fileFormat);
 
     vector.redistribute(dist);
 }
@@ -86,50 +74,20 @@ void KITGPI::Gradient::Gradient<ValueType>::initParameterisation(scai::lama::Vec
  *  Write a single parameter to an external file block.
  \param vector Single parameter which will be written to filename
  \param filename Name of file in which parameter will be written
- \param partitionedOut Partitioned output
+ \param fileFormat format for output file
  */
 template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, IndexType partitionedOut) const
-{
-    PartitionedInOut::PartitionedInOut<ValueType> partitionOut;
-
-    switch (partitionedOut) {
-    case false:
-        vector.writeToFile(filename);
-        HOST_PRINT(vector.getDistributionPtr()->getCommunicatorPtr(), "writing " << filename << "\n");
-        break;
-
-    case true:
-        partitionOut.writeToDistributedFiles(vector, filename);
-        break;
-
-    default:
-        COMMON_THROWEXCEPTION("Unexpected output option!")
-        break;
-    }
+void KITGPI::Gradient::Gradient<ValueType>::writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, IndexType fileFormat) const
+{    
+    IO::writeVector(vector,filename,fileFormat);
 };
 
 /*! \brief Read a parameter from file
  */
 template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, scai::dmemo::DistributionPtr dist, IndexType partitionedIn)
-{
-
-    PartitionedInOut::PartitionedInOut<ValueType> partitionIn;
-
-    switch (partitionedIn) {
-    case false:
-        partitionIn.readFromOneFile(vector, filename, dist);
-        break;
-
-    case true:
-        partitionIn.readFromDistributedFiles(vector, filename, dist);
-        break;
-
-    default:
-        COMMON_THROWEXCEPTION("Unexpected input option!")
-        break;
-    }
+void KITGPI::Gradient::Gradient<ValueType>::readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, IndexType fileFormat)
+{    
+    IO::readVector(vector,filename,fileFormat);
 };
 
 /*! \brief Allocate a single parameter
