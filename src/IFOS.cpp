@@ -231,8 +231,11 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     SourceEstimation<ValueType> sourceEst;
     Taper::Taper1D<ValueType> sourceSignalTaper;
+    // calculate source dist
+    scai::lama::DenseVector<IndexType> sourcecoords = getsourcecoordinates(sourceSettings, modelCoordinates);
+    scai::dmemo::DistributionPtr dist_sources = Acquisition::calcDistribution(sourcecoords, dist);
     if (config.get<bool>("useSourceSignalInversion"))
-        sourceEst.init(config, ctx, sources.get1DCoordinates().getDistributionPtr(), sourceSignalTaper);
+        sourceEst.init(config, ctx, dist_sources, sourceSignalTaper);
 
     /* --------------------------------------- */
     /* Frequency filter                        */
@@ -363,7 +366,7 @@ int main(int argc, char *argv[])
                 /* Source time function inversion */
                 if (config.get<bool>("useSourceSignalInversion") == 1) {
                     if (workflow.iteration == 0) {
-                        HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << " : Source Time Function Inversion\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << " : Source Time Function Inversion\n");
 
                         wavefields->resetWavefields();
        
@@ -378,15 +381,15 @@ int main(int argc, char *argv[])
 
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
 
-                        sourceEst.applyFilter(sources, shotNumber);
+                        sourceEst.applyFilter(sources, shotInd);
                         if (config.get<bool>("useSourceSignalTaper"))
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
-
                         if (config.get<bool>("writeInvertedSource") == 1)
                             sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     } else {
-                        sourceEst.applyFilter(sources, shotNumber);
-                        sourceSignalTaper.apply(sources.getSeismogramHandler());
+                        sourceEst.applyFilter(sources, shotInd);
+                        if (config.get<bool>("useSourceSignalTaper"))
+                            sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }
                 }
 

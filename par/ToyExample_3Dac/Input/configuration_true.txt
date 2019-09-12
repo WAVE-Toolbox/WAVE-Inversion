@@ -82,6 +82,8 @@ SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(bin
 # 2=lmf : binary file - parallel IO - float - little endian - 6 int header (24 byte)
 # 3=frv : binary file - serial IO - float - little endian - seperate header
 # 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
+writeSource=0                                  # 1=Writes used source wavelet/s per shot, filename=WriteSourceFilename+_shot_+<ShotNumber>+extension (specified by FileFormat)
+writeSourceFilename=SourceSignal/Source
 seismoDT=2.0e-03
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0

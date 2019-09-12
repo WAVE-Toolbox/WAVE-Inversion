@@ -4,7 +4,7 @@
 
 # Type of forward simulation
 dimension=2D              # Dimension: 2D or 3D
-equationType=elastic     # Type of wave equation: acoustic, elastic, visco
+equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
 
 # define spatial sampling: number of grid points in direction
 useVariableGrid=0
@@ -26,10 +26,10 @@ DH=50                     # in meter
 
 # define temporal sampling
 DT=2.0e-03                # temporal sampling in seconds
-T=2.5                       # total simulation time in seconds 
+T=2                       # total simulation time in seconds 
 
 # define order of spatial FD operator
-spatialFDorder=4          # possible values 2, 4, 6, 8, 10 and 12
+spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
 
 # define material parameter
 ModelRead=1               # 1=Model will be read from file, 0=generated on the fly
@@ -56,6 +56,11 @@ VMaxCPML=3500.0           # Maximum velocity of the CPML
 CenterFrequencyCPML=5.0   # Center frequency inside the boundaries
 NPower=4.0
 KMaxCPML=1.0
+
+saveSnapshots=0
+tincSnapshot=0
+tFirstSnapshot=0
+tLastSnapshot=0
     
 # Viscoelastic modelling
 numRelaxationMechanisms=0 # Number of relaxation mechanisms 
@@ -63,21 +68,13 @@ relaxationFrequency=0     # Relaxation frequency
 
 # generate homogeneous model
 velocityP=3500            # P-wave velocity in meter per seconds
-velocityS=2000.0          # S-wave velocity in meter per seconds
+velocityS=0               # S-wave velocity in meter per seconds
 rho=2000                  # Density in kilo gramms per cubic meter
 tauP=0.0                  # Tau value for P-waves
 tauS=0.0                  # Tau value for S-waves
 
-
-snapType=0                # 0=don't save snapshots 1=save velocities 2=save pressure/stress 3=save energy
-WavefieldFileName=./wavefield        # location of wavefields
-tFirstSnapshot=0                                      # Time of first snapshot in seconds
-tLastSnapshot=2                                       # Time of last snapshot in seconds
-tIncSnapshot=0.5          # Time increment between snapshot in seconds
-
-
 # Acquisition
-SourceFilename=Input/sources         # location of source file
+SourceFilename=Input/sources_true         # location of source file
 ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample.true      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(binary parallel) 3=frv (binary serial), 4=SU (parallel)
@@ -85,27 +82,31 @@ SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(bin
 # 2=lmf : binary file - parallel IO - float - little endian - 6 int header (24 byte)
 # 3=frv : binary file - serial IO - float - little endian - seperate header
 # 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
-writeSource=0                                  # 1=Writes used source wavelet/s per shot, filename=WriteSourceFilename+_shot_+<ShotNumber>+extension (specified by FileFormat)
-writeSourceFilename=SourceSignal/Source
+
 seismoDT=2.0e-03
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
-runSimultaneousShots=0
 useReceiversPerShot=0
 initSourcesFromSU=0
 initReceiverFromSU=0
+writeSource=1                                  # 1=Writes used source wavelet/s per shot, filename=WriteSourceFilename+_shot_+<ShotNumber>+extension (specified by FileFormat)
+writeSourceFilename=sourceInversion/source_signal_ricker
 
-
-boxWidth=20
-boxHeight=20
-
-vs1=2200
-vs2=2200
-vs3=2200
-vs4=2200
-
-#vs1=...
-#...
-#density1=...
-#...
 
 verbose=0
+
+snapType=0
+
+#ToyModel specification 
+
+boxWidth=20;
+boxHeight=20;
+
+vp1=3800
+vp2=3800
+vp3=3300
+vp4=2900
+
+#density1=3000
+#density2=3000
+#density3=3000
+#density4=3000

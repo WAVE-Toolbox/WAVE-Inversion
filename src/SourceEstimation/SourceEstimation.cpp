@@ -39,7 +39,6 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
     nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
     waterLevel = common::Math::pow<ValueType>(waterLvl, 2.0) * nFFT;
     filter.allocate(sourceDistribution, std::make_shared<dmemo::NoDistribution>(nFFT));
-    //std::cout << "alloc, " << *sourceDistribution << " " << filter.getLocalNumRows() << " " << filter.getLocalNumColumns() << std::endl;
     if (!tprName.empty()) {
         readTaper = true;
         taperName = tprName;
