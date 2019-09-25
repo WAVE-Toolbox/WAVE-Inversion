@@ -259,8 +259,6 @@ message ( STATUS "DOXYGEN_FOUND=${DOXYGEN_FOUND}, DOXYGEN_EXECUTABLE=${DOXYGEN_E
 
 if ( DOXYGEN_FOUND )
 
-    message( [status] "${CMAKE_SOURCE_DIR}/../doc/doxygen/Doxyfile")
-
     set ( DOXYGEN_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen" )
 
     configure_file ( "${CMAKE_SOURCE_DIR}/../doc/doxygen/Doxyfile" "${DOXYGEN_BINARY_DIR}/Doxyfile" @ONLY )
