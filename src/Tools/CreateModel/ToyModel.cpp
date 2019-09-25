@@ -7,14 +7,16 @@
 #include <string>
 #include <vector>
 
-#include "Configuration/Configuration.hpp"
+#include <Configuration/Configuration.hpp>
+#include <Configuration/ValueType.hpp>
 #include "HostPrint.hpp"
+#include <IO/IO.hpp>
 
 using namespace scai;
+using namespace KITGPI;
 
 int main(int argc, char *argv[])
 {
-    typedef double ValueType;
 
     ValueType vp1, vp2, vp3, vp4, vs1, vs2, vs3, vs4, density1, density2, density3, density4;
     int depth=1.0;
@@ -25,7 +27,7 @@ int main(int argc, char *argv[])
         return (2);
     }
     // read configuration parameter from file
-    KITGPI::Configuration::Configuration config(argv[1]);
+    Configuration::Configuration config(argv[1]);
     
     //background value
     ValueType vp0=config.get<ValueType>("velocityP");
@@ -118,18 +120,24 @@ int main(int argc, char *argv[])
     //write model to file specified in configuration
     std::string filename = config.get<std::string>("ModelFilename");
     
-    rho.writeToFile(filename + ".density.mtx");
+    IndexType fileFormat = config.get<IndexType>("FileFormat");
+
+    //write model to disc
+
+    KITGPI::IO::writeVector(rho, filename + ".density", fileFormat);
 
     if (type.compare("sh") != 0) {
-        vp.writeToFile(filename + ".vp.mtx");
+        KITGPI::IO::writeVector(vp, filename + ".vp", fileFormat);
     }
 
     if (type.compare("acoustic") != 0) {
-        vs.writeToFile(filename + ".vs.mtx");
+        KITGPI::IO::writeVector(vs, filename + ".vs", fileFormat);
     }
+
     if (type.compare("visco") == 0) {
-        tauP.writeToFile(filename + ".tauP.mtx");
-        tauS.writeToFile(filename + ".tauS.mtx");
+        KITGPI::IO::writeVector(tauP, filename + ".tauP", fileFormat);
+        KITGPI::IO::writeVector(tauS, filename + ".tauS", fileFormat);
     }
+    
     return 0;
 }

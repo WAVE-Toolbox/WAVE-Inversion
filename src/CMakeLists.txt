@@ -42,6 +42,7 @@ set ( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
 execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE GIT_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE)
 add_definitions("-DBUILD_COMMIT=${GIT_COMMIT}")
 
+
 ####################################################
 #  Find SOFI package (mandatory)                   #
 ####################################################
@@ -75,13 +76,8 @@ set( IFOS_used_libs ${SOFI_LIBRARIES} )
 
 # take SOFI_SCAI_ROOT as additional hint so same installation is used
 
-set ( SCAI_PATH_HINTS "${SCAI_DIR}" "${SCAI_HOME}" "$ENV{SCAI_HOME}" "${SOFI_SCAI_ROOT}" )
+set ( SCAI_PATH_HINTS "${SOFI_SCAI_ROOT}" )
 
-if ( ${CMAKE_VERSION} VERSION_GREATER 3.11)
-else()
-    ## simulate new policy by adding SCAI_ROOT to hints
-    set ( SCAI_PATH_HINTS ${SCAI_PATH_HINTS} "${SCAI_ROOT}" "$ENV{SCAI_ROOT}" )
-endif()
 
 find_package( SCAI REQUIRED CONFIG 
               NO_CMAKE_PATH 
@@ -156,11 +152,7 @@ foreach ( dir ${IFOS_LIB_DIRS} )
 
 endforeach ()
 
-### set value type ###
-#set(IFOS_VALUE_TYPE "float" CACHE STRING "variable type used for values")
-#configure_file("config.hpp.in" "${CMAKE_CURRENT_BINARY_DIR}/include/config.hpp")
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/config.hpp" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/include")
 
 
 ####################################################
@@ -191,136 +183,149 @@ install( TARGETS prog DESTINATION bin )
 #  Unit Test                                       #
 ####################################################
 
-#find_package( GTest )
-#
-#if ( ${GTEST_FOUND} )
-#
-#   file( GLOB IFOS_UNIT_TEST_SOURCES Tests/UnitTest/*.cpp )
-#
-#   add_executable( utest ${IFOS_UNIT_TEST_SOURCES} )
-#
-#   target_include_directories( utest PRIVATE Common Gradient Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation  ${GTEST_INCLUDE_DIR} )
-#   target_link_libraries( utest ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} IFOS ${IFOS_used_libs} )
-#
-#   set_target_properties( utest PROPERTIES OUTPUT_NAME Test_unit )
-#
-#   install( TARGETS utest DESTINATION bin )
-#
-#else()
-#
-#    message( WARNING "Skip configuration for utest, please set GTEST_ROOT to googletest installation directory" )
-#
-#    add_custom_target (
-#        utest
-#        COMMAND echo "ATTENTION: cannot build utest as googletest not found, set GTEST_ROOT" 
-#    )
-#
-#endif ()
+find_package( GTest )
+
+if ( ${GTEST_FOUND} )
+
+  file( GLOB IFOS_UNIT_TEST_SOURCES Tests/UnitTest/*.cpp )
+
+  add_executable( utest ${IFOS_UNIT_TEST_SOURCES} )
+
+  target_include_directories( utest PRIVATE Common Gradient Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation  ${GTEST_INCLUDE_DIR} )
+  target_link_libraries( utest ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} IFOS ${IFOS_used_libs} )
+
+  set_target_properties( utest PROPERTIES OUTPUT_NAME Test_unit )
+
+  install( TARGETS utest DESTINATION bin )
+
+else()
+
+   message( WARNING "Skip configuration for utest, please set GTEST_ROOT to googletest installation directory" )
+
+   add_custom_target (
+       utest
+       COMMAND echo "ATTENTION: cannot build utest as googletest not found, set GTEST_ROOT" 
+   )
+
+endif ()
 
 
-##  Integration Test                                #
-#####################################################
-#
-#set ( IFOS_INTEGRATION_TEST_SOURCES
-#    Tests/IntegrationTest/Test_CompareSeismogram.cpp
-#)
-#
-#add_executable( itest ${IFOS_INTEGRATION_TEST_SOURCES} )
-#
-#target_link_libraries( itest IFOS ${IFOS_used_libs} )
-#
-#set_target_properties( itest PROPERTIES OUTPUT_NAME Test_integration )
-#
-#install( TARGETS itest DESTINATION bin )
-#
+#  Integration Test                                #
+####################################################
+
+set ( IFOS_INTEGRATION_TEST_SOURCES
+   Tests/IntegrationTest/Test_CompareMisfit.cpp
+)
+
+add_executable( itest ${IFOS_INTEGRATION_TEST_SOURCES} )
+
+target_link_libraries( itest IFOS ${IFOS_used_libs} )
+
+set_target_properties( itest PROPERTIES OUTPUT_NAME Test_integration )
+
+install( TARGETS itest DESTINATION bin )
+
 #####################################################
 ##  Create Model                                    #
 #####################################################
-#
-#add_executable( model Tools/CreateModel/TwoLayer.cpp )
-##add_executable( model Tools/CreateModel/ToyModel.cpp )
-#
-#target_link_libraries( model IFOS ${IFOS_used_libs} )
-#
-#set_target_properties( model PROPERTIES OUTPUT_NAME TwoLayer )
-#
-#install( TARGETS model DESTINATION bin/tools )
-#
+
+# ADD_CUSTOM_TARGET(model)
+# ADD_DEPENDENCIES(model TwoLayer)
+# 
+# add_executable( TwoLayer Tools/CreateModel/TwoLayer.cpp )
+# 
+# target_link_libraries( TwoLayer IFOS ${IFOS_used_libs} )
+# 
+# set_target_properties( TwoLayer PROPERTIES OUTPUT_NAME TwoLayer )
+# 
+# install( TARGETS TwoLayer DESTINATION bin/tools )
+# 
+# add_executable( ToyModel Tools/CreateModel/ToyModel.cpp )
+# 
+# target_link_libraries( ToyModel IFOS ${IFOS_used_libs} )
+# 
+# set_target_properties( ToyModel PROPERTIES OUTPUT_NAME ToyModel )
+# 
+# install( TARGETS ToyModel DESTINATION bin/tools )
+
+
 #####################################################
 ##  Doxygen documentation                           #
 #####################################################
-#
-#find_package( Doxygen )
-#
-#message ( STATUS "DOXYGEN_FOUND=${DOXYGEN_FOUND}, DOXYGEN_EXECUTABLE=${DOXYGEN_EXECUTABLE}" )
-#
-#if ( DOXYGEN_FOUND )
-#
-#    set ( DOXYGEN_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen" )
-#
-#    configure_file ( "${CMAKE_SOURCE_DIR}/../doc/doxygen/Doxyfile" "${DOXYGEN_BINARY_DIR}/Doxyfile" @ONLY )
-#
-#    file ( MAKE_DIRECTORY ${DOXYGEN_BINARY_DIR}/html )
-#
-#    add_custom_command (
-#        OUTPUT ${DOXYGEN_BINARY_DIR}/html/index.html
-#        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_BINARY_DIR}/Doxyfile
-#        DEPENDS ${DOXYGEN_BINARY_DIR}/Doxyfile
-#        WORKING_DIRECTORY ${DOXYGEN_BINARY_DIR}
-#    )
-#
-#    add_custom_target (
-#        doc
-#        DEPENDS ${DOXYGEN_BINARY_DIR}/html/index.html
-#        COMMENT "Creating doxygen doc."
-#    )
-#
-#    install ( DIRECTORY   ${DOXYGEN_BINARY_DIR}/html 
-#              DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc )
-#
-#else ()
-#
-#    add_custom_target (
-#        doc
-#        COMMAND echo "ATTENTION: doxygen not found, cannot build documentation" 
-#    )
-#
-#endif ()
-#
-#####################################################
-##  Guide (latex/pdf) document                      #
-#####################################################
-#
-#find_package ( LATEX COMPONENTS PDFLATEX BIBTEX )
-#
-#message ( STATUS "LATEX_FOUND=${LATEX_FOUND}, PDFLATEX_COMPILER=${PDFLATEX_COMPILER}, BIBTEX_COMPILER=${BIBTEX_COMPILER}" )
-#
-#if ( LATEX_FOUND )
-#
-#    set ( GUIDE_BINARY_DIR "${CMAKE_BINARY_DIR}/doc/guide" )
-#    configure_file ( "${CMAKE_SOURCE_DIR}/../doc/guide/WAVE_guide_EN.tex" "${GUIDE_BINARY_DIR}/WAVE_guide_EN.tex" @ONLY )
-#    
-#    add_custom_command (
-#        OUTPUT ${GUIDE_BINARY_DIR}/WAVE_guide_EN.pdf
-#        COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
-#        COMMAND ${BIBTEX_COMPILER} WAVE_guide_EN
-#        COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
-#        COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
-#        DEPENDS ${GUIDE_BINARY_DIR}/WAVE_guide_EN.tex
-#        WORKING_DIRECTORY ${GUIDE_BINARY_DIR}
-#    )
-#
-#    add_custom_target (
-#        pdf
-#        DEPENDS ${GUIDE_BINARY_DIR}/WAVE_guide_EN.pdf 
-#        COMMENT "Creating pdf guide."
-#    )
-#
-#else ()
-#
-#    add_custom_target (
-#        pdf
-#        COMMAND echo "ATTENTION: pdflatex/bibtex not found, cannot build user guide" 
-#    )
-#
-#endif ()
+
+find_package( Doxygen )
+
+message ( STATUS "DOXYGEN_FOUND=${DOXYGEN_FOUND}, DOXYGEN_EXECUTABLE=${DOXYGEN_EXECUTABLE}" )
+
+if ( DOXYGEN_FOUND )
+
+    message( [status] "${CMAKE_SOURCE_DIR}/../doc/doxygen/Doxyfile")
+
+    set ( DOXYGEN_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/doc/doxygen" )
+
+    configure_file ( "${CMAKE_SOURCE_DIR}/../doc/doxygen/Doxyfile" "${DOXYGEN_BINARY_DIR}/Doxyfile" @ONLY )
+
+    file ( MAKE_DIRECTORY ${DOXYGEN_BINARY_DIR}/html )
+
+    add_custom_command (
+        OUTPUT ${DOXYGEN_BINARY_DIR}/html/index.html
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_BINARY_DIR}/Doxyfile
+        DEPENDS ${DOXYGEN_BINARY_DIR}/Doxyfile
+        WORKING_DIRECTORY ${DOXYGEN_BINARY_DIR}
+    )
+
+    add_custom_target (
+        doc
+        DEPENDS ${DOXYGEN_BINARY_DIR}/html/index.html
+        COMMENT "Creating doxygen doc."
+    )
+
+    install ( DIRECTORY   ${DOXYGEN_BINARY_DIR}/html 
+              DESTINATION ${CMAKE_INSTALL_PREFIX}/share/doc )
+
+else ()
+
+    add_custom_target (
+        doc
+        COMMAND echo "ATTENTION: doxygen not found, cannot build documentation" 
+    )
+ 
+endif ()
+
+####################################################
+#  Guide (latex/pdf) document                      #
+####################################################
+
+find_package ( LATEX COMPONENTS PDFLATEX BIBTEX )
+
+message ( STATUS "LATEX_FOUND=${LATEX_FOUND}, PDFLATEX_COMPILER=${PDFLATEX_COMPILER}, BIBTEX_COMPILER=${BIBTEX_COMPILER}" )
+
+if ( LATEX_FOUND )
+
+   set ( GUIDE_BINARY_DIR "${CMAKE_BINARY_DIR}/doc/guide" )
+   configure_file ( "${CMAKE_SOURCE_DIR}/../doc/guide/WAVE_guide_EN.tex" "${GUIDE_BINARY_DIR}/WAVE_guide_EN.tex" @ONLY )
+   
+   add_custom_command (
+       OUTPUT ${GUIDE_BINARY_DIR}/WAVE_guide_EN.pdf
+       COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
+       COMMAND ${BIBTEX_COMPILER} WAVE_guide_EN
+       COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
+       COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
+       DEPENDS ${GUIDE_BINARY_DIR}/WAVE_guide_EN.tex
+       WORKING_DIRECTORY ${GUIDE_BINARY_DIR}
+   )
+
+   add_custom_target (
+       pdf
+       DEPENDS ${GUIDE_BINARY_DIR}/WAVE_guide_EN.pdf 
+       COMMENT "Creating pdf guide."
+   )
+
+else ()
+
+   add_custom_target (
+       pdf
+       COMMAND echo "ATTENTION: pdflatex/bibtex not found, cannot build user guide" 
+   )
+
+endif ()
