@@ -229,24 +229,24 @@ install( TARGETS itest DESTINATION bin )
 ##  Create Model                                    #
 #####################################################
 
-# ADD_CUSTOM_TARGET(model)
-# ADD_DEPENDENCIES(model TwoLayer)
-# 
-# add_executable( TwoLayer Tools/CreateModel/TwoLayer.cpp )
-# 
-# target_link_libraries( TwoLayer IFOS ${IFOS_used_libs} )
-# 
-# set_target_properties( TwoLayer PROPERTIES OUTPUT_NAME TwoLayer )
-# 
-# install( TARGETS TwoLayer DESTINATION bin/tools )
-# 
-# add_executable( ToyModel Tools/CreateModel/ToyModel.cpp )
-# 
-# target_link_libraries( ToyModel IFOS ${IFOS_used_libs} )
-# 
-# set_target_properties( ToyModel PROPERTIES OUTPUT_NAME ToyModel )
-# 
-# install( TARGETS ToyModel DESTINATION bin/tools )
+ADD_CUSTOM_TARGET(model)
+ADD_DEPENDENCIES(model TwoLayer)
+
+add_executable( TwoLayer Tools/CreateModel/TwoLayer.cpp )
+
+target_link_libraries( TwoLayer IFOS ${IFOS_used_libs} )
+
+set_target_properties( TwoLayer PROPERTIES OUTPUT_NAME TwoLayer )
+
+install( TARGETS TwoLayer DESTINATION bin/tools )
+
+add_executable( ToyModel Tools/CreateModel/ToyModel.cpp )
+
+target_link_libraries( ToyModel IFOS ${IFOS_used_libs} )
+
+set_target_properties( ToyModel PROPERTIES OUTPUT_NAME ToyModel )
+
+install( TARGETS ToyModel DESTINATION bin/tools )
 
 
 #####################################################
