@@ -42,9 +42,8 @@ set ( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
 execute_process(COMMAND git rev-parse --short HEAD OUTPUT_VARIABLE GIT_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE)
 add_definitions("-DBUILD_COMMIT=${GIT_COMMIT}")
 
-
 ####################################################
-#  Path hints for finding SCAI(Lama) / Geographer  #
+#  Find SOFI package (mandatory)                   #
 ####################################################
 
 set ( SOFI_PATH_HINTS "${SOFI_DIR}" "${SOFI_HOME}" "$ENV{SOFI_HOME}" )
@@ -56,10 +55,6 @@ else ()
     set ( SOFI_PATH_HINTS ${SOFI_PATH_HINTS} "${SOFI_ROOT}" "$ENV{SOFI_ROOT}" )
 endif ()
 
-####################################################
-#  Find SOFI library (mandatory)                   #
-####################################################
-
 find_package( SOFI REQUIRED CONFIG 
               NO_CMAKE_PATH 
               NO_SYSTEM_ENVIRONMENT_PATH 
@@ -69,12 +64,13 @@ find_package( SOFI REQUIRED CONFIG
 
 set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${SOFI_CXX_FLAGS} )
 
-include_directories( ${SOFI_INCLUDE_DIRS} )
+## provide SOFI include directories + library for IFOS
 
+include_directories( ${SOFI_INCLUDE_DIRS} )
 set( IFOS_used_libs ${SOFI_LIBRARIES} )
 
 ####################################################
-#  Find LAMA library (mandatory)                   #
+#  Find SCAI/LAMA package (mandatory)              #
 ####################################################
 
 # take SOFI_SCAI_ROOT as additional hint so same installation is used
@@ -92,15 +88,16 @@ find_package( SCAI REQUIRED CONFIG
               NO_SYSTEM_ENVIRONMENT_PATH 
               PATHS ${SCAI_PATH_HINTS} )
 
-## take over compilfer flags as used by LAMA
+## provide SCAI/LAMA include directories + library for IFOS
 
 include_directories( ${SCAI_INCLUDE_DIRS} )
-
 set( IFOS_used_libs ${IFOS_used_libs} ${SCAI_LIBRARIES} )
 
 ####################################################
-#  Find Geographer library (optional)              #
+#  Find Geographer package (optional)              #
 ####################################################
+
+# take SOFI_Geographer_ROOT as additional hint so same installation is used
 
 set ( Geographer_PATH_HINTS 
         "${Geographer_DIR}" 
@@ -119,9 +116,14 @@ find_package( Geographer CONFIG
               PATHS ${Geographer_PATH_HINTS} )
 
 if ( ${Geographer_FOUND} )
-    include_directories( ${Geographer_INCLUDE_DIRS} )
+ 
+    ## enalble conditional compilation of code using Geographer
     add_definitions( "-DUSE_GEOGRAPHER" )
+
+    ## provide Geographer include directories + library for IFOS
+    include_directories( ${Geographer_INCLUDE_DIRS} )
     set( IFOS_used_libs ${Geographer_LIBRARIES} ${IFOS_used_libs} )
+
 endif ()
 
 ###################################################
