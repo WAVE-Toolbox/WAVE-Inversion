@@ -10,7 +10,7 @@
 #include <cmath>
 
 #include <Configuration/Configuration.hpp>
-//#include "/home/tmetz/projects/FDSimulation_LAMA//src/Configuration/Configuration.hpp"
+#include <Configuration/ValueType.hpp>
 #include <Acquisition/Receivers.hpp>
 #include <Acquisition/Sources.hpp>
 
@@ -49,7 +49,6 @@ bool verbose; // global variable definition
 
 int main(int argc, char *argv[])
 {
-    typedef float ValueType;
     double start_t, end_t, start_t_shot, end_t_shot; /* For timing */
 
     if (argc != 2) {
