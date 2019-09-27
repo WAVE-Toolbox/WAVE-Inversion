@@ -103,9 +103,18 @@ int main(int argc, char *argv[])
     // define the grid topology by sizes NX, NY, and NZ from configuration
     // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
 
-    // distribute the grid onto available processors
-    dmemo::DistributionPtr dist = Partitioning::gridPartition<ValueType>(config, commShot);
-
+    // distribute the grid onto available processors    
+    dmemo::DistributionPtr dist = nullptr;
+    if ((config.get<IndexType>("partitioning") == 0) || (config.get<IndexType>("partitioning") == 2)) {
+        //Block distribution = starting distribution for graph partitioner
+        dist = std::make_shared<dmemo::BlockDistribution>(modelCoordinates.getNGridpoints(), commShot);
+    } else if (config.get<IndexType>("partitioning") == 1) {
+        SCAI_ASSERT(!config.get<bool>("useVariableGrid"), "Grid distribution is not available for the variable grid");
+        dist = Partitioning::gridPartition<ValueType>(config, commShot);
+    } else {
+        COMMON_THROWEXCEPTION("unknown partitioning method");
+    }
+    
 
     IndexType nx = config.get<IndexType>("NX");
     IndexType ny = config.get<IndexType>("NY");
@@ -126,6 +135,16 @@ int main(int argc, char *argv[])
     end_t = common::Walltime::get();
     HOST_PRINT(commAll, "", "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
 
+    /* --------------------------------------- */
+    /* Call partioner */
+    /* --------------------------------------- */
+    if (config.get<IndexType>("partitioning") == 2) {
+        start_t = common::Walltime::get();
+        dist = Partitioning::graphPartition(config, ctx, commShot, dist, *derivatives,modelCoordinates);
+        end_t = common::Walltime::get();
+        HOST_PRINT(commAll, "", "Finished graph partitioning in " << end_t - start_t << " sec.\n\n");
+    }
+    
     /* --------------------------------------- */
     /* Acquisition geometry                    */
     /* --------------------------------------- */
@@ -432,7 +451,7 @@ int main(int argc, char *argv[])
                 receiversTrue.getSeismogramHandler().normalize();
 
                 /* Calculate misfit of one shot */
-                misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));
+                misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
 
                 /* Calculate adjoint sources */
                 dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
@@ -444,7 +463,7 @@ int main(int argc, char *argv[])
 
                 /* Apply energy preconditioning per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1) {
-                    energyPrecond.apply(*gradientPerShot, shotNumber);
+                    energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
                 }
 
                 if (config.get<bool>("useReceiversPerShot"))
@@ -574,7 +593,7 @@ int main(int argc, char *argv[])
                     receiversTrue.getSeismogramHandler().normalize();
 
                     /* Calculate misfit of one shot */
-                    misfitPerIt.setValue(shotNumber, dataMisfit->calc(receivers, receiversTrue));
+                    misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
 
                     end_t_shot = common::Walltime::get();
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Finished additional forward run\n");

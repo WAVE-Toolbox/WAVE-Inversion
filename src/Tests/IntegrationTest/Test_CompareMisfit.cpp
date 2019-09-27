@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     if (finalMisfit > referenceMisfit) {
         std::cout << "\n\nTest Failed\n\n"
                   << std::endl
-                  << "Inversion misfit of " << finalMisfit << " is smaller than reference misfit of " << referenceMisfit << "\n\n"
+                  << "Inversion misfit of " << finalMisfit << " is greater than reference misfit of " << referenceMisfit << "\n\n"
                   << std::endl;
         return (1);
     } else {

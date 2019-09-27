@@ -128,7 +128,7 @@ testShotIncr=2                         # increment of test shots
 useSourceSignalInversion=1                         # 1= use source time inversion
 waterLevel=1e-10                                   # water level of source time inversion
 writeInvertedSource=1                              # 1=source signal will be written to disk, 0=not
-sourceSeismogramFilename=sourceInversion/invSource # location/basename of output source signal
+sourceSeismogramFilename=../ToyExample_ac_STFI/invSource # location/basename of output source signal
 useSourceSignalTaper=1                             # use cosine taper for source signal
 sourceSignalTaperStart1=10                          # start index of first cosine taper
 sourceSignalTaperEnd1=20                          # end index of first cosine taper

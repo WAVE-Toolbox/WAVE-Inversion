@@ -89,7 +89,7 @@ useReceiversPerShot=0
 initSourcesFromSU=0
 initReceiverFromSU=0
 writeSource=1                                  # 1=Writes used source wavelet/s per shot, filename=WriteSourceFilename+_shot_+<ShotNumber>+extension (specified by FileFormat)
-writeSourceFilename=sourceInversion/source_signal_ricker
+writeSourceFilename=../ToyExample_ac_STFI/source_signal_ricker
 
 
 verbose=0

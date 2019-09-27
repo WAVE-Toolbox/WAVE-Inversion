@@ -61,7 +61,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
  \param shotNumber 
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat)
 {
 //     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
     
@@ -70,8 +70,8 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
     approxHessian *= 1 / approxHessian.maxNorm(); 
     
     if(saveApproxHessian==1){
-        approxHessian.writeToFile(approxHessianName + ".shot_" + std::to_string(shotNumber+1) + ".mtx");}
-    
+        IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);}
+        
     approxHessian = 1 / approxHessian;
     gradientPerShot *= approxHessian;    // overload operator /= in gradient-class    
     

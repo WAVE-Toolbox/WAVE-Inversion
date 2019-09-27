@@ -3,9 +3,11 @@
 #include <scai/lama.hpp>
 #include <iostream>
 
+#include <IO/IO.hpp>
 #include <Acquisition/Receivers.hpp>
 #include <Wavefields/Wavefields.hpp>
 #include "../Gradient/Gradient.hpp"
+
 
 namespace KITGPI
 {
@@ -32,7 +34,7 @@ namespace KITGPI
 
             void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config);
             void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT); //!< Integrate squared wavefields 
-            void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber);
+            void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat);
             void resetApproxHessian();
             
         private:

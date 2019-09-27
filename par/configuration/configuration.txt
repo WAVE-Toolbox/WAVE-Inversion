@@ -22,6 +22,7 @@ NY=100                    # depth
 NZ=1                    # horizontal 2
 
 # define Partitioning
+partitioning=2
 ShotDomainDefinition=0              # 0 define domains by ProcNS, #1 define by node id, #2 define by env var DOMAIN
 NumShotDomains=1                  # Number of shot domains
 
