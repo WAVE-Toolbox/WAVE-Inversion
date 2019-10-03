@@ -1,0 +1,122 @@
+# Input file SOFI
+# The format has to be name=value (without any white spaces)
+# Use the hashtag "#" for comments
+
+# Type of forward simulation
+dimension=2D              # Dimension: 2D or 3D
+equationType=elastic     # Type of wave equation: acoustic, elastic, visco
+
+# define spatial sampling: number of grid points in direction
+useVariableGrid=0
+partitioning=2 # 0=Block Distribution 1=Grid Distribution 2=Graph Partitioning
+useVariableFDoperators=0
+
+interfaceFilename=Input/interfaces.txt
+dhFactorFilename=Input/dhFactors.txt
+spatialFDorderFilename=Input/FDorders.txt
+
+partitionWrite=0                                   # 1=partition will be written to disk, 0=not
+partitionFilename=out/partition
+
+coordinateWrite=0                                  # 1=coordinates will be written to disk, 0=not
+coordinateFilename=out/coordinates       
+
+weightsWrite=0                                  # 1=weigths will be written to disk, 0=not
+weightsFilename=out/weights       
+
+NX=200                    # horizontal 1
+NY=100                    # depth
+NZ=1                    # horizontal 2
+
+# define Partitioning
+ShotDomainDefinition=0              # 0 define domains by ProcNS, #1 define by node id, #2 define by env var DOMAIN
+NumShotDomains=2                  # Number of shot domains
+
+# distance between two grid points
+DH=0.5                     # in meter
+
+# define temporal sampling
+DT=0.2e-03                # temporal sampling in seconds
+T=1                       # total simulation time in seconds 
+
+# define order of spatial FD operator
+spatialFDorder=4          # possible values 2, 4, 6, 8, 10 and 12
+
+# define material parameter
+ModelRead=1               # 1=Model will be read from file, 0=generated on the fly
+ModelWrite=0              # 1=Model will be written to disk, 0=not
+ModelFilename=../model/ettlinger_linie_true # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
+
+#input-output
+FileFormat=1  # file format for input and output  of models and wavefields
+
+# Supported formats:
+# 1=mtx : formated ascii file - serial IO
+# 2=lmf : binary file - parallel IO - float - little endian - 5 int header (20 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
+
+# Apply the free surface condition
+FreeSurface=1             # 1=ON, 0=OFF
+
+# Damping Boundary
+DampingBoundary=1         # 1=ON, 0=OFF
+DampingBoundaryType=2     # Type of damping boundary: 1=ABS 2=CPML
+BoundaryWidth=18          # Width of damping boundary in grid points
+DampingCoeff=8.0          # Damping coefficient 
+VMaxCPML=1500.0           # Maximum velocity of the CPML
+CenterFrequencyCPML=10.0   # Center frequency inside the boundaries
+NPower=4.0
+KMaxCPML=1.0
+    
+# Viscoelastic modelling
+numRelaxationMechanisms=0 # Number of relaxation mechanisms 
+relaxationFrequency=0     # Relaxation frequency
+
+snapType=0                # 0=don't save snapshots 1=save velocities 2=save pressure/stress 3=save energy
+WavefieldFileName=./wavefield        # location of wavefields
+tFirstSnapshot=0                                      # Time of first snapshot in seconds
+tLastSnapshot=2                                       # Time of last snapshot in seconds
+tIncSnapshot=0.5          # Time increment between snapshot in seconds
+
+# Acquisition
+SourceFilename=Input/sources         # location of source file
+ReceiverFilename=Input/receiver      # location of receiver file
+SeismogramFilename=Input/ettlinger_linie.true      # target location of seismogram
+SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(binary parallel) 3=frv (binary serial), 4=SU (parallel)
+# 1=mtx : formated ascii file - serial IO - 2 line ascii header
+# 2=lmf : binary file - parallel IO - float - little endian - 6 int header (24 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
+# 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
+writeSource=0                                  # 1=Writes used source wavelet/s per shot, filename=WriteSourceFilename+_shot_+<ShotNumber>+extension (specified by FileFormat)
+writeSourceFilename=source
+seismoDT=0.6e-03
+NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+useReceiversPerShot=0
+initSourcesFromSU=0
+initReceiverFromSU=0
+
+# Build model Ettlinger Linie
+# gradients
+vp1_up=280 # vp at surface
+vp1_down=600 # vp at grid point depth_halfspace
+    
+vs1_up=120 # vs at surface
+vs1_middle=175 # vs at grid point depth_grad_change_vs
+depth_grad_change_vs=10 #grid point, where different linear gradient of vs begins    
+vs1_down=300 # vs at grid point depth_halfspace
+ 
+#depth of halfspace
+depth_halfspace=70
+#velocities of halfspace
+vp2=1500
+vs2=300
+    
+rho1=1500
+rho2=1500
+    
+#trench
+trench_vs=120
+trench_centerx=80 # center grid point of trench
+trench_width=40 # total width of trench
+
+verbose=0

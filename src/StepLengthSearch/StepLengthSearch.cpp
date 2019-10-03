@@ -94,7 +94,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
         step2ok = true;
     }
 
-    /* --- Search for a third step length - case: misfit was DECREASED --- */
+    /* --- Search for a third step length - case: misfit was DECREASED Case 1/2 --- */
     steplength = steplengthInit;
     while (step2ok == true && stepCalcCount < maxStepCalc) {
         HOST_PRINT(commAll, "\nEstimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc << "\n");
@@ -111,7 +111,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
         }
     }
 
-    /* --- Search for a third step length - case: misfit was INCREASED  --- */
+    /* --- Search for a third step length - case: misfit was INCREASED Case 3/4 --- */
     steplength = steplengthInit;
     while (step2ok == false && stepCalcCount < maxStepCalc) {
         HOST_PRINT(commAll, "Estimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc << "\n");
@@ -138,9 +138,13 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
         steplengthOptimum = parabolicFit(steplengthParabola, misfitParabola);
         HOST_PRINT(commAll, "\nApply parabolic fit");
     } else if (step2ok == true && step3ok == false) {
-        steplengthOptimum = steplengthParabola.getValue(2);
+        if (maxStepCalc==1){
+            steplengthOptimum = steplengthParabola.getValue(1);}
+        else {
+            steplengthOptimum = steplengthParabola.getValue(2);}
     } else if (step2ok == false && step3ok == true) {
-        steplengthOptimum = steplengthParabola.getValue(2);
+        steplengthOptimum = parabolicFit(steplengthParabola, misfitParabola); //case 3: parabolic fit instead of steplengthParabola.getValue(2)
+        HOST_PRINT(commAll, "\nApply parabolic fit");
     } else if (step2ok == false && step3ok == false) {
         steplengthOptimum = steplengthMin;
         HOST_PRINT(commAll, "\nVariable steplengthMin used to update the model");

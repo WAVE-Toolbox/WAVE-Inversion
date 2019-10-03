@@ -248,6 +248,14 @@ set_target_properties( ToyModel PROPERTIES OUTPUT_NAME ToyModel )
 
 install( TARGETS ToyModel DESTINATION bin/tools )
 
+add_executable( ModelEttlingerLinie Tools/CreateModel/ettlinger_linie.cpp )
+
+target_link_libraries( ModelEttlingerLinie IFOS ${IFOS_used_libs} )
+
+set_target_properties( ModelEttlingerLinie PROPERTIES OUTPUT_NAME ModelEttlingerLinie )
+
+install( TARGETS ModelEttlingerLinie DESTINATION bin/tools )
+
 
 #####################################################
 ##  Doxygen documentation                           #

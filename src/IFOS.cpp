@@ -50,7 +50,9 @@ bool verbose; // global variable definition
 int main(int argc, char *argv[])
 {
     double start_t, end_t, start_t_shot, end_t_shot; /* For timing */
-
+    double globalStart_t, globalEnd_t; /* For timing */
+    globalStart_t = common::Walltime::get();
+    
     if (argc != 2) {
         std::cout << "\n\nNo configuration file given!\n\n"
                   << std::endl;
@@ -65,6 +67,8 @@ int main(int argc, char *argv[])
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
 
+    verbose = config.get<bool>("verbose");
+    
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
     std::string misfitType = config.get<std::string>("misfitType");
@@ -75,16 +79,46 @@ int main(int argc, char *argv[])
     IndexType maxiterations = config.get<IndexType>("maxIterations");
     std::string optimizationType = config.get<std::string>("optimizationType");
 
-    // Create an object of the mapping (3D-1D) class Coordinates
+    
+    /* inter node communicator */
+    dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
+    common::Settings::setRank(commAll->getNodeRank());
 
-    Acquisition::Coordinates<ValueType> modelCoordinates(config.get<IndexType>("NX"), config.get<IndexType>("NY"), config.get<IndexType>("NZ"), config.get<ValueType>("DH"));
+    
+    HOST_PRINT(commAll, "\n IFOS++ " << dimension << " " << equationType << " - LAMA Version\n");
+    HOST_PRINT(commAll, "","  - Running on " << commAll->getSize() << " mpi processes -\n\n");
+    
+    if (commAll->getRank() == MASTERGPI) {
+        config.print();
+    }
+
+    std::string settingsFilename; // filename for processor specific settings
+    if (common::Settings::getEnvironment(settingsFilename, "SCAI_SETTINGS")) {
+        // each processor reads line of settings file that matches its node name and node rank
+        common::Settings::readSettingsFile(settingsFilename.c_str(), commAll->getNodeName(), commAll->getNodeRank());
+    }
+    
+    
+    /* --------------------------------------- */
+    /* coordinate mapping (3D<->1D)            */
+    /* --------------------------------------- */
+
+    Acquisition::Coordinates<ValueType> modelCoordinates(config);
+
+    if (config.get<bool>("useVariableGrid")) {
+        CheckParameter::checkVariableGrid(config, commAll, modelCoordinates);
+        for (int layer=0;layer<modelCoordinates.getNumLayers();layer++){
+            HOST_PRINT(commAll, "\n Number of gridpoints in layer: " << layer << " = " << modelCoordinates.getNGridpoints(layer)); 
+        }
+        auto numGridpointsRegular=config.get<IndexType>("NX")*config.get<IndexType>("NY")*config.get<IndexType>("NZ");
+        HOST_PRINT(commAll, "\n Number of gripoints total: " << modelCoordinates.getNGridpoints());
+        HOST_PRINT(commAll, "\n Percentage of gridpoints of the underlying regular grid given by NX*NY*NZ: "  << (float) modelCoordinates.getNGridpoints()/numGridpointsRegular * 100 << "% \n\n");
+    }
 
     /* --------------------------------------- */
     /* Context and Distribution                */
     /* --------------------------------------- */
-    /* inter node communicator */
-    dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
-    common::Settings::setRank(commAll->getNodeRank());
+
     
     /* execution context */
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
@@ -98,10 +132,10 @@ int main(int argc, char *argv[])
     dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
     SCAI_DMEMO_TASK(commShot)
 
-    // inter node distribution
-    // define the grid topology by sizes NX, NY, and NZ from configuration
-    // Attention: LAMA uses row-major indexing while SOFI-3D uses column-major, so switch dimensions, x-dimension has stride 1
-
+    /* --------------------------------------- */
+    /* Distribution                            */
+    /* --------------------------------------- */
+    
     // distribute the grid onto available processors    
     dmemo::DistributionPtr dist = nullptr;
     if ((config.get<IndexType>("partitioning") == 0) || (config.get<IndexType>("partitioning") == 2)) {
@@ -113,29 +147,48 @@ int main(int argc, char *argv[])
     } else {
         COMMON_THROWEXCEPTION("unknown partitioning method");
     }
+  
     
-
-    IndexType nx = config.get<IndexType>("NX");
-    IndexType ny = config.get<IndexType>("NY");
-    IndexType nz = config.get<IndexType>("NZ");
-
-    verbose = config.get<bool>("verbose");
-    HOST_PRINT(commAll, "\nIFOS" << dimension << " " << equationType << " - LAMA Version\n\n");
-    if (commAll->getRank() == MASTERGPI) {
-        config.print();
-    }
+    if (config.get<bool>("coordinateWrite"))
+    modelCoordinates.writeCoordinates(dist, ctx, config.get<std::string>("coordinateFilename"),config.get<IndexType>("FileFormat"));
 
     /* --------------------------------------- */
-    /* Calculate derivative matrices           */
+    /* Factories                               */
     /* --------------------------------------- */
-    start_t = common::Walltime::get();
+
     ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr derivatives(ForwardSolver::Derivatives::Factory<ValueType>::Create(dimension));
-    derivatives->init(dist, ctx, config, modelCoordinates, commShot);
-    end_t = common::Walltime::get();
-    HOST_PRINT(commAll, "", "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
+    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(Wavefields::Factory<ValueType>::Create(dimension, equationType));
+    ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
 
     /* --------------------------------------- */
-    /* Call partioner */
+    /* Memory estimation                       */
+    /* --------------------------------------- */
+    
+    HOST_PRINT(commAll, " ============== Memory Estimation: ===============\n\n")
+
+    ValueType memDerivatives = derivatives->estimateMemory(config, dist, modelCoordinates);
+    ValueType memWavefileds = wavefields->estimateMemory(dist);
+    ValueType memWavefiledsStorage = memWavefileds* (int) (tStepEnd/config.get<IndexType>("DTInversion"));
+    ValueType memModel = model->estimateMemory(dist);
+    ValueType memSolver = solver->estimateMemory(config, dist, modelCoordinates);
+    ValueType memTotal = memDerivatives + memWavefileds + memModel + memSolver + memWavefiledsStorage;
+
+    HOST_PRINT(commAll, " -  Derivative Matrices \t" << memDerivatives << " MB\n");
+    HOST_PRINT(commAll, " -  Wavefield vectors \t\t" << memWavefileds << " MB\n");
+    HOST_PRINT(commAll, " -  Forward wavefield storage \t" << memWavefiledsStorage << " MB\n");
+    HOST_PRINT(commAll, " -  Model Vectors \t\t" << memModel << " MB\n");
+    HOST_PRINT(commAll, " -  Boundary Condition Vectors \t" << memSolver << " MB\n");
+    HOST_PRINT(commAll, "\n Memory Usage (total / per partition): \n " << memTotal << " / " << memTotal / dist->getNumPartitions() << " MB ");
+    IndexType numShotDomains = config.get<IndexType>("NumShotDomains"); // total number of shot domains
+    if (numShotDomains > 1)
+        HOST_PRINT(commAll, "\n Total Memory Usage (" << numShotDomains << " shot Domains ): \n " << memTotal * numShotDomains << " MB  ");
+
+    HOST_PRINT(commAll, "\n\n ========================================================================\n\n")
+    
+    
+    /* --------------------------------------- */
+    /* Call partitioner */
     /* --------------------------------------- */
     if (config.get<IndexType>("partitioning") == 2) {
         start_t = common::Walltime::get();
@@ -143,6 +196,16 @@ int main(int argc, char *argv[])
         end_t = common::Walltime::get();
         HOST_PRINT(commAll, "", "Finished graph partitioning in " << end_t - start_t << " sec.\n\n");
     }
+    
+    
+    /* --------------------------------------- */
+    /* Calculate derivative matrices           */
+    /* --------------------------------------- */
+    start_t = common::Walltime::get();
+    derivatives->init(dist, ctx, config, modelCoordinates, commShot);
+    end_t = common::Walltime::get();
+    HOST_PRINT(commAll, "", "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
+
     
     /* --------------------------------------- */
     /* Acquisition geometry                    */
@@ -160,7 +223,7 @@ int main(int argc, char *argv[])
     calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
 
-    CheckParameter::checkSources<ValueType>(config, sourceSettings, commShot);
+    CheckParameter::checkSources<ValueType>(sourceSettings, modelCoordinates, commShot);
     dmemo::BlockDistribution shotDist(numshots, commInterShot);
     Acquisition::Receivers<ValueType> receivers;
     if (!config.get<bool>("useReceiversPerShot"))
@@ -169,7 +232,6 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Modelparameter                          */
     /* --------------------------------------- */
-    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
     // load starting model
     model->init(config, ctx, dist, modelCoordinates);
     //model->init(config, ctx, dist);
@@ -177,7 +239,6 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Wavefields                              */
     /* --------------------------------------- */
-    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields = Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefields->init(ctx, dist);
 
     //Temporary Wavefield for the derivative of the forward wavefields
@@ -202,8 +263,6 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Forward solver                          */
     /* --------------------------------------- */
-    ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
-
     solver->initForwardSolver(config, *derivatives, *wavefields, *model, modelCoordinates, ctx, config.get<ValueType>("DT"));
 
     /* --------------------------------------- */
@@ -212,7 +271,7 @@ int main(int argc, char *argv[])
     Acquisition::Receivers<ValueType> receiversTrue;
     if (!config.get<bool>("useReceiversPerShot")) {
         receiversTrue.init(config, modelCoordinates, ctx, dist);
-        CheckParameter::checkReceivers<ValueType>(config, receiversTrue, commShot);
+        //CheckParameter::checkReceivers<ValueType>(config, receiversTrue, commShot);
     }
 
     /* --------------------------------------- */
@@ -360,15 +419,19 @@ int main(int argc, char *argv[])
                     receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
                     adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
 
-                    CheckParameter::checkReceivers<ValueType>(config, receivers, commShot);
+                    //CheckParameter::checkReceivers<ValueType>(config, receivers, commShot);
 
                     ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
                 }
 
                 /* Read field data (or pseudo-observed data, respectively) */
                 receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
-                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
                     receiversTrue.getSeismogramHandler().filter(freqFilter);
+                    if (workflow.iteration == 0){
+                        receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".stage_" + std::to_string(workflow.workflowStage+1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                    }
+                }
 
                 /* Reset approximated Hessian per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1)
@@ -378,6 +441,8 @@ int main(int argc, char *argv[])
                 Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
                 sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
+                CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model,modelCoordinates,shotNumber);
+                
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                     sources.getSeismogramHandler().filter(freqFilter);
 
@@ -395,7 +460,7 @@ int main(int argc, char *argv[])
                         solver->resetCPML();
 
                         if (config.get<bool>("maxOffsetSrcEst") == 1)
-                            sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"), nx, ny, nz, modelCoordinates);
+                            sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"),modelCoordinates);
 
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
 
@@ -477,6 +542,9 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
             } //end of loop over shots
+            
+            
+                    dist = std::make_shared<dmemo::BlockDistribution>(modelCoordinates.getNGridpoints(), commShot);
 
             gradient->sumShotDomain(commInterShot);
             commInterShot->sumArray(misfitPerIt.getLocalValues());
@@ -614,6 +682,7 @@ int main(int argc, char *argv[])
         } // end of loop over iterations
 
     } // end of loop over workflow stages
-
+    globalEnd_t = common::Walltime::get();
+    HOST_PRINT(commAll, "\nTotal runtime of SOFI: " << globalEnd_t - globalStart_t << " sec.\nSOFI finished!\n\n");
     return 0;
 }

@@ -168,7 +168,7 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
  \param NZ Number of grid points in z-direction
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, IndexType NX, IndexType NY, IndexType NZ,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates)
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates)
 {
 
     lama::DenseVector<ValueType> offsets;
@@ -192,7 +192,7 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
     // get indices of receiver position and calc mutes
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
-            Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates(), NX, NY, NZ,modelCoordinates);
+            Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates(), modelCoordinates.getNX(), modelCoordinates.getNY(), modelCoordinates.getNZ(),modelCoordinates);
 
             offsets /= -maxOffset;
             offsets.unaryOp(offsets, common::UnaryOp::CEIL);

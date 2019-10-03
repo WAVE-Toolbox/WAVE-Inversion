@@ -1,4 +1,4 @@
-function plotGradient(parameter,stage, iteration,geometry,gradientName)
+function plotGradient(parameter,stage, iteration,geometry,gradientName, configuration_inv)
 
 load 'seismic.map'
 
@@ -12,18 +12,22 @@ DH=geometry.DH;   % Spatial grid sampling
 LAYER=geometry.LAYER; % Define layer of 3D gradient to display as 2D slice
 
 %% Read gradient
-gradient=readGradientFromMtx(filename,NX,NY,NZ);
-X=0:DH:(NX*DH-DH);
-Y=0:DH:(NY*DH-DH);
+if str2double(configuration_inv.getString("useVariableGrid"))
+        [X,Y,gradient]=readmeshmodel(filename,configuration_inv.getString("coordinateFilename"),DH,LAYER,1);
+else
+    gradient=readGradientFromMtx(filename,NX,NY,NZ);
+    X=0:DH:(NX*DH-DH);
+    Y=0:DH:(NY*DH-DH);
+end
+
 
 %% Plot gradient
 figure
 colormap(seismic);
-imagesc(X,Y,gradient(:,:,LAYER)/max(max(max(abs(gradient)))))
+imagesc(X,Y,gradient(:,:,LAYER+1)/max(max(max(abs(gradient)))))
 colorbar
  caxis([-1 1])
 xlabel('X in meter')
 ylabel('Y in meter')
 title('normed gradient')
-
 
