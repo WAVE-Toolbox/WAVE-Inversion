@@ -1,4 +1,5 @@
 #include "Elastic.hpp"
+#include <scai/dmemo/SingleDistribution.hpp>
 
 using namespace scai;
 
@@ -308,9 +309,40 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
 {
+    /*reduction between shot domains.
+    each shot domain may have a different distribution of (gradient) vectors. 
+      This happens if geographer is used (different result for dist on each shot domain even for homogenous architecture)
+      or on heterogenous architecture. In this case even the number of processes on each domain can vary.
+    Therfore it is necessary that only one process per shot domain communicates all data.
+    */
+    
+    //get information from distributed vector
+    auto size = velocityP.size();
+    auto dist = velocityP.getDistributionPtr();
+    auto comm = dist->getCommunicatorPtr();
+    
+    // create single distribution, only master process owns the complete vector (no distribution).
+    
+    int shotMaster=0;
+    auto singleDist = std::make_shared<dmemo::SingleDistribution>( size, comm, shotMaster );
+    
+    //redistribute vector to master process
+    // (this may cause memory issues for big models)
+    velocityP.redistribute(singleDist);
+    
+    //reduce local array (size of local array is !=0 only for master process)
     commInterShot->sumArray(velocityP.getLocalValues());
+    
+    //redistribute vector to former partition
+    velocityP.redistribute(dist);
+    
+    velocityS.redistribute(singleDist);
     commInterShot->sumArray(velocityS.getLocalValues());
+    velocityS.redistribute(dist);
+    
+    density.redistribute(singleDist);
     commInterShot->sumArray(density.getLocalValues());
+    density.redistribute(dist);
 }
 
 /*! \brief Function for scaling the gradients with the model parameter 

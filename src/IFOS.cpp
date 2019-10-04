@@ -543,8 +543,6 @@ int main(int argc, char *argv[])
 
             } //end of loop over shots
             
-            
-                    dist = std::make_shared<dmemo::BlockDistribution>(modelCoordinates.getNGridpoints(), commShot);
 
             gradient->sumShotDomain(commInterShot);
             commInterShot->sumArray(misfitPerIt.getLocalValues());
