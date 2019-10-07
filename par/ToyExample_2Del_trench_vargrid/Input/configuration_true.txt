@@ -9,7 +9,9 @@ equationType=elastic     # Type of wave equation: acoustic, elastic, visco
 # define spatial sampling: number of grid points in direction
 useVariableGrid=0
 partitioning=2 # 0=Block Distribution 1=Grid Distribution 2=Graph Partitioning
+graphPartitionTool=geoKMeans
 useVariableFDoperators=0
+
 
 interfaceFilename=Input/interfaces.txt
 dhFactorFilename=Input/dhFactors.txt

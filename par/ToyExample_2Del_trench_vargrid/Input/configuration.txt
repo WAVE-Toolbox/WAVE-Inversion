@@ -14,6 +14,7 @@ equationType=elastic     # Type of wave equation: acoustic, elastic, visco
 useVariableGrid=1
 partitioning=2 # 0=Block Distribution 1=Grid Distribution 2=Graph Partitioning
 useVariableFDoperators=0
+graphPartitionTool=geoKmeans
 
 interfaceFilename=Input/interfaces.txt
 dhFactorFilename=Input/dhFactors.txt

@@ -22,8 +22,7 @@ NY=100                    # depth
 NZ=1                    # horizontal 2
 
 # define Partitioning
-partitioning=2
-ShotDomainDefinition=0              # 0 define domains by ProcNS, #1 define by node id, #2 define by env var DOMAIN
+ShotDomainDefinition=0              # 0 define domains by NumShotDomains, #1 define by node id, #2 define by env var DOMAIN
 NumShotDomains=1                  # Number of shot domains
 
 # distance between two grid points
@@ -122,7 +121,7 @@ testShotIncr=1                         # increment of test shots
 useSourceSignalInversion=1                         # 1= use source time inversion
 waterLevel=1e-10                                   # water level of source time inversion
 writeInvertedSource=1                              # 1=source signal will be written to disk, 0=not
-sourceSeismogramFilename=sourceInversion/invSource # location/basename of output source signal
+sourceSeismogramFilename=seismograms/invSource # location/basename of output source signal
 useSourceSignalTaper=1                             # use cosine taper for source signal
 sourceSignalTaperStart1=0                          # start index of first cosine taper
 sourceSignalTaperEnd1=100                          # end index of first cosine taper

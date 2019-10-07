@@ -6,9 +6,11 @@ export NUM_MPI_PROCESSES=4
 export SCAI_UNSUPPORTED=IGNORE
 export SCAI_LOG=ERROR
 
-IFOS_EXE="./../build/bin/IFOS"
-UNITTEST_EXE="./../build/bin/Test_unit"
-INTEGRATIONTEST_EXE="./../build/bin/Test_integration"
+BINDIR="./../build/bin"
+
+IFOS_EXE="${BINDIR}/IFOS"
+UNITTEST_EXE="${BINDIR}/Test_unit"
+INTEGRATIONTEST_EXE="${BINDIR}/Test_integration"
 
 
 # Run unit tests
