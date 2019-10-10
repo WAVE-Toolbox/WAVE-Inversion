@@ -48,7 +48,7 @@ T=1                       # total simulation time in seconds
 spatialFDorder=4          # possible values 2, 4, 6, 8, 10 and 12
 
 # define material parameter
-ModelRead=2               # 1=Model will be read from file, 0=generated on the fly
+ModelRead=1               # 1=Regular model will be read from file and meshed onto discontinous grid if UseVariableGrid=1, 2=Variable grid model will be read from file,  0=generated on the fly
 ModelWrite=0              # 1=Model will be written to disk, 0=not
 ModelFilename=../model/ettlinger_linie # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
 
