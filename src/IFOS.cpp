@@ -399,6 +399,13 @@ int main(int argc, char *argv[])
             /* Update model for fd simulation (averaging, inverse Density ...) */
 
             model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
+            
+            
+            if ((workflow.iteration == 0)&&(commInterShot->getRank() == 0)) {
+                /* only shot Domain 0 writes output */
+                model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
+            }
+            
             solver->prepareForModelling(*model, config.get<ValueType>("DT"));
 
             /* --------------------------------------- */
@@ -567,6 +574,7 @@ int main(int argc, char *argv[])
                 gradientTaper.apply(*gradient);
 
             /* Output of gradient */
+            /* only shot Domain 0 writes output */
             if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0)
                 gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
 
@@ -596,9 +604,11 @@ int main(int argc, char *argv[])
             if (config.get<bool>("useModelThresholds"))
                 model->applyThresholds(config);
 
-            if (commInterShot->getRank() == 0)
+            if (commInterShot->getRank() == 0) {
+                /* only shot Domain 0 writes output */
                 model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
-
+            }
+                
             steplengthInit *= 0.98;
 
             end_t = common::Walltime::get();

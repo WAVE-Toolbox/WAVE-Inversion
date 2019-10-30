@@ -1,6 +1,5 @@
 function [model]=readModelfromMtx(filename,NX,NY,NZ)
 % readModelfromMtx  read 1D models into 3D array
-
 %   model = readModelfromMtx(filename,NX,NY,NZ)
 %   filename: filename of the model
 %   NX,NY,NZ number of gridpoints in each direction+

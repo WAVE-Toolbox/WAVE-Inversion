@@ -12,7 +12,7 @@ stage=1;
 iteration=2; % iteration number
 
 % model parameter-------------------------------------------------
-geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
+geometry.LAYER=0; % Define layer of 3D model to display as 2D slice
 parameter='vp';   % model parameter
 
 colorbarRange.min=1900; %lower clip of the colorbar 
@@ -39,8 +39,12 @@ geometry.DH=config.getValue('DH');   % Spatial grid sampling
 %% plot model
 
 inversionModel=config.getString('ModelFilename');
-startingModel=[config.getString('ModelFilename') '.out'];
+startingModel=config.getString('ModelFilename');
 trueModel=configTrue.getString('ModelFilename');
+
+inversionModel=[inversionModel '.stage_' num2str(stage) '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the model
+startingModel=[startingModel '.stage_' num2str(stage) '.It_0.' parameter '.mtx']; % File name of the model
+trueModel=[trueModel '.' parameter '.mtx']; % File name of the model
 
 
 delimiterIn = ' ';
@@ -73,7 +77,7 @@ plotSeismogram(DT,stage,iteration,shot,component,skipTraces,syntheticData,fieldD
 gradientName=config.getString('gradientFilename');
 
 if iteration > 0
-plotGradient(parameter,stage,iteration,geometry,gradientName);
+plotGradient(parameter,stage,iteration,geometry,gradientName,config);
 end
 
 rmpath('../model')

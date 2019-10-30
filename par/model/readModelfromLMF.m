@@ -1,6 +1,5 @@
 function [model]=readModelfromLMF(filename,NX,NY,NZ)
 % readModelfromLMF  read 1D models into 3D array
-
 %   model = readModelfromLMF(filename,NX,NY,NZ)
 %   filename: filename of the model
 %   NX,NY,NZ number of gridpoints in each direction+

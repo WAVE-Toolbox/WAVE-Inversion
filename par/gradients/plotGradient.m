@@ -9,7 +9,7 @@ NX=geometry.NX;  % Number of grid points in X
 NY=geometry.NY;  % Number of grid points in Y
 NZ=geometry.NZ;  % Number of grid points in Z
 DH=geometry.DH;   % Spatial grid sampling
-LAYER=geometry.LAYER; % Define layer of 3D gradient to display as 2D slice
+LAYER=geometry.LAYER+1; % Define layer of 3D gradient to display as 2D slice
 
 %% Read gradient
 if str2double(configuration_inv.getString("useVariableGrid"))
@@ -24,7 +24,7 @@ end
 %% Plot gradient
 figure
 colormap(seismic);
-imagesc(X,Y,gradient(:,:,LAYER+1)/max(max(max(abs(gradient)))))
+imagesc(X,Y,gradient(:,:,LAYER)/max(max(max(abs(gradient)))))
 colorbar
  caxis([-1 1])
 xlabel('X in meter')
