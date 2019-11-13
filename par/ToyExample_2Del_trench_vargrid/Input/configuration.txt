@@ -19,6 +19,7 @@ graphPartitionTool=geoKmeans
 interfaceFilename=Input/interfaces.txt
 dhFactorFilename=Input/dhFactors.txt
 spatialFDorderFilename=Input/FDorders.txt
+gridConfigurationFilename=Input/gridConfig.txt
 
 partitionWrite=0                                   # 1=partition will be written to disk, 0=not
 partitionFilename=partition
