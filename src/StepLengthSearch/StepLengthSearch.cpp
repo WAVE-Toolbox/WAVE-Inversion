@@ -285,8 +285,10 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         }
 
         /* Normalize observed and synthetic data */
-        receivers.getSeismogramHandler().normalize();
-        receiversTrue.getSeismogramHandler().normalize();
+        if (config.get<bool>("NormalizeTraces")){
+            receivers.getSeismogramHandler().normalize();
+            receiversTrue.getSeismogramHandler().normalize();
+        }
 
         misfitTest.setValue(shotNumber, dataMisfit.calc(receivers, receiversTrue));
     }

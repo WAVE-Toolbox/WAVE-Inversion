@@ -518,8 +518,10 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
 
                 /* Normalize observed and synthetic data */
-                receivers.getSeismogramHandler().normalize();
-                receiversTrue.getSeismogramHandler().normalize();
+                if (config.get<bool>("NormalizeTraces")){
+                    receivers.getSeismogramHandler().normalize();
+                    receiversTrue.getSeismogramHandler().normalize();
+                }
 
                 /* Calculate misfit of one shot */
                 misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
@@ -664,8 +666,10 @@ int main(int argc, char *argv[])
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                     /* Normalize observed and synthetic data */
-                    receivers.getSeismogramHandler().normalize();
-                    receiversTrue.getSeismogramHandler().normalize();
+                    if (config.get<bool>("NormalizeTraces")){
+                        receivers.getSeismogramHandler().normalize();
+                        receiversTrue.getSeismogramHandler().normalize();
+                    }
 
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
