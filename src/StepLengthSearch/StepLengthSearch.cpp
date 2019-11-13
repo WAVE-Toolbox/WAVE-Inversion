@@ -297,7 +297,6 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.getSeismogramHandler().normalize();
         }
 
-
         misfitTest.setValue(shotNumber, dataMisfit.calc(receivers, receiversTrue));
     }
 
