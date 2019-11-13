@@ -74,6 +74,12 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
         }
     }
 
+         // check wavefield for NaNs or infinite values
+        if (comm->any(!wavefields->isFinite(dist))){ // if any processor returns isfinite=false, write model and break
+            model.write("model_crash", config.get<IndexType>("FileFormat"));
+            COMMON_THROWEXCEPTION("Infinite or NaN value in adjoint velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+        }
+
     /* ---------------------------------- */
     /*       Calculate gradients          */
     /* ---------------------------------- */

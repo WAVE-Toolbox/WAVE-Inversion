@@ -284,9 +284,19 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);
         }
 
+
+        // check wavefield and seismogram for NaNs or infinite values
+        if (commAll->any(!wavefields.isFinite(dist)) || commAll->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+            testmodel->write("model_crash", config.get<IndexType>("FileFormat"));
+            COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
+        }
+
         /* Normalize observed and synthetic data */
-        receivers.getSeismogramHandler().normalize();
-        receiversTrue.getSeismogramHandler().normalize();
+        if (config.get<bool>("NormalizeTraces")){
+            receivers.getSeismogramHandler().normalize();
+            receiversTrue.getSeismogramHandler().normalize();
+        }
+
 
         misfitTest.setValue(shotNumber, dataMisfit.calc(receivers, receiversTrue));
     }
