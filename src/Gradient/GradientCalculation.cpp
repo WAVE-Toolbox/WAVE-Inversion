@@ -51,7 +51,9 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
 
     scai::dmemo::DistributionPtr dist = wavefields->getRefVX().getDistributionPtr();
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
+    scai::dmemo::CommunicatorPtr commShot = model.getDensity().getDistributionPtr()->getCommunicatorPtr(); // get communicator for shot domain
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
+    
 
     /* ------------------------------------------------------ */
     /*                Backward Modelling                      */
@@ -75,7 +77,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     }
 
          // check wavefield for NaNs or infinite values
-        if (comm->any(!wavefields->isFinite(dist))){ // if any processor returns isfinite=false, write model and break
+            if (commShot->any(!wavefields->isFinite(dist))){ // if any processor returns isfinite=false, write model and break
             model.write("model_crash", config.get<IndexType>("FileFormat"));
             COMMON_THROWEXCEPTION("Infinite or NaN value in adjoint velocity wavefield, output model as model_crash.FILE_EXTENSION!");
         }

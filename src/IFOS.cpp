@@ -514,7 +514,7 @@ int main(int argc, char *argv[])
                 }
 
                 // check wavefield and seismogram for NaNs or infinite values
-                if (commAll->any(!wavefields->isFinite(dist)) || commAll->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+                if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
                     model->write("model_crash", config.get<IndexType>("FileFormat"));
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                 }
@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
                     }
 
                     // check wavefield and seismogram for NaNs or infinite values
-                    if (commAll->any(!wavefields->isFinite(dist)) || commAll->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+                    if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
                         model->write("model_crash", config.get<IndexType>("FileFormat"));
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
