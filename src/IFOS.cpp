@@ -149,9 +149,10 @@ int main(int argc, char *argv[])
     }
   
     
-    if (config.get<bool>("coordinateWrite"))
-    modelCoordinates.writeCoordinates(dist, ctx, config.get<std::string>("coordinateFilename"),config.get<IndexType>("FileFormat"));
-
+    if ((config.get<bool>("coordinateWrite")) && (shotDomain==0)) {
+        modelCoordinates.writeCoordinates(dist, ctx, config.get<std::string>("coordinateFilename"),config.get<IndexType>("FileFormat"));
+    }
+    
     /* --------------------------------------- */
     /* Factories                               */
     /* --------------------------------------- */
