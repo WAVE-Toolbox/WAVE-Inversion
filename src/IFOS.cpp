@@ -149,9 +149,10 @@ int main(int argc, char *argv[])
     }
   
     
-    if (config.get<bool>("coordinateWrite"))
-    modelCoordinates.writeCoordinates(dist, ctx, config.get<std::string>("coordinateFilename"),config.get<IndexType>("FileFormat"));
-
+    if ((config.get<bool>("coordinateWrite")) && (shotDomain==0)) {
+        modelCoordinates.writeCoordinates(dist, ctx, config.get<std::string>("coordinateFilename"),config.get<IndexType>("FileFormat"));
+    }
+    
     /* --------------------------------------- */
     /* Factories                               */
     /* --------------------------------------- */
@@ -513,13 +514,21 @@ int main(int argc, char *argv[])
                     }
                 }
 
+                // check wavefield and seismogram for NaNs or infinite values
+                if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+                    model->write("model_crash", config.get<IndexType>("FileFormat"));
+                    COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+                }
+
                 receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                 HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
 
                 /* Normalize observed and synthetic data */
-                receivers.getSeismogramHandler().normalize();
-                receiversTrue.getSeismogramHandler().normalize();
+                if (config.get<bool>("NormalizeTraces")){
+                    receivers.getSeismogramHandler().normalize();
+                    receiversTrue.getSeismogramHandler().normalize();
+                }
 
                 /* Calculate misfit of one shot */
                 misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
@@ -661,11 +670,19 @@ int main(int argc, char *argv[])
                         solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                     }
 
+                    // check wavefield and seismogram for NaNs or infinite values
+                    if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+                        model->write("model_crash", config.get<IndexType>("FileFormat"));
+                        COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+                    }
+
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                     /* Normalize observed and synthetic data */
-                    receivers.getSeismogramHandler().normalize();
-                    receiversTrue.getSeismogramHandler().normalize();
+                    if (config.get<bool>("NormalizeTraces")){
+                        receivers.getSeismogramHandler().normalize();
+                        receiversTrue.getSeismogramHandler().normalize();
+                    }
 
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
@@ -691,6 +708,6 @@ int main(int argc, char *argv[])
 
     } // end of loop over workflow stages
     globalEnd_t = common::Walltime::get();
-    HOST_PRINT(commAll, "\nTotal runtime of SOFI: " << globalEnd_t - globalStart_t << " sec.\nSOFI finished!\n\n");
+    HOST_PRINT(commAll, "\nTotal runtime of IFOS: " << globalEnd_t - globalStart_t << " sec.\nIFOS finished!\n\n");
     return 0;
 }
