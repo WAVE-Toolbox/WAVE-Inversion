@@ -3,15 +3,27 @@ stages:
     - unittest
     - inversion
 
+
 gcc:
+  stage : build WAVE-Simulation
+  before_script:	
+     - git clone https://github.com/WAVE-Toolbox/WAVE-Simulation.git && cd WAVE-Simulation
+     - git checkout 066e7c39c903edab37e56263
+  script:   
+     - mkdir build && cd "$_"
+     - SCAI_DIR=/data14/software/scai_lama/build_dev/ cmake ../src -DCMAKE_INSTALL_PREFIX=./
+     - make install -j 4
+  artifacts:
+     expire_in: 30 min
+     paths:
+     - build/bin/
+
+
   stage: build
-  before_script:
-    - SCAI_ROOT=/data14/software/scai_lama/build_dev/
-    - echo "LAMA Version:" && file ${SCAI_ROOT}/lib/libscai_lama.so | sed 's/.*libscai_lama\.so\.\([0-9]*\.[0-9]*\.[0.9]*\).*/\1/g'
   script:
     - echo "g++ Version:" && g++ --version
     - mkdir build && cd "$_"
-    - SOFI_DIR=/data14/software/SOFI++/build_dev/ cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
+    - SOFI_DIR=./WAVE-Simulation/build cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
     - make install -j 4
   artifacts:
     when: on_success

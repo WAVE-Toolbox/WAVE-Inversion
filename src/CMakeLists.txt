@@ -44,39 +44,39 @@ add_definitions("-DBUILD_COMMIT=${GIT_COMMIT}")
 
 
 ####################################################
-#  Find SOFI package (mandatory)                   #
+#  Find WAVE-Simulation package (mandatory)                   #
 ####################################################
 
-set ( SOFI_PATH_HINTS "${SOFI_DIR}" "${SOFI_HOME}" "$ENV{SOFI_HOME}" )
+set ( WAVE-Simulation_PATH_HINTS "${WAVE-Toolbox_DIR}" "${SOFI_HOME}" "$ENV{SOFI_HOME}" )
 
 if ( ${CMAKE_VERSION} VERSION_GREATER 3.11)
     ## use new policy to configure with SCAI_ROOT, suppress warning
     cmake_policy( SET CMP0074 NEW )
 else ()
-    set ( SOFI_PATH_HINTS ${SOFI_PATH_HINTS} "${SOFI_ROOT}" "$ENV{SOFI_ROOT}" )
+    set ( Simulation_PATH_HINTS ${WAVE-Toolbox_PATH_HINTS} "${SOFI_ROOT}" "$ENV{SOFI_ROOT}" )
 endif ()
 
-find_package( SOFI REQUIRED CONFIG 
+find_package( Simulation REQUIRED CONFIG 
               NO_CMAKE_PATH 
               NO_SYSTEM_ENVIRONMENT_PATH 
-              PATHS ${SOFI_PATH_HINTS} )
+              PATHS ${Simulation_PATH_HINTS} )
 
-## take over compilfer flags as used by SOFI
+## take over compilfer flags as used by WAVE-Simulation
 
-set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${SOFI_CXX_FLAGS} )
+set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${Simulation_CXX_FLAGS} )
 
-## provide SOFI include directories + library for IFOS
+## provide WAVE-Simulation include directories + library for IFOS
 
-include_directories( ${SOFI_INCLUDE_DIRS} )
-set( IFOS_used_libs ${SOFI_LIBRARIES} )
+include_directories( ${Simulation_INCLUDE_DIRS} )
+set( IFOS_used_libs ${Simulation_LIBRARIES} )
 
 ####################################################
 #  Find SCAI/LAMA package (mandatory)              #
 ####################################################
 
-# take SOFI_SCAI_ROOT as additional hint so same installation is used
+# take Simulation_SCAI_ROOT as additional hint so same installation is used
 
-set ( SCAI_PATH_HINTS "${SOFI_SCAI_ROOT}" )
+set ( SCAI_PATH_HINTS "${Simulation_SCAI_ROOT}" )
 
 
 find_package( SCAI REQUIRED CONFIG 
@@ -93,13 +93,13 @@ set( IFOS_used_libs ${IFOS_used_libs} ${SCAI_LIBRARIES} )
 #  Find Geographer package (optional)              #
 ####################################################
 
-# take SOFI_Geographer_ROOT as additional hint so same installation is used
+# take Simulation_Geographer_ROOT as additional hint so same installation is used
 
 set ( Geographer_PATH_HINTS 
         "${Geographer_DIR}" 
         "${Geographer_HOME}"
         "$ENV{Geograhper_HOME}"
-        "${SOFI_Geographer_ROOT}" )
+        "${Simulation_Geographer_ROOT}" )
 
 if ( ${CMAKE_VERSION} VERSION_GREATER 3.11)
 else()
