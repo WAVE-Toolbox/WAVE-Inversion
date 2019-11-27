@@ -4,24 +4,19 @@ stages:
     - inversion
 
 
-buildSimulation:
+build:
   stage : build
   before_script:	
      - git clone https://github.com/WAVE-Toolbox/WAVE-Simulation.git && cd WAVE-Simulation
      - git checkout 066e7c39c903edab37e56263
-  script:   
      - mkdir build && cd "$_"
      - SCAI_DIR=/data14/software/scai_lama/build_dev/ cmake ../src -DCMAKE_INSTALL_PREFIX=./
      - make install -j 4
-  artifacts:
-     expire_in: 30 min
-     paths:
-     - build/bin/
-
-buildInversion:
-  stage: build
+     - cd ../../
   script:
     - echo "g++ Version:" && g++ --version
+    - pwd
+    - ls -la
     - mkdir build && cd "$_"
     - Simulation_DIR=./WAVE-Simulation/build cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
     - make install -j 4
