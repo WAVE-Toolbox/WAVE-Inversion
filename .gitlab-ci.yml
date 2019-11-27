@@ -15,10 +15,8 @@ build:
      - cd ../../
   script:
     - echo "g++ Version:" && g++ --version
-    - pwd
-    - ls -la
     - mkdir build && cd "$_"
-    - Simulation_DIR=./WAVE-Simulation/build cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
+    - Simulation_DIR=../WAVE-Simulation/build cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
     - make install -j 4
   artifacts:
     when: on_success
