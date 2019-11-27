@@ -4,8 +4,8 @@ stages:
     - inversion
 
 
-gcc:
-  stage : build WAVE-Simulation
+buildSimulation:
+  stage : build
   before_script:	
      - git clone https://github.com/WAVE-Toolbox/WAVE-Simulation.git && cd WAVE-Simulation
      - git checkout 066e7c39c903edab37e56263
@@ -18,12 +18,12 @@ gcc:
      paths:
      - build/bin/
 
-
+buildInversion:
   stage: build
   script:
     - echo "g++ Version:" && g++ --version
     - mkdir build && cd "$_"
-    - SOFI_DIR=./WAVE-Simulation/build cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
+    - Simulation_DIR=./WAVE-Simulation/build cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
     - make install -j 4
   artifacts:
     when: on_success
