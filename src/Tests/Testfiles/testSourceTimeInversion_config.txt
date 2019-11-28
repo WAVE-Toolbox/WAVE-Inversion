@@ -16,3 +16,4 @@ initSourcesFromSU=0                            # 1=initialize sources from SU fi
 initReceiverFromSU=0                           # 1=initialize receiver from SU file 0=not (one file per component, filename=ReceiverFilename+.<component> + .SU)
 
 runSimultaneousShots=0
+useReceiversPerShot=0

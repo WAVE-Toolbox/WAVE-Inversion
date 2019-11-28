@@ -51,19 +51,18 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotNumber)
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr)
 {
-
     lama::DenseVector<ComplexValueType> filterTmp1(filter.getColDistributionPtr(), 0.0);
     lama::DenseVector<ComplexValueType> filterTmp2(filter.getColDistributionPtr(), 0.0);
 
-    addComponents(filterTmp1, receivers, receivers, shotNumber);
+    addComponents(filterTmp1, receivers, receivers, shotNr);
     filterTmp1 += waterLevel * receivers.getSeismogramHandler().getNumTracesTotal();
     filterTmp1.unaryOp(filterTmp1, common::UnaryOp::RECIPROCAL);
-    addComponents(filterTmp2, receivers, receiversTrue, shotNumber);
+    addComponents(filterTmp2, receivers, receiversTrue, shotNr);
     filterTmp1 *= filterTmp2;
-
-    filter.setRow(filterTmp1, shotNumber, common::BinaryOp::COPY);
+    
+    filter.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
 }
 
 /*! \brief Apply the Wiener filter to a synthetic source
@@ -71,7 +70,7 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, IndexType shotNumber) const
+void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, IndexType shotInd) const
 {
 
     //get seismogram that corresponds to source type
@@ -87,7 +86,7 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     lama::fft<ComplexValueType>(seismoTrans, 1);
 
     lama::DenseVector<ComplexValueType> filterTmp;
-    filter.getRow(filterTmp, shotNumber);
+    filter.getRow(filterTmp, shotInd);
     seismoTrans.scaleColumns(filterTmp);
 
     lama::ifft<ComplexValueType>(seismoTrans, 1);
@@ -147,7 +146,7 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
                 
                 Taper::Taper2D<ValueType> seismoTaper;
                 seismoTaper.init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
-                std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber) + "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]) + ".mtx";
+                std::string taperNameTmp = taperName + ".shot_" + std::to_string(shotNumber) + "." + std::string(Acquisition::SeismogramTypeString[Acquisition::SeismogramType(iComponent)]);
                 seismoTaper.read(taperNameTmp);
                 seismoTaper.apply(seismoA_tmp);
                 seismoTaper.apply(seismoB_tmp);
@@ -169,7 +168,7 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
  \param NZ Number of grid points in z-direction
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, IndexType NX, IndexType NY, IndexType NZ,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates)
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates)
 {
 
     lama::DenseVector<ValueType> offsets;
@@ -193,7 +192,7 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
     // get indices of receiver position and calc mutes
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
-            Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates(), NX, NY, NZ,modelCoordinates);
+            Common::calcOffsets(offsets, sourceIndex, receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates(), modelCoordinates.getNX(), modelCoordinates.getNY(), modelCoordinates.getNZ(),modelCoordinates);
 
             offsets /= -maxOffset;
             offsets.unaryOp(offsets, common::UnaryOp::CEIL);

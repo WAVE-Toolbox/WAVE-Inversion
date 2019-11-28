@@ -1,0 +1,10 @@
+# grid configuration:
+#
+# interface: y coordinate (in gridpoints of a underlying regular grid with NY gridpoints). Must increase with layer.
+# dhFactor: grid stretch factor. Only changes of factor 3 are alowed eg 1<->3 or 9<->3. dhFactor=1 is the spacing of the underlying regular grid.
+# FDOrder: Can be set between 2-12 per layer of the discontinous grid or a regular grid (dhFactor=1 for all layers) 
+
+#interface	dhFactor	FDOrder
+
+0		1		4
+50		3		4

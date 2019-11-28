@@ -6,12 +6,17 @@ stages:
 gcc:
   stage: build
   before_script:
-    - SCAI_ROOT=/data14/software/scai_lama/build_dev
-    - GPI_ROOT=/data14/software/SOFI++/build_dev
-    - echo "LAMA Version:" && file ${SCAI_ROOT}/lib/libscai_lama.so | sed 's/.*libscai_lama\.so\.\([0-9]*\.[0-9]*\.[0.9]*\).*/\1/g'
+     - git clone https://github.com/WAVE-Toolbox/WAVE-Simulation.git && cd WAVE-Simulation
+     - git checkout 066e7c39c903edab37e56263
+     - mkdir build && cd "$_"
+     - SCAI_DIR=/data14/software/scai_lama/build_dev/ cmake ../src -DCMAKE_INSTALL_PREFIX=./
+     - make install -j 4
+     - cd ../../
   script:
     - echo "g++ Version:" && g++ --version
-    - cd build/ && make prog && make utest && make itest
+    - mkdir build && cd "$_"
+    - Simulation_DIR=../WAVE-Simulation/build cmake ../src/ -DCMAKE_INSTALL_PREFIX=./
+    - make install -j 4
   artifacts:
     when: on_success
     expire_in: 30 min
@@ -30,7 +35,7 @@ acoustic2D-gcc:
   script:
     - OMP_NUM_THREADS=1
     - cd par/
-    - mpirun -np 4 ./../build/bin/IFOS "ci/configuration_ci.2D.acoustic.txt"
+    - mpirun -np 4 ./../build/bin/Inversion "ci/configuration_ci.2D.acoustic.txt"
     - ./../build/bin/Test_integration "ci/configuration_ci.2D.acoustic.txt"
 
 

@@ -39,7 +39,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
 
     IndexType t = 0;
@@ -51,7 +51,9 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
 
     scai::dmemo::DistributionPtr dist = wavefields->getRefVX().getDistributionPtr();
     scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
+    scai::dmemo::CommunicatorPtr commShot = model.getDensity().getDistributionPtr()->getCommunicatorPtr(); // get communicator for shot domain
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
+    
 
     /* ------------------------------------------------------ */
     /*                Backward Modelling                      */
@@ -60,6 +62,8 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     wavefields->resetWavefields();
     ZeroLagXcorr->resetXcorr(workflow);
 
+    IndexType dtinversion = config.get<IndexType>("DTInversion");
+
     for (t = tEnd - 1; t >= 0; t--) {
 
         solver.run(receivers, adjointSources, model, *wavefields, derivatives, t);
@@ -67,8 +71,16 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
         /* --------------------------------------- */
         /*             Convolution                 */
         /* --------------------------------------- */
-        ZeroLagXcorr->update(*wavefieldrecord[t], *wavefields, workflow);
+        if (t % dtinversion == 0) {
+            ZeroLagXcorr->update(*wavefieldrecord[floor(t / dtinversion + 0.5)], *wavefields, workflow);
+        }
     }
+
+         // check wavefield for NaNs or infinite values
+            if (commShot->any(!wavefields->isFinite(dist))){ // if any processor returns isfinite=false, write model and break
+            model.write("model_crash", config.get<IndexType>("FileFormat"));
+            COMMON_THROWEXCEPTION("Infinite or NaN value in adjoint velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+        }
 
     /* ---------------------------------- */
     /*       Calculate gradients          */
@@ -78,7 +90,7 @@ void KITGPI::GradientCalculation<ValueType>::run(KITGPI::ForwardSolver::ForwardS
     SourceTaper.apply(gradient);
 
     if (config.get<IndexType>("WriteGradientPerShot"))
-        gradient.write(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".Shot_" + std::to_string(shotNumber), config.get<IndexType>("PartitionedOut"), workflow);
+        gradient.write(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".Shot_" + std::to_string(shotNumber), config.get<IndexType>("FileFormat"), workflow);
 
     //     receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/rec_adjoint.mtx");
 }

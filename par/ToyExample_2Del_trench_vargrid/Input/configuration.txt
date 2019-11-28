@@ -1,0 +1,176 @@
+# Input file WAVE-Inversion
+# The format has to be name=value (without any white spaces)
+# Use the hashtag "#" for comments
+
+#---------------------------------------------------------#
+#             Forward modelling parameters                #
+#---------------------------------------------------------#
+
+# Type of forward simulation
+dimension=2D              # Dimension: 2D or 3D
+equationType=elastic     # Type of wave equation: acoustic, elastic, visco
+
+# define spatial sampling: number of grid points in direction
+useVariableGrid=1
+partitioning=2 # 0=Block Distribution 1=Grid Distribution 2=Graph Partitioning
+useVariableFDoperators=0
+graphPartitionTool=geoKmeans
+
+interfaceFilename=Input/interfaces.txt
+dhFactorFilename=Input/dhFactors.txt
+spatialFDorderFilename=Input/FDorders.txt
+gridConfigurationFilename=Input/gridConfig.txt
+
+partitionWrite=0                                   # 1=partition will be written to disk, 0=not
+partitionFilename=partition
+
+coordinateWrite=1                                  # 1=coordinates will be written to disk, 0=not
+coordinateFilename=coordinates       
+
+weightsWrite=1                                  # 1=weigths will be written to disk, 0=not
+weightsFilename=weights
+
+NX=200                    # horizontal 1
+NY=100                    # depth
+NZ=1                    # horizontal 2
+
+# define Partitioning
+ShotDomainDefinition=0              # 0 define domains by ProcNS, #1 define by node id, #2 define by env var DOMAIN
+NumShotDomains=2                  # Number of shot domains
+
+# distance between two grid points
+DH=0.5                     # in meter
+
+# define temporal sampling
+DT=0.6e-03                # temporal sampling in seconds
+T=1                       # total simulation time in seconds 
+
+# define order of spatial FD operator
+spatialFDorder=4          # possible values 2, 4, 6, 8, 10 and 12
+
+# define material parameter
+ModelRead=1               # 1=Regular model will be read from file and meshed onto discontinous grid if UseVariableGrid=1, 2=Variable grid model will be read from file,  0=generated on the fly
+ModelWrite=0              # 1=Model will be written to disk, 0=not
+ModelFilename=../model/ettlinger_linie # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
+
+#input-output
+FileFormat=1  # file format for input and output  of models and wavefields
+
+# Supported formats:
+# 1=mtx : formated ascii file - serial IO
+# 2=lmf : binary file - parallel IO - float - little endian - 5 int header (20 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
+
+# Apply the free surface condition
+FreeSurface=1             # 1=ON, 0=OFF
+
+# Damping Boundary
+DampingBoundary=1         # 1=ON, 0=OFF
+DampingBoundaryType=2     # Type of damping boundary: 1=ABS 2=CPML
+BoundaryWidth=18          # Width of damping boundary in grid points
+DampingCoeff=8.0          # Damping coefficient 
+VMaxCPML=1500.0           # Maximum velocity of the CPML
+CenterFrequencyCPML=10.0   # Center frequency inside the boundaries
+NPower=4.0
+KMaxCPML=1.0
+    
+# Viscoelastic modelling
+numRelaxationMechanisms=0 # Number of relaxation mechanisms 
+relaxationFrequency=0     # Relaxation frequency
+
+saveSnapshots=0
+tincSnapshot=0
+tFirstSnapshot=0
+tLastSnapshot=0
+
+# Acquisition
+SourceFilename=Input/sources_var         # location of source file
+ReceiverFilename=Input/receiver      # location of receiver file
+SeismogramFilename=../seismograms/ettlinger_linie      # target location of seismogram
+SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(binary parallel) 3=frv (binary serial), 4=SU (parallel)
+# 1=mtx : formated ascii file - serial IO - 2 line ascii header
+# 2=lmf : binary file - parallel IO - float - little endian - 6 int header (24 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
+# 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
+seismoDT=0.6e-03 #2
+NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+useReceiversPerShot=0
+initSourcesFromSU=0
+initReceiverFromSU=0
+
+#---------------------------------------------------------#
+#                Inversion Parameters                     #
+#---------------------------------------------------------#
+
+# Input/Output
+fieldSeisName=Input/ettlinger_linie.true        # location/basename of input seismograms
+writeGradient=1                        # 1=Gradient will be written to disk, 0=not
+writeGradientPerShot=0                 # Write Gradient for Single Shots 1=Yes 0=No
+gradientFilename=../gradients/ettlinger_linie.grad        # location/basename of output gradients
+logFilename=../logs/ettlinger_linie.steplengthSearch.log  # target location of log file
+
+# General settings
+maxIterations=20                       # maximum number of inversion iterations
+misfitType=L2                          # type of misfit (L2, etc.)
+optimizationType=steepestdescent     # type of optimization method
+DTInversion=1				# factor of DT for cross-correlation in gradient calculation
+workflowFilename=Input/workflow.txt # location/basename of workflow file
+
+# Step length search
+steplengthInit=0.04                    # starting steplength
+maxStepCalc=3                          # maximum number of additional forward calculations to find a proper step length
+scalingFactor=2                        # factor for multiplication or division of test step length
+steplengthMin=0.001                    # minimum step length
+steplengthMax=0.3                      # maximum step length
+testShotStart=0                        # shot number of first test shot
+testShotEnd=20                         # shot number of last test shot
+testShotIncr=4                         # increment of test shots
+
+useSourceSignalInversion=0
+useModelThresholds=1
+lowerVPTh=0
+upperVPTH=2000
+lowerVSTH=50
+upperVSTH=1000
+lowerDensityTH=0
+upperDensityTH=2000
+
+normalizeGradient=0
+useGradientTaper=0
+useEnergyPreconditioning=1
+epsilonHessian=0.005
+saveApproxHessian=0
+approxHessianName=hessian
+
+
+# Tapers
+sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
+receiverTaperRadius=0  # Circular receiver taper: Radius in gridpoints
+sourceReceiverTaperType=1
+
+# Build starting model Ettlinger Linie
+# gradients
+vp1_up=280 # vp at surface
+vp1_down=600 # vp at grid point depth_halfspace
+
+vs1_up=140 # vs at surface
+vs1_middle=320 # vs at grid point depth_grad_change_vs
+depth_grad_change_vs=70 #grid point, where different linear gradient of vs begins
+vs1_down=320 # vs at grid point depth_halfspace
+
+#depth of halfspace
+depth_halfspace=70
+#velocities of halfspace
+vp2=1500
+vs2=320
+
+rho1=1500
+rho2=1500
+
+#trench
+trench_vs=0
+trench_centerx=0 # center grid point of trench
+trench_width=0 # total width of trench
+
+
+verbose=0

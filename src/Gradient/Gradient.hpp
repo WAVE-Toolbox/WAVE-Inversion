@@ -24,7 +24,6 @@
 
 #include "../Common/HostPrint.hpp"
 #include <Configuration/Configuration.hpp>
-#include <PartitionedInOut/PartitionedInOut.hpp>
 
 #include "../Workflow/Workflow.hpp"
 #include "../ZeroLagCrossCorrelation/ZeroLagXcorr.hpp"
@@ -72,9 +71,9 @@ namespace KITGPI
              * Standard write function
              *
              \param filename filename to write parameters (endings will be added by derived classes)
-             \param partitionedOut Partitioned output
+             \param fileFormat format of output file
              */
-            virtual void write(std::string filename, scai::IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
+            virtual void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
             virtual std::string getEquationType() const = 0;
 
@@ -137,9 +136,6 @@ namespace KITGPI
           protected:
             void resetParameter(scai::lama::DenseVector<ValueType> &vector) { vector.setScalar(0); }
 
-            scai::IndexType PartitionedIn;  //!< ==1 If Modulus is read from partitioned fileblock; ==0 if modulus is in single files
-            scai::IndexType PartitionedOut; //!< ==1 If Modulus is written to partitioned fileblock; ==0 if modulus is written to single files
-
             std::string equationType;
 
             scai::lama::DenseVector<ValueType> density; //!< Vector storing Density.
@@ -154,18 +150,16 @@ namespace KITGPI
             ValueType relaxationFrequency;           //!< Relaxation Frequency
 
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType value);
-            void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, scai::IndexType partitionedIn);
+            void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, scai::IndexType fileFormat);
 
-            void writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, scai::IndexType partitionedOut) const;
+            void writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, scai::IndexType fileFormat) const;
 
-            scai::IndexType getPartitionedIn();
-            scai::IndexType getPartitionedOut();
             bool normalizeGradient;
 
           private:
             void allocateParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
-            void readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, scai::dmemo::DistributionPtr dist, scai::IndexType partitionedIn);
+            void readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, scai::IndexType fileFormat);
         };
     }
 }

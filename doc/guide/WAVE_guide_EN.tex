@@ -177,7 +177,7 @@ urlcolor=LinkColor}
 
 \title{LAMA_Implementation_Doc}
 \author{}
-
+\graphicspath{{@CMAKE_SOURCE_DIR@/../doc/guide/}}
 
 % -----------------------------------------------------------------------------------------------
 \begin{document}
@@ -197,7 +197,7 @@ urlcolor=LinkColor}
 
 \begin{center}
 \vspace{2cm}
-\huge{IFOS++}\\
+\huge{WAVE-Inversion}\\
 \vspace{0.5cm}
 \large{HPC Full-Waveform Inversion Software}
 \end{center}
@@ -240,11 +240,11 @@ Supported by the German Ministry of Education and Research (BMBF) through the pr
 \chapter*{License}
 \addcontentsline{toc}{chapter}{License}
 
-IFOS++ is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License (GNU AGPL v3) as published by the Free Software Foundation, version 3.0 of the License only.
+WAVE-Inversion is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License (GNU AGPL v3) as published by the Free Software Foundation, version 3.0 of the License only.
  
-IFOS++ is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with FDSimulation. See file LICENSE and/or \url{https://www.gnu.org/licenses/agpl-3.0.de.html}.
+WAVE-Inversion is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with FDSimulation. See file LICENSE and/or \url{https://www.gnu.org/licenses/agpl-3.0.de.html}.
 
-The authors of IFOS++ are listed in file \lstinline{AUTHORS}.
+The authors of WAVE-Inversion are listed in file \lstinline{AUTHORS}.
 
 \chapter*{Acknowledgments}
 
@@ -254,7 +254,7 @@ We would also like to acknowledge the developers of the FWI code IFOS2D (\url{ht
 
 \chapter*{References}
 
-A list of publications where IFOS++ was used
+A list of publications where WAVE-Inversion was used
 
 
 % -----------------------------------------------------------------------------------------------
@@ -268,7 +268,7 @@ approach. Because FWI uses the full information content of each seismogram, stru
 In order to extract information about the structure and composition of the crust from seismic observations, it is necessary to be able to predict how seismic wavefields are affected by complex structures. Since exact analytical
 solutions to the wave equations do not exist for most subsurface configurations, the solutions can be obtained only by numerical methods. 
 
-For iterative calculations of synthetic seismograms with limited computer resources fast and accurate modeling methods are needed. The FWI program IFOS++ (Inversion of Full Observed Seismograms with C++) is using the finite difference simulation software SOFI++ (insert link). It is also possible to use the IFOS++ library with different simulation software.
+For iterative calculations of synthetic seismograms with limited computer resources fast and accurate modeling methods are needed. The FWI program WAVE-Inversion (Inversion of Full Observed Seismograms with C++) is using the finite difference simulation software WAVE-Simulation (insert link). It is also possible to use the WAVE-Inversion library with different simulation software.
 
 % -----------------------------------------------------------------------------------------------
 \cleardoublepage
@@ -460,14 +460,14 @@ M=
 
 
 
-\part{Software Guide to IFOS++}
+\part{Software Guide to WAVE-Inversion}
 \chapter{Software Requirements and Quick Guide}
 
-IFOS++ is developed as a part of the WAVE-project (\url{http://wave-toolbox.org}) and is a seismic full-waveform inversion framework. 
+WAVE-Inversion is developed as a part of the WAVE-project (\url{http://wave-toolbox.org}) and is a seismic full-waveform inversion framework. 
 
 \section{Software Requirements}
 
-To begin with, a \CC-compiler has to be available. A compiler with  \CC[11]-standard support is needed. To compile IFOS++, make sure a couple of libraries are installed and running properly. All necessary libraries for proper usage and a short description can be seen in table \ref{tab:pack}. A \CC-compiler and LAMA are mandatory whereas the other libraries and software is optional to execute IFOS++.
+To begin with, a \CC-compiler has to be available. A compiler with  \CC[11]-standard support is needed. To compile WAVE-Inversion, make sure a couple of libraries are installed and running properly. All necessary libraries for proper usage and a short description can be seen in table \ref{tab:pack}. A \CC-compiler and LAMA are mandatory whereas the other libraries and software is optional to execute WAVE-Inversion.
 As the software is meant for high performance computing (HPC) on cluster networks, it is primarily designed to run on Linux-platforms. The code has been tested using \gCC[4.9.3], \clang[3.9] as a  \CC-compiler and using OpenMPI (1.7.2, 1.10.0) as MPI implementation.
 
 \begin{table}[h!]
@@ -507,30 +507,30 @@ LAMA 				& The LAMA-framework for high performance			& \url{https://www.libama.o
 \section{Quick Guide}
 
 \subsection{Installation}
-To get started Download, IFOS++. 
+To get started Download, WAVE-Inversion. 
 
-You can either download the software directly from \url{https://git.scc.kit.edu/WAVE/IFOS/repository/archive.zip?ref=master} and unzip the folder (e.g. by entering \shellcmd{tar -zxvf IFOS.tgz}).
+You can either download the software directly from \url{https://git.scc.kit.edu/WAVE/WAVE-Inversion/repository/archive.zip?ref=master} and unzip the folder (e.g. by entering \shellcmd{tar -zxvf WAVE-Inversion.tgz}).
 
-Alternatively you can also get IFOS++ by entering the command: \\\shellcmdline{git clone https://git.scc.kit.edu/WAVE/IFOS.git}
+Alternatively you can also get WAVE-Inversion by entering the command: \\\shellcmdline{git clone https://git.scc.kit.edu/WAVE/WAVE-Inversion.git}
 
 As preparatory steps environment variables have to be linked to LAMA. Add the following lines to the \shellcmd{{\char`\~}/.bashrc}:
 \\\shellcmdline{ `export SCAI\_ROOT=[PATH\_TO\_LAMA\_BUILD]`}
 \\\shellcmdline{ `export DYLD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{DYLD\_LIBRARY\_PATH\}`}
 \\\shellcmdline{ `export LD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{LD\_LIBRARY\_PATH\}`}
 \\\shellcmdline{ `export OMP\_NUM\_THREADS=1`}\\
-You can also find the instructions in \shellcmd{IFOS/par/README.md}. 
+You can also find the instructions in \shellcmd{WAVE-Inversion/par/README.md}. 
 
-Change to the directory: \\\shellcmdline{IFOS/build/}
+Change to the directory: \\\shellcmdline{build/}
 
 You can compile the source code by simply entering: \\\shellcmdline{make prog}\\ in your command line. \gCC is set to be the default \CC-compiler. To use an alternative compiler, the compiler setting can be change in the \shellcmd{Makefile}, or otherwise by executing:\\\shellcmdline{make CXX=<yourCompiler> prog}
 
-The runtime configuration (such as the FD grid) can be changed in the \shellcmd{configuration.txt} file, located in the directory \shellcmd{IFOS/par/configuration/}. A list of all input variables and their dependencies can be found in section \ref{sec:config}. 
+The runtime configuration (such as the FD grid) can be changed in the \shellcmd{configuration.txt} file, located in the directory \shellcmd{par/configuration/}. A list of all input variables and their dependencies can be found in section \ref{sec:config}. 
 
-To create a html and LaTeX or Pdf documentation of the software code itself, you can generate a doxygen documentation. Therefore change the directory to \shellcmd{IFOS/build/} and run the command \shellcmd{make doc}. After running doxygen, the html, LaTeX and Pdf version of the reference manual can be found in \shellcmd{build/doc/doxygen/} and \shellcmd{build/doc/guide/}.
+To create a html and LaTeX or Pdf documentation of the software code itself, you can generate a doxygen documentation. Therefore change the directory to \shellcmd{build/} and run the command \shellcmd{make doc}. After running doxygen, the html, LaTeX and Pdf version of the reference manual can be found in \shellcmd{build/doc/doxygen/} and \shellcmd{build/doc/guide/}.
 
 \subsection{Example}
 
-To run the simulation change the directory to: \\\shellcmdline{IFOS/par/}\\
+To run the simulation change the directory to: \\\shellcmdline{par/}\\
 and start the program by running the shell script \shellcmd{start\_Inversion.sh} with  \\\shellcmdline{source start\_Inversion.sh}\\
 
 The synthetic Seismogram data is saved in \shellcmd{par/seismograms/} and can be plotted by using either the \shellcmd{plotSeismogram.m} Matlab-script or by executing the Python-script \shellcmd{plotSeismogram.py}.
@@ -596,7 +596,7 @@ With the parameters \verb+writeGradientPerShot+ and \verb+writeGradient+, it can
 
 The program will create a log file with the name specified by \verb+logFilename+. The file contains the misfit evolution (last column) for each stage and iteration (first two columns). The third column (optimum step length) is the step length which was used for the model update. The next three columns correspond to the three step length of the inexact line search and the subsequent three columns are the corresponding misfits. Note that these three misfits could be calculated only for a subset of the shots depending on the setting. Rows with iteration 0 denote the initial misfit of the corresponding workflow stage.
 
-Additional to the configuration file a workflow file has to be used because some parameters are only defined there and are not available in the configuration file! The name is set by the parameter \verb+workflowFilename+. At the moment, the workflow file contains the following parameters: \verb+invertForVp+, \verb+invertForVs+, \verb+invertForDensity+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+, \verb+upperCornerFreq+. With the first three parameters it can be decided which model parameter class should be updated. The parameter \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of SOFI++ (insert link). 
+Additional to the configuration file a workflow file has to be used because some parameters are only defined there and are not available in the configuration file! The name is set by the parameter \verb+workflowFilename+. At the moment, the workflow file contains the following parameters: \verb+invertForVp+, \verb+invertForVs+, \verb+invertForDensity+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+, \verb+upperCornerFreq+. With the first three parameters it can be decided which model parameter class should be updated. The parameter \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of WAVE-Simulation (insert link). 
 
 The \verb+verbose+ option for detailed output is not available yet, but will be implemented in the future.
 
@@ -607,7 +607,7 @@ The misfit definition has to be specified with the parameter \verb+misfitType+. 
 
 \subsection{Step length estimation}
 
-For gradient-based, local optimization algorithms usually a step length estimation is necessary. In the case the steepest descent or conjugate gradient method is used (with or without preconditioning), IFOS++ performs an inexact line search using a parabolic fit of the misfit function. For the parabolic fit three step length/misfit pairs are used. To save computation time the first pair is given by the step length zero and the misfit of the current model. The second pair is given by the parameter \verb+steplengthInit+ and the misfit calculated from the updated model with \verb+steplengthInit+. For the third pair two cases are distinguished: 1) if the misfit was decreased, the step length is multiplied with the parameter \verb+scalingFactor+ and a third step length is searched which gives a larger misfit than the second step length. If the misfit is still decreasing, the step length will again be multiplied with \verb+scalingFactor+ until it increases or the parameter \verb+maxStepCalc+ is reached. 2) If the misfit was increased, the step length is divided by the parameter \verb+scalingFactor+ and a third step length is searched which gives a smaller misfit than the first step length. If the misfit is too large, the step length will again be divided by \verb+scalingFactor+ until it sufficiently decreases or the parameter \verb+maxStepCalc+ is reached.
+For gradient-based, local optimization algorithms usually a step length estimation is necessary. In the case the steepest descent or conjugate gradient method is used (with or without preconditioning), WAVE-Inversion performs an inexact line search using a parabolic fit of the misfit function. For the parabolic fit three step length/misfit pairs are used. To save computation time the first pair is given by the step length zero and the misfit of the current model. The second pair is given by the parameter \verb+steplengthInit+ and the misfit calculated from the updated model with \verb+steplengthInit+. For the third pair two cases are distinguished: 1) if the misfit was decreased, the step length is multiplied with the parameter \verb+scalingFactor+ and a third step length is searched which gives a larger misfit than the second step length. If the misfit is still decreasing, the step length will again be multiplied with \verb+scalingFactor+ until it increases or the parameter \verb+maxStepCalc+ is reached. 2) If the misfit was increased, the step length is divided by the parameter \verb+scalingFactor+ and a third step length is searched which gives a smaller misfit than the first step length. If the misfit is too large, the step length will again be divided by \verb+scalingFactor+ until it sufficiently decreases or the parameter \verb+maxStepCalc+ is reached.
 Note that the parameter \verb+steplengthInit+ is decreased by 2\% after each iteration within each workflow stage. The parameter is reset at the beginning of each stage to the value specified in the configuration file.
 After calculating three step length/misfit pairs, four cases are distinguished to choose a proper step length:
 
@@ -684,20 +684,20 @@ To merge a fileblock \shellcmd{filename\_\%r.mtx} to a single vector-file, the c
 In this case the name of the file-block and its size is written fist and then the name of the single output-file.
 
 \section{Unit Tests}
-To guarantee a functioning framework, IFOS++ includes unit-tests using the googletest framework. To run all unit-tests, you first have to install googletest (e.g. from \url{http://code.google.com/p/googletest}). 
+To guarantee a functioning framework, WAVE-Inversion includes unit-tests using the googletest framework. To run all unit-tests, you first have to install googletest (e.g. from \url{http://code.google.com/p/googletest}). 
 
 As preparatory steps environment variables have to be linked to googletest. Add the following lines to the \shellcmd{{\char`\~}/.bashrc}:
 \\\shellcmdline{ `export GTEST\_DIR=[PATH\_TO\_GTEST\_DIRECTORY]`}
 \\\shellcmdline{ `export LD\_LIBRARY\_PATH=\$\{GTEST\_DIR\}:\$\{LD\_LIBRARY\_PATH\}`}
 \\\shellcmdline{ `export DYLD\_LIBRARY\_PATH=\$\{GTEST\_DIR\}:\$\{DYLD\_LIBRARY\_PATH\}}
 
-To compile all tests, change the directory: \\\shellcmdline{IFOS/src/} \\ and compile the tests by simply entering:\\\shellcmdline{make utest} and \shellcmdline{make itest}
+To compile all tests, change the directory: \\\shellcmdline{/src/} \\ and compile the tests by simply entering:\\\shellcmdline{make utest} and \shellcmdline{make itest}
 
 The executable file is located in the directory:
-\\\shellcmdline{IFOS/build/bin}\\
+\\\shellcmdline{/build/bin}\\
 To execute the unit-tests change to the \shellcmd{/par} folder and run the \shellcmd{Test\_unit} file by entering:
 \\\shellcmdline{./../bin/Tests/Test\_unit}\\ 
-For faultless function of IFOS++ all tests should execute without failure.
+For faultless function of WAVE-Inversion all tests should execute without failure.
 
 \section{Benchmark}
 
@@ -711,6 +711,6 @@ For faultless function of IFOS++ all tests should execute without failure.
 \addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
 \addcontentsline{toc}{chapter}{List of Tables}
 \cleardoublepage
-\bibliography{WAVE_guide}
+\bibliography{@CMAKE_SOURCE_DIR@/../doc/guide/WAVE_guide}
 \bibliographystyle{apalike}
 \end{document}

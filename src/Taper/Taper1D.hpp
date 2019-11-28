@@ -32,7 +32,7 @@ namespace KITGPI
             void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
 
-            void read(std::string filename, scai::IndexType partitionedIn);
+            void read(std::string filename, scai::IndexType fileFormat);
             
             bool getDirection() const;
 

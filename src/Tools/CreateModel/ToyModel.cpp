@@ -7,14 +7,16 @@
 #include <string>
 #include <vector>
 
-#include "Configuration/Configuration.hpp"
+#include <Configuration/Configuration.hpp>
+#include <Configuration/ValueType.hpp>
 #include "HostPrint.hpp"
+#include <IO/IO.hpp>
 
 using namespace scai;
+using namespace KITGPI;
 
 int main(int argc, char *argv[])
 {
-    typedef double ValueType;
 
     ValueType vp1, vp2, vp3, vp4, vs1, vs2, vs3, vs4, density1, density2, density3, density4;
     int depth=1.0;
@@ -25,7 +27,7 @@ int main(int argc, char *argv[])
         return (2);
     }
     // read configuration parameter from file
-    KITGPI::Configuration::Configuration config(argv[1]);
+    Configuration::Configuration config(argv[1]);
     
     //background value
     ValueType vp0=config.get<ValueType>("velocityP");
@@ -59,31 +61,23 @@ int main(int argc, char *argv[])
     int NX = config.get<IndexType>("NX");
     int NY = config.get<IndexType>("NY");
     int NZ = config.get<IndexType>("NZ");
-    common::Grid3D grid(NZ, NY, NX);
+    common::Grid3D grid(NY, NZ, NX);
 
-    // construct model vectors
-    lama::GridVector<ValueType> vp(grid);
-    lama::GridVector<ValueType> vs(grid);
-    lama::GridVector<ValueType> rho(grid);
-    lama::GridVector<ValueType> tauP(grid);
-    lama::GridVector<ValueType> tauS(grid);
-    
-
-    //set background value
-    vp = vp0;
-    vs = vs0;
-    rho = density0;
-    tauP = config.get<ValueType>("tauP");
-    tauS = config.get<ValueType>("tauS");
+    // construct model vectors and set background value
+    lama::GridVector<ValueType> vp(grid,vp0);
+    lama::GridVector<ValueType> vs(grid,vs0);
+    lama::GridVector<ValueType> rho(grid,density0);
+    lama::GridVector<ValueType> tauP(grid,config.get<ValueType>("tauP"));
+    lama::GridVector<ValueType> tauS(grid,config.get<ValueType>("tauS"));
     
     
    //top-left
   for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
     for (IndexType y = NY/2-height/2; y < NY/2; ++y) {
 	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
-	  vp(z, y, x) = vp1; 
-	  vs(z, y, x) = vs1; 
-          rho(z, y, x) = density1;
+	  vp(y, z, x) = vp1; 
+	  vs(y, z, x) = vs1; 
+          rho(y, z, x) = density1;
 	}
     }
    }
@@ -92,9 +86,9 @@ int main(int argc, char *argv[])
   for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2-height/2; y < NY/2; ++y) {    
 	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {      
-	  vp(z, y, x) = vp2; 
-	  vs(z, y, x) = vs2; 
-          rho(z, y, x) = density2;
+	  vp(y, z, x) = vp2; 
+	  vs(y, z, x) = vs2; 
+          rho(y, z, x) = density2;
 	}
     }
    }      
@@ -103,9 +97,9 @@ int main(int argc, char *argv[])
  for (IndexType x = NX/2-width/2; x < NX/2; ++x) {
   for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
       for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
-	  vp(z, y, x) = vp3; 
-	  vs(z, y, x) = vs3; 
-          rho(z, y, x) = density3;
+	  vp(y, z, x) = vp3; 
+	  vs(y, z, x) = vs3; 
+          rho(y, z, x) = density3;
       }
   }                                                               
  }
@@ -114,9 +108,9 @@ int main(int argc, char *argv[])
   for (IndexType x = NX/2; x < NX/2+width/2; ++x) {
     for (IndexType y = NY/2; y < NY/2+width/2; ++y) {
 	for (IndexType z = NZ/2-depth/2; z <= NZ/2+depth/2; ++z) {  
-	  vp(z, y, x) = vp4; 
-	  vs(z, y, x) = vs4; 
-          rho(z, y, x) = density4;
+	  vp(y, z, x) = vp4; 
+	  vs(y, z, x) = vs4; 
+          rho(y, z, x) = density4;
 	}
     }
    }      
@@ -126,18 +120,24 @@ int main(int argc, char *argv[])
     //write model to file specified in configuration
     std::string filename = config.get<std::string>("ModelFilename");
     
-    rho.writeToFile(filename + ".density.mtx");
+    IndexType fileFormat = config.get<IndexType>("FileFormat");
+
+    //write model to disc
+
+    KITGPI::IO::writeVector(rho, filename + ".density", fileFormat);
 
     if (type.compare("sh") != 0) {
-        vp.writeToFile(filename + ".vp.mtx");
+        KITGPI::IO::writeVector(vp, filename + ".vp", fileFormat);
     }
 
     if (type.compare("acoustic") != 0) {
-        vs.writeToFile(filename + ".vs.mtx");
+        KITGPI::IO::writeVector(vs, filename + ".vs", fileFormat);
     }
+
     if (type.compare("visco") == 0) {
-        tauP.writeToFile(filename + ".tauP.mtx");
-        tauS.writeToFile(filename + ".tauS.mtx");
+        KITGPI::IO::writeVector(tauP, filename + ".tauP", fileFormat);
+        KITGPI::IO::writeVector(tauS, filename + ".tauS", fileFormat);
     }
+    
     return 0;
 }

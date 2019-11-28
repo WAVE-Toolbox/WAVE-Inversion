@@ -11,7 +11,7 @@ stage=1;
 iteration=3; % iteration number
 
 % model parameter-------------------------------------------------
-geometry.LAYER=20; % Define layer of 3D model to display as 2D slice
+geometry.LAYER=15; % Define layer of 3D model to display as 2D slice
 parameter='vs';   % model parameter
 
 colorbarRange.min=1900; %lower clip of the colorbar 
@@ -41,10 +41,17 @@ inversionModel=config.getString('ModelFilename');
 startingModel=[config.getString('ModelFilename') '.out'];
 trueModel=configTrue.getString('ModelFilename');
 
-load ([config.getString('SourceFilename') '.mtx']);
-acquisition.sources=spconvert(sources(2:end,:));
-load ([config.getString('ReceiverFilename') '.mtx']);
-acquisition.receiver=spconvert(receiver(2:end,:));
+delimiterIn = ' ';
+headerlinesIn = 1;
+
+filename_sources=[config.getString('SourceFilename') '.txt'];
+
+A = importdata(filename_sources,delimiterIn,headerlinesIn);
+acquisition.sources=A.data;
+
+filename_receiver=[config.getString('ReceiverFilename') '.txt'];
+B = importdata(filename_receiver,delimiterIn,headerlinesIn);
+acquisition.receiver=B.data;
 
 plotModel (parameter,colorbarRange,stage,iteration,geometry,acquisition,...
     inversionModel,startingModel,trueModel)

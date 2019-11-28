@@ -1,4 +1,4 @@
-# Input file IFOS
+# Input file WAVE-Inversion
 # The format has to be name=value (without any white spaces)
 # Use the hashtag "#" for comments
 
@@ -11,16 +11,19 @@ dimension=2D              # Dimension: 2D or 3D
 equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
 
 # define spatial sampling: number of grid points in direction
+useVariableGrid=0
+partitioning=1
+useVariableFDoperators=0
+
+coordinateWrite=0
+
 NX=100                    # horizontal 1
 NY=100                    # depth
 NZ=1                    # horizontal 2
 
 # define Partitioning
-UseCubePartitioning=1     # 1=ON, 0=OFF
-ProcNX=2                  # Number of processes in X direction
-ProcNY=2                  # Number of processes in Y direction
-ProcNZ=1                  # Number of processes in Z direction
-ProcNS=1
+ShotDomainDefinition=0              # 0 define domains by ProcNS, #1 define by node id, #2 define by env var DOMAIN
+NumShotDomains=2                  # Number of shot domains
 
 # distance between two grid points
 DH=50                     # in meter
@@ -36,11 +39,14 @@ spatialFDorder=2          # possible values 2, 4, 6, 8, 10 and 12
 ModelRead=0               # 1=Model will be read from file, 0=generated on the fly
 ModelWrite=1              # 1=Model will be written to disk, 0=not
 ModelFilename=../model/ToyModel # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
-ModelParametrisation=2    # 1=Module, 2=Velocity
 
-# parallel input-output
-PartitionedIn=0           # 1=Read files parallel, 0=serial 
-PartitionedOut=0          # 1=Write files parallel, 0=serial
+#input-output
+FileFormat=1  # file format for input and output  of models and wavefields
+
+# Supported formats:
+# 1=mtx : formated ascii file - serial IO
+# 2=lmf : binary file - parallel IO - float - little endian - 5 int header (20 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
 
 # Apply the free surface condition
 FreeSurface=0             # 1=ON, 0=OFF
@@ -75,10 +81,14 @@ tFirstSnapshot=0
 SourceFilename=Input/sources         # location of source file
 ReceiverFilename=Input/receiver      # location of receiver file
 SeismogramFilename=../seismograms/ToyExample      # target location of seismogram
-SeismogramFormat=1                             # 1=MTX, 2=SU
+SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(binary parallel) 3=frv (binary serial), 4=SU (parallel)
+# 1=mtx : formated ascii file - serial IO - 2 line ascii header
+# 2=lmf : binary file - parallel IO - float - little endian - 6 int header (24 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
+# 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
+
 seismoDT=2.0e-03
 NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
-runSimultaneousShots=0
 useReceiversPerShot=0
 initSourcesFromSU=0
 initReceiverFromSU=0
@@ -97,11 +107,11 @@ gradientFilename=../gradients/ToyExample.grad        # location/basename of outp
 logFilename=../logs/ToyExample.steplengthSearch.log  # target location of log file
 
 # General settings
-workflowFilename=./Input/workflow.txt # location/basename of workflow file
 maxIterations=3                       # maximum number of inversion iterations
-misfitType=L2                          # type of misfit (L2, etc.) 
-
-
+misfitType=L2                          # type of misfit (L2, etc.)
+optimizationType=conjugateGradient     # type of optimization method
+DTInversion=1                           # factor of DT for cross-correlation in gradient calculation
+workflowFilename=Input/workflow.txt # location/basename of workflow file
 
 # Step length search
 steplengthInit=0.03                    # starting steplength
@@ -121,8 +131,6 @@ useModelThresholds=0
 sourceTaperRadius=20    # Circular source taper: Radius in gridpoints
 receiverTaperRadius=20  # Circular receiver taper: Radius in gridpoints
 sourceReceiverTaperType=1
-
-optimizationType=conjugateGradient     # type of optimization method
 
 useEnergyPreconditioning=1 # approximated diagonal Hessian is applied to gradient per shot
 epsilonHessian=0.005       # parameter to stabilize matrix inversion (recommended: 0.005)

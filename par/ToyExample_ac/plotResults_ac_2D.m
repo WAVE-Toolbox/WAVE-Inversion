@@ -9,10 +9,10 @@ configTrue=conf('../ToyExample_ac/Input/configuration_true.txt');
 % general parameter ----------------------------------------------
 
 stage=1;
-iteration=3; % iteration number
+iteration=2; % iteration number
 
 % model parameter-------------------------------------------------
-geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
+geometry.LAYER=0; % Define layer of 3D model to display as 2D slice
 parameter='vp';   % model parameter
 
 colorbarRange.min=1900; %lower clip of the colorbar 
@@ -39,13 +39,26 @@ geometry.DH=config.getValue('DH');   % Spatial grid sampling
 %% plot model
 
 inversionModel=config.getString('ModelFilename');
-startingModel=[config.getString('ModelFilename') '.out'];
+startingModel=config.getString('ModelFilename');
 trueModel=configTrue.getString('ModelFilename');
 
-load ([config.getString('SourceFilename') '.mtx']);
-acquisition.sources=spconvert(sources(2:end,:));
-load ([config.getString('ReceiverFilename') '.mtx']);
-acquisition.receiver=spconvert(receiver(2:end,:));
+inversionModel=[inversionModel '.stage_' num2str(stage) '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the model
+startingModel=[startingModel '.stage_' num2str(stage) '.It_0.' parameter '.mtx']; % File name of the model
+trueModel=[trueModel '.' parameter '.mtx']; % File name of the model
+
+
+delimiterIn = ' ';
+headerlinesIn = 1;
+
+filename_sources=[config.getString('SourceFilename') '.txt'];
+
+A = importdata(filename_sources,delimiterIn,headerlinesIn);
+acquisition.sources=A.data;
+
+filename_receiver=[config.getString('ReceiverFilename') '.txt'];
+B = importdata(filename_receiver,delimiterIn,headerlinesIn);
+acquisition.receiver=B.data;
+
 %%
 plotModel (parameter,colorbarRange,stage,iteration,geometry,acquisition,...
     inversionModel,startingModel,trueModel)
@@ -64,7 +77,7 @@ plotSeismogram(DT,stage,iteration,shot,component,skipTraces,syntheticData,fieldD
 gradientName=config.getString('gradientFilename');
 
 if iteration > 0
-plotGradient(parameter,stage,iteration,geometry,gradientName);
+plotGradient(parameter,stage,iteration,geometry,gradientName,config);
 end
 
 rmpath('../model')

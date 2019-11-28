@@ -1,4 +1,4 @@
-# Input file SOFI
+# Input file WAVE-Inversion
 # The format has to be name=value (without any white spaces)
 # Use the hashtag "#" for comments
 
@@ -11,16 +11,19 @@ dimension=2D              # Dimension: 2D or 3D
 equationType=acoustic     # Type of wave equation: acoustic, elastic, visco
 
 # define spatial sampling: number of grid points in direction
+useVariableGrid=0
+partitioning=1
+useVariableFDoperators=0
+
+coordinateWrite=0
+
 NX=100                    # horizontal 1
 NY=100                    # depth
 NZ=1                    # horizontal 2
 
 # define Partitioning
-UseCubePartitioning=1     # 1=ON, 0=OFF
-ProcNX=2                  # Number of processes in X direction
-ProcNY=2                  # Number of processes in Y direction
-ProcNZ=1                  # Number of processes in Z direction
-ProcNS=1                  # Number of shot domains
+ShotDomainDefinition=0              # 0 define domains by ProcNS, #1 define by node id, #2 define by env var DOMAIN
+NumShotDomains=2                  # Number of shot domains
 
 # distance between two grid points
 DH=50                     # in meter
@@ -38,9 +41,13 @@ ModelWrite=1              # 1=Model will be written to disk, 0=not
 ModelFilename=model/model # The ending vp.mtx, vs.mtx and density.mtx will be added automatically. 
 ModelParametrisation=2    # 1=Module, 2=Velocity
 
-# parallel input-output
-PartitionedIn=0           # 1=Read files parallel, 0=serial 
-PartitionedOut=0          # 1=Write files parallel, 0=serial
+#input-output
+FileFormat=1  # file format for input and output  of models and wavefields
+
+# Supported formats:
+# 1=mtx : formated ascii file - serial IO
+# 2=lmf : binary file - parallel IO - float - little endian - 5 int header (20 byte)
+# 3=frv : binary file - serial IO - float - little endian - seperate header
 
 # Apply the free surface condition
 FreeSurface=0             # 1=ON, 0=OFF
@@ -91,9 +98,10 @@ gradientFilename=gradients/grad                  # location/basename of output g
 logFilename=ci/steplengthSearch.ci.log            # target location of log file
 
 # General settings
-maxIterations=5                                 # maximum number of inversion itertions
+maxIterations=3                                 # maximum number of inversion itertions
 misfitType=L2                                   # type of misfit (L2, etc.)
 optimizationType=steepestDescent                # type of optimization method
+DTInversion=1 		                        # factor of DT for cross-correlation in gradient calculation
 workflowFilename=ci/workflow_ci.2D.acoustic.txt # location/basename of workflow file
 
 # Step length search
@@ -107,10 +115,19 @@ testShotEnd=17                                  # shot number of last test shot
 testShotIncr=1                                  # increment of test shots
 
 # Source time function inversion
-useSourceSignalInversion=0
-waterLevel=0.01
-writeInvertedSource=0
-useSeismogramTaper=0                            # 1=taper seismograms for source time function inversion 0=not
+useSourceSignalInversion=1                         # 1= use source time inversion
+waterLevel=1e-10                                   # water level of source time inversion
+writeInvertedSource=0                              # 1=source signal will be written to disk, 0=not
+sourceSeismogramFilename=sourceInversion/invSource # location/basename of output source signal
+useSourceSignalTaper=1                             # use cosine taper for source signal
+sourceSignalTaperStart1=0                          # start index of first cosine taper
+sourceSignalTaperEnd1=20                          # end index of first cosine taper
+sourceSignalTaperStart2=150                          # start index of second cosine taper (0=no second transition zone)
+sourceSignalTaperEnd2=300                            # end index of second cosine taper (0=no second transition zone)
+maxOffsetSrcEst=0                                  # maximum offset in grid points to allow (0=no offset limits)
+useSeismogramTaper=0                               # 1=taper seismograms for source time function inversion 0=not
+seismogramTaperName=taper/seismoTaper              # location/basename of seismogram taper
+
 
 # Preconditioning
 sourceReceiverTaperType=1                       # type of source and receiver typers 1=log 2=cos^2

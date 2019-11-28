@@ -43,13 +43,12 @@ NX=geometry.NX;  % Number of grid points in X
 NY=geometry.NY;  % Number of grid points in Y
 NZ=geometry.NZ;  % Number of grid points in Z
 DH=geometry.DH;   % Spatial grid sampling
-LAYER=geometry.LAYER; % Define layer of 3D model to display as 2D slice
+LAYER=geometry.LAYER+1; % Define layer of 3D model to display as 2D slice
 
 
 %% Read model
 if iteration > 0
-filename=[inversionModel '.stage_' num2str(stage) '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the model
-model=readModelfromMtx(filename,NX,NY,NZ);
+model=readModelfromMtx(inversionModel,NX,NY,NZ);
 end
 X=0:DH:(NX*DH-DH);
 Y=0:DH:(NY*DH-DH);
@@ -79,8 +78,7 @@ title([parameter ' model at iteration ' num2str(iteration)])
 
 if nargin > 7
 %% Read model
-filename=[startingModel '.' parameter '.mtx']; % File name of the model
-model=readModelfromMtx(filename,NX,NY,NZ);
+model=readModelfromMtx(startingModel,NX,NY,NZ);
 
 %% Plot
 if nargin > 8
@@ -94,15 +92,14 @@ colorbar('location','southoutside');
 xlabel('X in meter')
 ylabel('Y in meter')
 hold on
-plot(sources(:,1)*DH,sources(:,2)*DH,'*')
+plot(sources(:,2)*DH,sources(:,3)*DH,'*')
 plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' starting model'])
 end
 
 if nargin > 8
 %% Read model
-filename=[trueModel '.' parameter '.mtx']; % File name of the model
-model=readModelfromMtx(filename,NX,NY,NZ);
+model=readModelfromMtx(trueModel,NX,NY,NZ);
 
 %% Plot
 subplot(1,3,1)
@@ -112,7 +109,7 @@ colorbar('location','southoutside');
 xlabel('X in meter')
 ylabel('Y in meter')
 hold on
-plot(sources(:,1)*DH,sources(:,2)*DH,'*')
+plot(sources(:,2)*DH,sources(:,3)*DH,'*')
 plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' true model'])
 end

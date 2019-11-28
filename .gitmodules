@@ -1,5 +1,0 @@
-[submodule "SOFI"]
-	path = SOFI
-	url = https://git.scc.kit.edu/WAVE/FDSimulation_LAMA.git
-[submodule]
-	SOFI = master

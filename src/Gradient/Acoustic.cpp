@@ -1,5 +1,6 @@
 #include "Acoustic.hpp"
-#include <scai/lama/io/FileIO.hpp>
+#include <scai/dmemo/SingleDistribution.hpp>
+
 using namespace scai;
 using namespace KITGPI;
 
@@ -54,20 +55,21 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
 /*! \brief Write gradient to an external file
  *
  \param filename For the P-wave modulus ".pWaveModulus.mtx" is added and for density ".density.mtx" is added.
- \param partitionedOut Partitioned output
+ \param fileFormat format of output file
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexType partitionedOut, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
+void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
     if (workflow.getInvertForVp() == 1) {
-        std::string filenameP = filename + ".vp.mtx";
-        this->writeParameterisation(velocityP, filenameP, partitionedOut);
+        std::string filenameP = filename + ".vp";
+        this->writeParameterisation(velocityP, filenameP, fileFormat);
     }
 
     if (workflow.getInvertForDensity() == 1) {
-        std::string filenamedensity = filename + ".density.mtx";
-        this->writeParameterisation(density, filenamedensity, partitionedOut);
+        std::string filenamedensity = filename + ".density";
+        this->writeParameterisation(density, filenamedensity, fileFormat);
     }
+    
 };
 
 /*! \brief Get equationType (acoustic)
@@ -299,8 +301,36 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
 {
+    /*reduction between shot domains.
+    each shot domain may have a different distribution of (gradient) vectors. 
+      This happens if geographer is used (different result for dist on each shot domain even for homogenous architecture)
+      or on heterogenous architecture. In this case even the number of processes on each domain can vary.
+    Therfore it is necessary that only one process per shot domain communicates all data.
+    */
+    
+    //get information from distributed vector
+    auto size = velocityP.size();
+    auto dist = velocityP.getDistributionPtr();
+    auto comm = dist->getCommunicatorPtr();
+    
+    // create single distribution, only master process owns the complete vector (no distribution).
+    
+    int shotMaster=0;
+    auto singleDist = std::make_shared<dmemo::SingleDistribution>( size, comm, shotMaster );
+    
+    //redistribute vector to master process
+    // (this may cause memory issues for big models)
+    velocityP.redistribute(singleDist);
+    
+    //reduce local array (size of local array is !=0 only for master process)
     commInterShot->sumArray(velocityP.getLocalValues());
+    
+    //redistribute vector to former partition
+    velocityP.redistribute(dist);
+    
+    density.redistribute(singleDist);
     commInterShot->sumArray(density.getLocalValues());
+    density.redistribute(dist);
 }
 
 /*! \brief function for scaling the gradients with the model parameter 

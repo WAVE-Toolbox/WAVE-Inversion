@@ -5,6 +5,10 @@
 
 #include "../Common/HostPrint.hpp"
 #include <Configuration/Configuration.hpp>
+#include <Configuration/ValueType.hpp>
+
+using namespace scai;
+using namespace KITGPI;
 
 void skipHeaderLines(std::ifstream &ifs)
 {
@@ -17,7 +21,6 @@ void skipHeaderLines(std::ifstream &ifs)
 
 int main(int argc, char *argv[])
 {
-    typedef double ValueType;
 
     if (argc != 2) {
         std::cout << "\n\nNo configuration file given!\n\n"
@@ -26,7 +29,7 @@ int main(int argc, char *argv[])
     }
 
     // read configuration parameter from file
-    KITGPI::Configuration::Configuration config(argv[1]);
+    Configuration::Configuration config(argv[1]);
     std::string filenameRef = config.get<std::string>("LogFilename");
     std::string dimensionRef = config.get<std::string>("dimension");
     std::string equationTypeRef = config.get<std::string>("equationType");
@@ -74,7 +77,7 @@ int main(int argc, char *argv[])
     if (finalMisfit > referenceMisfit) {
         std::cout << "\n\nTest Failed\n\n"
                   << std::endl
-                  << "Inversion misfit of " << finalMisfit << " is smaller than reference misfit of " << referenceMisfit << "\n\n"
+                  << "Inversion misfit of " << finalMisfit << " is greater than reference misfit of " << referenceMisfit << "\n\n"
                   << std::endl;
         return (1);
     } else {
