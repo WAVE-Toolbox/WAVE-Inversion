@@ -1,7 +1,7 @@
 #!/bin/bash
 SIMULATIONEXE=~/projects/FDSimulation_LAMA/build/bin/Simulation
 MODELEXE=../../build/bin/tools/ModelEttlingerLinie
-INVERSIONEXE=../../build/bin/IFOS
+INVERSIONEXE=../../build/bin/Inversion
 
 # remove old output
 rm -f ../seismograms/ettlinger_linie*

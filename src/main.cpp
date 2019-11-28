@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     common::Settings::setRank(commAll->getNodeRank());
 
     
-    HOST_PRINT(commAll, "\n IFOS++ " << dimension << " " << equationType << " - LAMA Version\n");
+    HOST_PRINT(commAll, "\n WAVE-Inversion " << dimension << " " << equationType << " - LAMA Version\n");
     HOST_PRINT(commAll, "","  - Running on " << commAll->getSize() << " mpi processes -\n\n");
     
     if (commAll->getRank() == MASTERGPI) {
@@ -708,6 +708,6 @@ int main(int argc, char *argv[])
 
     } // end of loop over workflow stages
     globalEnd_t = common::Walltime::get();
-    HOST_PRINT(commAll, "\nTotal runtime of IFOS: " << globalEnd_t - globalStart_t << " sec.\nIFOS finished!\n\n");
+    HOST_PRINT(commAll, "\nTotal runtime of WAVE-Inversion: " << globalEnd_t - globalStart_t << " sec.\nWAVE-Inversion finished!\n\n");
     return 0;
 }

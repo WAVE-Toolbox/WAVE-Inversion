@@ -63,7 +63,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat)
 {
-//     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
+//     sqrt(approxHessian) missing because of |u_i| (see IFOS2D)?
     
     /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
     approxHessian += epsilonHessian*approxHessian.maxNorm(); 

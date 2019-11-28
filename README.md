@@ -1,6 +1,6 @@
-## Geophysical inversion software **IFOS**
+## Geophysical inversion software **WAVE-Inversion**
 
-Master: [![build status](https://git.scc.kit.edu/WAVE/IFOS/badges/master/build.svg)](https://git.scc.kit.edu/WAVE/IFOS/commits/master) Develop: [![build status](https://git.scc.kit.edu/WAVE/IFOS/badges/develop/build.svg)](https://git.scc.kit.edu/WAVE/IFOS/commits/develop)
+Master: [![build status](https://git.scc.kit.edu/WAVE/WAVE-Inversion/badges/master/build.svg)](https://git.scc.kit.edu/WAVE/WAVE-Inversion/commits/master) Develop: [![build status](https://git.scc.kit.edu/WAVE/WAVE-Inversion/badges/develop/build.svg)](https://git.scc.kit.edu/WAVE/WAVE-Inversion/commits/develop)
 
 Geophysical inversion software developed by the [WAVE-Project](http://wave-toolbox.org).
 
@@ -17,9 +17,3 @@ Documentation:
 Contributing:
 - See the contributing guidelines provided in `CONTRIBUTING.md`
 
-Download:
-```
-git clone https://git.scc.kit.edu/WAVE/IFOS.git
-git submodule init
-git submodule update
-```

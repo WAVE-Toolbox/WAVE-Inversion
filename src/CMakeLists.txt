@@ -1,6 +1,6 @@
 ###########################################################################
 #
-#     Start the build of IFOS++ by the following command:
+#     Start the build of WAVE-Inversion by the following command:
 # 
 #     SCAI_DIR=<path_to_lama> GTEST_ROOT=<path_to_googletest> cmake ../src 
 #
@@ -11,7 +11,7 @@
 #    
 ###########################################################################
 
-project( IFOS )
+project( WAVE-Inversion )
 
 cmake_minimum_required ( VERSION 3.0 )
 
@@ -65,10 +65,10 @@ find_package( Simulation REQUIRED CONFIG
 
 set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${Simulation_CXX_FLAGS} )
 
-## provide WAVE-Simulation include directories + library for IFOS
+## provide WAVE-Simulation include directories + library for WAve-Inversion
 
 include_directories( ${Simulation_INCLUDE_DIRS} )
-set( IFOS_used_libs ${Simulation_LIBRARIES} )
+set( Inversion_used_libs ${Simulation_LIBRARIES} )
 
 ####################################################
 #  Find SCAI/LAMA package (mandatory)              #
@@ -84,10 +84,10 @@ find_package( SCAI REQUIRED CONFIG
               NO_SYSTEM_ENVIRONMENT_PATH 
               PATHS ${SCAI_PATH_HINTS} )
 
-## provide SCAI/LAMA include directories + library for IFOS
+## provide SCAI/LAMA include directories + library for WAVE-Inversion
 
 include_directories( ${SCAI_INCLUDE_DIRS} )
-set( IFOS_used_libs ${IFOS_used_libs} ${SCAI_LIBRARIES} )
+set( Inversion_used_libs ${Inversion_used_libs} ${SCAI_LIBRARIES} )
 
 ####################################################
 #  Find Geographer package (optional)              #
@@ -116,18 +116,18 @@ if ( ${Geographer_FOUND} )
     ## enalble conditional compilation of code using Geographer
     add_definitions( "-DUSE_GEOGRAPHER" )
 
-    ## provide Geographer include directories + library for IFOS
+    ## provide Geographer include directories + library for WAVE-Inversion
     include_directories( ${Geographer_INCLUDE_DIRS} )
-    set( IFOS_used_libs ${Geographer_LIBRARIES} ${IFOS_used_libs} )
+    set( Inversion_used_libs ${Geographer_LIBRARIES} ${Inversion_used_libs} )
 
 endif ()
 
 ###################################################
-#  Collect source files of IFOS library            #
+#  Collect source files of WAVE-Inversion library            #
 #  and copy header files to install                #
 ####################################################
 
-set ( IFOS_LIB_DIRS 
+set ( Inversion_LIB_DIRS 
 	Common
 	Gradient
 	Misfit
@@ -140,10 +140,10 @@ set ( IFOS_LIB_DIRS
 	ZeroLagCrossCorrelation
          )
 
-foreach ( dir ${IFOS_LIB_DIRS} ) 
+foreach ( dir ${Inversion_LIB_DIRS} ) 
 
     file( GLOB_RECURSE files ${dir}/*.cpp ${dir}/*.hpp )
-    set ( IFOS_FILES ${IFOS_FILES} ${files} )
+    set ( Inversion_FILES ${Inversion_FILES} ${files} )
 
     file( GLOB_RECURSE files RELATIVE ${CMAKE_SOURCE_DIR}/${dir} ${dir}/*.hpp )
     foreach ( file ${files} )
@@ -156,26 +156,26 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 
 ####################################################
-#  IFOS library                                    #
+#  WAVE-Inversion library                                    #
 ####################################################
 
 include_directories( Common Gradient Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation )
 
-add_library( IFOS ${IFOS_FILES} )
+add_library( Inversion ${Inversion_FILES} )
 
-target_link_libraries( IFOS ${IFOS_used_libs} )
+target_link_libraries( Inversion ${Inversion_used_libs} )
 
-install( TARGETS IFOS DESTINATION lib )
+install( TARGETS Inversion DESTINATION lib )
 
 ####################################################
-#  IFOS executable                                 #
+#  Inversion executable                                 #
 ####################################################
 
-add_executable( prog IFOS.cpp )
+add_executable( prog main.cpp )
 
-target_link_libraries( prog IFOS ${IFOS_used_libs} )
+target_link_libraries( prog Inversion ${Inversion_used_libs} )
 
-set_target_properties( prog PROPERTIES OUTPUT_NAME IFOS )
+set_target_properties( prog PROPERTIES OUTPUT_NAME Inversion )
 
 install( TARGETS prog DESTINATION bin )
 
@@ -187,12 +187,12 @@ find_package( GTest )
 
 if ( ${GTEST_FOUND} )
 
-  file( GLOB IFOS_UNIT_TEST_SOURCES Tests/UnitTest/*.cpp )
+  file( GLOB Inversion_UNIT_TEST_SOURCES Tests/UnitTest/*.cpp )
 
-  add_executable( utest ${IFOS_UNIT_TEST_SOURCES} )
+  add_executable( utest ${Inversion_UNIT_TEST_SOURCES} )
 
   target_include_directories( utest PRIVATE Common Gradient Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation  ${GTEST_INCLUDE_DIR} )
-  target_link_libraries( utest ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} IFOS ${IFOS_used_libs} )
+  target_link_libraries( utest ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} Inversion ${Inversion_used_libs} )
 
   set_target_properties( utest PROPERTIES OUTPUT_NAME Test_unit )
 
@@ -213,13 +213,13 @@ endif ()
 #  Integration Test                                #
 ####################################################
 
-set ( IFOS_INTEGRATION_TEST_SOURCES
+set ( Inversion_INTEGRATION_TEST_SOURCES
    Tests/IntegrationTest/Test_CompareMisfit.cpp
 )
 
-add_executable( itest ${IFOS_INTEGRATION_TEST_SOURCES} )
+add_executable( itest ${Inversion_INTEGRATION_TEST_SOURCES} )
 
-target_link_libraries( itest IFOS ${IFOS_used_libs} )
+target_link_libraries( itest Inversion ${Inversion_used_libs} )
 
 set_target_properties( itest PROPERTIES OUTPUT_NAME Test_integration )
 
@@ -234,7 +234,7 @@ ADD_DEPENDENCIES(model TwoLayer)
 
 add_executable( TwoLayer Tools/CreateModel/TwoLayer.cpp )
 
-target_link_libraries( TwoLayer IFOS ${IFOS_used_libs} )
+target_link_libraries( TwoLayer Inversion ${Inversion_used_libs} )
 
 set_target_properties( TwoLayer PROPERTIES OUTPUT_NAME TwoLayer )
 
@@ -242,7 +242,7 @@ install( TARGETS TwoLayer DESTINATION bin/tools )
 
 add_executable( ToyModel Tools/CreateModel/ToyModel.cpp )
 
-target_link_libraries( ToyModel IFOS ${IFOS_used_libs} )
+target_link_libraries( ToyModel Inversion ${Inversion_used_libs} )
 
 set_target_properties( ToyModel PROPERTIES OUTPUT_NAME ToyModel )
 
@@ -250,7 +250,7 @@ install( TARGETS ToyModel DESTINATION bin/tools )
 
 add_executable( ModelEttlingerLinie Tools/CreateModel/ettlinger_linie.cpp )
 
-target_link_libraries( ModelEttlingerLinie IFOS ${IFOS_used_libs} )
+target_link_libraries( ModelEttlingerLinie Inversion ${Inversion_used_libs} )
 
 set_target_properties( ModelEttlingerLinie PROPERTIES OUTPUT_NAME ModelEttlingerLinie )
 

@@ -8,7 +8,7 @@ export SCAI_LOG=ERROR
 
 BINDIR="./../build/bin"
 
-IFOS_EXE="${BINDIR}/IFOS"
+INVERSION_EXE="${BINDIR}/Inversion"
 UNITTEST_EXE="${BINDIR}/Test_unit"
 INTEGRATIONTEST_EXE="${BINDIR}/Test_integration"
 
@@ -23,7 +23,7 @@ fi
 # Run simulation tests
 rm -rf ci/*.ci.*
 
-mpirun -np ${NUM_MPI_PROCESSES} ${IFOS_EXE} ./ci/configuration_ci.2D.acoustic.txt
+mpirun -np ${NUM_MPI_PROCESSES} ${INVERSION_EXE} ./ci/configuration_ci.2D.acoustic.txt
  ${INTEGRATIONTEST_EXE} ci/configuration_ci.2D.acoustic.txt
 if [ "$?" != "0" ]; then
 	echo "Test failed ! "

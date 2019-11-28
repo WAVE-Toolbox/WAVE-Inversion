@@ -1,7 +1,7 @@
 #!/bin/bash
 SIMULATIONEXE=${GPI_ROOT}/bin/Simulation
 MODELEXE=../../build/bin/tools/ToyModel
-IFOSEXE=../../build/bin/IFOS
+INVERSIONEXE=../../build/bin/Inversion
 
 # remove old output
 rm -f ../seismograms/ToyExample*
@@ -19,7 +19,7 @@ ${MODELEXE} "Input/configuration_true.txt" || { echo 'Model Creation failed' ; e
 # run WAVE-Simulation to calculate synthetic "field" seismograms
 mpirun -np 8 ${SIMULATIONEXE} "Input/configuration_true.txt" || { echo 'Forward Run failed' ; exit 1; }
 
-# run IFOS to invert Model
-mpirun -np 8 ${IFOSEXE} "Input/configuration.txt"
+# run WAVE-Inversion to invert Model
+mpirun -np 8 ${INVERSIONEXE} "Input/configuration.txt"
 
 echo 'finished'

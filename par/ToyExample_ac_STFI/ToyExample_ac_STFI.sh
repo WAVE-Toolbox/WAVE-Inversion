@@ -2,7 +2,7 @@
 
 SIMULATIONEXE=${GPI_ROOT}/bin/Simulation
 MODELEXE=../../build/bin/tools/ToyModel
-INVERSIONEXE=../../build/bin/IFOS
+INVERSIONEXE=../../build/bin/Inversion
 
 # remove old output
 rm -f ../seismograms/ToyExample*

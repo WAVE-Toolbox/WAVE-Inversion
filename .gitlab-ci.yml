@@ -36,7 +36,7 @@ acoustic2D-gcc:
   script:
     - OMP_NUM_THREADS=1
     - cd par/
-    - mpirun -np 4 ./../build/bin/IFOS "ci/configuration_ci.2D.acoustic.txt"
+    - mpirun -np 4 ./../build/bin/Inversion "ci/configuration_ci.2D.acoustic.txt"
     - ./../build/bin/Test_integration "ci/configuration_ci.2D.acoustic.txt"
 
 
