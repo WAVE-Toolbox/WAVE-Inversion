@@ -6,7 +6,7 @@ Geophysical inversion software developed by the [WAVE-Project](http://wave-toolb
 
 Compilation:
 `mkdir build && cd build`
-`SOFI_DIR=<SOFI build dir> cmake ../src/ -DCMAKE_INSTALL_PREFIX=./`
+`SIMULATION_DIR=<WAVE-Simulation build dir> cmake ../src/ -DCMAKE_INSTALL_PREFIX=./`
 `make install -j 4`
 
 Documentation:

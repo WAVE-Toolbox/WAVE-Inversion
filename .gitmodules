@@ -1,5 +1,0 @@
-[submodule "SOFI"]
-	path = WAVE-Simulation
-	url = https://git.scc.kit.edu/WAVE/WAVE-Simulation.git
-[submodule]
-	WAVE-Simulation = develop

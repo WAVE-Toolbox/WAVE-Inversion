@@ -1,5 +1,5 @@
 classdef conf
-    % matlab class to handle the config for SOFI and IFOS
+    % matlab class to handle the config for WAVE-Simulation and WAVE-Inversion
     %   members getvalue and getString read variables from config
     
     properties (Access = private)

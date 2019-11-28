@@ -1,5 +1,5 @@
 #!/bin/bash
-SOFIEXE=${GPI_ROOT}/bin/SOFI
+SIMULATIONEXE=${GPI_ROOT}/bin/Simulation
 MODELEXE=../../build/bin/tools/ToyModel
 IFOSEXE=../../build/bin/IFOS
 
@@ -16,8 +16,8 @@ export OMP_NUM_THREADS=1
 # Create Model
 ${MODELEXE} "Input/configuration_true.txt" || { echo 'Model Creation failed' ; exit 1; }
 
-# run SOFI to calculate synthetic "field" seismograms
-mpirun -np 8 ${SOFIEXE} "Input/configuration_true.txt" || { echo 'Forward Run failed' ; exit 1; }
+# run WAVE-Simulation to calculate synthetic "field" seismograms
+mpirun -np 8 ${SIMULATIONEXE} "Input/configuration_true.txt" || { echo 'Forward Run failed' ; exit 1; }
 
 # run IFOS to invert Model
 mpirun -np 8 ${IFOSEXE} "Input/configuration.txt"

@@ -1,4 +1,4 @@
-# Input file SOFI
+# Input file WAVE-Simulation
 # The format has to be name=value (without any white spaces)
 # Use the hashtag "#" for comments
 

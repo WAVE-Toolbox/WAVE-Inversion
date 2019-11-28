@@ -8,8 +8,8 @@ configTrue=conf('../ToyExample_2Del_trench_vargrid/Input/configuration_true.txt'
 
 % general parameter ----------------------------------------------
 
-stage=4;
-iteration=4; % iteration number
+stage=3;
+iteration=1; % iteration number
 
 % model parameter-------------------------------------------------
 geometry.LAYER=0; % Define layer of 3D model to display as 2D slice
