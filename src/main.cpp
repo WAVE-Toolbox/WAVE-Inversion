@@ -515,7 +515,7 @@ int main(int argc, char *argv[])
                 }
 
                 // check wavefield and seismogram for NaNs or infinite values
-                if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+                if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
                     model->write("model_crash", config.get<IndexType>("FileFormat"));
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                 }
@@ -539,7 +539,7 @@ int main(int argc, char *argv[])
                 /* Calculate gradient */
 
                 HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
-                gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
+                gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
 
                 /* Apply energy preconditioning per shot */
                 if (config.get<bool>("useEnergyPreconditioning") == 1) {
@@ -671,7 +671,7 @@ int main(int argc, char *argv[])
                     }
 
                     // check wavefield and seismogram for NaNs or infinite values
-                    if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+                    if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
                         model->write("model_crash", config.get<IndexType>("FileFormat"));
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
