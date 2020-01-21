@@ -47,13 +47,13 @@ add_definitions("-DBUILD_COMMIT=${GIT_COMMIT}")
 #  Find WAVE-Simulation package (mandatory)                   #
 ####################################################
 
-set ( WAVE-Simulation_PATH_HINTS "${WAVE-Toolbox_DIR}" "${SOFI_HOME}" "$ENV{SOFI_HOME}" )
+set ( WAVE-Toolbox_PATH_HINTS "${WAVE-Toolbox_DIR}" "${Simulation_DIR}" "$ENV{Simulation_DIR}" )
 
 if ( ${CMAKE_VERSION} VERSION_GREATER 3.11)
     ## use new policy to configure with SCAI_ROOT, suppress warning
     cmake_policy( SET CMP0074 NEW )
 else ()
-    set ( Simulation_PATH_HINTS ${WAVE-Toolbox_PATH_HINTS} "${SOFI_ROOT}" "$ENV{SOFI_ROOT}" )
+    set ( Simulation_PATH_HINTS ${WAVE-Toolbox_PATH_HINTS} "${Simulation_ROOT}" "$ENV{Simulation_ROOT}" )
 endif ()
 
 find_package( Simulation REQUIRED CONFIG 
