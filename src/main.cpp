@@ -62,7 +62,13 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Read configuration from file            */
     /* --------------------------------------- */
-    Configuration::Configuration config(argv[1]);
+    Configuration::Configuration config;
+    config.init(argv[1]);
+    
+    Configuration::Configuration configStream;
+    if (config.get<bool>("useStreamConfig")){
+        configStream.readFromFile(config.get<std::string>("streamConfigFilename"),true);    
+    }
 
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
@@ -103,7 +109,8 @@ int main(int argc, char *argv[])
     /* coordinate mapping (3D<->1D)            */
     /* --------------------------------------- */
 
-    Acquisition::Coordinates<ValueType> modelCoordinates(config);
+    Acquisition::Coordinates<ValueType> modelCoordinates;
+    modelCoordinates.init(config);
 
     if (config.get<bool>("useVariableGrid")) {
         CheckParameter::checkVariableGrid(config, commAll, modelCoordinates);
@@ -159,13 +166,13 @@ int main(int argc, char *argv[])
 
     ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr derivatives(ForwardSolver::Derivatives::Factory<ValueType>::Create(dimension));
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelBig(Modelparameter::Factory<ValueType>::Create(equationType));
     Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(Wavefields::Factory<ValueType>::Create(dimension, equationType));
     ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
 
     /* --------------------------------------- */
     /* Memory estimation                       */
     /* --------------------------------------- */
-    
     HOST_PRINT(commAll, " ============== Memory Estimation: ===============\n\n")
 
     ValueType memDerivatives = derivatives->estimateMemory(config, dist, modelCoordinates);
@@ -187,7 +194,6 @@ int main(int argc, char *argv[])
 
     HOST_PRINT(commAll, "\n\n ========================================================================\n\n")
     
-    
     /* --------------------------------------- */
     /* Call partitioner */
     /* --------------------------------------- */
@@ -206,7 +212,6 @@ int main(int argc, char *argv[])
     derivatives->init(dist, ctx, config, modelCoordinates, commShot);
     end_t = common::Walltime::get();
     HOST_PRINT(commAll, "", "Finished initializing matrices in " << end_t - start_t << " sec.\n\n");
-
     
     /* --------------------------------------- */
     /* Acquisition geometry                    */
@@ -226,6 +231,7 @@ int main(int argc, char *argv[])
 
     CheckParameter::checkSources<ValueType>(sourceSettings, modelCoordinates, commShot);
     dmemo::BlockDistribution shotDist(numshots, commInterShot);
+    
     Acquisition::Receivers<ValueType> receivers;
     if (!config.get<bool>("useReceiversPerShot"))
         receivers.init(config, modelCoordinates, ctx, dist);
@@ -236,7 +242,22 @@ int main(int argc, char *argv[])
     // load starting model
     model->init(config, ctx, dist, modelCoordinates);
     //model->init(config, ctx, dist);
-
+    
+    /* --------------------------------------- */
+    /* Modelparameter for bigmodel             */
+    /* --------------------------------------- */
+    
+    Acquisition::Coordinates<ValueType> modelCoordinatesBig;
+    if (config.get<bool>("useStreamConfig")) {
+        modelCoordinatesBig.init(configStream);
+        dmemo::DistributionPtr distBig = nullptr;
+        distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot); 
+        modelBig->init(configStream, ctx, distBig, modelCoordinatesBig);   
+    }
+    
+    std::vector<Acquisition::coordinate3D> cutCoord;
+    Acquisition::getCutCoord("acquisition/cutCoordinations.txt", cutCoord);
+            
     /* --------------------------------------- */
     /* Wavefields                              */
     /* --------------------------------------- */
@@ -385,133 +406,170 @@ int main(int argc, char *argv[])
             gradientTaper.init(dist, ctx, 1);
             gradientTaper.read(config.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
         }
-
+        
         /* --------------------------------------- */
-        /*        Loop over iterations             */
+        /*        Loop over subset shots           */
         /* --------------------------------------- */
-
-        for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
-
-            HOST_PRINT(commAll, "\n=================================================");
-            HOST_PRINT(commAll, "\n============ Workflow stage " << workflow.workflowStage + 1 << " of " << workflow.maxStage << " ==============");
-            HOST_PRINT(commAll, "\n============     Iteration " << workflow.iteration + 1 << "       ==============");
-            HOST_PRINT(commAll, "\n=================================================\n\n");
-            start_t = common::Walltime::get();
-            /* Update model for fd simulation (averaging, inverse Density ...) */
-
-            model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
+        
+        IndexType cutCoordSize = 1;
+        if (config.get<bool>("useStreamConfig")) {
+            cutCoordSize = cutCoord.size();
+        }
+        
+//         for (IndexType cutCoordInd = 0; cutCoordInd < cutCoordSize; cutCoordInd++) {
+        std::srand((int)time(0));
+        IndexType outShotInd = 0;
+        while (outShotInd++ < 10) {
             
-            
-            if ((workflow.iteration == 0)&&(commInterShot->getRank() == 0)) {
-                /* only shot Domain 0 writes output */
-                model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
+            IndexType cutCoordInd = std::rand() % cutCoordSize;
+            if (config.get<bool>("useStreamConfig")==0) {
+                outShotInd = 10;
+                cutCoordInd = 0;
             }
+            else {
+                modelBig->getModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd);
+            }
+
+            /* --------------------------------------- */
+            /*        Loop over iterations             */
+            /* --------------------------------------- */
             
-            solver->prepareForModelling(*model, config.get<ValueType>("DT"));
+            for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
 
-            /* --------------------------------------- */
-            /*        Loop over shots                  */
-            /* --------------------------------------- */
-
-            gradient->resetGradient(); // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
-            misfitPerIt = 0;
-
-            IndexType localShotInd = 0;
-            for (IndexType shotInd = shotDist.lb(); shotInd < shotDist.ub(); shotInd++) {
-                IndexType shotNumber = uniqueShotNos[shotInd];
-                localShotInd++;
-                HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << ": started\n");
-
-                if (config.get<bool>("useReceiversPerShot")) {
-                    receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
-                    receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
-                    adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
-
-                    //CheckParameter::checkReceivers<ValueType>(config, receivers, commShot);
-
-                    ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
-                }
-
-                /* Read field data (or pseudo-observed data, respectively) */
-                receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
-                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
-                    receiversTrue.getSeismogramHandler().filter(freqFilter);
-                    if (workflow.iteration == 0){
-                        receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".stage_" + std::to_string(workflow.workflowStage+1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
-                    }
-                }
-
-                /* Reset approximated Hessian per shot */
-                if (config.get<bool>("useEnergyPreconditioning") == 1)
-                    energyPrecond.resetApproxHessian();
-
-                std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
-                Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
-                sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
-
-                CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model,modelCoordinates,shotNumber);
+                HOST_PRINT(commAll, "\n=================================================");
+                HOST_PRINT(commAll, "\n============ Workflow stage " << workflow.workflowStage + 1 << " of " << workflow.maxStage << " ==============");
+                HOST_PRINT(commAll, "\n============     Subset " << cutCoordInd + 1 << " of " << cutCoordSize << "     ==============");
+                HOST_PRINT(commAll, "\n============      Iteration " << workflow.iteration + 1 << "      ==============");
+                HOST_PRINT(commAll, "\n=================================================\n\n");
+                start_t = common::Walltime::get();
+                /* Update model for fd simulation (averaging, inverse Density ...) */
+                model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
                 
-                if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
-                    sources.getSeismogramHandler().filter(freqFilter);
+                
+                if ((workflow.iteration == 0)&&(commInterShot->getRank() == 0)) {
+                    /* only shot Domain 0 writes output */
+                    model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
+                }
+                
+                if ((workflow.iteration == 0)&&(config.get<bool>("useStreamConfig"))) {
+                    modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
+                }
+                
+                solver->prepareForModelling(*model, config.get<ValueType>("DT"));
 
-                /* Source time function inversion */
-                if (config.get<bool>("useSourceSignalInversion") == 1) {
-                    if (workflow.iteration == 0) {
-                        HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << " : Source Time Function Inversion\n");
+                /* --------------------------------------- */
+                /*        Loop over shots                  */
+                /* --------------------------------------- */
 
-                        wavefields->resetWavefields();
-       
-                        for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
-                            solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                gradient->resetGradient(); // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
+                misfitPerIt = 0;
+
+                IndexType localShotInd = 0;
+                IndexType firstShot = shotDist.lb();
+                IndexType lastShot = shotDist.ub();
+                
+                if (config.get<bool>("useStreamConfig")) {
+                    lastShot = firstShot + 1;
+                }
+                
+                for (IndexType shotInd = firstShot + cutCoordInd; shotInd < lastShot + cutCoordInd; shotInd++) {
+                    IndexType shotNumber = uniqueShotNos[shotInd];
+                    localShotInd++;
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << ": started\n");
+
+                    if (config.get<bool>("useReceiversPerShot")) {
+                        receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
+                        receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
+                        adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
+
+                        //CheckParameter::checkReceivers<ValueType>(config, receivers, commShot);
+
+                        ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
+                    }
+
+                    /* Read field data (or pseudo-observed data, respectively) */
+                    receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
+                    if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
+                        receiversTrue.getSeismogramHandler().filter(freqFilter);
+                        if (workflow.iteration == 0){
+                            receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".stage_" + std::to_string(workflow.workflowStage+1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                         }
-                
-                        solver->resetCPML();
-
-                        if (config.get<bool>("maxOffsetSrcEst") == 1)
-                            sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"),modelCoordinates);
-
-                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
-
-                        sourceEst.applyFilter(sources, shotInd);
-                        if (config.get<bool>("useSourceSignalTaper"))
-                            sourceSignalTaper.apply(sources.getSeismogramHandler());
-                        if (config.get<bool>("writeInvertedSource") == 1)
-                            sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
-                    } else {
-                        sourceEst.applyFilter(sources, shotInd);
-                        if (config.get<bool>("useSourceSignalTaper"))
-                            sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }
-                }
 
-                /* --------------------------------------- */
-                /*        Forward modelling                */
-                /* --------------------------------------- */
+                    /* Reset approximated Hessian per shot */
+                    if (config.get<bool>("useEnergyPreconditioning") == 1)
+                        energyPrecond.resetApproxHessian();
 
-                HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start time stepping with " << tStepEnd << " time steps\n");
+                    std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
+                    Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
+                    sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
-                wavefields->resetWavefields();
+                    CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model,modelCoordinates,shotNumber);
+                    
+                    if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
+                        sources.getSeismogramHandler().filter(freqFilter);
 
-                ValueType DTinv = 1 / config.get<ValueType>("DT");
+                    /* Source time function inversion */
+                    if (config.get<bool>("useSourceSignalInversion") == 1) {
+                        if (workflow.iteration == 0) {
+                            HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << " : Source Time Function Inversion\n");
 
-                start_t_shot = common::Walltime::get();
-                //IndexType WavefieldRecordIndex=0;
-                for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                            wavefields->resetWavefields();
+        
+                            for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                                solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                            }
+                    
+                            solver->resetCPML();
 
-                    *wavefieldsTemp = *wavefields;
+                            if (config.get<bool>("maxOffsetSrcEst") == 1)
+                                sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"),modelCoordinates);
 
-                    solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
-                    if (tStep % dtinversion == 0) {
-                        // save wavefields in std::vector
-                        *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = *wavefields;
-                        //calculate temporal derivative of wavefield
-                        *wavefieldrecord[floor(tStep / dtinversion + 0.5)] -= *wavefieldsTemp;
-                        *wavefieldrecord[floor(tStep / dtinversion + 0.5)] *= DTinv;
-                        //WavefieldRecordIndex++;
+                            sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
+
+                            sourceEst.applyFilter(sources, shotInd);
+                            if (config.get<bool>("useSourceSignalTaper"))
+                                sourceSignalTaper.apply(sources.getSeismogramHandler());
+                            if (config.get<bool>("writeInvertedSource") == 1)
+                                sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                        } else {
+                            sourceEst.applyFilter(sources, shotInd);
+                            if (config.get<bool>("useSourceSignalTaper"))
+                                sourceSignalTaper.apply(sources.getSeismogramHandler());
+                        }
                     }
-                    if (config.get<bool>("useEnergyPreconditioning") == 1) {
-                        energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
+
+                    /* --------------------------------------- */
+                    /*        Forward modelling                */
+                    /* --------------------------------------- */
+
+                    HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start time stepping with " << tStepEnd << " time steps\n");
+
+                    wavefields->resetWavefields();
+
+                    ValueType DTinv = 1 / config.get<ValueType>("DT");
+
+                    start_t_shot = common::Walltime::get();
+                    //IndexType WavefieldRecordIndex=0;
+                    for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+
+                        *wavefieldsTemp = *wavefields;
+
+                        solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                        if (tStep % dtinversion == 0) {
+                            // save wavefields in std::vector
+                            *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = *wavefields;
+                            //calculate temporal derivative of wavefield
+                            *wavefieldrecord[floor(tStep / dtinversion + 0.5)] -= *wavefieldsTemp;
+                            *wavefieldrecord[floor(tStep / dtinversion + 0.5)] *= DTinv;
+                            //WavefieldRecordIndex++;
+                        }
+                        if (config.get<bool>("useEnergyPreconditioning") == 1) {
+                            energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
+                        }
                     }
+<<<<<<< HEAD
+=======
                 }
 
                 // check wavefield and seismogram for NaNs or infinite values
@@ -529,184 +587,237 @@ int main(int argc, char *argv[])
                     receivers.getSeismogramHandler().normalize();
                     receiversTrue.getSeismogramHandler().normalize();
                 }
-
-                /* Calculate misfit of one shot */
-                misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
-
-                /* Calculate adjoint sources */
-                dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
-
-                /* Calculate gradient */
-
-                HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
-                gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
-
-                /* Apply energy preconditioning per shot */
-                if (config.get<bool>("useEnergyPreconditioning") == 1) {
-                    energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
-                }
-
-                if (config.get<bool>("useReceiversPerShot"))
-                    ReceiverTaper.apply(*gradientPerShot);
-
-                gradientPerShot->normalize();
-                *gradient += *gradientPerShot;
-
-                solver->resetCPML();
-
-                end_t_shot = common::Walltime::get();
-                HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Finished in " << end_t_shot - start_t_shot << " sec.\n");
-
-            } //end of loop over shots
-            
-
-            gradient->sumShotDomain(commInterShot);
-            commInterShot->sumArray(misfitPerIt.getLocalValues());
-
-            HOST_PRINT(commAll, "\n======== Finished loop over shots =========");
-            HOST_PRINT(commAll, "\n===========================================\n");
-
-            /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-            if (!config.get<bool>("useReceiversPerShot"))
-                ReceiverTaper.apply(*gradient);
-
-            gradientOptimization->apply(*gradient, workflow, *model);
-
-            if (config.get<IndexType>("FreeSurface") == 2) {
-                lama::DenseVector<ValueType> mask;
-                mask = model->getVelocityP();
-                mask.unaryOp(mask, common::UnaryOp::SIGN);
-                *gradient *= mask;
-            }
-
-            if (workflow.getUseGradientTaper())
-                gradientTaper.apply(*gradient);
-
-            /* Output of gradient */
-            /* only shot Domain 0 writes output */
-            if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0)
-                gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
-
-            dataMisfit->addToStorage(misfitPerIt);
-            misfitPerIt = 0;
-
-            SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration));
-
-            /* Check abort criteria */
-            HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
-
-            bool breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow);
-            if (breakLoop == true) {
-                break;
-            }
-
-            HOST_PRINT(commAll, "\n===========================================");
-            HOST_PRINT(commAll, "\n======== Start step length search =========\n");
-
-            SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, sourceSignalTaper);
-
-            HOST_PRINT(commAll, "=========== Update Model ============\n\n");
-            /* Apply model update */
-            *gradient *= SLsearch.getSteplength();
-            *model -= *gradient;
-
-            if (config.get<bool>("useModelThresholds"))
-                model->applyThresholds(config);
-
-            if (commInterShot->getRank() == 0) {
-                /* only shot Domain 0 writes output */
-                model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
-            }
-                
-            steplengthInit *= 0.98;
-
-            end_t = common::Walltime::get();
-            HOST_PRINT(commAll, "\nFinished iteration " << workflow.iteration + 1 << " in " << end_t - start_t << " sec.\n\n");
-
-            /* -------------------------------------------------------------------- */
-            /* One extra forward modelling to ensure complete and consistent output */
-            /* -------------------------------------------------------------------- */
-            if (workflow.iteration == maxiterations - 1) {
-
-                HOST_PRINT(commAll, "================ Maximum number of iterations reached =================\n");
-                HOST_PRINT(commAll, "=== Do one more forward modelling to calculate misfit and save seismograms ===\n\n");
-
-                /* Update model for fd simulation (averaging, inverse Density ...) */
-                model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
-                solver->prepareForModelling(*model, config.get<ValueType>("DT"));
-
-                for (IndexType shotInd = shotDist.lb(); shotInd < shotDist.ub(); shotInd++) {
-                    IndexType shotNumber = uniqueShotNos[shotInd];
-
-                    /* Read field data (or pseudo-observed data, respectively) */
-                    if (config.get<bool>("useReceiversPerShot")) {
-                        receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
-                        receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
-                    }
-                    receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
-
-                    HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Additional forward run with " << tStepEnd << " time steps\n");
-
-                    wavefields->resetWavefields();
-
-                    std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
-                    Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
-                    sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
-
-                    if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0) {
-                        sources.getSeismogramHandler().filter(freqFilter);
-                        receiversTrue.getSeismogramHandler().filter(freqFilter);
-                    }
-
-                    if (config.get<bool>("useSourceSignalInversion") == 1) {
-                        sourceEst.applyFilter(sources, shotNumber);
-                        if (config.get<bool>("useSourceSignalTaper"))
-                            sourceSignalTaper.apply(sources.getSeismogramHandler());
-                    }
-
-                    start_t_shot = common::Walltime::get();
-
-                    for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
-                        solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
-                    }
+>>>>>>> 0e0d5f04c63ed180a0da8268d4de10ff2f6d0a49
 
                     // check wavefield and seismogram for NaNs or infinite values
-                    if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
+                    if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
                         model->write("model_crash", config.get<IndexType>("FileFormat"));
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
 
-                    receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                    receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
+                    HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
+
+<<<<<<< HEAD
                     /* Normalize observed and synthetic data */
                     if (config.get<bool>("NormalizeTraces")){
                         receivers.getSeismogramHandler().normalize();
                         receiversTrue.getSeismogramHandler().normalize();
                     }
+=======
+                HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
+                gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
+>>>>>>> 0e0d5f04c63ed180a0da8268d4de10ff2f6d0a49
 
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
 
+                    /* Calculate adjoint sources */
+                    dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue);
+
+                    /* Calculate gradient */
+
+                    HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
+                    gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
+
+                    /* Apply energy preconditioning per shot */
+                    if (config.get<bool>("useEnergyPreconditioning") == 1) {
+                        energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
+                    }
+
+                    if (config.get<bool>("useReceiversPerShot"))
+                        ReceiverTaper.apply(*gradientPerShot);
+
+                    gradientPerShot->normalize();
+                    *gradient += *gradientPerShot;
+
+                    solver->resetCPML();
+
                     end_t_shot = common::Walltime::get();
-                    HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Finished additional forward run\n");
+                    HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
                 } //end of loop over shots
+                
 
+                gradient->sumShotDomain(commInterShot);
                 commInterShot->sumArray(misfitPerIt.getLocalValues());
-                dataMisfit->addToStorage(misfitPerIt);
 
-                SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1));
+                HOST_PRINT(commAll, "\n======== Finished loop over shots =========");
+                HOST_PRINT(commAll, "\n===========================================\n");
 
-                if (workflow.workflowStage != workflow.maxStage - 1) {
-                    HOST_PRINT(commAll, "\nChange workflow stage\n");
-                    workflow.changeStage(config, *dataMisfit, steplengthInit);
+                /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
+                if (!config.get<bool>("useReceiversPerShot"))
+                    ReceiverTaper.apply(*gradient);
+
+                gradientOptimization->apply(*gradient, workflow, *model);
+
+                if (config.get<IndexType>("FreeSurface") == 2) {
+                    lama::DenseVector<ValueType> mask;
+                    mask = model->getVelocityP();
+                    mask.unaryOp(mask, common::UnaryOp::SIGN);
+                    *gradient *= mask;
                 }
 
-            } // end extra forward modelling
+                if (workflow.getUseGradientTaper())
+                    gradientTaper.apply(*gradient);
 
-        } // end of loop over iterations
+                /* Output of gradient */
+                /* only shot Domain 0 writes output */
+                if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0)
+                    gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
+
+                dataMisfit->addToStorage(misfitPerIt);
+                misfitPerIt = 0;
+
+                SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration));
+
+                /* Check abort criteria */
+                HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
+
+                bool breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow);
+                if (breakLoop == true) {
+                    break;
+                }
+
+                HOST_PRINT(commAll, "\n===========================================");
+                HOST_PRINT(commAll, "\n======== Start step length search =========\n");
+                
+                // apply smoothing (gaussian window) to gradient before this point
+                // also apply smoothing in big model along the boundary lines after set the subset into the big model
+                // smoothing could lose small anomalies within the boundary line, increase subset size might be more precise but is more computational expensive
+                // compare subset approach with conventional approach
+                // also have new parameter: "relative improved misfit in the current shot" to have a better stop criterion
+
+                SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, sourceSignalTaper, cutCoordInd);
+
+                HOST_PRINT(commAll, "=========== Update Model ============\n\n");
+                /* Apply model update */
+                *gradient *= SLsearch.getSteplength();
+                *model -= *gradient;
+
+                if (config.get<bool>("useModelThresholds"))
+                    model->applyThresholds(config);
+
+                if (commInterShot->getRank() == 0) {
+                    /* only shot Domain 0 writes output */
+                    model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
+                }
+                
+                if (config.get<bool>("useStreamConfig")) {
+                    IndexType smoothRange = config.get<IndexType>("smoothRange");
+                    modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange);
+                    modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
+                }
+                
+                steplengthInit *= 0.98;
+
+                end_t = common::Walltime::get();
+                HOST_PRINT(commAll, "\nFinished iteration " << workflow.iteration + 1 << " in " << end_t - start_t << " sec.\n\n");
+
+                /* -------------------------------------------------------------------- */
+                /* One extra forward modelling to ensure complete and consistent output */
+                /* -------------------------------------------------------------------- */
+                if (workflow.iteration == maxiterations - 1) {
+
+                    HOST_PRINT(commAll, "================ Maximum number of iterations reached =================\n");
+                    HOST_PRINT(commAll, "=== Do one more forward modelling to calculate misfit and save seismograms ===\n\n");
+
+                    /* Update model for fd simulation (averaging, inverse Density ...) */
+                    model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
+                    solver->prepareForModelling(*model, config.get<ValueType>("DT"));
+                    
+                    IndexType firstShot = shotDist.lb();
+                    IndexType lastShot = shotDist.ub();
+                    
+                    if (config.get<bool>("useStreamConfig")) {
+                        lastShot = firstShot + 1;
+                    }
+                    
+                    for (IndexType shotInd = firstShot + cutCoordInd; shotInd < lastShot + cutCoordInd; shotInd++) {
+                        IndexType shotNumber = uniqueShotNos[shotInd];
+
+                        /* Read field data (or pseudo-observed data, respectively) */
+                        if (config.get<bool>("useReceiversPerShot")) {
+                            receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
+                            receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
+                        }
+                        receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
+
+                        HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Additional forward run with " << tStepEnd << " time steps\n");
+
+                        wavefields->resetWavefields();
+
+                        std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
+                        Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
+                        sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
+
+                        if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0) {
+                            sources.getSeismogramHandler().filter(freqFilter);
+                            receiversTrue.getSeismogramHandler().filter(freqFilter);
+                        }
+
+                        if (config.get<bool>("useSourceSignalInversion") == 1) {
+                            sourceEst.applyFilter(sources, shotNumber);
+                            if (config.get<bool>("useSourceSignalTaper"))
+                                sourceSignalTaper.apply(sources.getSeismogramHandler());
+                        }
+
+                        start_t_shot = common::Walltime::get();
+
+                        for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                            solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
+                        }
+
+<<<<<<< HEAD
+                        // check wavefield and seismogram for NaNs or infinite values
+                        if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
+                            model->write("model_crash", config.get<IndexType>("FileFormat"));
+                            COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+                        }
+=======
+                    // check wavefield and seismogram for NaNs or infinite values
+                    if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
+                        model->write("model_crash", config.get<IndexType>("FileFormat"));
+                        COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+                    }
+>>>>>>> 0e0d5f04c63ed180a0da8268d4de10ff2f6d0a49
+
+                        receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+
+                        /* Normalize observed and synthetic data */
+                        if (config.get<bool>("NormalizeTraces")){
+                            receivers.getSeismogramHandler().normalize();
+                            receiversTrue.getSeismogramHandler().normalize();
+                        }
+
+                        /* Calculate misfit of one shot */
+                        misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
+
+                        end_t_shot = common::Walltime::get();
+                        HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Finished additional forward run\n");
+
+                    } //end of loop over shots
+
+                    commInterShot->sumArray(misfitPerIt.getLocalValues());
+                    dataMisfit->addToStorage(misfitPerIt);
+
+                    SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1));
+
+                    if (workflow.workflowStage != workflow.maxStage - 1) {
+                        HOST_PRINT(commAll, "\nChange workflow stage\n");
+                        workflow.changeStage(config, *dataMisfit, steplengthInit);
+                    }
+
+                } // end extra forward modelling
+
+            } // end of loop over iterations
+            
+        } // end of loop over subset shots
 
     } // end of loop over workflow stages
+
+    
     globalEnd_t = common::Walltime::get();
     HOST_PRINT(commAll, "\nTotal runtime of WAVE-Inversion: " << globalEnd_t - globalStart_t << " sec.\nWAVE-Inversion finished!\n\n");
     return 0;
