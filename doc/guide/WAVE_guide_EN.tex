@@ -35,6 +35,7 @@
 \usepackage{adjustbox}
 \usepackage{nicefrac}
 \usepackage{physics}
+\usepackage{verbatimbox}
 \KOMAoptions{twoside}
 \setcounter{MaxMatrixCols}{50}
 
@@ -506,23 +507,19 @@ LAMA 				& The LAMA-framework for high performance			& \url{https://www.libama.o
 
 \section{Quick Guide}
 
+% install folder extra, e.g. for different compiler options, one build folder only 
+% suggested to create different build folder and install folder and copy the par folder 
+
 \subsection{Installation}
-To get started Download, WAVE-Inversion. 
+To get started, download WAVE-Inversion. 
 
-You can either download the software directly from \url{https://git.scc.kit.edu/WAVE/WAVE-Inversion/repository/archive.zip?ref=master} and unzip the folder (e.g. by entering \shellcmd{tar -zxvf WAVE-Inversion.tgz}).
+You can download the software together with WAVE-Simulation directly from \url{https://github.com/WAVE-Toolbox/Installation} and unzip the folder (e.g. by entering \shellcmd{tar -zxvf Installation-master.zip}).
 
-Alternatively you can also get WAVE-Inversion by entering the command: \\\shellcmdline{git clone https://git.scc.kit.edu/WAVE/WAVE-Inversion.git}
+Alternatively you can also get WAVE-Inversion by entering the command: \\\shellcmdline{git clone https://github.com/WAVE-Toolbox/Installation.git}
 
-As preparatory steps environment variables have to be linked to LAMA. Add the following lines to the \shellcmd{{\char`\~}/.bashrc}:
-\\\shellcmdline{ `export SCAI\_ROOT=[PATH\_TO\_LAMA\_BUILD]`}
-\\\shellcmdline{ `export DYLD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{DYLD\_LIBRARY\_PATH\}`}
-\\\shellcmdline{ `export LD\_LIBRARY\_PATH=\$\{SCAI\_ROOT\}/lib:\$\{LD\_LIBRARY\_PATH\}`}
-\\\shellcmdline{ `export OMP\_NUM\_THREADS=1`}\\
-You can also find the instructions in \shellcmd{WAVE-Inversion/par/README.md}. 
+In the \shellcmd{tar -zxvf Installation-master} folder you will find a readme file and an \shellcmd{install.sh} script. Run the script where you want to have the installation by entering: \\\shellcmdline{./install.sh}
 
-Change to the directory: \\\shellcmdline{build/}
-
-You can compile the source code by simply entering: \\\shellcmdline{make prog}\\ in your command line. \gCC is set to be the default \CC-compiler. To use an alternative compiler, the compiler setting can be change in the \shellcmd{Makefile}, or otherwise by executing:\\\shellcmdline{make CXX=<yourCompiler> prog}
+The script installs (clones, configures and compiles) the required LAMA-framework, the WAVE-Simulation and the WAVE-Inversion and the optional Geographer distribution.
 
 The runtime configuration (such as the FD grid) can be changed in the \shellcmd{configuration.txt} file, located in the directory \shellcmd{par/configuration/}. A list of all input variables and their dependencies can be found in section \ref{sec:config}. 
 
@@ -539,8 +536,12 @@ As a first test, run the default example by following the commands to obtain the
 
 \section{Configuration}\label{sec:config}
 
+As mentioned in the quick guide, the configuration can be found in \shellcmd{par/configuration/}. In the \shellcmd{configuration.txt} file Input variables can be added or changed. A list of all variables and config parameters that can be added and changed can be found in the tables \ref{tab:config_IO} to \ref{tab:config_thresholds}. In the following subsections you can find a detailed description of all parameters.
+
+\subsection{General in- and output}
+
 \begin{table}[h!]
-\caption[List of all configuration parameters.]{List of all configuration parameters, that can be added and changed in the config-file.}\label{tab:config}
+\caption[List of in- and output configuration parameters.]{List of in- and output configuration parameters, that can be added and changed in the config-file.}\label{tab:config_IO}
 \centering
 \begin{adjustbox}{width=1\textwidth,center=\textwidth}
 	\begin{tabular}{llll}
@@ -553,41 +554,12 @@ As a first test, run the default example by following the commands to obtain the
          gradientFilename         & Name of gradients                                                   & string & gradients/grad \\     
          logFilename              & Name of log file                                                    & string & logs/steplengthSearch.log  \\
          verbose                  & only in lbfgs branch!, use detailed output                          &  int   & 0 (=no) \\
-        \midrule
-         maxIterations            & Maximum number of inversion iterations (per workflow stage if used) &  int   & 20  \\                 
-         misfitType               & Type of misfit                                                      & string & L2  \\
-         optimizationType         & Type of optimization                                                & string & conjugateGradient \\
-         workflowFilename         & Name of workflow file                                               & string & workflow/workflow.txt \\
-        \midrule
-         steplengthInit           & Initial step length used in the first iteration of each stage       & double & 0.03  \\
-         steplengthMin            & Minimum step length                                                 & double & 0.001 \\
-         steplengthMax            & Maximum step length                                                 & double & 0.1 \\                     
-         maxStepCalc              & Maximum number of additional step length calculations               &  int   & 4 \\                         
-         scalingFactor            & Factor for multiplication or division of test step length           & double & 2.0 \\                       
-         testShotStart            & Shot number of first test shot                                      &  int   & 0 \\                        
-         testShotEnd              & Shot number of last test shot                                       &  int   & 17 \\                        
-         testShotIncr             & Increment of test shots                                             &  int   & 1 \\                       
-        \midrule
-         useSourceSignalInversion & Use source time inversion                                           &  int   & 0 (=no) \\
-         waterLevel               & Water level of source time inversion                                & double & 0.01 \\                        
-        \midrule
-         sourceTaperRadius        & Circular source taper: Radius in grid points                        &  int   & 20 \\ 
-         receiverTaperRadius      & Circular receiver taper: Radius in grid points                      &  int   & 20 \\
-         useEnergyPreconditioning & Approximated diagonal of Hessian is applied to gradient per shot    &  int   & 1 (=yes) \\ 
-         epsilonHessian           & Water level to stabilize matrix inversion (recommended: 0.005)      & double & 0.005 \\      
-         saveApproxHessian        & Save approximated diagonal of Hessian                               &  int   & 0 (=no) \\
-         approxHessianName        & Name of file for approximated diagonal of Hessian                   & string & gradients/Hessian \\
 	\bottomrule
 	\end{tabular}
 	\end{adjustbox}
-\end{table}	
+\end{table}
 
-
-As mentioned in the quick guide, the configuration can be found in \shellcmd{par/configuration/}. In the \shellcmd{configuration.txt} file Input variables can be added or changed. A list of all variables and config parameters that can be added and changed can be found in table \ref{tab:config}. In the following subsection you can find a detailed description of all parameters.
-
-\subsection{General in- and output}
-
-Full-waveform inversion is an algorithm which needs and produces a lot of data. In this part, the general in- and output is described. Some in-/output options are very specific and therefore described in the corresponding section.
+Full-waveform inversion is an algorithm which needs and produces a lot of data. In this part, the general in- and output is described. Some in-/output options are very specific and therefore described in the corresponding section and table \ref{tab:config_IO}.
 
 The core of every FWI is the field data that should be inverted. The folder and basename of the field data has to be defined with the parameter \verb+fieldSeisName+. The program is automatically appending the shot number and the seismogram type (p,vx,vy,vz). For example, if the parameter \verb+fieldSeisName+ is set to \verb+seismograms/fieldData+ and pressure seismograms are inverted, the complete file name that is tried to be read is \verb+seismograms/fieldData.shot_0.p.mtx+. Shots are counted from 0.
 Synthetic seismograms are saved in the same way with the filename \verb+SeismogramFilename+. Note that seismograms with \verb+.It_0.+ correspond to the seismograms of the initial model of each workflow stage.
@@ -596,18 +568,90 @@ With the parameters \verb+writeGradientPerShot+ and \verb+writeGradient+, it can
 
 The program will create a log file with the name specified by \verb+logFilename+. The file contains the misfit evolution (last column) for each stage and iteration (first two columns). The third column (optimum step length) is the step length which was used for the model update. The next three columns correspond to the three step length of the inexact line search and the subsequent three columns are the corresponding misfits. Note that these three misfits could be calculated only for a subset of the shots depending on the setting. Rows with iteration 0 denote the initial misfit of the corresponding workflow stage.
 
-Additional to the configuration file a workflow file has to be used because some parameters are only defined there and are not available in the configuration file! The name is set by the parameter \verb+workflowFilename+. At the moment, the workflow file contains the following parameters: \verb+invertForVp+, \verb+invertForVs+, \verb+invertForDensity+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+, \verb+upperCornerFreq+. With the first three parameters it can be decided which model parameter class should be updated. The parameter \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of WAVE-Simulation (insert link). 
-
 The \verb+verbose+ option for detailed output is not available yet, but will be implemented in the future.
 
+\subsection{Misfit definition, optimization and workflow file}
 
-\subsection{Misfit definition}
+\begin{table}[h!]
+\caption[List of misfit configuration parameters.]{List of misfit configuration parameters, that can be added and changed in the config-file.}\label{tab:config_misfit}
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{llll}
+	\toprule
+         Variable                 & Short description                                                   & Type   & Example value \\
+	\midrule                 
+         misfitType               & Type of misfit                                                      & string & L2  \\
+         DTInversion              & ???                                                                 &  int   & 1 \\
+         optimizationType         & Type of optimization                                                & string & conjugateGradient \\
+         workflowFilename         & Name of workflow file                                               & string & workflow/workflow.txt \\
+         maxIterations            & Maximum number of inversion iterations (per workflow stage if used) &  int   & 20  \\
+	\bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}
 
-The misfit definition has to be specified with the parameter \verb+misfitType+. Currently, only L2 misfit is available and can be chosen by setting \verb+misfitType+ to \verb+L2+. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources. This option is recommended for field data.
+The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_misfit}. Currently, only L2 misfit is available and can be chosen by setting \verb+misfitType+ to \verb+L2+. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources. This option is recommended for field data.
+
+The parameter \verb+DTInversion+ defines the factor of DT for the cross-correlation in the gradient calculation. If e.g. it is set to 2, every second time sample is picked. The highest possible value depends on the wave length.
+
+\subsubsection{Optimization}
+Currently, there are two different optimization methods available, the steepest descent and the conjugate gradient method. Both can be used with gradient preconditioning (see subsection \ref{config:precond}). The method has to be chosen with the parameter \verb+optimizationType+. Possible values are \verb+steepestDescent+ and \verb+conjugateGradient+. The characters are internally transformed to lowercase letters, so \verb+STEEPESTDESCENT+ would also be valid.
+
+The conjugate gradient direction at iteration $k$, $c_k$, is calculated in the following way:
+\begin{equation*}
+ c_k =  \nabla_{\vec{m}} E_k + \beta_k \cdot c_{k-1}
+\end{equation*}
+
+The weight, $\beta_k$, is calculated after Polak and Ribi\'{e}re:
+\begin{equation*}
+ \beta_k^{\mathrm{PR}} = \frac{ \nabla_{\vec{m}}^T E_k (\nabla_{\vec{m}} E_k - \nabla_{\vec{m}} E_{k-1}) }{\nabla_{\vec{m}}^T E_{k-1} \nabla_{\vec{m}} E_{k-1}}
+\end{equation*}
+
+Note that a steepest descent update is performed in the first iteration of every workflow stage.
+
+
+\subsubsection{Workflow file}
+Additional to the configuration file a workflow file has to be used because some parameters are only defined there and are not available in the configuration file! The name is set by the parameter \verb+workflowFilename+. At the moment, the workflow file contains the following parameters: \verb+invertForVp+, \verb+invertForVs+, \verb+invertForDensity+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+, \verb+upperCornerFreq+. Its structure is 
+\begin{verbnobox}[\fontsize{7pt}{7pt}\selectfont]
+#invertForVp invertForVs invertForDensity relativeMisfitChange filterOrder lowerCornerFreq(Hz) upperCornerFreq(Hz) useGradientTaper
+      0           1            0                 0.1                12             1                   20                0
+      0           1            0                 0.1                12             1                   40                0
+      0           1            0                 0.1                12             1                   60                0
+\end{verbnobox}
+With the first three parameters it can be decided which model parameter class should be updated. The parameter \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of WAVE-Simulation (insert link). 
+
+
+\subsubsection{Abort criterion}\label{config:abort}
+Currently, there are two abort criteria implemented. The first criterion determines the maximum iteration number per workflow stage which can be set with the parameter \verb+maxIterations+. The second criterion measures the relative misfit change, $\Delta E$, between the current iteration and the second last iteration:
+
+\begin{equation*}
+ \Delta E = \frac{|E_k-E_{k-2}|}{E_{k-2}}
+\end{equation*}
+
+If this value is smaller than the parameter \verb+relativeMisfitChange+ the workflow stage is changed or - if it is the last stage - the inversion stops.
 
 \subsection{Step length estimation}
 
-For gradient-based, local optimization algorithms usually a step length estimation is necessary. In the case the steepest descent or conjugate gradient method is used (with or without preconditioning), WAVE-Inversion performs an inexact line search using a parabolic fit of the misfit function. For the parabolic fit three step length/misfit pairs are used. To save computation time the first pair is given by the step length zero and the misfit of the current model. The second pair is given by the parameter \verb+steplengthInit+ and the misfit calculated from the updated model with \verb+steplengthInit+. For the third pair two cases are distinguished: 1) if the misfit was decreased, the step length is multiplied with the parameter \verb+scalingFactor+ and a third step length is searched which gives a larger misfit than the second step length. If the misfit is still decreasing, the step length will again be multiplied with \verb+scalingFactor+ until it increases or the parameter \verb+maxStepCalc+ is reached. 2) If the misfit was increased, the step length is divided by the parameter \verb+scalingFactor+ and a third step length is searched which gives a smaller misfit than the first step length. If the misfit is too large, the step length will again be divided by \verb+scalingFactor+ until it sufficiently decreases or the parameter \verb+maxStepCalc+ is reached.
+\begin{table}[h!]
+\caption[List of step length estimation configuration parameters.]{List of step length estimation configuration parameters, that can be added and changed in the config-file.}\label{tab:config_steplength}
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{llll}
+	\toprule
+         Variable                 & Short description                                                   & Type   & Example value \\
+	\midrule
+         steplengthInit           & Initial step length used in the first iteration of each stage       & double & 0.03  \\
+         steplengthMin            & Minimum step length                                                 & double & 0.001 \\
+         steplengthMax            & Maximum step length                                                 & double & 0.1 \\                     
+         maxStepCalc              & Maximum number of additional step length calculations               &  int   & 4 \\                         
+         scalingFactor            & Factor for multiplication or division of test step length           & double & 2.0 \\                                            
+         testShotIncr             & Increment of test shots                                             &  int   & 1 \\                       
+	\bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}
+
+For gradient-based, local optimization algorithms usually a step length estimation is necessary. In the case the steepest descent or conjugate gradient method is used (with or without preconditioning), WAVE-Inversion performs an inexact line search using a parabolic fit of the misfit function. For the parabolic fit three step length/misfit pairs are used. To save computation time the first pair is given by the step length zero and the misfit of the current model. The second pair is given by the parameter \verb+steplengthInit+ and the misfit calculated from the updated model with \verb+steplengthInit+, both shown together with other parameters in table \ref{tab:config_steplength}. For the third pair two cases are distinguished: 1) if the misfit was decreased, the step length is multiplied with the parameter \verb+scalingFactor+ and a third step length is searched which gives a larger misfit than the second step length. If the misfit is still decreasing, the step length will again be multiplied with \verb+scalingFactor+ until it increases or the parameter \verb+maxStepCalc+ is reached. 2) If the misfit was increased, the step length is divided by the parameter \verb+scalingFactor+ and a third step length is searched which gives a smaller misfit than the first step length. If the misfit is too large, the step length will again be divided by \verb+scalingFactor+ until it sufficiently decreases or the parameter \verb+maxStepCalc+ is reached.
 Note that the parameter \verb+steplengthInit+ is decreased by 2\% after each iteration within each workflow stage. The parameter is reset at the beginning of each stage to the value specified in the configuration file.
 After calculating three step length/misfit pairs, four cases are distinguished to choose a proper step length:
 
@@ -627,46 +671,97 @@ Currently it is only possible to use one common step length for all model parame
 \end{equation}
 with $k$ as iteration number and $\alpha$ as step length. Thus, a step length of 0.01 results in a maximum model update of 1\% of the maximum of the corresponding model parameter.
 
+\subsection{Source time function inversion}
+
+\begin{table}[h!]
+\caption[List of source time function inversion configuration parameters.]{List of source time function inversion configuration parameters, that can be added and changed in the config-file.}\label{tab:config_sourcetime}
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{llll}
+	\toprule
+         Variable                 & Short description                                                   & Type   & Example value \\
+	\midrule
+         useSourceSignalInversion & Use source time inversion                                           &  int   & 0 (=no) \\
+         waterLevel               & Water level of source time inversion                                & double & 0.01 \\
+         writeInvertedSource      & Source signal will be written to disk                               &  int   & 1 (=yes) \\
+         sourceSeismogramFilename & Location/Name of output source signal                               & string & seismograms/invSourcew \\
+         useSourceSignalTaper     & Use cosine taper for source signal                                  &  int   & 1 (=yes) \\
+         sourceSignalTaperStart1  & Start index of first cosine taper                                   &  int   & 0 \\
+         sourceSignalTaperEnd1    & End index of first cosine taper                                     &  int   & 100 \\
+         sourceSignalTaperStart2  & Start index of second cosine taper                                  &  int   & 0 (=no second taper) \\
+         sourceSignalTaperEnd2    & End index of second cosine taper                                    &  int   & 0 \\
+         maxOffsetSrcEst          & Maximum offset in grid points to allow                              &  int   & 0 \\
+         useSeismogramTaper       & Use seismogram taper for source time function inversion                   &  int   & 0 (=no) \\
+         seismogramTaperName      & Location/Name of seismogram taper                                   & string & taper/seismoTaper \\
+	\bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}
+
+As the source that generates the observed data $d_{obs}$ is unknown, the source signature is unknown as well. By using the source time function inversion, the true source is approximated by a filtered synthetic one. Choosing the filter so that filtered synthetic source signature is as close to the real source signature leads to a minimized misfit function by L2 norm. The wanted result is 
+\begin{equation*}
+ s(w_k)=\dfrac{\vec{d}^T\vec{u}^*}{\vec{u}^T\vec{u}^*+\epsilon}
+\end{equation*}
+$\epsilon$ is added to stabilize the equation if the denominator is small and can be modified by the parameter \verb+waterLevel+ which is shown together with the other parameters in table \ref{tab:config_sourcetime}. The used inverted source signature can be written on the disk by \verb+writeInvertedSource+.
+
+In addition, a cosine taper can be used for the source signal, e.g. at the beginning or end of it by the parameter \verb+useSourceSignalTaper+. The start and end indices can be selected by \verb+sourceSignalTaperStart1+ and \verb+sourceSignalTaperEnd1+ or if a second taper is needed by \verb+sourceSignalTaperStart2+ and \verb+sourceSignalTaperEnd2+.
+A taper can also be used for the seismograms by the parameter \verb+useSeismogramTaper+ and by specifying the location/name of it with \verb+seismogramTaperName+.
+
 \subsection{Gradient preconditioning}
 \label{config:precond}
 
-Usually it is helpful to manipulate the gradient, e.g. to mitigate artifcats close to the source and receiver positions. There are currently three possibilities for gradient preconditioning: source and receiver tapers and energy preconditioning.
+\begin{table}[h!]
+\caption[List of gradient preconditioning configuration parameters.]{List of gradient preconditioning configuration parameters, that can be added and changed in the config-file.}\label{tab:config_precon}
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{llll}
+	\toprule
+         Variable                 & Short description                                                   & Type   & Example value \\
+	\midrule
+	 sourceReceiverTaperType  & Type of source and receiver tapers 1=log 2=$\cos^2$                 &  int   & 1 \\
+         sourceTaperRadius        & Circular source taper: Radius in grid points                        &  int   & 20 \\ 
+         receiverTaperRadius      & Circular receiver taper: Radius in grid points                      &  int   & 20 \\
+         useGradientTaper         & Use a taper for the gradient                                        &  int   & 0 (=no) \\
+         gradientTaperFilename    & Location/Name of the gradient taper                                 & string & gradients/gradientTaper \\
+         useEnergyPreconditioning & Approximated diagonal of Hessian is applied to gradient per shot    &  int   & 1 (=yes) \\ 
+         epsilonHessian           & Water level to stabilize matrix inversion (recommended: 0.005)      & double & 0.005 \\      
+         saveApproxHessian        & Save approximated diagonal of Hessian                               &  int   & 0 (=no) \\
+         approxHessianName        & Name of file for approximated diagonal of Hessian                   & string & gradients/Hessian \\
+         normalizeGradient        & Normalize gradient of each shot                                     &  int   & 0 (=no) \\
+	\bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}
 
-Circular tapers around the source and receiver positions can be used by setting \verb+sourceTaperRadius+ > 0 and \verb+receiverTaperRadius+ > 0, respectively. The number corresponds to the radius of the taper in grid points. The taper is zero in the middle and increases logarithmically to one at the outside of the circle. 
+Usually it is helpful to manipulate the gradient, e.g. to mitigate artifcats close to the source and receiver positions. There are currently three possibilities for gradient preconditioning: source and receiver tapers and energy preconditioning. A list of configurable parameters is shown in \ref{tab:config_precon}.
+
+Circular tapers around the source and receiver positions can be used by setting \verb+sourceTaperRadius+ > 0 and \verb+receiverTaperRadius+ > 0, respectively. The number corresponds to the radius of the taper in grid points. The taper is zero in the middle and increases logarithmically to one at the outside of the circle. The type is either logarithmic or cosine which can be chosen by setting the parameter \verb+sourceReceiverTaperType+ to either 1 or 2.
 
 Energy preconditioning can be used by setting \verb+useEnergyPreconditioning+ to 1. It is based on migration weight $K^{(1)}$ from \cite{plessix:04} (see also \cite{shin:01}) which is the inverse of an approximation of the diagonal of the Hessian. This type of preconditioning has also the effect of mitigating source/receiver artifacts. Moreover, it increases model updates in less illuminated areas of the model and can improve the convergence behaviour of the inversion. It is calculated by squaring and adding all available velocity wavefields summed over all time steps. The taper is calculated and applied for each shot separately. To stabilize the approximated Hessian a water level has to be set with the parameter \verb+epsilonHessian+. From experience, we recommend a value of 0.005.
 The taper can be saved to disc with the file name \verb+approxHessianName+ by setting \verb+saveApproxHessian+ to 1.
+In addition, the gradient can be normalized for each shot by setting \verb+normalizeGradient+ to 1.
+\subsection{Model thresholds}
 
-
-\subsection{Optimization}
-
-Currently, there are two different optimization methods available, the steepest descent and the conjugate gradient method. Both can be used with gradient preconditioning (see subsection \ref{config:precond}). The method has to be chosen with the parameter \verb+optimizationType+. Possible values are \verb+steepestDescent+ and \verb+conjugateGradient+. The characters are internally transformed to lowercase letters, so \verb+STEEPESTDESCENT+ would also be valid.
-
-The conjugate gradient direction at iteration $k$, $c_k$, is calculated in the following way:
-\begin{equation*}
- c_k =  \nabla_{\vec{m}} E_k + \beta_k \cdot c_{k-1}
-\end{equation*}
-
-The weight, $\beta_k$, is calculated after Polak and Ribi\'{e}re:
-\begin{equation*}
- \beta_k^{\mathrm{PR}} = \frac{ \nabla_{\vec{m}}^T E_k (\nabla_{\vec{m}} E_k - \nabla_{\vec{m}} E_{k-1}) }{\nabla_{\vec{m}}^T E_{k-1} \nabla_{\vec{m}} E_{k-1}}
-\end{equation*}
-
-Note that a steepest descent update is performed in the first iteration of every workflow stage.
-
-\subsection{Source time function inversion}
-
-\subsection{Abort criterion}
-\label{config:abort}
-
-Currently, there are two abort criteria implemented. The first criterion determines the maximum iteration number per workflow stage which can be set with the parameter \verb+maxIterations+. The second criterion measures the relative misfit change, $\Delta E$, between the current iteration and the second last iteration:
-
-\begin{equation*}
- \Delta E = \frac{|E_k-E_{k-2}|}{E_{k-2}}
-\end{equation*}
-
-If this value is smaller than the parameter \verb+relativeMisfitChange+ the workflow stage is changed or - if it is the last stage - the inversion stops.
-
+\begin{table}[h!]
+\caption[List of model thresholds configuration parameters.]{List of model thresholds configuration parameters, that can be added and changed in the config-file.}\label{tab:config_thresholds}
+\centering
+\begin{adjustbox}{width=1\textwidth,center=\textwidth}
+	\begin{tabular}{llll}
+	\toprule
+         Variable                 & Short description                                                   & Type   & Example value \\
+	\midrule
+         useModelThresholds=0     & Use thresholds for model parameters                                 &  int   & 0 (=no) \\
+         lowerVPTh                & Lower vp threshold in meter per seconds                             & double & 1481 \\
+         upperVPTh                & Upper vp threshold in meter per seconds                             & double & 6000 \\
+         lowerDensityTh           & Lower density threshold in kilogramms per cubicmeter                 & double & 1000 \\
+         upperDensityTh           & Upper density threshold in kilogramms per cubicmeter                 & double & 5000 \\
+         lowerVSTh                & Lower vs threshold in meter per seconds                             & double & 700 \\
+         upperVSTh                & Lower vs threshold in meter per seconds                             & double & 3500 \\
+	\bottomrule
+	\end{tabular}
+	\end{adjustbox}
+\end{table}
+The lower and upper limit of the model parameters as seen in table \ref{tab:config_thresholds} can be definied in meter per second or kilogram per cubicmeter for p-wave and s-wave velocity and density, respectively.
 
 \clearpage
 \section{Pre- and Post-Processing}\label{sec:process}
