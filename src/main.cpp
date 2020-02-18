@@ -66,7 +66,14 @@ int main(int argc, char *argv[])
     config.init(argv[1]);
     
     Configuration::Configuration configStream;
-    if (config.get<bool>("useStreamConfig")){
+    bool useStreamConfig;
+    try {
+        useStreamConfig = config.get<bool>("useStreamConfig");
+    } catch(...) {
+        useStreamConfig = false;
+    }
+    
+    if (useStreamConfig){
         configStream.readFromFile(config.get<std::string>("streamConfigFilename"),true);    
     }
 
@@ -248,7 +255,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     
     Acquisition::Coordinates<ValueType> modelCoordinatesBig;
-    if (config.get<bool>("useStreamConfig")) {
+    if (useStreamConfig) {
         modelCoordinatesBig.init(configStream);
         dmemo::DistributionPtr distBig = nullptr;
         distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot); 
@@ -412,7 +419,7 @@ int main(int argc, char *argv[])
         /* --------------------------------------- */
         
         IndexType cutCoordSize = 1;
-        if (config.get<bool>("useStreamConfig")) {
+        if (useStreamConfig) {
             cutCoordSize = cutCoord.size();
         }
         
@@ -422,7 +429,7 @@ int main(int argc, char *argv[])
         while (outShotInd++ < 10) {
             
             IndexType cutCoordInd = std::rand() % cutCoordSize;
-            if (config.get<bool>("useStreamConfig")==0) {
+            if (useStreamConfig==0) {
                 outShotInd = 10;
                 cutCoordInd = 0;
             }
@@ -451,7 +458,7 @@ int main(int argc, char *argv[])
                     model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
                 }
                 
-                if ((workflow.iteration == 0)&&(config.get<bool>("useStreamConfig"))) {
+                if ((workflow.iteration == 0)&&(useStreamConfig)) {
                     modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
                 }
                 
@@ -468,7 +475,7 @@ int main(int argc, char *argv[])
                 IndexType firstShot = shotDist.lb();
                 IndexType lastShot = shotDist.ub();
                 
-                if (config.get<bool>("useStreamConfig")) {
+                if (useStreamConfig) {
                     lastShot = firstShot + 1;
                 }
                 
@@ -568,9 +575,7 @@ int main(int argc, char *argv[])
                             energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
                         }
                     }
-<<<<<<< HEAD
-=======
-                }
+//                 }
 
                 // check wavefield and seismogram for NaNs or infinite values
                 if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
@@ -587,7 +592,6 @@ int main(int argc, char *argv[])
                     receivers.getSeismogramHandler().normalize();
                     receiversTrue.getSeismogramHandler().normalize();
                 }
->>>>>>> 0e0d5f04c63ed180a0da8268d4de10ff2f6d0a49
 
                     // check wavefield and seismogram for NaNs or infinite values
                     if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
@@ -599,16 +603,15 @@ int main(int argc, char *argv[])
 
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
 
-<<<<<<< HEAD
                     /* Normalize observed and synthetic data */
                     if (config.get<bool>("NormalizeTraces")){
                         receivers.getSeismogramHandler().normalize();
                         receiversTrue.getSeismogramHandler().normalize();
                     }
-=======
+
                 HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
                 gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
->>>>>>> 0e0d5f04c63ed180a0da8268d4de10ff2f6d0a49
+
 
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
@@ -619,7 +622,7 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
 
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
-                    gradientCalculation.run(*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
+	                gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
 
                     /* Apply energy preconditioning per shot */
                     if (config.get<bool>("useEnergyPreconditioning") == 1) {
@@ -704,7 +707,7 @@ int main(int argc, char *argv[])
                     model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
                 }
                 
-                if (config.get<bool>("useStreamConfig")) {
+                if (useStreamConfig) {
                     IndexType smoothRange = config.get<IndexType>("smoothRange");
                     modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange);
                     modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
@@ -730,7 +733,7 @@ int main(int argc, char *argv[])
                     IndexType firstShot = shotDist.lb();
                     IndexType lastShot = shotDist.ub();
                     
-                    if (config.get<bool>("useStreamConfig")) {
+                    if (useStreamConfig) {
                         lastShot = firstShot + 1;
                     }
                     
@@ -769,19 +772,16 @@ int main(int argc, char *argv[])
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                         }
 
-<<<<<<< HEAD
                         // check wavefield and seismogram for NaNs or infinite values
                         if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
                             model->write("model_crash", config.get<IndexType>("FileFormat"));
                             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                         }
-=======
                     // check wavefield and seismogram for NaNs or infinite values
                     if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
                         model->write("model_crash", config.get<IndexType>("FileFormat"));
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
->>>>>>> 0e0d5f04c63ed180a0da8268d4de10ff2f6d0a49
 
                         receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
