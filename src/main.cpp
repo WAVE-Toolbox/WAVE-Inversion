@@ -575,28 +575,11 @@ int main(int argc, char *argv[])
                             energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
                         }
                     }
-//                 }
-
-                // check wavefield and seismogram for NaNs or infinite values
-                if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
-                    model->write("model_crash", config.get<IndexType>("FileFormat"));
-                    COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
-                }
-
-                receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
-
-                HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
-
-                /* Normalize observed and synthetic data */
-                if (config.get<bool>("NormalizeTraces")){
-                    receivers.getSeismogramHandler().normalize();
-                    receiversTrue.getSeismogramHandler().normalize();
-                }
 
                     // check wavefield and seismogram for NaNs or infinite values
-                    if (commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())){ // if any processor returns isfinite=false, write model and break
-                        model->write("model_crash", config.get<IndexType>("FileFormat"));
-                        COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+                    if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
+                    model->write("model_crash", config.get<IndexType>("FileFormat"));
+                    COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
 
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
@@ -608,10 +591,6 @@ int main(int argc, char *argv[])
                         receivers.getSeismogramHandler().normalize();
                         receiversTrue.getSeismogramHandler().normalize();
                     }
-
-                HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
-                gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
-
 
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotInd, dataMisfit->calc(receivers, receiversTrue));
@@ -709,7 +688,9 @@ int main(int argc, char *argv[])
                 
                 if (useStreamConfig) {
                     IndexType smoothRange = config.get<IndexType>("smoothRange");
-                    modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange);
+                    IndexType NX = config.get<IndexType>("NX");
+                    IndexType NYBig = configStream.get<IndexType>("NY");
+                    modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NYBig);
                     modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
                 }
                 
