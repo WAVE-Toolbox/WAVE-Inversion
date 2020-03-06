@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     }
     
     if (useStreamConfig){
-        configStream.readFromFile(config.get<std::string>("streamConfigFilename"),true);    
+        configStream.readFromFile(config.get<std::string>("streamConfigFilename"),true);
     }
 
     std::string dimension = config.get<std::string>("dimension");
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     if (config.get<bool>("useVariableGrid")) {
         CheckParameter::checkVariableGrid(config, commAll, modelCoordinates);
         for (int layer=0;layer<modelCoordinates.getNumLayers();layer++){
-            HOST_PRINT(commAll, "\n Number of gridpoints in layer: " << layer << " = " << modelCoordinates.getNGridpoints(layer)); 
+            HOST_PRINT(commAll, "\n Number of gridpoints in layer: " << layer << " = " << modelCoordinates.getNGridpoints(layer));
         }
         auto numGridpointsRegular=config.get<IndexType>("NX")*config.get<IndexType>("NY")*config.get<IndexType>("NZ");
         HOST_PRINT(commAll, "\n Number of gripoints total: " << modelCoordinates.getNGridpoints());
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
     /* Distribution                            */
     /* --------------------------------------- */
     
-    // distribute the grid onto available processors    
+    // distribute the grid onto available processors
     dmemo::DistributionPtr dist = nullptr;
     if ((config.get<IndexType>("partitioning") == 0) || (config.get<IndexType>("partitioning") == 2)) {
         //Block distribution = starting distribution for graph partitioner
@@ -258,8 +258,8 @@ int main(int argc, char *argv[])
     if (useStreamConfig) {
         modelCoordinatesBig.init(configStream);
         dmemo::DistributionPtr distBig = nullptr;
-        distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot); 
-        modelBig->init(configStream, ctx, distBig, modelCoordinatesBig);   
+        distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot);
+        modelBig->init(configStream, ctx, distBig, modelCoordinatesBig);
     }
     
     std::vector<Acquisition::coordinate3D> cutCoord;
@@ -426,11 +426,11 @@ int main(int argc, char *argv[])
 //         for (IndexType cutCoordInd = 0; cutCoordInd < cutCoordSize; cutCoordInd++) {
         std::srand((int)time(0));
         IndexType outShotInd = 0;
-        while (outShotInd++ < 10) {
+        while (outShotInd++ < 20) {
             
             IndexType cutCoordInd = std::rand() % cutCoordSize;
             if (useStreamConfig==0) {
-                outShotInd = 10;
+                outShotInd = 20;
                 cutCoordInd = 0;
             }
             else {
@@ -441,6 +441,9 @@ int main(int argc, char *argv[])
             /*        Loop over iterations             */
             /* --------------------------------------- */
             
+            if (useStreamConfig) {
+                maxiterations = 1;
+            }
             for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
 
                 HOST_PRINT(commAll, "\n=================================================");
@@ -453,7 +456,7 @@ int main(int argc, char *argv[])
                 model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
                 
                 
-                if ((workflow.iteration == 0)&&(commInterShot->getRank() == 0)) {
+                if ((workflow.iteration == 0)&&(commInterShot->getRank() == 0)&&(useStreamConfig == 0)) {
                     /* only shot Domain 0 writes output */
                     model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
                 }
@@ -601,7 +604,7 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
 
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
-	                gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
+                    gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
 
                     /* Apply energy preconditioning per shot */
                     if (config.get<bool>("useEnergyPreconditioning") == 1) {
@@ -620,9 +623,13 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
                 } //end of loop over shots
-                
 
                 gradient->sumShotDomain(commInterShot);
+                
+                IndexType NX = config.get<IndexType>("NX");
+                IndexType NY = config.get<IndexType>("NY");
+                gradient->smoothGradient(modelCoordinates,NX,NY);
+                
                 commInterShot->sumArray(misfitPerIt.getLocalValues());
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots =========");
@@ -665,9 +672,6 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\n===========================================");
                 HOST_PRINT(commAll, "\n======== Start step length search =========\n");
                 
-                // apply smoothing (gaussian window) to gradient before this point
-                // also apply smoothing in big model along the boundary lines after set the subset into the big model
-                // smoothing could lose small anomalies within the boundary line, increase subset size might be more precise but is more computational expensive
                 // compare subset approach with conventional approach
                 // also have new parameter: "relative improved misfit in the current shot" to have a better stop criterion
 
@@ -681,16 +685,18 @@ int main(int argc, char *argv[])
                 if (config.get<bool>("useModelThresholds"))
                     model->applyThresholds(config);
 
-                if (commInterShot->getRank() == 0) {
+                if ((commInterShot->getRank() == 0)&&(useStreamConfig==0)) {
                     /* only shot Domain 0 writes output */
-                    model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
+                        model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
                 }
                 
                 if (useStreamConfig) {
                     IndexType smoothRange = config.get<IndexType>("smoothRange");
-                    IndexType NX = config.get<IndexType>("NX");
+                    IndexType NXBig = configStream.get<IndexType>("NX");
                     IndexType NYBig = configStream.get<IndexType>("NY");
-                    modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NYBig);
+                    IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
+                    
+                    modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
                     modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
                 }
                 

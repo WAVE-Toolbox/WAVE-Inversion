@@ -33,7 +33,7 @@ namespace KITGPI
     namespace Gradient
     {
 
-        /*! \brief Class to store the gradients for acoustic inversion 
+        /*! \brief Class to store the gradients for acoustic inversion
          *
          */
         template <typename ValueType>
@@ -111,6 +111,8 @@ namespace KITGPI
             void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
             void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
+            
+            void smoothGradient(Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType NX, scai::IndexType NY) override;
 
           private:
             using Gradient<ValueType>::equationType;

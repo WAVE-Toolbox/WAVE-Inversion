@@ -310,7 +310,7 @@ template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
 {
     /*reduction between shot domains.
-    each shot domain may have a different distribution of (gradient) vectors. 
+    each shot domain may have a different distribution of (gradient) vectors.
       This happens if geographer is used (different result for dist on each shot domain even for homogenous architecture)
       or on heterogenous architecture. In this case even the number of processes on each domain can vary.
     Therfore it is necessary that only one process per shot domain communicates all data.
@@ -345,7 +345,72 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
     density.redistribute(dist);
 }
 
-/*! \brief Function for scaling the gradients with the model parameter 
+/*! \brief Smoothen gradient by gaussian window
+ \param gradient gradient model
+ \param modelCoordinates coordinate class object of the subset
+ \param NX NX in model
+ \param NY NY in model
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::smoothGradient(Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType NX, scai::IndexType NY)
+{
+    auto savedVelocityP = velocityP;
+    auto savedVelocityS = velocityS;
+    auto savedDensity = density;
+    
+    for (IndexType y = 0; y < NY; y++) {
+        for (IndexType x = 0; x < NX; x++) {
+            if (x == 0) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
+            }
+            else if (x == 1) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
+            }
+            else if (x == 2) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
+            }
+            else if (x == NX-3) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.0055;
+            }
+            else if (x == NX-2) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.0055;
+                }
+            else if (x == NX-1) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055;
+            }
+            else {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
+            }
+        }
+    }
+    for (IndexType x = 0; x < NX; x++) {
+        for (IndexType y = 0; y < NY; y++) {
+            if (y == 0) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
+            }
+            else if (y == 1) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
+            }
+            else if (y == 2) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
+            }
+            else if (y == NY-3) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.0055;
+            }
+            else if (y == NY-2) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.0055;
+                }
+            else if (y == NY-1) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055;
+            }
+            else {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
+            }
+        }
+    }
+}
+
+/*! \brief Function for scaling the gradients with the model parameter
  *
  \param model Abstract model.
  */
@@ -383,12 +448,12 @@ void KITGPI::Gradient::Elastic<ValueType>::normalize()
     }
 }
 
-/*! \brief Function for calculating the elastic gradients from the cross correlation and the model parameter 
+/*! \brief Function for calculating the elastic gradients from the cross correlation and the model parameter
  *
  \param model Abstract model.
  \param correlatedWavefields Abstract xCorr.
- \param DT Temporal discretization 
- \param workflow 
+ \param DT Temporal discretization
+ \param workflow
  *
  \f{eqnarray*}
    \nabla_{\lambda} E &=& - \mathrm{d}t \frac{1}{(N \lambda+2\mu)^2} \cdot X_{\lambda} \\
@@ -400,7 +465,7 @@ void KITGPI::Gradient::Elastic<ValueType>::normalize()
  *
  * with \f$ N \f$ as the number of dimensions, \f$ \mu = \rho v_{\mathrm{s}}^2 \f$ and \f$ \lambda = \rho v_{\mathrm{p}}^2 - 2\mu\f$.
  *
- \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 2D 
+ \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 2D
  \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 3D
  */
 template <typename ValueType>

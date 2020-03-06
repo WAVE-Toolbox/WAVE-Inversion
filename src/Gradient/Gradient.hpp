@@ -39,7 +39,7 @@ namespace KITGPI
 
         /*! \brief Abstract class to store gradients for inversion
          *
-	     * This class implements some methods which are required by all derived classes.
+         * This class implements some methods which are required by all derived classes.
          * As this class is an abstract class, all constructors are protected.
          */
         template <typename ValueType>
@@ -115,6 +115,8 @@ namespace KITGPI
             virtual void timesAssign(scai::lama::Vector<ValueType> const &rhs) = 0;
 
             virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
+            
+            virtual void smoothGradient(Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType NX, scai::IndexType NY) = 0;
 
             /* Operator overloading */
             /*lhs Base rhs Base */
