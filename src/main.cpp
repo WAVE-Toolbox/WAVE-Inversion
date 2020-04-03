@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Memory estimation                       */
     /* --------------------------------------- */
-    HOST_PRINT(commAll, " ============== Memory Estimation: ===============\n\n")
+    HOST_PRINT(commAll, "============== Memory Estimation: ===============\n\n")
 
     ValueType memDerivatives = derivatives->estimateMemory(config, dist, modelCoordinates);
     ValueType memWavefileds = wavefields->estimateMemory(dist);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     if (numShotDomains > 1)
         HOST_PRINT(commAll, "\n Total Memory Usage (" << numShotDomains << " shot Domains ): \n " << memTotal * numShotDomains << " MB  ");
 
-    HOST_PRINT(commAll, "\n\n ========================================================================\n\n")
+    HOST_PRINT(commAll, "\n\n========================================================================\n\n")
     
     /* --------------------------------------- */
     /* Call partitioner */
@@ -426,11 +426,11 @@ int main(int argc, char *argv[])
 //         for (IndexType cutCoordInd = 0; cutCoordInd < cutCoordSize; cutCoordInd++) {
         std::srand((int)time(0));
         IndexType outShotInd = 0;
-        while (outShotInd++ < 20) {
+        while (outShotInd++ < 100) {
             
             IndexType cutCoordInd = std::rand() % cutCoordSize;
             if (useStreamConfig==0) {
-                outShotInd = 20;
+                outShotInd = 100;
                 cutCoordInd = 0;
             }
             else {
@@ -448,7 +448,8 @@ int main(int argc, char *argv[])
 
                 HOST_PRINT(commAll, "\n=================================================");
                 HOST_PRINT(commAll, "\n============ Workflow stage " << workflow.workflowStage + 1 << " of " << workflow.maxStage << " ==============");
-                HOST_PRINT(commAll, "\n============     Subset " << cutCoordInd + 1 << " of " << cutCoordSize << "     ==============");
+                HOST_PRINT(commAll, "\n============     Subset " << cutCoordInd + 1  << " of " << cutCoordSize << "     ==============");
+                HOST_PRINT(commAll, "\n===========      Subset Shot " << outShotInd << "      =============");
                 HOST_PRINT(commAll, "\n============      Iteration " << workflow.iteration + 1 << "      ==============");
                 HOST_PRINT(commAll, "\n=================================================\n\n");
                 start_t = common::Walltime::get();
@@ -462,7 +463,7 @@ int main(int argc, char *argv[])
                 }
                 
                 if ((workflow.iteration == 0)&&(useStreamConfig)) {
-                    modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
+                    modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
                 }
                 
                 solver->prepareForModelling(*model, config.get<ValueType>("DT"));
@@ -654,7 +655,7 @@ int main(int argc, char *argv[])
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
                 if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0)
-                    gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
+                    gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
 
                 dataMisfit->addToStorage(misfitPerIt);
                 misfitPerIt = 0;
@@ -697,7 +698,7 @@ int main(int argc, char *argv[])
                     IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
                     
                     modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
-                    modelBig->write((config.get<std::string>("ModelFilename") + ".subset_" + std::to_string(cutCoordInd + 1) + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
+                    modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
                 }
                 
                 steplengthInit *= 0.98;
@@ -711,7 +712,7 @@ int main(int argc, char *argv[])
                 if (workflow.iteration == maxiterations - 1) {
 
                     HOST_PRINT(commAll, "================ Maximum number of iterations reached =================\n");
-                    HOST_PRINT(commAll, "=== Do one more forward modelling to calculate misfit and save seismograms ===\n\n");
+                    HOST_PRINT(commAll, "= Do one more forward modelling to calculate misfit and save seismograms =\n\n");
 
                     /* Update model for fd simulation (averaging, inverse Density ...) */
                     model->prepareForModelling(modelCoordinates, ctx, dist, commShot);
