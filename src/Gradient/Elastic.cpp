@@ -345,7 +345,7 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
     density.redistribute(dist);
 }
 
-/*! \brief Smoothen gradient by gaussian window
+/*! \brief Smoothen gradient by gaussian window and cosine taper on the left side
  \param gradient gradient model
  \param modelCoordinates coordinate class object of the subset
  \param NX NX in model
@@ -405,6 +405,14 @@ void KITGPI::Gradient::Elastic<ValueType>::smoothGradient(Acquisition::Coordinat
             }
             else {
                 velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
+            }
+        }
+    }
+    // Cos Taper
+    for (IndexType y = 0; y < NY; y++) {
+        for (IndexType x = 0; x < NX; x++) {
+            if (x < 80) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0.5*(1-cos(M_PI*x/80))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
             }
         }
     }

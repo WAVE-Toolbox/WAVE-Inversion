@@ -333,11 +333,11 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumShotDomain(scai::dmemo::Communica
     density.redistribute(dist);
 }
 
-/*! \brief Smoothen gradient by gaussian window
- \param gradient gradient model
- \param modelCoordinates coordinate class object of the subset
- \param NX NX in model
- \param NY NY in model
+/*! \brief Smoothen gradient by gaussian window and cosine taper on the left side
+\param gradient gradient model
+\param modelCoordinates coordinate class object of the subset
+\param NX NX in model
+\param NY NY in model
  */
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::smoothGradient(Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType NX, scai::IndexType NY)
@@ -392,6 +392,14 @@ void KITGPI::Gradient::Acoustic<ValueType>::smoothGradient(Acquisition::Coordina
             }
             else {
                 velocityP[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityP[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityP[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityP[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityP[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityP[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityP[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityP[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
+            }
+        }
+    }
+    // Cos Taper
+    for (IndexType y = 0; y < NY; y++) {
+        for (IndexType x = 0; x < NX; x++) {
+            if (x < 80) {
+                velocityP[modelCoordinates.coordinate2index(x, y, 0)] = 0.5*(1-cos(M_PI*x/80))*velocityP[modelCoordinates.coordinate2index(x, y, 0)];
             }
         }
     }

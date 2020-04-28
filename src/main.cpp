@@ -426,11 +426,11 @@ int main(int argc, char *argv[])
 //         for (IndexType cutCoordInd = 0; cutCoordInd < cutCoordSize; cutCoordInd++) {
         std::srand((int)time(0));
         IndexType outShotInd = 0;
-        while (outShotInd++ < 100) {
+        while (outShotInd++ < 300) {
             
             IndexType cutCoordInd = std::rand() % cutCoordSize;
             if (useStreamConfig==0) {
-                outShotInd = 100;
+                outShotInd = 300;
                 cutCoordInd = 0;
             }
             else {
