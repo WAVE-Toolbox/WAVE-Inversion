@@ -426,11 +426,11 @@ int main(int argc, char *argv[])
 //         for (IndexType cutCoordInd = 0; cutCoordInd < cutCoordSize; cutCoordInd++) {
         std::srand((int)time(0));
         IndexType outShotInd = 0;
-        while (outShotInd++ < 300) {
+        while (outShotInd++ < 200) {
             
             IndexType cutCoordInd = std::rand() % cutCoordSize;
             if (useStreamConfig==0) {
-                outShotInd = 300;
+                outShotInd = 200;
                 cutCoordInd = 0;
             }
             else {
@@ -522,15 +522,16 @@ int main(int argc, char *argv[])
 
                     /* Source time function inversion */
                     if (config.get<bool>("useSourceSignalInversion") == 1) {
+//                        if ((outShotInd == 1) && (workflow.iteration == 0)) {
                         if (workflow.iteration == 0) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << " : Source Time Function Inversion\n");
 
                             wavefields->resetWavefields();
-        
+
                             for (scai::IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                                 solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                             }
-                    
+
                             solver->resetCPML();
 
                             if (config.get<bool>("maxOffsetSrcEst") == 1)
@@ -791,6 +792,7 @@ int main(int argc, char *argv[])
                     dataMisfit->addToStorage(misfitPerIt);
 
                     SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1));
+                    dataMisfit->clearStorage();
 
                     if (workflow.workflowStage != workflow.maxStage - 1) {
                         HOST_PRINT(commAll, "\nChange workflow stage\n");
