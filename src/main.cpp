@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
     scai::dmemo::DistributionPtr dist_sources = Acquisition::calcDistribution(sourcecoords, dist);
     if (config.get<bool>("useSourceSignalInversion"))
         sourceEst.init(config, ctx, dist_sources, sourceSignalTaper);
-
+    
     /* --------------------------------------- */
     /* Frequency filter                        */
     /* --------------------------------------- */
@@ -426,11 +426,14 @@ int main(int argc, char *argv[])
 //         for (IndexType cutCoordInd = 0; cutCoordInd < cutCoordSize; cutCoordInd++) {
         std::srand((int)time(0));
         IndexType outShotInd = 0;
-        while (outShotInd++ < 200) {
+        std::vector<scai::IndexType> filterHistoryCount(numshots, 0);
+
+        while (outShotInd++ < 100) {
             
             IndexType cutCoordInd = std::rand() % cutCoordSize;
+            
             if (useStreamConfig==0) {
-                outShotInd = 200;
+                outShotInd = 100;
                 cutCoordInd = 0;
             }
             else {
@@ -444,6 +447,7 @@ int main(int argc, char *argv[])
             if (useStreamConfig) {
                 maxiterations = 1;
             }
+            
             for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
 
                 HOST_PRINT(commAll, "\n=================================================");
@@ -519,10 +523,9 @@ int main(int argc, char *argv[])
                     
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
                         sources.getSeismogramHandler().filter(freqFilter);
-
+                    
                     /* Source time function inversion */
-                    if (config.get<bool>("useSourceSignalInversion") == 1) {
-//                        if ((outShotInd == 1) && (workflow.iteration == 0)) {
+                    if (config.get<bool>("useSourceSignalInversion") == 1){
                         if (workflow.iteration == 0) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << " : Source Time Function Inversion\n");
 
@@ -533,11 +536,23 @@ int main(int argc, char *argv[])
                             }
 
                             solver->resetCPML();
+                            
+                            /* Normalize observed and synthetic data */
+                            if (config.get<bool>("NormalizeTraces")){
+                                receivers.getSeismogramHandler().normalize();
+                                receiversTrue.getSeismogramHandler().normalize();
+                            }
+
+                            /* Set killed traces to zero */
+                            if (config.get<bool>("KillTraces")){
+                                receivers.getSeismogramHandler().kill();
+                                receiversTrue.getSeismogramHandler().kill();
+                            }
 
                             if (config.get<bool>("maxOffsetSrcEst") == 1)
                                 sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"),modelCoordinates);
-
-                            sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
+                            
+                            sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber, filterHistoryCount, useStreamConfig);
 
                             sourceEst.applyFilter(sources, shotInd);
                             if (config.get<bool>("useSourceSignalTaper"))
@@ -586,6 +601,18 @@ int main(int argc, char *argv[])
                     model->write("model_crash", config.get<IndexType>("FileFormat"));
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
+                    
+//                    /* Normalize observed and synthetic data */
+//                    if (config.get<bool>("NormalizeTraces")){
+//                        receivers.getSeismogramHandler().normalize();
+//                        receiversTrue.getSeismogramHandler().normalize();
+//                    }
+
+                    /* Set killed traces to zero */
+                    if (config.get<bool>("KillTraces")){
+                        receivers.getSeismogramHandler().kill();
+                        receiversTrue.getSeismogramHandler().kill();
+                    }
 
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
@@ -612,6 +639,11 @@ int main(int argc, char *argv[])
                     if (config.get<bool>("useEnergyPreconditioning") == 1) {
                         energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
                     }
+                    
+                    /* Smooth gradient */
+//                    IndexType NX = config.get<IndexType>("NX");
+//                    IndexType NY = config.get<IndexType>("NY");
+//                    gradient->smoothGradient(modelCoordinates,NX,NY);
 
                     if (config.get<bool>("useReceiversPerShot"))
                         ReceiverTaper.apply(*gradientPerShot);
@@ -628,6 +660,7 @@ int main(int argc, char *argv[])
 
                 gradient->sumShotDomain(commInterShot);
                 
+                /* Smooth gradient */
                 IndexType NX = config.get<IndexType>("NX");
                 IndexType NY = config.get<IndexType>("NY");
                 gradient->smoothGradient(modelCoordinates,NX,NY);
@@ -673,9 +706,6 @@ int main(int argc, char *argv[])
 
                 HOST_PRINT(commAll, "\n===========================================");
                 HOST_PRINT(commAll, "\n======== Start step length search =========\n");
-                
-                // compare subset approach with conventional approach
-                // also have new parameter: "relative improved misfit in the current shot" to have a better stop criterion
 
                 SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, sourceSignalTaper, cutCoordInd);
 
@@ -696,6 +726,8 @@ int main(int argc, char *argv[])
                     IndexType smoothRange = config.get<IndexType>("smoothRange");
                     IndexType NXBig = configStream.get<IndexType>("NX");
                     IndexType NYBig = configStream.get<IndexType>("NY");
+//                    IndexType NX = config.get<IndexType>("NX");
+//                    IndexType NY = config.get<IndexType>("NY");
                     IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
                     
                     modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
@@ -766,12 +798,24 @@ int main(int argc, char *argv[])
                             model->write("model_crash", config.get<IndexType>("FileFormat"));
                             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                         }
-                    // check wavefield and seismogram for NaNs or infinite values
-                    if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
-                        model->write("model_crash", config.get<IndexType>("FileFormat"));
-                        COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
-                    }
+                        // check wavefield and seismogram for NaNs or infinite values
+                        if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
+                            model->write("model_crash", config.get<IndexType>("FileFormat"));
+                            COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+                        }
+                        
+//                        /* Normalize observed and synthetic data */
+//                        if (config.get<bool>("NormalizeTraces")){
+//                            receivers.getSeismogramHandler().normalize();
+//                            receiversTrue.getSeismogramHandler().normalize();
+//                        }
 
+                        /* Set killed traces to zero */
+                        if (config.get<bool>("KillTraces")){
+                            receivers.getSeismogramHandler().kill();
+                            receiversTrue.getSeismogramHandler().kill();
+                        }
+                        
                         receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                         /* Normalize observed and synthetic data */

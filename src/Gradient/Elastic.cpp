@@ -411,12 +411,27 @@ void KITGPI::Gradient::Elastic<ValueType>::smoothGradient(Acquisition::Coordinat
     // Cos Taper
     for (IndexType y = 0; y < NY; y++) {
         for (IndexType x = 0; x < NX; x++) {
-            if (x < 40) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0.5*(1-cos(M_PI*x/40))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
+            // Simple Taper
+            if (x < 50) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0.5*(1-cos(M_PI*x/50))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
             }
-            if (x > NX-20) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = (1-0.5*(1-cos(M_PI*(x-NX+20)/20)))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
+            if (x > NX-50) {
+                velocityS[modelCoordinates.coordinate2index(x, y, 0)] =  (1-0.5*(1-cos(M_PI*(x-NX+50)/50)))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
             }
+            
+            // Late Tapers
+//            if (x < 31) {
+//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0;
+//            }
+//            if ((x < 50) && (x > 30)){
+//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0.5*(1-cos(M_PI*(x-30)/20))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
+//            }
+//            if ((x > NX-60) && (x < NX-20)){
+//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] =  (1-0.5*(1-cos(M_PI*(x-NX+60)/40)))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
+//            }
+//            if (x > NX-21) {
+//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0;
+//            }
         }
     }
 }

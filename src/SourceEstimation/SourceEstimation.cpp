@@ -39,6 +39,7 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
     nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
     waterLevel = common::Math::pow<ValueType>(waterLvl, 2.0) * nFFT;
     filter.allocate(sourceDistribution, std::make_shared<dmemo::NoDistribution>(nFFT));
+    filterHistory.allocate(sourceDistribution, std::make_shared<dmemo::NoDistribution>(nFFT));
     if (!tprName.empty()) {
         readTaper = true;
         taperName = tprName;
@@ -51,7 +52,7 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr)
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr, std::vector<scai::IndexType> &filterHistoryCount, bool useStreamConfig)
 {
     lama::DenseVector<ComplexValueType> filterTmp1(filter.getColDistributionPtr(), 0.0);
     lama::DenseVector<ComplexValueType> filterTmp2(filter.getColDistributionPtr(), 0.0);
@@ -62,7 +63,24 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
     addComponents(filterTmp2, receivers, receiversTrue, shotNr);
     filterTmp1 *= filterTmp2;
     
-    filter.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
+    if (useStreamConfig) {
+        if (filterHistoryCount[shotInd] == 0) {
+//            std::cout << filterHistoryCount[shotInd] << "\n";
+            
+            filter.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
+            filterHistory.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
+            filterHistoryCount[shotInd]++;
+        } else {
+//            std::cout << filterHistoryCount[shotInd] << "\n";
+            
+            lama::DenseVector<ComplexValueType> filterTmp3(filter.getColDistributionPtr(), 0.0);
+            filterHistory.getRow(filterTmp3, shotInd);
+            filter.setRow(filterTmp3, shotInd, common::BinaryOp::COPY);
+            filterHistoryCount[shotInd]++;
+        }
+    } else {
+        filter.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
+    }
 }
 
 /*! \brief Apply the Wiener filter to a synthetic source

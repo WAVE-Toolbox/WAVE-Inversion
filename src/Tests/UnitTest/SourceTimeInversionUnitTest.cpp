@@ -41,7 +41,8 @@ TEST(SourceTimeInversionTest, TestSourceEstimation)
     sourcesData.readFromFile("../src/Tests/Testfiles/testSourceTimeInversion_sourceSignal.mtx");
 
     sourceEst.init(500, sources.get1DCoordinates().getDistributionPtr(), 1.0e-10);
-    sourceEst.estimateSourceSignal(receivers, receiversTrue, 0, 0);
+    std::vector<scai::IndexType> filterHistoryCount(1, 0);
+    sourceEst.estimateSourceSignal(receivers, receiversTrue, 0, 0, filterHistoryCount, useStreamConfig);
     sourceEst.applyFilter(sources, 0);
 
     lama::DenseMatrix<ValueType> sourceSignalInv = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).getData();

@@ -305,6 +305,12 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.getSeismogramHandler().normalize();
         }
 
+        /* Set killed traces to zero */
+        if (config.get<bool>("KillTraces")){
+            receivers.getSeismogramHandler().kill();
+            receiversTrue.getSeismogramHandler().kill();
+        }
+
         misfitTest.setValue(shotInd, dataMisfit.calc(receivers, receiversTrue));
     }
 
