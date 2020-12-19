@@ -345,6 +345,69 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
     density.redistribute(dist);
 }
 
+/*! \brief If stream configuration is used, set a gradient into the big gradient
+ \param modelSubset subset model
+ \param modelCoordinates coordinate class object of the subset
+ \param modelCoordinatesBig coordinate class object of the big model
+ \param cutCoord cut coordinate
+ \param cutCoordInd cut coordinate index
+ \param smoothRange range in x direction which is to be smoothened
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::setGradientSubset(KITGPI::Gradient::Gradient<ValueType> &gradientSmall, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoord, scai::IndexType cutCoordInd, scai::IndexType smoothRange, scai::IndexType NX, scai::IndexType NY, scai::IndexType NXBig, scai::IndexType NYBig, scai::IndexType boundaryWidth)
+{
+    auto distBig = velocityP.getDistributionPtr();
+    auto dist = gradientSmall.getVelocityP().getDistributionPtr();
+//     auto comm = dist.getCommunicatorPtr();
+
+    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix = this->getShrinkMatrix(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoord.at(cutCoordInd));
+    shrinkMatrix.assignTranspose(shrinkMatrix);
+    
+    scai::lama::SparseVector<ValueType> eraseVector = this->getEraseVector(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoord.at(cutCoordInd),NX,NYBig,boundaryWidth);
+    
+    lama::DenseVector<ValueType> temp;
+    temp = gradientSmall.getVelocityP(); //results of inverted subset model
+    //damp the boundary borders
+    for (IndexType y = 0; y < NY; y++) {
+        for (IndexType i = 0; i < boundaryWidth; i++) {
+            temp[modelCoordinates.coordinate2index(i, y, 0)] = temp[modelCoordinates.coordinate2index(i, y, 0)]*(i+1)/boundaryWidth;
+            temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)] = temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)]*(i+1)/boundaryWidth;
+        }
+    }
+    temp = shrinkMatrix*temp; //transform subset into big model
+    velocityP *= eraseVector;
+    velocityP += temp; //take over the values
+  
+    temp = gradientSmall.getVelocityS(); //results of inverted subset model
+    //damp the boundary borders
+    for (IndexType y = 0; y < NY; y++) {
+        for (IndexType i = 0; i < boundaryWidth; i++) {
+            temp[modelCoordinates.coordinate2index(i, y, 0)] = temp[modelCoordinates.coordinate2index(i, y, 0)]*(i+1)/boundaryWidth;
+            temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)] = temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)]*(i+1)/boundaryWidth;
+        }
+    }
+    temp = shrinkMatrix*temp; //transform subset into big model
+    velocityS *= eraseVector;
+    velocityS += temp; //take over the values
+    
+    scai::lama::DenseVector<ValueType> smoothParameter = this->smoothParameter(modelCoordinatesBig, velocityS, cutCoord.at(cutCoordInd), smoothRange, NX, NXBig, NYBig);
+    velocityS = smoothParameter;
+//    IO::writeVector(velocityS, "model/setSubset_" + std::to_string(cutCoordInd) + ".vs" ,2);
+    
+    temp = gradientSmall.getDensity(); //results of inverted subset model
+    //damp the boundary borders
+    for (IndexType y = 0; y < NY; y++) {
+        for (IndexType i = 0; i < boundaryWidth; i++) {
+            temp[modelCoordinates.coordinate2index(i, y, 0)] = temp[modelCoordinates.coordinate2index(i, y, 0)]*(i+1)/boundaryWidth;
+            temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)] = temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)]*(i+1)/boundaryWidth;
+        }
+    }
+    temp = shrinkMatrix*temp; //transform subset into big model
+    density *= eraseVector;
+    density += temp; //take over the values
+
+}
+
 /*! \brief Smoothen gradient by gaussian window and cosine taper on the left side
  \param gradient gradient model
  \param modelCoordinates coordinate class object of the subset
@@ -418,7 +481,7 @@ void KITGPI::Gradient::Elastic<ValueType>::smoothGradient(Acquisition::Coordinat
             if (x > NX-50) {
                 velocityS[modelCoordinates.coordinate2index(x, y, 0)] =  (1-0.5*(1-cos(M_PI*(x-NX+50)/50)))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
             }
-            
+
             // Late Tapers
 //            if (x < 31) {
 //                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0;

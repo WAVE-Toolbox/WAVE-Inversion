@@ -65,14 +65,10 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
     
     if (useStreamConfig) {
         if (filterHistoryCount[shotInd] == 0) {
-//            std::cout << filterHistoryCount[shotInd] << "\n";
-            
             filter.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
             filterHistory.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
             filterHistoryCount[shotInd]++;
         } else {
-//            std::cout << filterHistoryCount[shotInd] << "\n";
-            
             lama::DenseVector<ComplexValueType> filterTmp3(filter.getColDistributionPtr(), 0.0);
             filterHistory.getRow(filterTmp3, shotInd);
             filter.setRow(filterTmp3, shotInd, common::BinaryOp::COPY);

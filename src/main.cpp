@@ -87,9 +87,12 @@ int main(int argc, char *argv[])
     std::string misfitType = config.get<std::string>("misfitType");
     std::string fieldSeisName(config.get<std::string>("fieldSeisName"));
     std::string gradname(config.get<std::string>("gradientFilename"));
+//    std::string gradnameBig(configStream.get<std::string>("gradientFilename"));
     std::string logFilename = config.get<std::string>("logFilename");
     ValueType steplengthInit = config.get<ValueType>("steplengthInit");
     IndexType maxiterations = config.get<IndexType>("maxIterations");
+    IndexType maxOutShotIteration =config.get<IndexType>("maxIterations");
+    IndexType maxcount = config.get<IndexType>("maxCount");
     std::string optimizationType = config.get<std::string>("optimizationType");
 
     
@@ -360,6 +363,13 @@ int main(int argc, char *argv[])
     Gradient::Gradient<ValueType>::GradientPtr gradientPerShot(Gradient::Factory<ValueType>::Create(equationType));
     gradientPerShot->init(ctx, dist);
     gradientPerShot->setNormalizeGradient(config.get<bool>("normalizeGradient"));
+    
+
+//    dmemo::DistributionPtr distBig = nullptr;
+//    distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot);
+//    Gradient::Gradient<ValueType>::GradientPtr gradientBig(Gradient::Factory<ValueType>::Create(equationType));
+//    gradientBig->init(ctx, distBig);
+
 
     /* --------------------------------------- */
     /* Gradient calculation                    */
@@ -418,25 +428,24 @@ int main(int argc, char *argv[])
         /*        Loop over subset shots           */
         /* --------------------------------------- */
         
+        std::vector<scai::IndexType> filterHistoryCount(numshots, 0);
+        IndexType outShotInd = 0;
         IndexType cutCoordSize = 1;
         if (useStreamConfig) {
             cutCoordSize = cutCoord.size();
         }
-        
-//         for (IndexType cutCoordInd = 0; cutCoordInd < cutCoordSize; cutCoordInd++) {
-        std::srand((int)time(0));
-        IndexType outShotInd = 0;
-        std::vector<scai::IndexType> filterHistoryCount(numshots, 0);
 
-        while (outShotInd++ < 100) {
+        while (outShotInd++ < maxOutShotIteration) {
             
+            std::srand((int)time(0));
             IndexType cutCoordInd = std::rand() % cutCoordSize;
+            while (filterHistoryCount[cutCoordInd] >= maxcount)
+                cutCoordInd = std::rand() % cutCoordSize;
             
             if (useStreamConfig==0) {
-                outShotInd = 100;
+                outShotInd = maxOutShotIteration;
                 cutCoordInd = 0;
-            }
-            else {
+            } else {
                 modelBig->getModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd);
             }
 
@@ -504,6 +513,12 @@ int main(int argc, char *argv[])
 
                     /* Read field data (or pseudo-observed data, respectively) */
                     receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
+                    
+                    /* Set killed traces to zero */
+                    if (config.get<bool>("KillTraces")){
+                        receiversTrue.getSeismogramHandler().kill();
+                    }
+                    
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
                         if (workflow.iteration == 0){
@@ -650,6 +665,17 @@ int main(int argc, char *argv[])
 
                     gradientPerShot->normalize();
                     *gradient += *gradientPerShot;
+//
+//                    if (useStreamConfig) {
+//                        IndexType smoothRange = config.get<IndexType>("smoothRange");
+//                        IndexType NX = config.get<IndexType>("NX");
+//                        IndexType NY = config.get<IndexType>("NY");
+//                        IndexType NXBig = configStream.get<IndexType>("NX");
+//                        IndexType NYBig = configStream.get<IndexType>("NY");
+//                        IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
+//
+//                        gradientBig->setGradientSubset(*gradientPerShot,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
+//                    }
 
                     solver->resetCPML();
 
@@ -664,7 +690,7 @@ int main(int argc, char *argv[])
                 IndexType NX = config.get<IndexType>("NX");
                 IndexType NY = config.get<IndexType>("NY");
                 gradient->smoothGradient(modelCoordinates,NX,NY);
-                
+
                 commInterShot->sumArray(misfitPerIt.getLocalValues());
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots =========");
@@ -688,9 +714,10 @@ int main(int argc, char *argv[])
 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
-                if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0)
+                if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0) {
                     gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
-
+//                    gradientBig->write(gradnameBig + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
+                }
                 dataMisfit->addToStorage(misfitPerIt);
                 misfitPerIt = 0;
 
@@ -713,6 +740,10 @@ int main(int argc, char *argv[])
                 /* Apply model update */
                 *gradient *= SLsearch.getSteplength();
                 *model -= *gradient;
+                
+//                if (useStreamConfig) {
+//                    *modelBig -= *gradientBig;
+//                }
 
                 if (config.get<bool>("useModelThresholds"))
                     model->applyThresholds(config);
@@ -726,10 +757,8 @@ int main(int argc, char *argv[])
                     IndexType smoothRange = config.get<IndexType>("smoothRange");
                     IndexType NXBig = configStream.get<IndexType>("NX");
                     IndexType NYBig = configStream.get<IndexType>("NY");
-//                    IndexType NX = config.get<IndexType>("NX");
-//                    IndexType NY = config.get<IndexType>("NY");
                     IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
-                    
+
                     modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
                     modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
                 }
@@ -837,17 +866,36 @@ int main(int argc, char *argv[])
 
                     SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1));
                     dataMisfit->clearStorage();
-
-                    if (workflow.workflowStage != workflow.maxStage - 1) {
-                        HOST_PRINT(commAll, "\nChange workflow stage\n");
-                        workflow.changeStage(config, *dataMisfit, steplengthInit);
+                    
+                    if (useStreamConfig == 0) {
+                        if (workflow.workflowStage != workflow.maxStage - 1) {
+                            HOST_PRINT(commAll, "\nChange workflow stage\n");
+                            workflow.changeStage(config, *dataMisfit, steplengthInit);
+                        }
                     }
 
                 } // end extra forward modelling
 
             } // end of loop over iterations
             
+            if (useStreamConfig) {
+                IndexType mincount = *std::min_element(std::begin(filterHistoryCount), std::end(filterHistoryCount));
+                if (mincount == maxcount) {
+                    HOST_PRINT(commAll, "\nMaximum number of iterations per subset reached \n");
+                    break;
+                }
+            }
+            
         } // end of loop over subset shots
+        std::ofstream outFile("filterHistory.stage_" + std::to_string(workflow.workflowStage + 1) + ".txt");
+        for (const auto &e : filterHistoryCount) outFile << e << "\n";
+        
+        if (useStreamConfig) {
+            if (workflow.workflowStage != workflow.maxStage - 1) {
+                HOST_PRINT(commAll, "\nChange workflow stage\n");
+                workflow.changeStage(config, *dataMisfit, steplengthInit);
+            }
+        }
 
     } // end of loop over workflow stages
 
