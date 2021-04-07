@@ -42,6 +42,7 @@ TEST(SourceTimeInversionTest, TestSourceEstimation)
 
     sourceEst.init(500, sources.get1DCoordinates().getDistributionPtr(), 1.0e-10);
     std::vector<scai::IndexType> filterHistoryCount(1, 0);
+    bool useStreamConfig = false;
     sourceEst.estimateSourceSignal(receivers, receiversTrue, 0, 0, filterHistoryCount, useStreamConfig);
     sourceEst.applyFilter(sources, 0);
 

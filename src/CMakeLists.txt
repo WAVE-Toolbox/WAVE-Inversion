@@ -171,7 +171,7 @@ install( TARGETS Inversion DESTINATION lib )
 #  Inversion executable                                 #
 ####################################################
 
-add_executable( prog main.cpp )
+add_executable( prog Inversion.cpp )
 
 target_link_libraries( prog Inversion ${Inversion_used_libs} )
 
