@@ -89,10 +89,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     SourceTaper.init(dist, ctx, sources, config, modelCoordinates, config.get<IndexType>("sourceTaperRadius"));
     SourceTaper.apply(gradient);
 
-    if (config.get<IndexType>("WriteGradientPerShot"))
-        gradient.write(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".Shot_" + std::to_string(shotNumber), config.get<IndexType>("FileFormat"), workflow);
-
-    //     receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType::P).writeToFileRaw("seismograms/rec_adjoint.mtx");
+    if (config.get<IndexType>("writeGradientPerShot"))
+        gradient.write(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), config.get<IndexType>("FileFormat"), workflow);
 }
 
 template class KITGPI::GradientCalculation<double>;

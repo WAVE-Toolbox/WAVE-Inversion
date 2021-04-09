@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
     IndexType shotDomain = Partitioning::getShotDomain(config, commAll); // will contain the domain to which this processor belongs
 
-    // Build subsets of processors for the shots
+    // Build pershots of processors for the shots
 
     dmemo::CommunicatorPtr commShot = commAll->split(shotDomain);
 
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
         }
         
         /* --------------------------------------- */
-        /*        Loop over subset shots           */
+        /*        Loop over pershot shots           */
         /* --------------------------------------- */
         
         std::vector<scai::IndexType> filterHistoryCount(numshots, 0);
@@ -462,8 +462,8 @@ int main(int argc, char *argv[])
 
                 HOST_PRINT(commAll, "\n=================================================");
                 HOST_PRINT(commAll, "\n============ Workflow stage " << workflow.workflowStage + 1 << " of " << workflow.maxStage << " ==============");
-                HOST_PRINT(commAll, "\n============     Subset " << cutCoordInd + 1  << " of " << cutCoordSize << "     ==============");
-                HOST_PRINT(commAll, "\n===========      Subset Shot " << outShotInd << "      =============");
+                HOST_PRINT(commAll, "\n============     PerShot " << cutCoordInd + 1  << " of " << cutCoordSize << "     ==============");
+                HOST_PRINT(commAll, "\n===========      PerShot Shot " << outShotInd << "      =============");
                 HOST_PRINT(commAll, "\n============      Iteration " << workflow.iteration + 1 << "      ==============");
                 HOST_PRINT(commAll, "\n=================================================\n\n");
                 start_t = common::Walltime::get();
@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
                 }
                 
                 if ((workflow.iteration == 0)&&(useStreamConfig)) {
-                    modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
+                    modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".pershot_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
                 }
                 
                 solver->prepareForModelling(*model, config.get<ValueType>("DT"));
@@ -639,11 +639,6 @@ int main(int argc, char *argv[])
                         energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
                     }
                     
-                    /* Smooth gradient */
-//                    IndexType NX = config.get<IndexType>("NX");
-//                    IndexType NY = config.get<IndexType>("NY");
-//                    gradient->smoothGradient(modelCoordinates,NX,NY);
-
                     if (config.get<bool>("useReceiversPerShot"))
                         ReceiverTaper.apply(*gradientPerShot);
 
@@ -658,7 +653,7 @@ int main(int argc, char *argv[])
 //                        IndexType NYBig = configBig.get<IndexType>("NY");
 //                        IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
 //
-//                        gradientBig->setGradientSubset(*gradientPerShot,modelCoordinates,modelCoordinatesBig,cutCoordinates,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
+//                        gradientBig->setGradientPerShot(*gradientPerShot,modelCoordinates,modelCoordinatesBig,cutCoordinates,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
 //                    }
 
                     solver->resetCPML();
@@ -670,11 +665,6 @@ int main(int argc, char *argv[])
 
                 gradient->sumShotDomain(commInterShot);
                 
-                /* Smooth gradient */
-                IndexType NX = config.get<IndexType>("NX");
-                IndexType NY = config.get<IndexType>("NY");
-                gradient->smoothGradient(modelCoordinates,NX,NY);
-
                 commInterShot->sumArray(misfitPerIt.getLocalValues());
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots =========");
@@ -699,8 +689,8 @@ int main(int argc, char *argv[])
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
                 if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0) {
-                    gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
-//                    gradientBig->write(gradnameBig + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
+                    gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".pershot_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
+//                    gradientBig->write(gradnameBig + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".pershot_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
                 }
                 dataMisfit->addToStorage(misfitPerIt);
                 misfitPerIt = 0;
@@ -743,8 +733,8 @@ int main(int argc, char *argv[])
 //                     IndexType NYBig = configBig.get<IndexType>("NY");
 //                     IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
 // 
-// //                     modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoordinates,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
-//                     modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
+// //                     modelBig->setModelPerShot(*model,modelCoordinates,modelCoordinatesBig,cutCoordinates,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
+//                     modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".pershot_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
 //                 }
                 
                 steplengthInit *= 0.98;
@@ -854,12 +844,12 @@ int main(int argc, char *argv[])
             if (useStreamConfig) {
                 IndexType mincount = *std::min_element(std::begin(filterHistoryCount), std::end(filterHistoryCount));
                 if (mincount == maxcount) {
-                    HOST_PRINT(commAll, "\nMaximum number of iterations per subset reached \n");
+                    HOST_PRINT(commAll, "\nMaximum number of iterations per pershot reached \n");
                     break;
                 }
             }
             
-        } // end of loop over subset shots
+        } // end of loop over pershot shots
         std::ofstream outFile("filterHistory.stage_" + std::to_string(workflow.workflowStage + 1) + ".txt");
         for (const auto &e : filterHistoryCount) outFile << e << "\n";
         

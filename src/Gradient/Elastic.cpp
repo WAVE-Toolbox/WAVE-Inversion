@@ -36,11 +36,11 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
  \param rho Density given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho)
+void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const)
 {
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(velocityS, ctx, dist, velocityS_const);
-    this->initParameterisation(density, ctx, dist, rho);
+    this->initParameterisation(density, ctx, dist, rho_const);
 }
 
 //! \brief Copy constructor
@@ -61,17 +61,17 @@ KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
-    if (workflow.getInvertForVp() == 1) {
+    if (workflow.getInvertForVp()) {
         std::string filenameP = filename + ".vp";
         this->writeParameterisation(velocityP, filenameP, fileFormat);
     }
 
-    if (workflow.getInvertForVs() == 1) {
+    if (workflow.getInvertForVs()) {
         std::string filenameS = filename + ".vs";
         this->writeParameterisation(velocityS, filenameS, fileFormat);
     }
 
-    if (workflow.getInvertForDensity() == 1) {
+    if (workflow.getInvertForDensity()) {
         std::string filenamedensity = filename + ".density";
         this->writeParameterisation(density, filenamedensity, fileFormat);
     }
@@ -310,10 +310,7 @@ template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
 {
     /*reduction between shot domains.
-    each shot domain may have a different distribution of (gradient) vectors.
-      This happens if geographer is used (different result for dist on each shot domain even for homogenous architecture)
-      or on heterogenous architecture. In this case even the number of processes on each domain can vary.
-    Therfore it is necessary that only one process per shot domain communicates all data.
+    each shot domain may have a different distribution of (gradient) vectors. This happens if geographer is used (different result for dist on each shot domain even for homogenous architecture) or on heterogenous architecture. In this case even the number of processes on each domain can vary. Therfore it is necessary that only one process per shot domain communicates all data.
     */
     
     //get information from distributed vector
@@ -323,7 +320,7 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
     
     // create single distribution, only master process owns the complete vector (no distribution).
     
-    int shotMaster=0;
+    int shotMaster = 0;
     auto singleDist = std::make_shared<dmemo::SingleDistribution>( size, comm, shotMaster );
     
     //redistribute vector to master process
@@ -345,158 +342,53 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
     density.redistribute(dist);
 }
 
-/*! \brief If stream configuration is used, set a gradient into the big gradient
- \param modelSubset subset model
- \param modelCoordinates coordinate class object of the subset
+/*! \brief If stream configuration is used, set a gradient per shot into the big gradient
+ \param gradientPerShot gradient per shot
+ \param modelCoordinates coordinate class object of the pershot
  \param modelCoordinatesBig coordinate class object of the big model
- \param cutCoordinates cut coordinate
- \param cutCoordInd cut coordinate index
- \param smoothRange range in x direction which is to be smoothened
+ \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::setGradientSubset(KITGPI::Gradient::Gradient<ValueType> &gradientSmall, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType cutCoordInd, scai::IndexType smoothRange, scai::IndexType NX, scai::IndexType NY, scai::IndexType NXBig, scai::IndexType NYBig, scai::IndexType boundaryWidth)
+void KITGPI::Gradient::Elastic<ValueType>::sumGradientPerShot(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
 {
-    auto distBig = velocityP.getDistributionPtr();
-    auto dist = gradientSmall.getVelocityP().getDistributionPtr();
-//     auto comm = dist.getCommunicatorPtr();
+    auto distBig = density.getDistributionPtr();
+    auto dist = gradientPerShot.getDensity().getDistributionPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix = this->getShrinkMatrix(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoordinates.at(cutCoordInd));
+    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix;
+    scai::lama::DenseVector<ValueType> weightingVector(dist, 1.0);
+    scai::lama::DenseVector<ValueType> weightingVectorBig(distBig, 0.0);
+    IndexType numCuts = cutCoordinates.size();
+    for (IndexType index=0; index < numCuts; index++) {        
+        shrinkMatrix = this->getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(index));
+        shrinkMatrix.assignTranspose(shrinkMatrix);
+        weightingVectorBig += shrinkMatrix * weightingVector;
+    }
+    weightingVectorBig = 1.0 / weightingVectorBig; // the weighting of overlapping area
+    Common::replaceInvalid<ValueType>(weightingVectorBig, 0.0);
+    
+    shrinkMatrix = this->getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
     shrinkMatrix.assignTranspose(shrinkMatrix);
     
-    scai::lama::SparseVector<ValueType> eraseVector = this->getEraseVector(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoordinates.at(cutCoordInd),NX,NYBig,boundaryWidth);
-    
-    lama::DenseVector<ValueType> temp;
-    temp = gradientSmall.getVelocityP(); //results of inverted subset model
-    //damp the boundary borders
-    for (IndexType y = 0; y < NY; y++) {
-        for (IndexType i = 0; i < boundaryWidth; i++) {
-            temp[modelCoordinates.coordinate2index(i, y, 0)] = temp[modelCoordinates.coordinate2index(i, y, 0)]*(i+1)/boundaryWidth;
-            temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)] = temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)]*(i+1)/boundaryWidth;
-        }
-    }
-    temp = shrinkMatrix*temp; //transform subset into big model
+    scai::lama::SparseVector<ValueType> eraseVector = this->getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
+    eraseVector *= weightingVectorBig;
+    scai::lama::SparseVector<ValueType> restoreVector;
+    restoreVector = 1.0 - eraseVector;
+        
+    scai::lama::DenseVector<ValueType> temp;
+    temp = shrinkMatrix * gradientPerShot.getVelocityP(); //transform pershot into big model
+    temp *= restoreVector;
     velocityP *= eraseVector;
     velocityP += temp; //take over the values
   
-    temp = gradientSmall.getVelocityS(); //results of inverted subset model
-    //damp the boundary borders
-    for (IndexType y = 0; y < NY; y++) {
-        for (IndexType i = 0; i < boundaryWidth; i++) {
-            temp[modelCoordinates.coordinate2index(i, y, 0)] = temp[modelCoordinates.coordinate2index(i, y, 0)]*(i+1)/boundaryWidth;
-            temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)] = temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)]*(i+1)/boundaryWidth;
-        }
-    }
-    temp = shrinkMatrix*temp; //transform subset into big model
+    temp = shrinkMatrix * gradientPerShot.getVelocityS();; //transform pershot into big model
+    temp *= restoreVector;
     velocityS *= eraseVector;
     velocityS += temp; //take over the values
-    
-    scai::lama::DenseVector<ValueType> smoothParameter = this->smoothParameter(modelCoordinatesBig, velocityS, cutCoordinates.at(cutCoordInd), smoothRange, NX, NXBig, NYBig);
-    velocityS = smoothParameter;
-//    IO::writeVector(velocityS, "model/setSubset_" + std::to_string(cutCoordInd) + ".vs" ,2);
-    
-    temp = gradientSmall.getDensity(); //results of inverted subset model
-    //damp the boundary borders
-    for (IndexType y = 0; y < NY; y++) {
-        for (IndexType i = 0; i < boundaryWidth; i++) {
-            temp[modelCoordinates.coordinate2index(i, y, 0)] = temp[modelCoordinates.coordinate2index(i, y, 0)]*(i+1)/boundaryWidth;
-            temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)] = temp[modelCoordinates.coordinate2index(NX-1-i, y, 0)]*(i+1)/boundaryWidth;
-        }
-    }
-    temp = shrinkMatrix*temp; //transform subset into big model
+
+    temp = shrinkMatrix * gradientPerShot.getDensity(); //transform pershot into big model
+    temp *= restoreVector;
     density *= eraseVector;
     density += temp; //take over the values
-
-}
-
-/*! \brief Smoothen gradient by gaussian window and cosine taper on the left side
- \param gradient gradient model
- \param modelCoordinates coordinate class object of the subset
- \param NX NX in model
- \param NY NY in model
- */
-template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::smoothGradient(Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType NX, scai::IndexType NY)
-{
-    auto savedVelocityP = velocityP;
-    auto savedVelocityS = velocityS;
-    auto savedDensity = density;
-    
-    for (IndexType y = 0; y < NY; y++) {
-        for (IndexType x = 0; x < NX; x++) {
-            if (x == 0) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
-            }
-            else if (x == 1) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
-            }
-            else if (x == 2) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
-            }
-            else if (x == NX-3) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.0055;
-            }
-            else if (x == NX-2) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.0055;
-                }
-            else if (x == NX-1) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055;
-            }
-            else {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x-3, y, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x-2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x-1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x+1, y, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x+2, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x+3, y, 0)]*0.0055;
-            }
-        }
-    }
-    for (IndexType x = 0; x < NX; x++) {
-        for (IndexType y = 0; y < NY; y++) {
-            if (y == 0) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
-            }
-            else if (y == 1) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
-            }
-            else if (y == 2) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
-            }
-            else if (y == NY-3) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.0055;
-            }
-            else if (y == NY-2) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.0055;
-                }
-            else if (y == NY-1) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055;
-            }
-            else {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = savedVelocityS[modelCoordinates.coordinate2index(x, y-3, 0)]*0.0055 + savedVelocityS[modelCoordinates.coordinate2index(x, y-2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y-1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y, 0)]*0.383 + savedVelocityS[modelCoordinates.coordinate2index(x, y+1, 0)]*0.242 + savedVelocityS[modelCoordinates.coordinate2index(x, y+2, 0)]*0.061 + savedVelocityS[modelCoordinates.coordinate2index(x, y+3, 0)]*0.0055;
-            }
-        }
-    }
-    // Cos Taper
-    for (IndexType y = 0; y < NY; y++) {
-        for (IndexType x = 0; x < NX; x++) {
-            // Simple Taper
-            if (x < 50) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0.5*(1-cos(M_PI*x/50))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
-            }
-            if (x > NX-50) {
-                velocityS[modelCoordinates.coordinate2index(x, y, 0)] =  (1-0.5*(1-cos(M_PI*(x-NX+50)/50)))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
-            }
-
-            // Late Tapers
-//            if (x < 31) {
-//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0;
-//            }
-//            if ((x < 50) && (x > 30)){
-//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0.5*(1-cos(M_PI*(x-30)/20))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
-//            }
-//            if ((x > NX-60) && (x < NX-20)){
-//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] =  (1-0.5*(1-cos(M_PI*(x-NX+60)/40)))*velocityS[modelCoordinates.coordinate2index(x, y, 0)];
-//            }
-//            if (x > NX-21) {
-//                velocityS[modelCoordinates.coordinate2index(x, y, 0)] = 0;
-//            }
-        }
-    }
 }
 
 /*! \brief Function for scaling the gradients with the model parameter
@@ -537,12 +429,12 @@ void KITGPI::Gradient::Elastic<ValueType>::normalize()
     }
 }
 
-/*! \brief Function for calculating the elastic gradients from the cross correlation and the model parameter
+/*! \brief Function for calculating the elastic gradients from the cross correlation and the model parameter 
  *
  \param model Abstract model.
  \param correlatedWavefields Abstract xCorr.
- \param DT Temporal discretization
- \param workflow
+ \param DT Temporal discretization 
+ \param workflow 
  *
  \f{eqnarray*}
    \nabla_{\lambda} E &=& - \mathrm{d}t \frac{1}{(N \lambda+2\mu)^2} \cdot X_{\lambda} \\
@@ -554,7 +446,7 @@ void KITGPI::Gradient::Elastic<ValueType>::normalize()
  *
  * with \f$ N \f$ as the number of dimensions, \f$ \mu = \rho v_{\mathrm{s}}^2 \f$ and \f$ \lambda = \rho v_{\mathrm{p}}^2 - 2\mu\f$.
  *
- \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 2D
+ \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 2D 
  \sa{KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::update} for the cross-correlations \f$ (X_{\lambda},X_{\rho},X_{\mu,A},X_{\mu,B},X_{\mu,C}) \f$ in 3D
  */
 template <typename ValueType>
@@ -564,6 +456,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 
     scai::lama::DenseVector<ValueType> gradLambda;
     scai::lama::DenseVector<ValueType> gradMu;
+    scai::lama::DenseVector<ValueType> gradRho;
     scai::lama::DenseVector<ValueType> temp;
     scai::lama::DenseVector<ValueType> temp2;
     scai::lama::DenseVector<ValueType> lambda;
@@ -592,7 +485,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
 
-    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity()) {
         //(N*lambda^2+4mu*lambda)/(2mu^2(N*lambda+2mu)^2)
 
         //temp2=>B
@@ -671,8 +564,8 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         temp *= gradMu;
         density += temp;
 
-        temp = DT * correlatedWavefields.getXcorrRho();
-        density -= temp;
+        gradRho = -DT * correlatedWavefields.getXcorrRho(); 
+        density += gradRho;
 
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);

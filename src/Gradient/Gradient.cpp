@@ -79,7 +79,7 @@ void KITGPI::Gradient::Gradient<ValueType>::initParameterisation(scai::lama::Vec
 template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, IndexType fileFormat) const
 {    
-    IO::writeVector(vector,filename,fileFormat);
+    IO::writeVector(vector, filename, fileFormat);
 };
 
 /*! \brief Read a parameter from file
@@ -87,7 +87,7 @@ void KITGPI::Gradient::Gradient<ValueType>::writeParameterisation(scai::lama::Ve
 template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, IndexType fileFormat)
 {    
-    IO::readVector(vector,filename,fileFormat);
+    IO::readVector(vector, filename, fileFormat);
 };
 
 /*! \brief Allocate a single parameter
@@ -99,7 +99,75 @@ void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama:
     vector.allocate(dist);
 };
 
-/*! \brief Get const reference to density  parameter
+/*! \brief Get matrix that multiplies with model matrices to get a pershot
+ \param dist Distribution of the pershot
+ \param distBig Distribution of the big model
+ \param modelCoordinates coordinate class object of the pershot
+ \param modelCoordinatesBig coordinate class object of the big model
+ \param cutCoordinate coordinate where to cut the pershot
+ */
+template <typename ValueType>
+scai::lama::CSRSparseMatrix<ValueType> KITGPI::Gradient::Gradient<ValueType>::getShrinkMatrix(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D const cutCoordinate)
+{
+    SparseFormat shrinkMatrix; //!< Shrink Multiplication matrix
+    shrinkMatrix.allocate(dist, distBig);
+      
+    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
+    dist->getOwnedIndexes(ownedIndexes);
+    lama::MatrixAssembly<ValueType> assembly;
+    IndexType indexBig = 0;
+ 
+    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) { // loop over all indices
+        Acquisition::coordinate3D coordinate = modelCoordinates.index2coordinate(ownedIndex); // get submodel coordinate from singleIndex
+        coordinate.x += cutCoordinate.x; // offset depends on shot number
+        coordinate.y += cutCoordinate.y;
+        coordinate.z += cutCoordinate.z;
+        indexBig = modelCoordinatesBig.coordinate2index(coordinate);
+        assembly.push(ownedIndex, indexBig, 1.0);
+    }
+    shrinkMatrix.fillFromAssembly(assembly);
+    return shrinkMatrix;
+}
+
+/*! \brief Get erase-matrix that erases the old values in the big model
+ \param dist Distribution of the pershot
+ \param distBig Distribution of the big model
+ \param modelCoordinates coordinate class object of the pershot
+ \param modelCoordinatesBig coordinate class object of the big model
+ \param cutCoordinate coordinate where to cut the pershot
+ */
+template <typename ValueType>
+scai::lama::SparseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getEraseVector(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D const cutCoordinate, scai::IndexType boundaryWidth)
+{
+    scai::lama::SparseVector<ValueType> eraseVector(distBig, 1.0); //!< Shrink Multiplication matrix
+      
+    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
+    dist->getOwnedIndexes(ownedIndexes);
+    lama::VectorAssembly<ValueType> assembly;
+    IndexType indexBig = 0;
+ 
+    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) { // loop over all indices
+        Acquisition::coordinate3D coordinate = modelCoordinates.index2coordinate(ownedIndex); // get submodel coordinate from singleIndex
+        coordinate.x += cutCoordinate.x; // offset depends on shot number
+        coordinate.y += cutCoordinate.y;
+        coordinate.z += cutCoordinate.z;
+        indexBig = modelCoordinatesBig.coordinate2index(coordinate);
+        assembly.push(indexBig, 0.0);
+    }
+    eraseVector.fillFromAssembly(assembly);
+    
+    // damp the boundary boarders
+    for (IndexType y = 0; y < modelCoordinatesBig.getNY(); y++) {
+        for (IndexType i = 0; i < boundaryWidth; i++) {
+            ValueType tmp = (ValueType)1.0 - (i + 1) / (ValueType)boundaryWidth;
+            eraseVector[modelCoordinatesBig.coordinate2index(cutCoordinate.x+i, y, 0)] = tmp;
+            eraseVector[modelCoordinatesBig.coordinate2index(cutCoordinate.x+modelCoordinates.getNX()-1-i, y, 0)] = tmp;
+        }
+    }
+    return eraseVector;
+}
+
+/*! \brief Get const reference to density parameter
  * 
  */
 template <typename ValueType>
@@ -109,7 +177,7 @@ scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getD
     return (density);
 }
 
-/*! \brief Get const reference to density  parameter
+/*! \brief Get const reference to density parameter
  */
 template <typename ValueType>
 scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getDensity() const
@@ -193,7 +261,7 @@ scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getT
     return (tauP);
 }
 
-/*! \brief Set tauP velocity  parameter
+/*! \brief Set tauP parameter
  */
 template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::setTauP(scai::lama::Vector<ValueType> const &setTauP)
@@ -217,20 +285,20 @@ scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getT
     return (tauS);
 }
 
+/*! \brief Set tauS parameter
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Gradient<ValueType>::setTauS(scai::lama::Vector<ValueType> const &setTauS)
+{
+    tauS = setTauS;
+}
+
 /*! \brief Get parameter normalizeGradient
  */
 template <typename ValueType>
 bool KITGPI::Gradient::Gradient<ValueType>::getNormalizeGradient() const
 {
     return (normalizeGradient);
-}
-
-/*! \brief Set tauS velocity  parameter
- */
-template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::setTauS(scai::lama::Vector<ValueType> const &setTauS)
-{
-    tauS = setTauS;
 }
 
 /*! \brief Set normalizeGradient parameter
@@ -240,104 +308,6 @@ void KITGPI::Gradient::Gradient<ValueType>::setNormalizeGradient(bool const &gra
 {
     normalizeGradient = gradNorm;
 }
-
-/*! \brief Get matrix that multiplies with model matrices to get a subset
- \param dist Distribution of the subset
- \param distBig Distribution of the big model
- \param modelCoordinates coordinate class object of the subset
- \param modelCoordinatesBig coordinate class object of the big model
- \param cutCoordinates coordinate where to cut the subset
- */
-template <typename ValueType>
-scai::lama::CSRSparseMatrix<ValueType> KITGPI::Gradient::Gradient<ValueType>::getShrinkMatrix(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D &cutCoordinates)
-{
-    SparseFormat shrinkMatrix; //!< Shrink Multiplication matrix
-    shrinkMatrix.allocate(dist,distBig);
-      
-    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
-    dist->getOwnedIndexes(ownedIndexes);
-    lama::MatrixAssembly<ValueType> assembly;
-    IndexType indexBig = 0;
- 
-    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) { // loop over all indices
-        Acquisition::coordinate3D coordinate = modelCoordinates.index2coordinate(ownedIndex); // get submodel coordinate from singleIndex
-        coordinate.x = coordinate.x + cutCoordinates.x; // offset depends on shot number
-        indexBig = modelCoordinatesBig.coordinate2index(coordinate);
-        assembly.push(ownedIndex, indexBig, 1.0);
-    }
-    shrinkMatrix.fillFromAssembly(assembly);
-    return shrinkMatrix;
-}
-
-/*! \brief Get erase-matrix that erases the old values in the big model
- \param dist Distribution of the subset
- \param distBig Distribution of the big model
- \param modelCoordinates coordinate class object of the subset
- \param modelCoordinatesBig coordinate class object of the big model
- \param cutCoordinates coordinate where to cut the subset
- */
-template <typename ValueType>
-scai::lama::SparseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getEraseVector(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D &cutCoordinates, scai::IndexType NX, scai::IndexType NYBig, scai::IndexType boundaryWidth)
-{
-    scai::lama::SparseVector<ValueType> eraseVector(distBig,1); //!< Shrink Multiplication matrix
-      
-    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
-    dist->getOwnedIndexes(ownedIndexes);
-    lama::VectorAssembly<ValueType> assembly;
-    IndexType indexBig = 0;
- 
-    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) { // loop over all indices
-        Acquisition::coordinate3D coordinate = modelCoordinates.index2coordinate(ownedIndex); // get submodel coordinate from singleIndex
-        coordinate.x = coordinate.x + cutCoordinates.x; // offset depends on shot number
-        indexBig = modelCoordinatesBig.coordinate2index(coordinate);
-        assembly.push(indexBig, 0);
-    }
-    eraseVector.fillFromAssembly(assembly);
-    
-    // damp the boundary boarders
-    for (IndexType y = 0; y < NYBig; y++) {
-        for (IndexType i = 0; i < boundaryWidth; i++) {
-            double tmp = (double)1.0-(i+1) / (double)boundaryWidth;
-            eraseVector[modelCoordinatesBig.coordinate2index(cutCoordinates.x+i, y, 0)] = tmp;
-            eraseVector[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-1-i, y, 0)] = tmp;
-        }
-    }
-    return eraseVector;
-}
-
-/*! \brief Smoothes parameter within a certain range via gauss
- \param modelCoordinatesBig coordinate class object of the big model
- \param parameter input parameter that is to be smoothed
- \param subsetSize size of the subset in x-direction
- \param cutCoordinates coordinate where to cut the subset
- \param smoothRange grid points to the left/right which are to be smoothed
- \param NX NX in model
- \param NXBig NX in big model
- \param NYBig NY in big model
- */
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::smoothParameter(Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, scai::lama::DenseVector<ValueType> parameter, Acquisition::coordinate3D &cutCoordinates, scai::IndexType smoothRange, scai::IndexType NX, scai::IndexType NXBig, scai::IndexType NYBig)
-{
-    scai::lama::DenseVector<ValueType> savedPar = parameter;
- 
-    for (IndexType y = 0; y < NYBig; y++) {
-        for (IndexType i = 0; i<smoothRange*2+1; i++) {
-            if (cutCoordinates.x < smoothRange+3) {
-                parameter[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i, y, 0)] = savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i-3, y, 0)]*0.0055 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i-2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i-1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i, y, 0)]*0.383 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i+1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i+2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i+3, y, 0)]*0.0055;
-            }
-            else if (cutCoordinates.x+NX+smoothRange+3 > NXBig){
-                parameter[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i, y, 0)] = savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i-3, y, 0)]*0.0055 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i-2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i-1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i, y, 0)]*0.383 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i+1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i+2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i+3, y, 0)]*0.0055;
-            }
-            else {
-                parameter[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i, y, 0)] = savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i-3, y, 0)]*0.0055 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i-2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i-1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i, y, 0)]*0.383 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i+1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i+2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x-smoothRange+i+3, y, 0)]*0.0055;
-            
-                parameter[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i, y, 0)] = savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i-3, y, 0)]*0.0055 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i-2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i-1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i, y, 0)]*0.383 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i+1, y, 0)]*0.242 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i+2, y, 0)]*0.061 + savedPar[modelCoordinatesBig.coordinate2index(cutCoordinates.x+NX-smoothRange+i+3, y, 0)]*0.0055;
-            }
-        }
-    }
-    return parameter;
-}
-
 
 /*! \brief Overloading = Operation
  *

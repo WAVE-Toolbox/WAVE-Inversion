@@ -249,7 +249,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
     testmodel->prepareForModelling(modelCoordinates, ctx, dist, commShot);
 
-    // later it should be possible to select only a subset of shots for the step length search
+    // later it should be possible to select only a pershot of shots for the step length search
     
     IndexType firstShot = shotDist.lb();
     IndexType lastShot = shotDist.ub();

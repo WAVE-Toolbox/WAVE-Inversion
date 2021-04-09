@@ -34,7 +34,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::C
     if ((workflow.getInvertForVp()) || (workflow.getInvertForVs()) || (workflow.getInvertForDensity()))
         this->initWavefield(xcorrLambda, ctx, dist);
 
-    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity()) {
         this->initWavefield(xcorrMuA, ctx, dist);
         this->initWavefield(xcorrMuB, ctx, dist);
         this->initWavefield(xcorrMuC, ctx, dist);
@@ -73,7 +73,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::resetXcorr(KITGPI::
     if (workflow.getInvertForDensity())
         this->resetWavefield(xcorrRho);
 
-    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity()) {
         this->resetWavefield(xcorrMuA);
         this->resetWavefield(xcorrMuB);
         this->resetWavefield(xcorrMuC);
@@ -129,7 +129,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::update(Wavefields::
         xcorrLambda += temp1;
     }
 
-    if ((workflow.getInvertForVs()) || (workflow.getInvertForDensity())) {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity()) {
         temp1 = forwardWavefield.getRefSxx();
         temp1 *= adjointWavefield.getRefSxx();
         xcorrMuA += temp1;
