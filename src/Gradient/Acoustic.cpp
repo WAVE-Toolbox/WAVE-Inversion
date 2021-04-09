@@ -337,21 +337,21 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumShotDomain(scai::dmemo::Communica
  \param modelSubset subset model
  \param modelCoordinates coordinate class object of the subset
  \param modelCoordinatesBig coordinate class object of the big model
- \param cutCoord cut coordinate
+ \param cutCoordinates cut coordinate
  \param cutCoordInd cut coordinate index
  \param smoothRange range in x direction which is to be smoothened
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::setGradientSubset(KITGPI::Gradient::Gradient<ValueType> &gradientSmall, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoord, scai::IndexType cutCoordInd, scai::IndexType smoothRange, scai::IndexType NX, scai::IndexType NY, scai::IndexType NXBig, scai::IndexType NYBig, scai::IndexType boundaryWidth)
+void KITGPI::Gradient::Acoustic<ValueType>::setGradientSubset(KITGPI::Gradient::Gradient<ValueType> &gradientSmall, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType cutCoordInd, scai::IndexType smoothRange, scai::IndexType NX, scai::IndexType NY, scai::IndexType NXBig, scai::IndexType NYBig, scai::IndexType boundaryWidth)
 {
     auto distBig = velocityP.getDistributionPtr();
     auto dist = gradientSmall.getVelocityP().getDistributionPtr();
 //     auto comm = dist.getCommunicatorPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix = this->getShrinkMatrix(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoord.at(cutCoordInd));
+    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix = this->getShrinkMatrix(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoordinates.at(cutCoordInd));
     shrinkMatrix.assignTranspose(shrinkMatrix);
     
-    scai::lama::SparseVector<ValueType> eraseVector = this->getEraseVector(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoord.at(cutCoordInd),NX,NYBig,boundaryWidth);
+    scai::lama::SparseVector<ValueType> eraseVector = this->getEraseVector(dist,distBig,modelCoordinates,modelCoordinatesBig,cutCoordinates.at(cutCoordInd),NX,NYBig,boundaryWidth);
     
     lama::DenseVector<ValueType> temp;
     temp = gradientSmall.getVelocityP(); //results of inverted subset model

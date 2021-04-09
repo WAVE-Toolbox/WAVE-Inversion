@@ -1,0 +1,7 @@
+# Workflow file for IFOS++, each line contains one workflow stage with the specified parameters	
+#	invertForVp	invertForVs	invertForDensity	invertForPorosity	invertForSaturation	 relativeMisfitChange    filterOrder    lowerCornerFreq(Hz)    upperCornerFreq(Hz)	timeDampingFactor
+	     1	         1	           1	                 0	               0		            0.01	             4                 5                      20				0
+	     1	         1	           1	                 0	               0		            0.01	             4                 5                      35				0
+	     1	         1	           1	                 0	               0		            0.01	             4                 5                      45				0
+	     1	         1	           1	                 0	               0		            0.01	             4                 5                      60				0
+	     1	         1	           1	                 0	               0		            0.01	             4                 5                      80				0

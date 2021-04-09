@@ -62,10 +62,9 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Read configuration from file            */
     /* --------------------------------------- */
-    Configuration::Configuration config;
-    config.init(argv[1]);
+    Configuration::Configuration config(argv[1]);
     
-    Configuration::Configuration configStream;
+    Configuration::Configuration configBig;
     bool useStreamConfig;
     try {
         useStreamConfig = config.get<bool>("useStreamConfig");
@@ -74,7 +73,7 @@ int main(int argc, char *argv[])
     }
     
     if (useStreamConfig){
-        configStream.readFromFile(config.get<std::string>("streamConfigFilename"),true);
+        configBig.readFromFile(config.get<std::string>("streamConfigFilename"),true);
     }
 
     std::string dimension = config.get<std::string>("dimension");
@@ -87,12 +86,12 @@ int main(int argc, char *argv[])
     std::string misfitType = config.get<std::string>("misfitType");
     std::string fieldSeisName(config.get<std::string>("fieldSeisName"));
     std::string gradname(config.get<std::string>("gradientFilename"));
-//    std::string gradnameBig(configStream.get<std::string>("gradientFilename"));
+//    std::string gradnameBig(configBig.get<std::string>("gradientFilename"));
     std::string logFilename = config.get<std::string>("logFilename");
     ValueType steplengthInit = config.get<ValueType>("steplengthInit");
     IndexType maxiterations = config.get<IndexType>("maxIterations");
     IndexType maxOutShotIteration =config.get<IndexType>("maxIterations");
-    IndexType maxcount = config.get<IndexType>("maxCount");
+    IndexType maxcount = config.get<IndexType>("maxiterations");
     std::string optimizationType = config.get<std::string>("optimizationType");
 
     
@@ -259,14 +258,16 @@ int main(int argc, char *argv[])
     
     Acquisition::Coordinates<ValueType> modelCoordinatesBig;
     if (useStreamConfig) {
-        modelCoordinatesBig.init(configStream);
+        modelCoordinatesBig.init(configBig);
         dmemo::DistributionPtr distBig = nullptr;
         distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot);
-        modelBig->init(configStream, ctx, distBig, modelCoordinatesBig);
+        modelBig->init(configBig, ctx, distBig, modelCoordinatesBig);
     }
     
-    std::vector<Acquisition::coordinate3D> cutCoord;
-    Acquisition::getCutCoord("acquisition/cutCoordinations.txt", cutCoord);
+    std::vector<Acquisition::coordinate3D> cutCoordinates;
+    std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
+    sources.getAcquisitionSettings(configBig, sourceSettingsBig);
+    Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig);
             
     /* --------------------------------------- */
     /* Wavefields                              */
@@ -432,7 +433,7 @@ int main(int argc, char *argv[])
         IndexType outShotInd = 0;
         IndexType cutCoordSize = 1;
         if (useStreamConfig) {
-            cutCoordSize = cutCoord.size();
+            cutCoordSize = cutCoordinates.size();
         }
 
         while (outShotInd++ < maxOutShotIteration) {
@@ -446,7 +447,7 @@ int main(int argc, char *argv[])
                 outShotInd = maxOutShotIteration;
                 cutCoordInd = 0;
             } else {
-                modelBig->getModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd);
+                modelBig->getModelPerShot(*model, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(cutCoordInd));
             }
 
             /* --------------------------------------- */
@@ -513,12 +514,7 @@ int main(int argc, char *argv[])
 
                     /* Read field data (or pseudo-observed data, respectively) */
                     receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
-                    
-                    /* Set killed traces to zero */
-                    if (config.get<bool>("KillTraces")){
-                        receiversTrue.getSeismogramHandler().kill();
-                    }
-                    
+                                        
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
                         if (workflow.iteration == 0){
@@ -556,12 +552,6 @@ int main(int argc, char *argv[])
                             if (config.get<bool>("NormalizeTraces")){
                                 receivers.getSeismogramHandler().normalize();
                                 receiversTrue.getSeismogramHandler().normalize();
-                            }
-
-                            /* Set killed traces to zero */
-                            if (config.get<bool>("KillTraces")){
-                                receivers.getSeismogramHandler().kill();
-                                receiversTrue.getSeismogramHandler().kill();
                             }
 
                             if (config.get<bool>("maxOffsetSrcEst") == 1)
@@ -623,12 +613,6 @@ int main(int argc, char *argv[])
 //                        receiversTrue.getSeismogramHandler().normalize();
 //                    }
 
-                    /* Set killed traces to zero */
-                    if (config.get<bool>("KillTraces")){
-                        receivers.getSeismogramHandler().kill();
-                        receiversTrue.getSeismogramHandler().kill();
-                    }
-
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
@@ -670,11 +654,11 @@ int main(int argc, char *argv[])
 //                        IndexType smoothRange = config.get<IndexType>("smoothRange");
 //                        IndexType NX = config.get<IndexType>("NX");
 //                        IndexType NY = config.get<IndexType>("NY");
-//                        IndexType NXBig = configStream.get<IndexType>("NX");
-//                        IndexType NYBig = configStream.get<IndexType>("NY");
+//                        IndexType NXBig = configBig.get<IndexType>("NX");
+//                        IndexType NYBig = configBig.get<IndexType>("NY");
 //                        IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
 //
-//                        gradientBig->setGradientSubset(*gradientPerShot,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
+//                        gradientBig->setGradientSubset(*gradientPerShot,modelCoordinates,modelCoordinatesBig,cutCoordinates,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
 //                    }
 
                     solver->resetCPML();
@@ -753,15 +737,15 @@ int main(int argc, char *argv[])
                         model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
                 }
                 
-                if (useStreamConfig) {
-                    IndexType smoothRange = config.get<IndexType>("smoothRange");
-                    IndexType NXBig = configStream.get<IndexType>("NX");
-                    IndexType NYBig = configStream.get<IndexType>("NY");
-                    IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
-
-                    modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoord,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
-                    modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
-                }
+//                 if (useStreamConfig) {
+//                     IndexType smoothRange = config.get<IndexType>("smoothRange");
+//                     IndexType NXBig = configBig.get<IndexType>("NX");
+//                     IndexType NYBig = configBig.get<IndexType>("NY");
+//                     IndexType boundaryWidth = config.get<IndexType>("BoundaryWidth");
+// 
+// //                     modelBig->setModelSubset(*model,modelCoordinates,modelCoordinatesBig,cutCoordinates,cutCoordInd,smoothRange,NX,NY,NXBig,NYBig,boundaryWidth);
+//                     modelBig->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".subset_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1)), config.get<IndexType>("FileFormat"));
+//                 }
                 
                 steplengthInit *= 0.98;
 
@@ -833,12 +817,6 @@ int main(int argc, char *argv[])
 //                            receivers.getSeismogramHandler().normalize();
 //                            receiversTrue.getSeismogramHandler().normalize();
 //                        }
-
-                        /* Set killed traces to zero */
-                        if (config.get<bool>("KillTraces")){
-                            receivers.getSeismogramHandler().kill();
-                            receiversTrue.getSeismogramHandler().kill();
-                        }
                         
                         receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
