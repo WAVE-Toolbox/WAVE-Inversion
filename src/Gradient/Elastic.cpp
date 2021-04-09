@@ -572,5 +572,13 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     }
 }
 
+/*! \brief Apply a median filter to filter the extrame value of the gradient
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
+{
+    
+}
+
 template class KITGPI::Gradient::Elastic<float>;
 template class KITGPI::Gradient::Elastic<double>;

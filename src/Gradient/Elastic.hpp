@@ -72,6 +72,9 @@ namespace KITGPI
             ValueType getRelaxationFrequency() const override;
 
             void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            
+            void applyMedianFilter(KITGPI::Configuration::Configuration config) override;
+            
             void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow);
             void normalize();
 

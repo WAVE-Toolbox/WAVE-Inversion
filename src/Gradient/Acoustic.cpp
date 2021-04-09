@@ -460,5 +460,13 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     }
 }
 
+/*! \brief Apply a median filter to filter the extrame value of the gradient
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
+{
+
+}
+
 template class KITGPI::Gradient::Acoustic<double>;
 template class KITGPI::Gradient::Acoustic<float>;

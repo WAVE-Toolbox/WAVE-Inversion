@@ -63,14 +63,9 @@ namespace KITGPI
             virtual void resetGradient() = 0;
 
             virtual void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            
+            virtual void applyMedianFilter(KITGPI::Configuration::Configuration config) = 0;
 
-            /*! \brief Abstract write function
-             *
-             * Standard write function
-             *
-             \param filename filename to write parameters (endings will be added by derived classes)
-             \param fileFormat format of output file
-             */
             virtual void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
             virtual std::string getEquationType() const = 0;
