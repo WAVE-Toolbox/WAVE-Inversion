@@ -42,7 +42,7 @@ namespace KITGPI
 
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
 
-        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, scai::IndexType shotInd, scai::IndexType shotNumber, std::vector<scai::IndexType> &filterHistoryCount, bool useStreamConfig);
+        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
         void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffsets, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
 
@@ -51,7 +51,6 @@ namespace KITGPI
         scai::IndexType nFFT; // filter length
 
         scai::lama::DenseMatrix<ComplexValueType> filter;
-        scai::lama::DenseMatrix<ComplexValueType> filterHistory;
 
         bool useOffsetMutes;
         std::vector<scai::lama::DenseVector<ValueType>> mutes;

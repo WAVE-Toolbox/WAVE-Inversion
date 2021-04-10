@@ -552,7 +552,7 @@ int main(int argc, char *argv[])
                             if (config.get<bool>("maxOffsetSrcEst") == 1)
                                 sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"),modelCoordinates);
                             
-                            sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber, filterHistoryCount, useStreamConfig);
+                            sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
 
                             sourceEst.applyFilter(sources, shotInd);
                             if (config.get<bool>("useSourceSignalTaper"))
