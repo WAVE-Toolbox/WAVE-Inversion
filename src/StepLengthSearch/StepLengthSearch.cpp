@@ -37,6 +37,8 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
+    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
     int testShotIncr = config.get<int>("testShotIncr");
 
     wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -230,6 +232,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     //     double start_t, end_t; /* For timing */
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     std::string equationType = config.get<std::string>("equationType");
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
     int testShotIncr = config.get<int>("testShotIncr");
 
     scai::lama::DenseVector<ValueType> misfitTest(numshots, 0, ctx);

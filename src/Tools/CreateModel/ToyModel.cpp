@@ -38,7 +38,9 @@ int main(int argc, char *argv[])
     int width=config.get<IndexType>("boxWidth");
     int height=config.get<IndexType>("boxHeight");
     
-    if (config.get<std::string>("dimension")=="3D")
+    std::string dimension = config.get<std::string>("dimension");
+    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower); 
+    if (dimension.compare("3d") == 0)
     depth=config.get<IndexType>("boxDepth");
 
 //    permutations in box
@@ -115,7 +117,8 @@ int main(int argc, char *argv[])
     }
    }      
 
-   std::string type = config.get<std::string>("equationType");
+    std::string type = config.get<std::string>("equationType");
+    std::transform(type.begin(), type.end(), type.begin(), ::tolower); 
    
     //write model to file specified in configuration
     std::string filename = config.get<std::string>("ModelFilename");

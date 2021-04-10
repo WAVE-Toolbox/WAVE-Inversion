@@ -46,9 +46,7 @@ namespace KITGPI
             std::string approxHessianName;
             std::string dimension; 
             std::string equationType;
-            ValueType epsilonHessian;
-
-            
+            ValueType epsilonHessian;            
         };
     }
 }

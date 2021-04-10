@@ -17,8 +17,8 @@ template <typename ValueType>
 void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates,IndexType radius)
 {
     /* Get local "global" indices */
-    hmemo::HArray<IndexType> ownedIndeces;
-    dist->getOwnedIndexes(ownedIndeces); // get global indeces for local part
+    hmemo::HArray<IndexType> ownedIndexes;
+    dist->getOwnedIndexes(ownedIndexes); // get global indexes for local part
 
     //gets coordinate index for first source to be changed
     IndexType SourceCoordinate;
@@ -36,7 +36,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 
     if(radius>0){
         //loop over all gridpoint -> this is costly maybe there is a better alternative because the size of the taper is known
-        for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndeces)){
+        for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)){
             ValueType valueTemp=1;
             ValueType value=1;
             
@@ -66,7 +66,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
                         switch (taperType) {
                             case 1:
                                 //normalized logarithmic function : log(i)/log(max) for log(i)>1 
-                                valueTemp=std::log(distance) / std::log(radius );
+                                valueTemp=std::log(distance) / std::log(radius);
                                 
                                 break;
                             case 2:
@@ -82,7 +82,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
                         value=0;
                     }
                     
-                assembly.push(ownedIndex,value);
+                assembly.push(ownedIndex, value);
                 }
             }
         }

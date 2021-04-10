@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
     std::string filenameRef = config.get<std::string>("LogFilename");
     std::string dimensionRef = config.get<std::string>("dimension");
     std::string equationTypeRef = config.get<std::string>("equationType");
+    std::transform(dimensionRef.begin(), dimensionRef.end(), dimensionRef.begin(), ::tolower);   
+    std::transform(equationTypeRef.begin(), equationTypeRef.end(), equationTypeRef.begin(), ::tolower);  
 
     // read reference misfit
     std::string filenameMisfit = "ci/ReferenceMisfits.txt";

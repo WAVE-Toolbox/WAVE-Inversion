@@ -9,7 +9,7 @@ namespace KITGPI
     //! \brief Optimization namespace
     namespace Optimization
     {        
-        /*! \brief Class to calculate the conjugate gradientEM direction
+        /*! \brief Class to calculate the conjugate gradient direction
         * 
         */
         template <typename ValueType>

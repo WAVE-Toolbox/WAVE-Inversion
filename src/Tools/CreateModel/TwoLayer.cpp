@@ -53,7 +53,8 @@ int main(int argc, char *argv[])
     }
     
     
-       std::string type = config.get<std::string>("equationType");
+    std::string type = config.get<std::string>("equationType");
+    std::transform(type.begin(), type.end(), type.begin(), ::tolower); 
     //write model to file specified in configuration
     std::string filename = config.get<std::string>("ModelFilename");
     

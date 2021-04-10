@@ -9,11 +9,11 @@
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config)
 {
-    approxHessian.setSameValue(dist, 0 );
+    approxHessian.setSameValue(dist, 0);
 
-    wavefieldVX.setSameValue(dist, 0 );
-    wavefieldVY.setSameValue(dist, 0 );
-    wavefieldVZ.setSameValue(dist, 0 );
+    wavefieldVX.setSameValue(dist, 0);
+    wavefieldVY.setSameValue(dist, 0);
+    wavefieldVZ.setSameValue(dist, 0);
     
     saveApproxHessian = config.get<bool>("saveApproxHessian");  
     approxHessianName = config.get<std::string>("approxHessianName");  
@@ -21,37 +21,40 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
     
     dimension = config.get<std::string>("dimension");
     equationType = config.get<std::string>("equationType");
-    
+    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);
 }
 
 /*! \brief Calculate the approximation of the diagonal of the inverse of the Hessian for one shot
  *
  *
  \param wavefield Wavefield of one time step
- \param DT temporal sampling intervall
+ \param DT temporal sampling interval
  */
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT)
 {
             
-    if(equationType!="SH"){
+    if(equationType.compare("sh") != 0){
         wavefieldVX = wavefield.getRefVX();
         wavefieldVX *= wavefieldVX;
         wavefieldVX *= DT;
-        approxHessian += wavefieldVX;}
+        approxHessian += wavefieldVX;        
+    }
         
-    if(equationType!="SH"){
+    if(equationType.compare("sh") != 0){
         wavefieldVY = wavefield.getRefVY();
         wavefieldVY *= wavefieldVY;
         wavefieldVY *= DT;
-        approxHessian += wavefieldVY;}
+        approxHessian += wavefieldVY;        
+    }
     
-    if(dimension=="3D" || equationType=="SH"){
+    if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0){
         wavefieldVZ = wavefield.getRefVZ();
         wavefieldVZ *= wavefieldVZ;
         wavefieldVZ *= DT;
-        approxHessian += wavefieldVZ;}
-    
+        approxHessian += wavefieldVZ;        
+    }    
 }
 
 /*! \brief Apply the approximation of the diagonal of the inverse of the Hessian for one shot
@@ -70,7 +73,8 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
     approxHessian *= 1 / approxHessian.maxNorm(); 
     
     if(saveApproxHessian==1){
-        IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);}
+        IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);        
+    }
         
     approxHessian = 1 / approxHessian;
     gradientPerShot *= approxHessian;    // overload operator /= in gradient-class    

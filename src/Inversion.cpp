@@ -78,6 +78,8 @@ int main(int argc, char *argv[])
 
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
+    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
 
     verbose = config.get<bool>("verbose");
     
@@ -86,14 +88,12 @@ int main(int argc, char *argv[])
     std::string misfitType = config.get<std::string>("misfitType");
     std::string fieldSeisName(config.get<std::string>("fieldSeisName"));
     std::string gradname(config.get<std::string>("gradientFilename"));
-//    std::string gradnameBig(configBig.get<std::string>("gradientFilename"));
     std::string logFilename = config.get<std::string>("logFilename");
     ValueType steplengthInit = config.get<ValueType>("steplengthInit");
     IndexType maxiterations = config.get<IndexType>("maxIterations");
     IndexType maxOutShotIteration =config.get<IndexType>("maxIterations");
     IndexType maxcount = config.get<IndexType>("maxiterations");
     std::string optimizationType = config.get<std::string>("optimizationType");
-
     
     /* inter node communicator */
     dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
