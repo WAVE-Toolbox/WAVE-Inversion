@@ -12,7 +12,7 @@ template <typename ValueType>
 KITGPI::Gradient::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     equationType = "elastic";
-    init(ctx, dist, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
 
 /*! \brief Initialisation with zeros
@@ -23,7 +23,7 @@ KITGPI::Gradient::Elastic<ValueType>::Elastic(scai::hmemo::ContextPtr ctx, scai:
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
 
 /*! \brief Initialisation that is generating a homogeneous model
@@ -36,11 +36,13 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
  \param rho Density given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const)
+void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const, ValueType porosity_const, ValueType saturation_const)
 {
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(velocityS, ctx, dist, velocityS_const);
     this->initParameterisation(density, ctx, dist, rho_const);
+    this->initParameterisation(porosity, ctx, dist, porosity_const);
+    this->initParameterisation(saturation, ctx, dist, saturation_const);
 }
 
 //! \brief Copy constructor
@@ -51,6 +53,8 @@ KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
     velocityP = rhs.velocityP;
     velocityS = rhs.velocityS;
     density = rhs.density;
+    porosity = rhs.porosity;
+    saturation = rhs.saturation;
 }
 
 /*! \brief Write model to an external file
@@ -74,6 +78,16 @@ void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType
     if (workflow.getInvertForDensity()) {
         std::string filenamedensity = filename + ".density";
         this->writeParameterisation(density, filenamedensity, fileFormat);
+    }
+    
+    if (workflow.getInvertForPorosity()) { 
+        std::string filenamePorosity = filename + ".porosity";
+        this->writeParameterisation(porosity, filenamePorosity, fileFormat);
+    }
+        
+    if (workflow.getInvertForSaturation()) { 
+        std::string filenameSaturation = filename + ".saturation";
+        this->writeParameterisation(saturation, filenameSaturation, fileFormat);
     }
 };
 
@@ -153,6 +167,8 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     density *= rhs;
     velocityP *= rhs;
     velocityS *= rhs;
+    porosity *= rhs;
+    saturation *= rhs;
 
     return *this;
 }
@@ -179,6 +195,8 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     density += rhs.density;
     velocityP += rhs.velocityP;
     velocityS += rhs.velocityS;
+    porosity += rhs.porosity;
+    saturation += rhs.saturation;
 
     return *this;
 }
@@ -205,6 +223,8 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     density -= rhs.density;
     velocityP -= rhs.velocityP;
     velocityS -= rhs.velocityS;
+    porosity -= rhs.porosity;
+    saturation -= rhs.saturation;
 
     return *this;
 }
@@ -219,6 +239,8 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     velocityP = rhs.velocityP;
     velocityS = rhs.velocityS;
     density = rhs.density;
+    porosity = rhs.porosity;
+    saturation = rhs.saturation;
 
     return *this;
 }
@@ -233,6 +255,8 @@ void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<Val
     density = rhs.getDensity();
     velocityP = rhs.getVelocityP();
     velocityS = rhs.getVelocityS();
+    porosity = rhs.getPorosity();
+    saturation = rhs.getSaturation();
 }
 
 /*! \brief Function for overloading -= Operation (called in base class)
@@ -246,6 +270,8 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Gradient::Gradien
     density -= rhs.getDensity();
     velocityP -= rhs.getVelocityP();
     velocityS -= rhs.getVelocityS();
+    porosity -= rhs.getPorosity();
+    saturation -= rhs.getSaturation();
 }
 
 /*! \brief Function for overloading += Operation (called in base class)
@@ -259,6 +285,8 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
     density += rhs.getDensity();
     velocityP += rhs.getVelocityP();
     velocityS += rhs.getVelocityS();
+    porosity += rhs.getPorosity();
+    saturation += rhs.getSaturation();
 }
 
 /*! \brief Function for overloading *= Operation (called in base class)
@@ -271,6 +299,8 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(ValueType const &rhs)
     density *= rhs;
     velocityP *= rhs;
     velocityS *= rhs;
+    porosity *= rhs;
+    saturation *= rhs;
 }
 
 /*! \brief Function for overloading *= Operation (called in base class)
@@ -283,6 +313,8 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector<ValueT
     density *= rhs;
     velocityP *= rhs;
     velocityS *= rhs;
+    porosity *= rhs;
+    saturation *= rhs;
 }
 
 /*! \brief Function for overloading -= Operation (called in base class)
@@ -293,13 +325,20 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector<ValueT
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-    scai::lama::DenseVector<ValueType> temp;
-    temp = lhs.getVelocityP() - rhs.getVelocityP();
-    lhs.setVelocityP(temp);
-    temp = lhs.getVelocityS() - rhs.getVelocityS();
-    lhs.setVelocityS(temp);
-    temp = lhs.getDensity() - rhs.getDensity();
-    lhs.setDensity(temp);
+    scai::lama::DenseVector<ValueType> temp;   
+    if (lhs.getParameterisation() == 2 || lhs.getParameterisation() == 1) {   
+        temp = lhs.getPorosity() - rhs.getPorosity();
+        lhs.setPorosity(temp);
+        temp = lhs.getSaturation() - rhs.getSaturation();
+        lhs.setSaturation(temp);      
+    } else {
+        temp = lhs.getVelocityP() - rhs.getVelocityP();
+        lhs.setVelocityP(temp);
+        temp = lhs.getVelocityS() - rhs.getVelocityS();
+        lhs.setVelocityS(temp);
+        temp = lhs.getDensity() - rhs.getDensity();
+        lhs.setDensity(temp);
+    }
 };
 
 /*! \brief Function for summing the gradients of all shot domains
@@ -340,6 +379,14 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
     density.redistribute(singleDist);
     commInterShot->sumArray(density.getLocalValues());
     density.redistribute(dist);
+    
+    porosity.redistribute(singleDist);
+    commInterShot->sumArray(porosity.getLocalValues());
+    porosity.redistribute(dist);
+    
+    saturation.redistribute(singleDist);
+    commInterShot->sumArray(saturation.getLocalValues());
+    saturation.redistribute(dist);
 }
 
 /*! \brief If stream configuration is used, set a gradient per shot into the big gradient
@@ -389,25 +436,65 @@ void KITGPI::Gradient::Elastic<ValueType>::sumGradientPerShot(KITGPI::Gradient::
     temp *= restoreVector;
     density *= eraseVector;
     density += temp; //take over the values
+    
+    temp = shrinkMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
+    temp *= restoreVector;
+    porosity *= eraseVector;
+    porosity += temp; //take over the values
+    
+    temp = shrinkMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
+    temp *= restoreVector;
+    saturation *= eraseVector;
+    saturation += temp; //take over the values
 }
 
 /*! \brief Function for scaling the gradients with the model parameter
- *
+ * 
  \param model Abstract model.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
-    if (workflow.getInvertForVp()) {
-        velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
-    }
-
-    if (workflow.getInvertForVs()) {
-        velocityS *= 1 / velocityS.maxNorm() * model.getVelocityS().maxNorm();
-    }
-
-    if (workflow.getInvertForDensity()) {
-        density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
+    ValueType maxValue;      
+    
+    IndexType scaleGradient = config.get<IndexType>("scaleGradient");
+    if (scaleGradient == 1) {
+        if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
+            velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
+        }
+        if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {
+            velocityS *= 1 / velocityS.maxNorm() * model.getVelocityS().maxNorm();
+        }
+        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
+            density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
+        }    
+        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {        
+            porosity *= 1 / porosity.maxNorm() * model.getPorosity().maxNorm();
+        }    
+        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) {       
+            saturation *= 1 / saturation.maxNorm() * model.getSaturation().maxNorm();        
+        } 
+    } else if (scaleGradient == 2) {
+        if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
+            maxValue = config.get<ValueType>("upperVPTh") - config.get<ValueType>("lowerVPTh");
+            velocityP *= 1 / velocityP.maxNorm() * maxValue;
+        }
+        if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {
+            maxValue = config.get<ValueType>("upperVSTh") - config.get<ValueType>("lowerVSTh");
+            velocityS *= 1 / velocityS.maxNorm() * maxValue;
+        }
+        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
+            maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
+            density *= 1 / density.maxNorm() * maxValue;
+        }    
+        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {  
+            maxValue = config.get<ValueType>("upperPorosityTh") - config.get<ValueType>("lowerPorosityTh");      
+            porosity *= 1 / porosity.maxNorm() * maxValue;
+        }    
+        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) {  
+            maxValue = config.get<ValueType>("upperSaturationTh") - config.get<ValueType>("lowerSaturationTh");     
+            saturation *= 1 / saturation.maxNorm() * maxValue;        
+        } 
     }
 }
 
@@ -426,6 +513,12 @@ void KITGPI::Gradient::Elastic<ValueType>::normalize()
         gradientMax = density.maxNorm();
         if (gradientMax != 0)
             density *= 1 / gradientMax;
+        gradientMax = porosity.maxNorm();
+        if (gradientMax != 0)
+            porosity *= 1 / gradientMax;
+        gradientMax = saturation.maxNorm();
+        if (gradientMax != 0)
+            saturation *= 1 / gradientMax;
     }
 }
 
@@ -457,6 +550,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::lama::DenseVector<ValueType> gradLambda;
     scai::lama::DenseVector<ValueType> gradMu;
     scai::lama::DenseVector<ValueType> gradRho;
+    scai::lama::DenseVector<ValueType> gradK_sat;
     scai::lama::DenseVector<ValueType> temp;
     scai::lama::DenseVector<ValueType> temp2;
     scai::lama::DenseVector<ValueType> lambda;
@@ -485,7 +579,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
 
-    if (workflow.getInvertForVs() || workflow.getInvertForDensity()) {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         //(N*lambda^2+4mu*lambda)/(2mu^2(N*lambda+2mu)^2)
 
         //temp2=>B
@@ -524,6 +618,9 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 
         gradMu *= DT;
         Common::replaceInvalid<ValueType>(gradMu, 0.0);
+                
+        gradK_sat = gradLambda;
+        gradK_sat += 3 / 2 * gradMu; 
     }
 
     // vp, vs , rho gradients
@@ -552,7 +649,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }
 
-    if (workflow.getInvertForDensity()) {
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
 
         density = scai::lama::pow(model.getVelocityP(), 2);
         temp = scai::lama::pow(model.getVelocityS(), 2);
@@ -570,6 +667,51 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }
+        
+    if (workflow.getInvertForPorosity()) {            
+        scai::lama::DenseVector<ValueType> rho_satDePorosity;
+        scai::lama::DenseVector<ValueType> mu_satDePorosity;
+        scai::lama::DenseVector<ValueType> K_satDePorosity; 
+        // Based on Gassmann equation   
+        // derivative of mu_sat with respect to porosity
+        mu_satDePorosity = this->getMu_satDePorosity(model); 
+        // sum with chain rule
+        porosity = mu_satDePorosity * gradMu; 
+        
+        if (model.getParameterisation() == 2) { 
+            // derivative of density with respect to porosity
+            rho_satDePorosity = this->getDensityDePorosity(model);  
+            // derivative of K_sat with respect to porosity
+            K_satDePorosity = this->getK_satDePorosity(model); 
+        
+            // porosity derived from seismic modulus  
+            rho_satDePorosity *= gradRho;  
+            porosity += rho_satDePorosity;        
+            K_satDePorosity *= gradK_sat;
+            porosity += K_satDePorosity;  
+        }
+    } else {
+        this->initParameterisation(porosity, ctx, dist, 0.0);
+    }
+    
+    if (workflow.getInvertForSaturation() && model.getParameterisation() == 2) {        
+        scai::lama::DenseVector<ValueType> rho_satDeSaturation;
+        scai::lama::DenseVector<ValueType> K_satDeSaturation; 
+        
+        // Based on Gassmann equation     
+        // derivative of density with respect to saturation
+        rho_satDeSaturation = this->getDensityDeSaturation(model);   
+        // derivative of K_sat with respect to saturation
+        K_satDeSaturation = this->getK_satDeSaturation(model); 
+        
+        // water saturation derived from seismic modulus              
+        // sum with chain rule
+        saturation = rho_satDeSaturation * gradRho;       
+        K_satDeSaturation *= gradK_sat;
+        saturation += K_satDeSaturation; 
+    } else {
+        this->initParameterisation(saturation, ctx, dist, 0.0);
+    }    
 }
 
 /*! \brief Apply a median filter to filter the extrame value of the gradient
@@ -577,7 +719,42 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
 {
+    scai::lama::DenseVector<ValueType> density_temp;
+    scai::lama::DenseVector<ValueType> velocityS_temp;
+    scai::lama::DenseVector<ValueType> velocityP_temp;
+    scai::lama::DenseVector<ValueType> porosity_temp;
+    scai::lama::DenseVector<ValueType> saturation_temp;
     
+    density_temp = this->getDensity();
+    velocityS_temp = this->getVelocityS();
+    velocityP_temp = this->getVelocityP();
+    porosity_temp = this->getPorosity();
+    saturation_temp = this->getSaturation();
+    
+    bool useStreamConfig = config.get<bool>("useStreamConfig");
+    scai::IndexType NX;
+    scai::IndexType NY;
+    if (!useStreamConfig) {
+        NX = config.get<IndexType>("NX");
+        NY = config.get<IndexType>("NY");
+    } else {
+        KITGPI::Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
+        NX = configBig.get<IndexType>("NX");
+        NY = configBig.get<IndexType>("NY");
+    }    
+    scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+    
+    KITGPI::Common::applyMedianFilterTo2DVector(density_temp, NX, NY, spatialFDorder);
+    KITGPI::Common::applyMedianFilterTo2DVector(velocityS_temp, NX, NY, spatialFDorder);
+    KITGPI::Common::applyMedianFilterTo2DVector(velocityP_temp, NX, NY, spatialFDorder);
+    KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
+    KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
+    
+    this->setDensity(density_temp);
+    this->setVelocityS(velocityS_temp);
+    this->setVelocityP(velocityP_temp);
+    this->setPorosity(porosity_temp);    
+    this->setSaturation(saturation_temp);
 }
 
 template class KITGPI::Gradient::Elastic<float>;

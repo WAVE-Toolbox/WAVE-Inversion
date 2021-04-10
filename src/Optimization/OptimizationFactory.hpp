@@ -28,7 +28,7 @@ namespace KITGPI
 
             /*! \brief Create the right optimization with factory method.
              *
-             \param type Optimization type (steepest descent, conjugate gradient, L-BFGS, etc.)
+             \param type Optimization type (steepest descent, conjugate gradientEM, L-BFGS, etc.)
              */
             static OptimizationPtr Create(std::string type);
         };

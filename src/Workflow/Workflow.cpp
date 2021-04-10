@@ -66,10 +66,11 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
     
     /* Skip stage lines (except for first stage) */
     for (int i = 0; i < skipCount; i++){
-        workflowFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');}
+        workflowFile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');        
+    }
         
     /* Extract variables from current workflow stage */
-    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> useGradientTaper;
+    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
     
     workflowFile.close();
 }
@@ -86,11 +87,13 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
     HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
     HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
+    HOST_PRINT(comm, "invertForPorosity = " << invertForPorosity << "\n");
+    HOST_PRINT(comm, "invertForSaturation = " << invertForSaturation << "\n");
     HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
     HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
     HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");
     HOST_PRINT(comm, "upperCornerFreq = " << upperCornerFreq << "\n");
-    HOST_PRINT(comm, "useGradientTaper = " << useGradientTaper << "\n");
+    HOST_PRINT(comm, "timeDampingFactor = " << timeDampingFactor << "\n");
 }
 
 /*! \brief Return copy of invertForVp
@@ -115,6 +118,22 @@ template <typename ValueType>
 bool KITGPI::Workflow::Workflow<ValueType>::getInvertForDensity() const
 {
     return invertForDensity;
+}
+
+/*! \brief Return copy of invertForPorosity
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForPorosity() const
+{
+    return invertForPorosity;
+}
+
+/*! \brief Return copy of invertForSaturation
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForSaturation() const
+{
+    return invertForSaturation;
 }
 
 /*! \brief Return copy of relativeMisfitChange
@@ -149,13 +168,21 @@ ValueType KITGPI::Workflow::Workflow<ValueType>::getUpperCornerFreq() const
     return upperCornerFreq;
 }
 
-/*! \brief Return copy of invertForDensity
+/*! \brief Return copy of timeDampingFactor
  */
 template <typename ValueType>
-bool KITGPI::Workflow::Workflow<ValueType>::getUseGradientTaper() const
+ValueType KITGPI::Workflow::Workflow<ValueType>::getTimeDampingFactor() const
 {
-    return useGradientTaper;
+    return timeDampingFactor;
 }
- 
+
+/*! \brief Return copy of skipCount
+ */
+template <typename ValueType>
+scai::IndexType KITGPI::Workflow::Workflow<ValueType>::getSkipCount() const
+{
+    return skipCount;
+}
+
 template class KITGPI::Workflow::Workflow<double>;
 template class KITGPI::Workflow::Workflow<float>;

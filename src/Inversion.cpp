@@ -419,11 +419,6 @@ int main(int argc, char *argv[])
             freqFilter.calc(transFcnFmly, "lp", workflow.getFilterOrder(), workflow.getLowerCornerFreq());
         else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
             freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());
-
-        if (workflow.getUseGradientTaper()) {
-            gradientTaper.init(dist, ctx, 1);
-            gradientTaper.read(config.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
-        }
         
         /* --------------------------------------- */
         /*        Loop over pershot shots           */
@@ -674,7 +669,7 @@ int main(int argc, char *argv[])
                 if (!config.get<bool>("useReceiversPerShot"))
                     ReceiverTaper.apply(*gradient);
 
-                gradientOptimization->apply(*gradient, workflow, *model);
+                gradientOptimization->apply(*gradient, workflow, *model, config);
 
                 if (config.get<IndexType>("FreeSurface") == 2) {
                     lama::DenseVector<ValueType> mask;
@@ -683,7 +678,7 @@ int main(int argc, char *argv[])
                     *gradient *= mask;
                 }
 
-                if (workflow.getUseGradientTaper())
+                if (config.get<bool>("useGradientTaper"))
                     gradientTaper.apply(*gradient);
 
                 /* Output of gradient */

@@ -49,7 +49,7 @@ namespace KITGPI
             //! Copy Constructor.
             Elastic(const Elastic &rhs);
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const);
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const, ValueType porosity_const, ValueType saturation_const);
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
             /*! \brief Set all wavefields to zero.
@@ -59,6 +59,8 @@ namespace KITGPI
                 this->resetParameter(velocityP);
                 this->resetParameter(velocityS);
                 this->resetParameter(density);
+                this->resetParameter(porosity);
+                this->resetParameter(saturation);
             };
 
             void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
@@ -75,7 +77,7 @@ namespace KITGPI
             
             void applyMedianFilter(KITGPI::Configuration::Configuration config) override;
             
-            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) override;
             void normalize();
 
             /* Overloading Operators */
@@ -104,6 +106,8 @@ namespace KITGPI
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;
             using Gradient<ValueType>::velocityS;
+            using Gradient<ValueType>::porosity;
+            using Gradient<ValueType>::saturation;
 
             /* Not requiered parameters */
             using Gradient<ValueType>::tauP;

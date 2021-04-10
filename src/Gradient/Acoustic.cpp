@@ -373,6 +373,16 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumGradientPerShot(KITGPI::Gradient:
     temp *= restoreVector;
     density *= eraseVector;
     density += temp; //take over the values
+    
+    temp = shrinkMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
+    temp *= restoreVector;
+    porosity *= eraseVector;
+    porosity += temp; //take over the values
+    
+    temp = shrinkMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
+    temp *= restoreVector;
+    saturation *= eraseVector;
+    saturation += temp; //take over the values
 }
 
 /*! \brief function for scaling the gradients with the model parameter
@@ -380,13 +390,41 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumGradientPerShot(KITGPI::Gradient:
  \param model Abstract model.
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
-    if (workflow.getInvertForVp()) {
-        velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
-    }
-    if (workflow.getInvertForDensity()) {
-        density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
+    ValueType maxValue;      
+    
+    IndexType scaleGradient = config.get<IndexType>("scaleGradient");
+    if (scaleGradient == 1) {
+        if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
+            velocityP *= 1 / velocityP.maxNorm() * model.getVelocityP().maxNorm();
+        }
+        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
+            density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
+        }    
+        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {        
+            porosity *= 1 / porosity.maxNorm() * model.getPorosity().maxNorm();
+        }    
+        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) {       
+            saturation *= 1 / saturation.maxNorm() * model.getSaturation().maxNorm();        
+        } 
+    } else if (scaleGradient == 2) {
+        if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
+            maxValue = config.get<ValueType>("upperVPTh") - config.get<ValueType>("lowerVPTh");
+            velocityP *= 1 / velocityP.maxNorm() * maxValue;
+        }
+        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
+            maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
+            density *= 1 / density.maxNorm() * maxValue;
+        }    
+        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {  
+            maxValue = config.get<ValueType>("upperPorosityTh") - config.get<ValueType>("lowerPorosityTh");      
+            porosity *= 1 / porosity.maxNorm() * maxValue;
+        }    
+        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) {  
+            maxValue = config.get<ValueType>("upperSaturationTh") - config.get<ValueType>("lowerSaturationTh");     
+            saturation *= 1 / saturation.maxNorm() * maxValue;        
+        } 
     }
 }
 

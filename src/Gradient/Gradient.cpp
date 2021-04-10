@@ -1,5 +1,4 @@
 #include "Gradient.hpp"
-#include <IO/IO.hpp>
 
 using namespace scai;
 using namespace KITGPI;
@@ -167,6 +166,161 @@ scai::lama::SparseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getEr
     return eraseVector;
 }
 
+/*! \brief calculate the derivative of density with respect to porosity
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getDensityDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    scai::lama::DenseVector<ValueType> rho_satDePorosity;
+    scai::lama::DenseVector<ValueType> saturationtemp;   
+    scai::lama::DenseVector<ValueType> temp1;   
+    
+    saturationtemp = model.getSaturation(); 
+
+    // derivative of density 
+    // \pdv{\rho_{sat}}{\phi}=S_w \rho_{w} + \left(1-S_w\right) \rho_{a} - \rho_{ma}
+    ValueType const DensityWater = model.getDensityWater();
+    ValueType const DensityAir = model.getDensityAir();
+    rho_satDePorosity = saturationtemp * DensityWater;  
+    temp1 = 1 - saturationtemp;  
+    temp1 *= DensityAir; 
+    rho_satDePorosity += temp1;
+    rho_satDePorosity -= model.getDensityRockMatrix();  
+    
+    return (rho_satDePorosity);
+}
+
+/*! \brief calculate the derivative of Mu_sat with respect to porosity
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getMu_satDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    scai::lama::DenseVector<ValueType> mu_satDePorosity;
+    scai::lama::DenseVector<ValueType> betaDePorosity;
+    scai::lama::DenseVector<ValueType> mu_ma;
+    
+    mu_ma = model.getShearModulusRockMatrix();
+    betaDePorosity = this->getBiotCoefficientDePorosity(model);
+
+    // derivative of mu_sat
+    // \pdv{\mu_{sat}}{\phi}=-\mu_{ma} \pdv{\beta}{\phi}
+    mu_satDePorosity = -mu_ma;
+    mu_satDePorosity *= betaDePorosity;   
+    
+    return (mu_satDePorosity);
+}
+
+/*! \brief calculate the derivative of K_sat with respect to porosity
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getK_satDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    scai::lama::DenseVector<ValueType> K_satDePorosity;
+    scai::lama::DenseVector<ValueType> betaDePorosity;
+    scai::lama::DenseVector<ValueType> Kf;
+    scai::lama::DenseVector<ValueType> K_ma;
+    scai::lama::DenseVector<ValueType> M;
+    scai::lama::DenseVector<ValueType> beta;
+    scai::lama::DenseVector<ValueType> temp1;
+    scai::lama::DenseVector<ValueType> temp2;
+    
+    K_ma = model.getBulkModulusRockMatrix();
+    beta = model.getBiotCoefficient();
+    betaDePorosity = this->getBiotCoefficientDePorosity(model);
+    Kf = model.getBulkModulusKf();
+    M = model.getBulkModulusM();
+
+    // derivative of K_sat
+    // \pdv{K_{sat}}{\phi}=\left(-\frac{\beta^2 M^2}{K_{ma}} + 2\beta M - K_{ma}\right) \pdv{\beta}{\phi} - \beta^2 M^2 \left( \frac{1}{K_{f}} - \frac{1}{K_{ma}}\right)
+    temp1 = 1 / K_ma;
+    Kf = 1 / Kf;
+    K_satDePorosity = Kf - temp1;
+    temp1 = beta * M;       
+    temp2 = 2 * temp1;
+    temp1 *= temp1;
+    K_satDePorosity *= temp1;
+    temp1 /= K_ma;
+    temp1 += K_ma;
+    temp2 -= temp1;
+    temp2 *= betaDePorosity;
+    K_satDePorosity = temp2 - K_satDePorosity;  
+    
+    return (K_satDePorosity);
+}
+
+/*! \brief calculate the derivative of BiotCoefficient beta with respect to porosity
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getBiotCoefficientDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{
+    scai::lama::DenseVector<ValueType> beta;
+    scai::lama::DenseVector<ValueType> betaDePorosity;
+    scai::lama::DenseVector<ValueType> mask;
+    
+    beta = model.getBiotCoefficient();
+    
+    scai::dmemo::DistributionPtr dist = beta.getDistributionPtr();    
+    betaDePorosity.allocate(dist);
+    ValueType const CriticalPorosity = model.getCriticalPorosity();
+    betaDePorosity.setScalar(1 / CriticalPorosity);
+    
+    mask = 1 - beta;
+    mask.unaryOp(mask, common::UnaryOp::SIGN);
+    betaDePorosity *= mask;
+    
+    return (betaDePorosity);
+}
+
+/*! \brief calculate the derivative of density with respect to saturation
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getDensityDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    scai::lama::DenseVector<ValueType> densityDeSaturation;
+    scai::lama::DenseVector<ValueType> porositytemp;
+    ValueType tempValue; 
+    
+    porositytemp = model.getPorosity();  
+    
+    // derivative of density
+    // \pdv{\rho_{sat}}{S_w}=\phi\left( \rho_{w} - \rho_{a}\right)
+    ValueType const DensityWater = model.getDensityWater();
+    ValueType const DensityAir = model.getDensityAir();
+    tempValue = DensityWater - DensityAir;
+    densityDeSaturation = porositytemp * tempValue;
+    
+    return (densityDeSaturation);
+}
+
+/*! \brief calculate the derivative of K_sat with respect to saturation
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getK_satDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    scai::lama::DenseVector<ValueType> K_satDeSaturation;
+    scai::lama::DenseVector<ValueType> beta;
+    scai::lama::DenseVector<ValueType> M;
+    scai::lama::DenseVector<ValueType> porositytemp; 
+    scai::lama::DenseVector<ValueType> temp1;
+    ValueType tempValue;
+    
+    porositytemp = model.getPorosity();      
+    beta = model.getBiotCoefficient();
+    M = model.getBulkModulusM();
+    
+    // derivative of K_sat
+    // \pdv{K_{sat}}{S_w}=-\phi \beta^2 M^2 \left(\frac{1}{K_{w}} - \frac{1}{K_{a}}\right)
+    ValueType const BulkModulusWater = model.getBulkModulusWater();
+    ValueType const BulkModulusAir = model.getBulkModulusAir();
+    tempValue = -(1 / BulkModulusWater - 1 / BulkModulusAir);
+    temp1 = beta * M;
+    temp1 *=temp1;
+    K_satDeSaturation = porositytemp * temp1;
+    K_satDeSaturation *= tempValue;
+    
+    return (K_satDeSaturation);
+}
+
 /*! \brief Get const reference to density parameter
  * 
  */
@@ -291,6 +445,54 @@ template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::setTauS(scai::lama::Vector<ValueType> const &setTauS)
 {
     tauS = setTauS;
+}
+
+/*! \brief Get const reference to porosity
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getPorosity()
+{
+    return (porosity);
+}
+
+/*! \brief Get const reference to porosity
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getPorosity() const
+{
+    return (porosity);
+}
+
+/*! \brief Set porosity model parameter
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Gradient<ValueType>::setPorosity(scai::lama::Vector<ValueType> const &setPorosity)
+{
+    porosity = setPorosity;
+}
+
+/*! \brief Get const reference to saturation
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getSaturation()
+{
+    return (saturation);
+}
+
+/*! \brief Get const reference to saturation
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getSaturation() const
+{
+    return (saturation);
+}
+
+/*! \brief Set saturation model parameter
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Gradient<ValueType>::setSaturation(scai::lama::Vector<ValueType> const &setSaturation)
+{
+    saturation = setSaturation;
 }
 
 /*! \brief Get parameter normalizeGradient

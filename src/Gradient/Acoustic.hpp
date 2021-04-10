@@ -77,7 +77,7 @@ namespace KITGPI
             
             void applyMedianFilter(KITGPI::Configuration::Configuration config) override;
             
-            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) override;
             void normalize();
 
             /* Overloading Operators */
@@ -122,6 +122,8 @@ namespace KITGPI
 
             using Gradient<ValueType>::density;
             using Gradient<ValueType>::velocityP;
+            using Gradient<ValueType>::porosity;
+            using Gradient<ValueType>::saturation;
 
             /* Not requiered parameters */
             using Gradient<ValueType>::velocityS;

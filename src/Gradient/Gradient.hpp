@@ -30,6 +30,13 @@
 #include <Common/Common.hpp>
 #include <Modelparameter/Modelparameter.hpp>
 
+#include <stdlib.h>
+#include <iomanip>
+#include "../Common/Common.hpp"
+#include "../Misfit/Misfit.hpp"
+#include <IO/IO.hpp>
+#include "../Taper/Taper2D.hpp"
+
 namespace KITGPI
 {
     //! \brief Gradient namespace
@@ -66,6 +73,13 @@ namespace KITGPI
             
             virtual void applyMedianFilter(KITGPI::Configuration::Configuration config) = 0;
 
+            scai::lama::DenseVector<ValueType> getBiotCoefficientDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model); 
+            scai::lama::DenseVector<ValueType> getDensityDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+            scai::lama::DenseVector<ValueType> getMu_satDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+            scai::lama::DenseVector<ValueType> getK_satDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+            scai::lama::DenseVector<ValueType> getDensityDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+            scai::lama::DenseVector<ValueType> getK_satDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
+            
             virtual void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
             virtual std::string getEquationType() const = 0;
@@ -82,6 +96,11 @@ namespace KITGPI
             virtual scai::lama::Vector<ValueType> const &getTauS();
             virtual scai::lama::Vector<ValueType> const &getTauS() const;
 
+            virtual scai::lama::Vector<ValueType> const &getPorosity();
+            virtual scai::lama::Vector<ValueType> const &getPorosity() const;
+            virtual scai::lama::Vector<ValueType> const &getSaturation();
+            virtual scai::lama::Vector<ValueType> const &getSaturation() const;
+
             virtual scai::IndexType getNumRelaxationMechanisms() const;
             virtual ValueType getRelaxationFrequency() const;
             bool getNormalizeGradient() const;
@@ -96,9 +115,12 @@ namespace KITGPI
             virtual void setNumRelaxationMechanisms(scai::IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
 
+            virtual void setPorosity(scai::lama::Vector<ValueType> const &setPorosity);
+            virtual void setSaturation(scai::lama::Vector<ValueType> const &setSaturation);
+
             void setNormalizeGradient(bool const &normGrad);
 
-            virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) = 0;
             virtual void normalize() = 0;
 
             virtual void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs) = 0;
@@ -148,6 +170,9 @@ namespace KITGPI
 
             scai::IndexType numRelaxationMechanisms; //!< Number of relaxation mechanisms
             ValueType relaxationFrequency;           //!< Relaxation Frequency
+
+            scai::lama::DenseVector<ValueType> porosity; //!< Vector storing porosity.
+            scai::lama::DenseVector<ValueType> saturation; //!< Vector storing saturation
 
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType value);
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, scai::IndexType fileFormat);

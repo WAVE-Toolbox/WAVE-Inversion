@@ -38,11 +38,14 @@ namespace KITGPI
             bool getInvertForVp() const;
             bool getInvertForVs() const;
             bool getInvertForDensity() const;
+            bool getInvertForPorosity() const;
+            bool getInvertForSaturation() const;
             ValueType getRelativeMisfitChange() const;
             scai::IndexType getFilterOrder() const;
             ValueType getLowerCornerFreq() const;
             ValueType getUpperCornerFreq() const;
-            bool getUseGradientTaper() const;
+            ValueType getTimeDampingFactor() const;
+            scai::IndexType getSkipCount() const;
             
             int maxStage;
             scai::IndexType workflowStage;
@@ -56,11 +59,13 @@ namespace KITGPI
             bool invertForVp;
             bool invertForVs;
             bool invertForDensity;
+            bool invertForPorosity;
+            bool invertForSaturation;
             ValueType relativeMisfitChange; 
             scai::IndexType filterOrder;
             ValueType lowerCornerFreq;
             ValueType upperCornerFreq;
-            bool useGradientTaper;
+            ValueType timeDampingFactor;
             
         };
     }
