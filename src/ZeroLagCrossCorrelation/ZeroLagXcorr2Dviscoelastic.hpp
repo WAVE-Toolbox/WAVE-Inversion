@@ -17,21 +17,21 @@ namespace KITGPI
     namespace ZeroLagXcorr
     {
 
-        /*! \brief Class to hold and caclulate the zero lag cross correlated wavefields for 2D visco gradients 
+        /*! \brief Class to hold and caclulate the zero lag cross correlated wavefields for 2D viscoelastic gradients 
          *
          */
         template <typename ValueType>
-        class ZeroLagXcorr2Dvisco : public ZeroLagXcorr<ValueType>
+        class ZeroLagXcorr2Dviscoelastic : public ZeroLagXcorr<ValueType>
         {
 
           public:
             //! Default constructor
-            ZeroLagXcorr2Dvisco(){equationType="visco"; numDimension=2;};
+            ZeroLagXcorr2Dviscoelastic(){equationType="viscoelastic"; numDimension=2;};
 
             //! Default destructor
-            ~ZeroLagXcorr2Dvisco(){};
+            ~ZeroLagXcorr2Dviscoelastic(){};
 
-            explicit ZeroLagXcorr2Dvisco(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            explicit ZeroLagXcorr2Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 

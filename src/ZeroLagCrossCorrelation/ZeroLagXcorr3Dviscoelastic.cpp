@@ -1,32 +1,32 @@
-#include "ZeroLagXcorr3Dvisco.hpp"
+#include "ZeroLagXcorr3Dviscoelastic.hpp"
 
 using namespace scai;
 
 /*! \brief Returns hmemo::ContextPtr from this wavefields
  */
 template <typename ValueType>
-scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::getContextPtr()
+scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::getContextPtr()
 {
     return (xcorrRho.getContextPtr());
 }
 
 /*! \brief Constructor which will set context, allocate and set the wavefields to zero.
  *
- * Initialisation of 3D visco wavefields
+ * Initialisation of 3D viscoelastic wavefields
  *
  \param ctx Context
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::ZeroLagXcorr3Dvisco(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::ZeroLagXcorr3Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    equationType="visco"; 
+    equationType="viscoelastic"; 
     numDimension=3;
     init(ctx, dist, workflow);
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrRho, ctx, dist);
@@ -48,10 +48,10 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::init(scai::hmemo::Con
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
     this->writeWavefield(xcorrRho, "xcorrRho", type, t);
-    COMMON_THROWEXCEPTION("3Dvisco convolution is not implemented yet.");
+    COMMON_THROWEXCEPTION("3Dviscoelastic convolution is not implemented yet.");
 }
 
 /*! \brief Wrapper Function to Write Snapshot of the Wavefield
@@ -60,7 +60,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::write(std::string typ
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     write(type, t, workflow);
 }
@@ -68,7 +68,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::writeSnapshot(IndexTy
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrRho);
@@ -87,7 +87,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::resetXcorr(KITGPI::Wo
 /*! \brief Get numDimension (3)
  */
 template <typename ValueType>
-int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::getNumDimension() const
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::getNumDimension() const
 {
     return (numDimension);
 }
@@ -95,7 +95,7 @@ int KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::getNumDimension() cons
 /*! \brief Get equationType (visco)
  */
 template <typename ValueType>
-std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::getEquationType() const
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::getEquationType() const
 {
     return (equationType);
 }
@@ -114,7 +114,7 @@ std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::getEquationTyp
  *  
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     //temporary wavefields allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp1;
@@ -177,5 +177,5 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<ValueType>::update(Wavefields::Wa
     }
 }
 
-template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<float>;
-template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dvisco<double>;
+template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<float>;
+template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<double>;

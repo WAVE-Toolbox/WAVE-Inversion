@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
         KITGPI::IO::writeVector(vs, filename + ".vs", fileFormat);
     }
 
-    if (type.compare("visco") == 0) {
+    if (type.compare("viscoelastic") == 0) {
         KITGPI::IO::writeVector(tauP, filename + ".tauP", fileFormat);
         KITGPI::IO::writeVector(tauS, filename + ".tauS", fileFormat);
     }
