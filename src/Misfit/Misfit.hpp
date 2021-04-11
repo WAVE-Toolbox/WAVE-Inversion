@@ -27,6 +27,8 @@ namespace KITGPI
             virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs) = 0;
             virtual void calcAdjointSeismogram(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs) = 0;
             
+            ValueType calcStablizingFunctionalPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, ValueType focusingParameter, int stablizingFunctionalType);
+            
             ValueType getMisfitSum(int iteration);
             scai::lama::DenseVector<ValueType> getMisfitIt(int iteration);
             ValueType getMisfitShot(int iteration, int shotNumber);

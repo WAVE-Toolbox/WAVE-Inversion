@@ -498,6 +498,12 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     }
 }
 
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{    
+
+}
+
 /*! \brief Apply a median filter to filter the extrame value of the gradient
  */
 template <typename ValueType>

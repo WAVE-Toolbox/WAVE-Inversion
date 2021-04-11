@@ -80,6 +80,9 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> getDensityDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
             scai::lama::DenseVector<ValueType> getK_satDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model);
             
+            scai::lama::DenseVector<ValueType> calcStabilizingFunctionalGradientPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit);
+            virtual void calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            
             virtual void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
 
             virtual std::string getEquationType() const = 0;

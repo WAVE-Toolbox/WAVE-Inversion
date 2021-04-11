@@ -133,9 +133,7 @@ int main(int argc, char *argv[])
 
     /* --------------------------------------- */
     /* Context and Distribution                */
-    /* --------------------------------------- */
-
-    
+    /* --------------------------------------- */    
     /* execution context */
     hmemo::ContextPtr ctx = hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
 
@@ -177,6 +175,7 @@ int main(int argc, char *argv[])
 
     ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr derivatives(ForwardSolver::Derivatives::Factory<ValueType>::Create(dimension));
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr model(Modelparameter::Factory<ValueType>::Create(equationType));
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelPriori(Modelparameter::Factory<ValueType>::Create(equationType));
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelBig(Modelparameter::Factory<ValueType>::Create(equationType));
     Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(Wavefields::Factory<ValueType>::Create(dimension, equationType));
     ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solver(ForwardSolver::Factory<ValueType>::Create(dimension, equationType));
@@ -250,20 +249,25 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Modelparameter                          */
     /* --------------------------------------- */
-    // load starting model
-    model->init(config, ctx, dist, modelCoordinates);
-    //model->init(config, ctx, dist);
-    
-    /* --------------------------------------- */
-    /* Modelparameter for bigmodel             */
-    /* --------------------------------------- */
-    
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelPerShot(Modelparameter::Factory<ValueType>::Create(equationType));
     Acquisition::Coordinates<ValueType> modelCoordinatesBig;
-    if (useStreamConfig) {
+    dmemo::DistributionPtr distBig = nullptr;
+    
+    // load starting model
+    if (!useStreamConfig) {    
+        model->init(config, ctx, dist, modelCoordinates);
+        modelPriori->init(config, ctx, dist, modelCoordinates);
+        model->prepareForInversion(config, commShot);
+        modelPriori->prepareForInversion(config, commShot);
+    } else {
         modelCoordinatesBig.init(configBig);
-        dmemo::DistributionPtr distBig = nullptr;
-        distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot);
-        modelBig->init(configBig, ctx, distBig, modelCoordinatesBig);
+        distBig = KITGPI::Partitioning::gridPartition<ValueType>(configBig, commShot);
+        model->init(configBig, ctx, distBig, modelCoordinatesBig);   
+        modelPriori->init(configBig, ctx, distBig, modelCoordinatesBig);
+        modelPerShot->init(config, ctx, dist, modelCoordinates);  
+        model->prepareForInversion(configBig, commShot);
+        modelPriori->prepareForInversion(configBig, commShot);
+        modelPerShot->prepareForInversion(config, commShot); // prepareForInversion is necessary for modelPerShot to calculate gradient.
     }
     
     std::vector<Acquisition::coordinate3D> cutCoordinates;
@@ -314,6 +318,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(Misfit::Factory<ValueType>::Create(misfitType));
     lama::DenseVector<ValueType> misfitPerIt(numshots, 0, ctx);
+    ValueType weightingStabilizingFunctionalGradient = 1.0;
 
     /* --------------------------------------- */
     /* Adjoint sources                         */
@@ -360,19 +365,22 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Gradients                               */
     /* --------------------------------------- */
-    Gradient::Gradient<ValueType>::GradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
-    gradient->init(ctx, dist);
-
-    Gradient::Gradient<ValueType>::GradientPtr gradientPerShot(Gradient::Factory<ValueType>::Create(equationType));
-    gradientPerShot->init(ctx, dist);
-    gradientPerShot->setNormalizeGradient(config.get<bool>("normalizeGradient"));
+    typedef typename Gradient::Gradient<ValueType>::GradientPtr gradientPtr;
+    gradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
+    gradientPtr gradientPerShot(Gradient::Factory<ValueType>::Create(equationType));
+    gradientPtr stabilizingFunctionalGradient(Gradient::Factory<ValueType>::Create(equationType));
     
-
-//    dmemo::DistributionPtr distBig = nullptr;
-//    distBig = std::make_shared<dmemo::BlockDistribution>(modelCoordinatesBig.getNGridpoints(), commShot);
-//    Gradient::Gradient<ValueType>::GradientPtr gradientBig(Gradient::Factory<ValueType>::Create(equationType));
-//    gradientBig->init(ctx, distBig);
-
+    if (!useStreamConfig) {
+        gradient->init(ctx, dist);
+        gradientPerShot->init(ctx, dist);       
+        stabilizingFunctionalGradient->init(ctx, dist);
+    } else {
+        gradient->init(ctx, distBig);
+        stabilizingFunctionalGradient->init(ctx, distBig);
+    }
+    gradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));
+    gradientPerShot->setNormalizeGradient(config.get<bool>("normalizeGradient"));  
+    stabilizingFunctionalGradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));    
 
     /* --------------------------------------- */
     /* Gradient calculation                    */
@@ -682,6 +690,33 @@ int main(int argc, char *argv[])
                 if (!config.get<bool>("useReceiversPerShot"))
                     ReceiverTaper.apply(*gradient);
 
+                if (workflow.iteration != 0 && config.get<IndexType>("stablizingFunctionalType") != 0) {
+                    
+                    // inversion with regularization constraint
+                    HOST_PRINT(commAll, "\n===========================================");
+                    HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient 1 ===");
+                    HOST_PRINT(commAll, "\n===========================================\n");
+                    gradient->normalize();  
+                    
+                    stabilizingFunctionalGradient->calcStabilizingFunctionalGradient(*model, *modelPriori, config, *dataMisfit, workflow);
+                    if (config.get<bool>("useGradientTaper")) {
+                        gradientTaper1D.apply(*stabilizingFunctionalGradient);
+                    }  
+                    stabilizingFunctionalGradient->applyMedianFilter(config);  
+                    stabilizingFunctionalGradient->normalize();  
+                    if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                        stabilizingFunctionalGradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".stabilizingFunctionalGradient", config.get<IndexType>("FileFormat"), workflow);
+                    }  
+                    if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1 ) < 0)) {
+                        weightingStabilizingFunctionalGradient *= 0.6;
+                    }
+                    HOST_PRINT(commAll, "weightingStabilizingFunctionalGradient = " << weightingStabilizingFunctionalGradient << "\n");  
+                    HOST_PRINT(commAll, "\n===========================================\n");
+                    
+                    *stabilizingFunctionalGradient *= weightingStabilizingFunctionalGradient;
+                    *gradient += *stabilizingFunctionalGradient;   
+                }
+                
                 gradientOptimization->apply(*gradient, workflow, *model, config);
 
                 if (config.get<IndexType>("FreeSurface") == 2) {
@@ -696,7 +731,7 @@ int main(int argc, char *argv[])
 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
-                if (config.get<IndexType>("WriteGradient") && commInterShot->getRank() == 0) {
+                if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0) {
                     gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".pershot_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
 //                    gradientBig->write(gradnameBig + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".pershot_" + std::to_string(cutCoordInd) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
                 }

@@ -321,6 +321,28 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getK_s
     return (K_satDeSaturation);
 }
 
+/*! \brief calculate the gradient of stabilizing functional of each model parameter */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcStabilizingFunctionalGradientPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit)
+{ 
+    scai::lama::DenseVector<ValueType> regularizedGradient; 
+    scai::lama::DenseVector<ValueType> We; 
+    ValueType tempValue;
+    tempValue = config.get<ValueType>("focusingParameter");
+    tempValue *= modelResidualVec.maxNorm();
+    tempValue = pow(tempValue, 2);  
+    We = scai::lama::pow(modelResidualVec, 2);
+    We += tempValue;
+    tempValue = dataMisfit.calcStablizingFunctionalPerModel(modelResidualVec, config.get<ValueType>("focusingParameter"), config.get<ValueType>("stablizingFunctionalType"));
+    We = tempValue / We;
+    We = scai::lama::sqrt(We);   
+    
+    regularizedGradient = We * We; 
+    regularizedGradient *= modelResidualVec;
+    
+    return regularizedGradient;
+}
+
 /*! \brief Get const reference to density parameter
  * 
  */

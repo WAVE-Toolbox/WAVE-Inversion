@@ -579,7 +579,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
 
-    if (workflow.getInvertForVs() || workflow.getInvertForDensity()) {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         //(N*lambda^2+4mu*lambda)/(2mu^2(N*lambda+2mu)^2)
 
         //temp2=>B
@@ -649,7 +649,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }
 
-    if (workflow.getInvertForDensity()) {
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
 
         density = scai::lama::pow(model.getVelocityP(), 2);
         temp = scai::lama::pow(model.getVelocityS(), 2);
@@ -712,6 +712,44 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     } else {
         this->initParameterisation(saturation, ctx, dist, 0.0);
     }    
+}
+
+template <typename ValueType>
+void KITGPI::Gradient::Elastic<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{    
+    scai::lama::DenseVector<ValueType> velocityPPrioritemp;
+    scai::lama::DenseVector<ValueType> velocitySPrioritemp;
+    scai::lama::DenseVector<ValueType> densityPrioritemp;
+    
+    velocityP = model.getVelocityP();  
+    velocityS = model.getVelocityS();  
+    density = model.getDensity();  
+    velocityPPrioritemp = modelPriori.getVelocityP(); 
+    velocitySPrioritemp = modelPriori.getVelocityS();  
+    densityPrioritemp = modelPriori.getDensity();  
+            
+    scai::hmemo::ContextPtr ctx = velocityP.getContextPtr();
+    scai::dmemo::DistributionPtr dist = velocityP.getDistributionPtr();
+    
+    if (workflow.getInvertForVp()) {
+        velocityPPrioritemp = velocityP - velocityPPrioritemp;
+        velocityP = this->calcStabilizingFunctionalGradientPerModel(velocityPPrioritemp, config, dataMisfit);
+    } else {
+        this->initParameterisation(velocityP, ctx, dist, 0.0);
+    }    
+    if (workflow.getInvertForVs()) {
+        velocitySPrioritemp = velocityS - velocitySPrioritemp;
+        velocityS = this->calcStabilizingFunctionalGradientPerModel(velocitySPrioritemp, config, dataMisfit);
+    } else {
+        this->initParameterisation(velocityS, ctx, dist, 0.0);
+    }
+    
+    if (workflow.getInvertForDensity()) { 
+        densityPrioritemp = density - densityPrioritemp;
+        density = this->calcStabilizingFunctionalGradientPerModel(densityPrioritemp, config, dataMisfit);
+    } else {
+        this->initParameterisation(density, ctx, dist, 0.0);
+    }  
 }
 
 /*! \brief Apply a median filter to filter the extrame value of the gradient
