@@ -2,11 +2,12 @@
 
 #include "ZeroLagXcorr.hpp"
 #include "ZeroLagXcorr2Dacoustic.hpp"
+#include "ZeroLagXcorr2Dsh.hpp"
 #include "ZeroLagXcorr2Delastic.hpp"
-//#include "ZeroLagXcorr2Dvisco.hpp"
+#include "ZeroLagXcorr2Dvisco.hpp"
 #include "ZeroLagXcorr3Dacoustic.hpp"
 #include "ZeroLagXcorr3Delastic.hpp"
-//#include "ZeroLagXcorr3Dvisco.hpp"
+#include "ZeroLagXcorr3Dvisco.hpp"
 
 namespace KITGPI
 {
@@ -28,10 +29,10 @@ namespace KITGPI
             Factory(Factory const &) = delete;
             void operator=(Factory const &) = delete;
 
-            /*! \brief Create the right simmulation with factory methode.
+            /*! \brief Create the right simulation with factory method.
              *
              \param dimension Dimension of the model (2D, 3D)
-             \param type Simmulation type (acoustic, elsstic, viscoelastic)
+             \param type Simulation type (acoustic, elastic, viscoelastic)
              */
             static ZeroLagXcorrPtr Create(std::string dimension, std::string type);
         };

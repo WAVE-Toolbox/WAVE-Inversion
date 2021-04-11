@@ -4,7 +4,7 @@
 #include "Elastic.hpp"
 #include "SH.hpp"
 #include "Gradient.hpp"
-//#include "Viscoelastic.hpp"
+#include "Viscoelastic.hpp"
 #include <string>
 
 namespace KITGPI

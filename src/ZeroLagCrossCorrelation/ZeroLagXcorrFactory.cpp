@@ -12,9 +12,12 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr KITGPI::
 
     // Assert correctness of input values
     SCAI_ASSERT_ERROR(dimension.compare("2d") == 0 || dimension.compare("3d") == 0, "Unkown dimension");
-    SCAI_ASSERT_ERROR(type.compare("acoustic") == 0 || type.compare("elastic") == 0 || type.compare("visco") == 0, "Unkown type");
+    SCAI_ASSERT_ERROR(type.compare("sh") == 0 || type.compare("acoustic") == 0 || type.compare("elastic") == 0 || type.compare("visco") == 0, "Unkown type");
 
     // 2D
+    if (dimension.compare("2d") == 0 && type.compare("sh") == 0) {
+        return ZeroLagXcorrPtr(new ZeroLagXcorr2Dsh<ValueType>);
+    }
     if (dimension.compare("2d") == 0 && type.compare("acoustic") == 0) {
         return ZeroLagXcorrPtr(new ZeroLagXcorr2Dacoustic<ValueType>);
     }
@@ -22,8 +25,7 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr KITGPI::
         return ZeroLagXcorrPtr(new ZeroLagXcorr2Delastic<ValueType>);
     }
     if (dimension.compare("2d") == 0 && type.compare("visco") == 0) {
-        //         return ZeroLagXcorrPtr(new ZeroLagXcorr2Dvisco<ValueType>);
-        COMMON_THROWEXCEPTION("3Dviscoelastic convolution is not implemented yet.");
+        return ZeroLagXcorrPtr(new ZeroLagXcorr2Dvisco<ValueType>);
     }
 
     // 3D
@@ -34,8 +36,7 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr KITGPI::
         return ZeroLagXcorrPtr(new ZeroLagXcorr3Delastic<ValueType>);
     }
     if (dimension.compare("3d") == 0 && type.compare("visco") == 0) {
-        //         return ZeroLagXcorrPtr(new ZeroLagXcorr3Dvisco<ValueType>);
-        COMMON_THROWEXCEPTION("3Dviscoelastic convolution is not implemented yet.");
+        return ZeroLagXcorrPtr(new ZeroLagXcorr3Dvisco<ValueType>);
     }
 
     COMMON_THROWEXCEPTION("Reached end of factory without match");
