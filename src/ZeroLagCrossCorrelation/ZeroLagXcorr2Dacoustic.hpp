@@ -35,7 +35,7 @@ namespace KITGPI
 
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             int getNumDimension() const;
             std::string getEquationType() const;

@@ -579,7 +579,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     scai::hmemo::ContextPtr ctx = gradLambda.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradLambda.getDistributionPtr();
 
-    if (workflow.getInvertForVs() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity()) {
         //(N*lambda^2+4mu*lambda)/(2mu^2(N*lambda+2mu)^2)
 
         //temp2=>B
@@ -649,7 +649,7 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }
 
-    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+    if (workflow.getInvertForDensity()) {
 
         density = scai::lama::pow(model.getVelocityP(), 2);
         temp = scai::lama::pow(model.getVelocityS(), 2);

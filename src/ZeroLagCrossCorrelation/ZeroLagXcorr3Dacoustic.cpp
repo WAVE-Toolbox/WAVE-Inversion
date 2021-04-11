@@ -22,9 +22,9 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::ZeroLagXcorr3Dacoustic(
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.getInvertForDensity())
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrRho, ctx, dist);
-    if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity()))
+    if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrLambda, ctx, dist);
 }
 
@@ -45,9 +45,9 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>:
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.getInvertForDensity())
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->writeWavefield(xcorrRho, "xcorrRho", type, t);
-    if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity()))
+    if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->writeWavefield(xcorrLambda, "xcorrLambda", type, t);
 }
 
@@ -68,9 +68,9 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::writeSnapshot(Inde
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.getInvertForDensity())
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrRho);
-    if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity()))
+    if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrLambda);
 }
 
@@ -82,26 +82,26 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::resetXcorr(KITGPI:
    X_{\rho} &+=& V_{x,\mathrm{forw}} \cdot V_{x,\mathrm{adj}} + V_{y,\mathrm{forw}} \cdot V_{y,\mathrm{adj}} + V_{z,\mathrm{forw}} \cdot V_{z,\mathrm{adj}}
  \f}
  *
- *  Note that the forwardWavefield is actually the derivative of the forward wavefield (see variable wavefieldrecord in main.cpp).
+ * 
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp;
-    if ((workflow.getInvertForVp()) || (workflow.getInvertForDensity())) {
-        temp = forwardWavefield.getRefP();
+    if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+        temp = forwardWavefieldDerivative.getRefP();
         temp *= adjointWavefield.getRefP();
         xcorrLambda += temp;
     }
-    if (workflow.getInvertForDensity()) {
-        temp = forwardWavefield.getRefVX();
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+        temp = forwardWavefieldDerivative.getRefVX();
         temp *= adjointWavefield.getRefVX();
         xcorrRho += temp;
-        temp = forwardWavefield.getRefVY();
+        temp = forwardWavefieldDerivative.getRefVY();
         temp *= adjointWavefield.getRefVY();
         xcorrRho += temp;
-        temp = forwardWavefield.getRefVZ();
+        temp = forwardWavefieldDerivative.getRefVZ();
         temp *= adjointWavefield.getRefVZ();
         xcorrRho += temp;
     }

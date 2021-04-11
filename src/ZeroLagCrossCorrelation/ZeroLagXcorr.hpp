@@ -39,13 +39,13 @@ namespace KITGPI
             //! Reset cross correlated wavefields
             virtual void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
-            virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual int getNumDimension() const = 0;
             virtual std::string getEquationType() const = 0;
 
             scai::lama::DenseVector<ValueType> const &getXcorrRho() const;
-            scai::lama::DenseVector<ValueType> const &getXcorrLambda() const;
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrLambda() const;
             virtual scai::lama::DenseVector<ValueType> const &getXcorrMuA() const;
             virtual scai::lama::DenseVector<ValueType> const &getXcorrMuB() const;
             virtual scai::lama::DenseVector<ValueType> const &getXcorrMuC() const;

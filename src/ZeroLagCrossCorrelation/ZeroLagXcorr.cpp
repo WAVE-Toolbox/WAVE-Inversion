@@ -74,7 +74,7 @@ scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<Val
     return (xcorrMuB);
 }
 
-//! \brief Getter routine for xcorrMuB
+//! \brief Getter routine for xcorrMuC
 template <typename ValueType>
 scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrMuC() const
 {

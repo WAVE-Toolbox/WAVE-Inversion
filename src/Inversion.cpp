@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
     /* coordinate mapping (3D<->1D)            */
     /* --------------------------------------- */
 
-    Acquisition::Coordinates<ValueType> modelCoordinates;
-    modelCoordinates.init(config);
+    Acquisition::Coordinates<ValueType> modelCoordinates(config);
+    Acquisition::Coordinates<ValueType> modelCoordinatesInversion(config, config.get<IndexType>("DHInversion"));
 
     if (config.get<bool>("useVariableGrid")) {
         CheckParameter::checkVariableGrid(config, commAll, modelCoordinates);
@@ -154,12 +154,14 @@ int main(int argc, char *argv[])
     
     // distribute the grid onto available processors
     dmemo::DistributionPtr dist = nullptr;
+    dmemo::DistributionPtr distInversion = nullptr;
     if ((config.get<IndexType>("partitioning") == 0) || (config.get<IndexType>("partitioning") == 2)) {
         //Block distribution = starting distribution for graph partitioner
         dist = std::make_shared<dmemo::BlockDistribution>(modelCoordinates.getNGridpoints(), commShot);
     } else if (config.get<IndexType>("partitioning") == 1) {
         SCAI_ASSERT(!config.get<bool>("useVariableGrid"), "Grid distribution is not available for the variable grid");
         dist = Partitioning::gridPartition<ValueType>(config, commShot);
+        distInversion = KITGPI::Partitioning::gridPartitionInversion<ValueType>(config, commShot);
     } else {
         COMMON_THROWEXCEPTION("unknown partitioning method");
     }
@@ -275,8 +277,8 @@ int main(int argc, char *argv[])
     wavefields->init(ctx, dist);
 
     //Temporary Wavefield for the derivative of the forward wavefields
-    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
-    wavefieldsTemp->init(ctx, dist);
+    Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
+    wavefieldsInversion->init(ctx, distInversion);
 
     /* --------------------------------------- */
     /* Wavefield record                        */
@@ -287,9 +289,7 @@ int main(int argc, char *argv[])
     IndexType dtinversion = config.get<IndexType>("DTInversion");
     for (IndexType i = 0; i < tStepEnd; i++) {
         if (i % dtinversion == 0) {
-            wavefieldPtr wavefieldsTemp(Wavefields::Factory<ValueType>::Create(dimension, equationType));
-            wavefieldsTemp->init(ctx, dist);
-            wavefieldrecord.push_back(wavefieldsTemp);
+            wavefieldrecord.push_back(wavefieldsInversion);
         }
     }
 
@@ -385,11 +385,15 @@ int main(int argc, char *argv[])
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     if (!config.get<bool>("useReceiversPerShot"))
         ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
-    Taper::Taper1D<ValueType> gradientTaper;
+    Taper::Taper1D<ValueType> gradientTaper1D;
     if (config.get<bool>("useGradientTaper")) {
-        gradientTaper.init(dist, ctx, 1);
-        gradientTaper.read(config.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
+        gradientTaper1D.init(dist, ctx, 1);
+        gradientTaper1D.read(config.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
     }
+    bool isSeismic = true;
+    Taper::Taper2D<ValueType> gradientTaper2DPerShot;
+    gradientTaper2DPerShot.initWavefieldTransform(config, distInversion, dist, ctx, isSeismic); 
+    gradientTaper2DPerShot.calcInversionAverageMatrix(modelCoordinates, modelCoordinatesInversion);  
 
     /* --------------------------------------- */
     /* Gradient preconditioning                */
@@ -586,22 +590,14 @@ int main(int argc, char *argv[])
 
                     wavefields->resetWavefields();
 
-                    ValueType DTinv = 1 / config.get<ValueType>("DT");
-
                     start_t_shot = common::Walltime::get();
                     //IndexType WavefieldRecordIndex=0;
                     for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
 
-                        *wavefieldsTemp = *wavefields;
-
                         solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                         if (tStep % dtinversion == 0) {
                             // save wavefields in std::vector
-                            *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = *wavefields;
-                            //calculate temporal derivative of wavefield
-                            *wavefieldrecord[floor(tStep / dtinversion + 0.5)] -= *wavefieldsTemp;
-                            *wavefieldrecord[floor(tStep / dtinversion + 0.5)] *= DTinv;
-                            //WavefieldRecordIndex++;
+                            *wavefieldrecord[floor(tStep / dtinversion + 0.5)] =  gradientTaper2DPerShot.applyWavefieldAverage(wavefields);
                         }
                         if (config.get<bool>("useEnergyPreconditioning") == 1) {
                             energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
@@ -644,7 +640,7 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
 
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Backward\n");
-                    gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow);
+                    gradientCalculation.run(commAll,*solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, gradientTaper2DPerShot);
 
                     /* Apply energy preconditioning per shot */
                     if (config.get<bool>("useEnergyPreconditioning") == 1) {
@@ -696,7 +692,7 @@ int main(int argc, char *argv[])
                 }
 
                 if (config.get<bool>("useGradientTaper"))
-                    gradientTaper.apply(*gradient);
+                    gradientTaper1D.apply(*gradient);
 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
