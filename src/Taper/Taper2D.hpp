@@ -21,6 +21,7 @@ namespace KITGPI
             ~Taper2D(){};
 
             void init(scai::dmemo::DistributionPtr rowDist, scai::dmemo::DistributionPtr colDist, scai::hmemo::ContextPtr ctx);
+            void init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms);
 
             void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;

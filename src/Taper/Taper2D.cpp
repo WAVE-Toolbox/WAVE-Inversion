@@ -10,9 +10,22 @@ using namespace scai;
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::init(dmemo::DistributionPtr rowDist, dmemo::DistributionPtr colDist, hmemo::ContextPtr ctx)
 {
-
     data.allocate(rowDist, colDist);
     data.setContextPtr(ctx);
+}
+
+/*! \brief Initialize taper
+ \param seismograms seismograms hander
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms)
+{
+    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
+            init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
+        }
+    }
 }
 
 /*! \brief Wrapper to support SeismogramHandler

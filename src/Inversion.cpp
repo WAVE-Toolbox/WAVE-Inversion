@@ -304,8 +304,10 @@ int main(int argc, char *argv[])
     Acquisition::Receivers<ValueType> receiversTrue;
     if (!config.get<bool>("useReceiversPerShot")) {
         receiversTrue.init(config, modelCoordinates, ctx, dist);
-        //CheckParameter::checkReceivers<ValueType>(config, receiversTrue, commShot);
     }
+    Taper::Taper2D<ValueType> seismogramTaper2D;
+    Taper::Taper1D<ValueType> seismogramTaper1D;
+    seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
 
     /* --------------------------------------- */
     /* Misfit                                  */
@@ -420,6 +422,8 @@ int main(int argc, char *argv[])
         else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
             freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());
         
+        seismogramTaper1D.calcTimeDampingTaper(workflow.getTimeDampingFactor(), config.get<ValueType>("DT"));  
+        
         /* --------------------------------------- */
         /*        Loop over pershot shots           */
         /* --------------------------------------- */
@@ -512,9 +516,17 @@ int main(int argc, char *argv[])
                                         
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
-                        if (workflow.iteration == 0){
-                            receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".stage_" + std::to_string(workflow.workflowStage+1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
-                        }
+                    }
+                    
+                    if (config.get<IndexType>("useSeismogramTaper") == 2) {
+                        seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
+                        seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+                        seismogramTaper2D.apply(receiversTrue.getSeismogramHandler()); 
+                    }
+                    seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
+                    
+                    if (workflow.iteration == 0){
+                        receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".stage_" + std::to_string(workflow.workflowStage+1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     }
 
                     /* Reset approximated Hessian per shot */
@@ -531,7 +543,7 @@ int main(int argc, char *argv[])
                         sources.getSeismogramHandler().filter(freqFilter);
                     
                     /* Source time function inversion */
-                    if (config.get<bool>("useSourceSignalInversion") == 1){
+                    if (config.get<bool>("useSourceSignalInversion")){
                         if (workflow.iteration == 0) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist.getLocalSize() << " : Source Time Function Inversion\n");
 
@@ -565,7 +577,7 @@ int main(int argc, char *argv[])
                                 sourceSignalTaper.apply(sources.getSeismogramHandler());
                         }
                     }
-
+                    
                     /* --------------------------------------- */
                     /*        Forward modelling                */
                     /* --------------------------------------- */
@@ -608,6 +620,11 @@ int main(int argc, char *argv[])
 //                        receiversTrue.getSeismogramHandler().normalize();
 //                    }
 
+                    if (config.get<IndexType>("useSeismogramTaper") == 2) {                                                   
+                        seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
+                    }
+                    seismogramTaper1D.apply(receivers.getSeismogramHandler());
+                    
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                     HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
@@ -779,11 +796,16 @@ int main(int argc, char *argv[])
                             receiversTrue.getSeismogramHandler().filter(freqFilter);
                         }
 
-                        if (config.get<bool>("useSourceSignalInversion") == 1) {
+                        if (config.get<bool>("useSourceSignalInversion")) {
                             sourceEst.applyFilter(sources, shotNumber);
                             if (config.get<bool>("useSourceSignalTaper"))
                                 sourceSignalTaper.apply(sources.getSeismogramHandler());
                         }
+
+                        if (config.get<IndexType>("useSeismogramTaper") == 2) {                                                   
+                            seismogramTaper2D.apply(receiversTrue.getSeismogramHandler()); 
+                        }
+                        seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
 
                         start_t_shot = common::Walltime::get();
 
@@ -802,7 +824,12 @@ int main(int argc, char *argv[])
 //                            receivers.getSeismogramHandler().normalize();
 //                            receiversTrue.getSeismogramHandler().normalize();
 //                        }
-                        
+
+                        if (config.get<IndexType>("useSeismogramTaper") == 2) {                                                   
+                            seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
+                        }
+                        seismogramTaper1D.apply(receivers.getSeismogramHandler());
+                            
                         receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                         /* Normalize observed and synthetic data */

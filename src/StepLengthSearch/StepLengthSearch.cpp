@@ -284,8 +284,19 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             sources.getSeismogramHandler().filter(freqFilter);
             receiversTrue.getSeismogramHandler().filter(freqFilter);
         }
+        
+        Taper::Taper2D<ValueType> seismogramTaper2D;
+        Taper::Taper1D<ValueType> seismogramTaper1D;
+        seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
+        seismogramTaper1D.calcTimeDampingTaper(workflow.getTimeDampingFactor(), config.get<ValueType>("DT"));  
+        if (config.get<IndexType>("useSeismogramTaper") == 2) {
+            seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
+            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            seismogramTaper2D.apply(receiversTrue.getSeismogramHandler());  
+        }
+        seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
 
-        if (config.get<bool>("useSourceSignalInversion") == 1) {
+        if (config.get<bool>("useSourceSignalInversion")) {
             sourceEst.applyFilter(sources, shotNumber);
             if (config.get<bool>("useSourceSignalTaper"))
                 sourceSignalTaper.apply(sources.getSeismogramHandler());
@@ -301,6 +312,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             testmodel->write("model_crash", config.get<IndexType>("FileFormat"));
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
+
+        if (config.get<IndexType>("useSeismogramTaper") == 2) {                                                   
+            seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
+        }
+        seismogramTaper1D.apply(receivers.getSeismogramHandler());
 
         /* Normalize observed and synthetic data */
         if (config.get<bool>("NormalizeTraces")){

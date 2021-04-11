@@ -24,6 +24,7 @@ namespace KITGPI
 
             void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool dir);
 
+            void calcTimeDampingTaper(ValueType timeDampingFactor, ValueType DT);
             void calcCosineTaper(scai::IndexType iStart, scai::IndexType iEnd, bool reverse);
             void calcCosineTaper(scai::IndexType iStart1, scai::IndexType iEnd1, scai::IndexType iStart2, scai::IndexType iEnd2, bool reverse);
 

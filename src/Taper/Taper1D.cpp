@@ -9,9 +9,8 @@ using namespace scai;
  \param dir Direction (0=taper columns, 1=taper rows)
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::init(dmemo::DistributionPtr dist, hmemo::ContextPtr ctx, bool dir)
+void KITGPI::Taper::Taper1D<ValueType>::init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool dir)
 {
-
     direction = dir;
     data.allocate(dist);
     data = 1.0; // in this state the taper does nothing when applied
@@ -26,6 +25,18 @@ bool KITGPI::Taper::Taper1D<ValueType>::getDirection() const
     return (direction);
 }
 
+/*! \brief to calculate a time damping taper for seismogram
+ \param timeDampingFactor timeDampingFactor
+ \param DT DT
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::calcTimeDampingTaper(ValueType timeDampingFactor, ValueType DT)
+{
+    data = lama::linearDenseVector<ValueType>(data.size(), 0.0, -DT);
+    data *= timeDampingFactor;
+    data.unaryOp(data, common::UnaryOp::EXP);
+}
+
 /*! \brief Wrapper to calculate a cosine taper with one transition zone
  \param iStart Start index of transition zone
  \param iEnd End index of transition zone
@@ -34,7 +45,6 @@ bool KITGPI::Taper::Taper1D<ValueType>::getDirection() const
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart, IndexType iEnd, bool reverse)
 {
-
     SCAI_ASSERT_ERROR(iStart >= 0 && iEnd < data.size() && iStart < iEnd, "invalid taper edges");
 
     if (reverse)
@@ -137,7 +147,6 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramHan
     }
 }
 
-
 /*! \brief Apply taper to a single seismogram
  \param seismogram Seismogram
  */
@@ -146,15 +155,6 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<Va
 {
     lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
     apply(seismogramData);
-}
-
-/*! \brief Apply taper to a Gradient
- \param grad Seismogram
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
-{
-    grad *= data;
 }
 
 /*! \brief Apply taper to a DenseMatrix
@@ -169,12 +169,21 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
         mat.scaleColumns(data);
 }
 
+/*! \brief Apply taper to a Gradient
+ \param grad Gradient
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
+{
+    grad *= data;
+}
+
 /*! \brief Read a taper from file
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::read(std::string filename, IndexType fileFormat)
 {
-    IO::readVector(data,filename,fileFormat);
+    IO::readVector(data, filename, fileFormat);
 }
 
 template class KITGPI::Taper::Taper1D<double>;
