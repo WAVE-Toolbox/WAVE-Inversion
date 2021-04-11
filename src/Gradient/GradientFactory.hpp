@@ -1,9 +1,8 @@
-
-
 #pragma once
 
 #include "Acoustic.hpp"
 #include "Elastic.hpp"
+#include "SH.hpp"
 #include "Gradient.hpp"
 //#include "Viscoelastic.hpp"
 #include <string>
