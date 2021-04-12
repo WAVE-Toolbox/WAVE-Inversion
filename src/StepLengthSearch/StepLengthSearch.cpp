@@ -1,6 +1,7 @@
 #include "StepLengthSearch.hpp"
 #include <iomanip>
 #include <string>
+#include <IO/IO.hpp>
 
 using scai::IndexType;
 
@@ -19,7 +20,7 @@ using scai::IndexType;
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, std::vector<Acquisition::sourceSettings<ValueType>> &sourceSettings, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, scai::lama::DenseVector<ValueType> currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper, scai::IndexType cutCoordInd)
+void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, std::vector<Acquisition::sourceSettings<ValueType>> &sourceSettings, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, scai::lama::DenseVector<ValueType> currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper, std::vector<scai::IndexType> uniqueShotNosRand, std::vector<std::string> misfitTypeHistory)
 {
     double start_t, end_t; /* For timing */
 
@@ -29,8 +30,13 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     std::vector<scai::IndexType> uniqueShotNos;
     calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
-    scai::dmemo::BlockDistribution shotDist(numshots, commInterShot);
-
+    std::shared_ptr<const dmemo::BlockDistribution> shotDist;
+    if (config.get<IndexType>("useRandSource") != 0) {  
+        IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+        shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
+    } else {
+        shotDist = dmemo::blockDistribution(numshots, commInterShot);
+    }
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
@@ -45,6 +51,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     wavefields->init(ctx, dist);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
+    dataMisfit->setMisfitTypeHistory(misfitTypeHistory);
 
     ValueType misfitTestSum;
     ValueType steplength;
@@ -80,8 +87,16 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
 
     /* --- Save first step length (steplength=0 is used to save computational time) --- */
     misfitTestSum = 0;
-    for (IndexType shotNumber = shotDist.lb(); shotNumber < shotDist.ub(); shotNumber += testShotIncr) {
-        misfitTestSum += currentMisfit.getValue(shotNumber);
+    IndexType shotNumber;  
+    IndexType shotIndTrue = 0;  
+    for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
+        if (config.get<IndexType>("useRandSource") == 0) { 
+            shotIndTrue = shotInd;
+        } else {
+            shotNumber = uniqueShotNosRand[shotInd];
+            Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNos, shotNumber);
+        }
+        misfitTestSum += currentMisfit.getValue(shotIndTrue);
     }
     misfitTestSum = commInterShot->sum(misfitTestSum);
 
@@ -89,7 +104,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
 
     /* --- Save second step length (initial step length) in any case --- */
     HOST_PRINT(commAll, "\nEstimation of 2nd steplength, forward test run no. " << stepCalcCount << " of maximum " << maxStepCalc << "\n");
-    misfitTestSum = this->calcMisfit(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, *wavefields, config, modelCoordinates, scaledGradient, *dataMisfit, steplengthInit, workflow, freqFilter, sourceEst, sourceSignalTaper, cutCoordInd);
+    misfitTestSum = this->calcMisfit(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, *wavefields, config, modelCoordinates, scaledGradient, *dataMisfit, steplengthInit, workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotNosRand);
     steplengthParabola.setValue(1, steplengthInit);
     misfitParabola.setValue(1, misfitTestSum);
     if (misfitParabola.getValue(0) > misfitParabola.getValue(1)) {
@@ -101,7 +116,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     while (step2ok == true && stepCalcCount < maxStepCalc) {
         HOST_PRINT(commAll, "\nEstimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc << "\n");
         steplength *= scalingFactor;
-        misfitTestSum = this->calcMisfit(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, *wavefields, config, modelCoordinates, scaledGradient, *dataMisfit, steplength, workflow, freqFilter, sourceEst, sourceSignalTaper, cutCoordInd);
+        misfitTestSum = this->calcMisfit(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, *wavefields, config, modelCoordinates, scaledGradient, *dataMisfit, steplength, workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotNosRand);
         steplengthParabola.setValue(2, steplength);
         misfitParabola.setValue(2, misfitTestSum);
         if (misfitTestSum > misfitParabola.getValue(1)) {
@@ -118,7 +133,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     while (step2ok == false && stepCalcCount < maxStepCalc) {
         HOST_PRINT(commAll, "Estimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc << "\n");
         steplength /= scalingFactor;
-        misfitTestSum = this->calcMisfit(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, *wavefields, config, modelCoordinates, scaledGradient, *dataMisfit, steplength, workflow, freqFilter, sourceEst, sourceSignalTaper, cutCoordInd);
+        misfitTestSum = this->calcMisfit(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, *wavefields, config, modelCoordinates, scaledGradient, *dataMisfit, steplength, workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotNosRand);
         steplengthParabola.setValue(2, steplength);
         misfitParabola.setValue(2, misfitTestSum);
         if (misfitTestSum < misfitParabola.getValue(0)) {
@@ -212,7 +227,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVec
  \param steplength Steplength
  */
 template <typename ValueType>
-ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, std::vector<Acquisition::sourceSettings<ValueType>> &sourceSettings, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper, scai::IndexType cutCoordInd)
+ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, std::vector<Acquisition::sourceSettings<ValueType>> &sourceSettings, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper, std::vector<scai::IndexType> uniqueShotNosRand)
 {
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
@@ -223,10 +238,17 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
     SCAI_DMEMO_TASK(commShot)
 
+    KITGPI::Acquisition::Sources<ValueType> sources;
     std::vector<scai::IndexType> uniqueShotNos;
     calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
-    scai::dmemo::BlockDistribution shotDist(numshots, commInterShot);
+    std::shared_ptr<const dmemo::BlockDistribution> shotDist;
+    if (config.get<IndexType>("useRandSource") != 0) {  
+        IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+        shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
+    } else {
+        shotDist = dmemo::blockDistribution(numshots, commInterShot);
+    }
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
 
     //     double start_t, end_t; /* For timing */
@@ -240,6 +262,20 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     // Implement a (virtual) copy constructor in the abstract base class to simplify the following code -> virtual constructor idiom!
     typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodel(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
     *testmodel = model;
+    testmodel->prepareForInversion(config, commShot);
+    
+    typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodelPerShot(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
+    testmodelPerShot->init(config, ctx, dist, modelCoordinates);  // init is necessary for modelPerShot to allocate distribution.
+    bool useStreamConfig = config.get<bool>("useStreamConfig");
+    Acquisition::Coordinates<ValueType> modelCoordinatesBig;
+    std::vector<Acquisition::coordinate3D> cutCoordinates;
+    if (useStreamConfig) {
+        KITGPI::Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
+        modelCoordinatesBig.init(configBig);
+        std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
+        sources.getAcquisitionSettings(configBig, sourceSettingsBig);
+        Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig);
+    }
     
     typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));
     *testgradient = scaledGradient;
@@ -247,35 +283,63 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     /* Update model */
     *testgradient *= steplength;
     *testmodel -= *testgradient;
+    
     if (config.get<bool>("useModelThresholds"))
         testmodel->applyThresholds(config);
 
-    testmodel->prepareForModelling(modelCoordinates, ctx, dist, commShot);
-
-    // later it should be possible to select only a pershot of shots for the step length search
-    
-    IndexType firstShot = shotDist.lb();
-    IndexType lastShot = shotDist.ub();
-    
-    if (config.get<bool>("useStreamConfig")) {
-        lastShot = firstShot + 1;
+    if (testmodel->getParameterisation() == 2 || testmodel->getParameterisation() == 1) {
+        HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics test =====\n");  
+        testmodel->calcWaveModulusFromPetrophysics();  
     }
     
-    for (IndexType shotInd = firstShot + cutCoordInd; shotInd < lastShot + cutCoordInd; shotInd += testShotIncr) {
-        IndexType shotNumber = uniqueShotNos[shotInd];
+    if (config.get<bool>("useModelThresholds"))
+        testmodel->applyThresholds(config); 
+
+    if (!useStreamConfig) {
+        testmodel->prepareForModelling(modelCoordinates, ctx, dist, commShot);
+        solver.prepareForModelling(*testmodel, config.get<ValueType>("DT"));
+    }
+
+    IndexType shotNumber;  
+    IndexType shotIndTrue = 0;  
+    // later it should be possible to select only a pershot of shots for the step length search    
+    for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
+        if (config.get<IndexType>("useRandSource") == 0) {  
+            shotNumber = uniqueShotNos[shotInd];
+            shotIndTrue = shotInd;
+        } else {
+            shotNumber = uniqueShotNosRand[shotInd];
+            Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNos, shotNumber);
+        }
+
+        if (useStreamConfig) {
+            HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshots << "\n");
+            testmodel->getModelPerShot(*testmodelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotIndTrue));    
+            testmodelPerShot->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
+            solver.prepareForModelling(*testmodelPerShot, config.get<ValueType>("DT"));
+        }
 
         wavefields.resetWavefields();
 
-        HOST_PRINT(commShot, "Shot " << shotNumber + 1 << " of " << numshots << ": Start Test Forward\n");
+        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Test Forward\n");
 
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
         Acquisition::Sources<ValueType> sources;
         sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
+        if (!useStreamConfig) {
+            CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodel, modelCoordinates, shotNumber);
+        } else {
+            CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
+        }
+        
         if (config.get<bool>("useReceiversPerShot")) {
             receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
             receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
+        } else if (config.get<bool>("useReceiverMark")) {
+            receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
+            receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
         }
 
         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("FieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
@@ -301,11 +365,16 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             if (config.get<bool>("useSourceSignalTaper"))
                 sourceSignalTaper.apply(sources.getSeismogramHandler());
         }
-
-        for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
-            solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);
+        
+        if (!useStreamConfig) {
+            for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                solver.run(receivers, sources, *testmodel, wavefields, derivatives, tStep);
+            }
+        } else {
+            for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+                solver.run(receivers, sources, *testmodelPerShot, wavefields, derivatives, tStep);
+            }
         }
-
 
         // check wavefield and seismogram for NaNs or infinite values
         if ((commShot->any(!wavefields.isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
@@ -324,7 +393,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.getSeismogramHandler().normalize();
         }
 
-        misfitTest.setValue(shotInd, dataMisfit.calc(receivers, receiversTrue));
+        misfitTest.setValue(shotIndTrue, dataMisfit.calc(receivers, receiversTrue, shotIndTrue));
     }
 
     commInterShot->sumArray(misfitTest.getLocalValues());
