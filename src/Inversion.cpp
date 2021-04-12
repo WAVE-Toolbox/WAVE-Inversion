@@ -482,8 +482,6 @@ int main(int argc, char *argv[])
                 model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage+1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
             }
             
-            solver->prepareForModelling(*model, config.get<ValueType>("DT"));
-
             /* --------------------------------------- */
             /*        Loop over shots                  */
             /* --------------------------------------- */
@@ -597,15 +595,15 @@ int main(int argc, char *argv[])
                         if (config.get<bool>("maxOffsetSrcEst") == 1)
                             sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"),modelCoordinates);
                         
-                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotInd, shotNumber);
+                        sourceEst.estimateSourceSignal(receivers, receiversTrue, shotIndTrue, shotNumber);
 
-                        sourceEst.applyFilter(sources, shotInd);
+                        sourceEst.applyFilter(sources, shotIndTrue);
                         if (config.get<bool>("useSourceSignalTaper"))
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
                         if (config.get<bool>("writeInvertedSource") == 1)
                             sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     } else {
-                        sourceEst.applyFilter(sources, shotInd);
+                        sourceEst.applyFilter(sources, shotIndTrue);
                         if (config.get<bool>("useSourceSignalTaper"))
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }

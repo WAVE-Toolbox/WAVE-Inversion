@@ -191,7 +191,6 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
 template <typename ValueType>
 ValueType KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVector<ValueType> const &xValues, scai::lama::DenseVector<ValueType> const &yValues)
 {
-
     SCAI_ASSERT(xValues.size() == 3, "xvalues must contain 3 values!");
     SCAI_ASSERT(yValues.size() == 3, "yvalues must contain 3 values!");
     ValueType steplengthExtremum;
