@@ -14,23 +14,25 @@ bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm,
 {
     bool breakLoop = false;
     
-    if ( (workflow.iteration > 1) && ( std::abs( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration-2) )/(misfit.getMisfitSum(workflow.iteration - 2)) < workflow.getRelativeMisfitChange()) ) 
-    {        
-        HOST_PRINT(comm, "\nAbort criterion fulfilled \n");
-        HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.getRelativeMisfitChange() << "\n");
-        
+    if ( workflow.iteration > 1 ) {        
+        if ( std::abs( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration-2) )/(misfit.getMisfitSum(workflow.iteration - 2)) < workflow.getRelativeMisfitChange()) {
+            breakLoop = true;  
+            HOST_PRINT(comm, "\nAbort criterion 1 fulfilled \n");
+            HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.getRelativeMisfitChange() << "\n");
+        }
+        if ( workflow.iteration > iterationStep-1 && ( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration - iterationStep) )/(misfit.getMisfitSum(workflow.iteration - iterationStep)) > iterationStep * workflow.getRelativeMisfitChange()) {
+            breakLoop = true;  
+            HOST_PRINT(comm, "\nAbort criterion 2 fulfilled \n");
+            HOST_PRINT(comm, "(Misfit(it)-Misfit(it-" << iterationStep << ")) / Misfit(it-"<< iterationStep << ") > " << iterationStep * workflow.getRelativeMisfitChange() << "\n");
+        }    
         if(workflow.workflowStage != workflow.maxStage-1){
             HOST_PRINT(comm, "\nChange workflow stage\n");
             workflow.changeStage(config, misfit, steplengthInit);}
             
-        breakLoop = true;
-        
-    }
-    
-    return breakLoop;
-    
+        breakLoop = true;        
+    }    
+    return breakLoop;    
 }
-
 
 template class KITGPI::AbortCriterion<double>;
 template class KITGPI::AbortCriterion<float>;

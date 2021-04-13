@@ -26,7 +26,6 @@ namespace KITGPI
         ~AbortCriterion(){};
         
         bool check(scai::dmemo::CommunicatorPtr comm, KITGPI::Misfit::Misfit<ValueType> &misfit, KITGPI::Configuration::Configuration config, ValueType &steplengthInit, Workflow::Workflow<ValueType> &workflow);
-
-
+        int const iterationStep = 2;
     };
 }

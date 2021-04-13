@@ -309,21 +309,21 @@ message ( STATUS "LATEX_FOUND=${LATEX_FOUND}, PDFLATEX_COMPILER=${PDFLATEX_COMPI
 if ( LATEX_FOUND )
 
    set ( GUIDE_BINARY_DIR "${CMAKE_BINARY_DIR}/doc/guide" )
-   configure_file ( "${CMAKE_SOURCE_DIR}/../doc/guide/WAVE_guide_EN.tex" "${GUIDE_BINARY_DIR}/WAVE_guide_EN.tex" @ONLY )
+   configure_file ( "${CMAKE_SOURCE_DIR}/../doc/guide/WAVE_Inversion_guide_EN.tex" "${GUIDE_BINARY_DIR}/WAVE_Inversion_guide_EN.tex" @ONLY )
    
    add_custom_command (
-       OUTPUT ${GUIDE_BINARY_DIR}/WAVE_guide_EN.pdf
-       COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
-       COMMAND ${BIBTEX_COMPILER} WAVE_guide_EN
-       COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
-       COMMAND ${PDFLATEX_COMPILER} WAVE_guide_EN
-       DEPENDS ${GUIDE_BINARY_DIR}/WAVE_guide_EN.tex
+       OUTPUT ${GUIDE_BINARY_DIR}/WAVE_Inversion_guide_EN.pdf
+       COMMAND ${PDFLATEX_COMPILER} WAVE_Inversion_guide_EN
+       COMMAND ${BIBTEX_COMPILER} WAVE_Inversion_guide_EN
+       COMMAND ${PDFLATEX_COMPILER} WAVE_Inversion_guide_EN
+       COMMAND ${PDFLATEX_COMPILER} WAVE_Inversion_guide_EN
+       DEPENDS ${GUIDE_BINARY_DIR}/WAVE_Inversion_guide_EN.tex
        WORKING_DIRECTORY ${GUIDE_BINARY_DIR}
    )
 
    add_custom_target (
        pdf
-       DEPENDS ${GUIDE_BINARY_DIR}/WAVE_guide_EN.pdf 
+       DEPENDS ${GUIDE_BINARY_DIR}/WAVE_Inversion_guide_EN.pdf 
        COMMENT "Creating pdf guide."
    )
 
