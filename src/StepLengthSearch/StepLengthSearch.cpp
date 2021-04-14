@@ -328,9 +328,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
         if (!useStreamConfig) {
-            CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodel, modelCoordinates, shotNumber);
+            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodel, modelCoordinates, shotNumber);
         } else {
-            CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
+            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
         }
         
         if (config.get<bool>("useReceiversPerShot")) {
@@ -387,7 +387,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
 
         /* Normalize observed and synthetic data */
-        if (config.get<bool>("NormalizeTraces")){
+        if (config.get<bool>("normalizeTraces")){
             receivers.getSeismogramHandler().normalize();
             receiversTrue.getSeismogramHandler().normalize();
         }

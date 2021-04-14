@@ -21,10 +21,10 @@ dhFactorFilename=Input/dhFactors.txt
 spatialFDorderFilename=Input/FDorders.txt
 gridConfigurationFilename=Input/gridConfig.txt
 
-partitionWrite=0                                   # 1=partition will be written to disk, 0=not
+writePartition=0                                   # 1=partition will be written to disk, 0=not
 partitionFilename=partition
 
-coordinateWrite=1                                  # 1=coordinates will be written to disk, 0=not
+writeCoordinate=1                                  # 1=coordinates will be written to disk, 0=not
 coordinateFilename=coordinates       
 
 weightsWrite=1                                  # 1=weigths will be written to disk, 0=not
@@ -93,7 +93,7 @@ SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(bin
 # 3=frv : binary file - serial IO - float - little endian - seperate header
 # 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
 seismoDT=0.6e-03 #2
-NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+normalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0
 initSourcesFromSU=0
 initReceiverFromSU=0

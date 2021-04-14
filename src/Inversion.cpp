@@ -553,9 +553,9 @@ int main(int argc, char *argv[])
                 sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
                 if (!useStreamConfig) {
-                    CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model, modelCoordinates, shotNumber);
+                    CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model, modelCoordinates, shotNumber);
                 } else {
-                    CheckParameter::checkNumericalArtefeactsAndInstabilities<ValueType>(config, sourceSettingsShot, *modelPerShot, modelCoordinates, shotNumber);
+                    CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *modelPerShot, modelCoordinates, shotNumber);
                 }
                 
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
@@ -581,7 +581,7 @@ int main(int argc, char *argv[])
                         solver->resetCPML();
                         
                         /* Normalize observed and synthetic data */
-                        if (config.get<bool>("NormalizeTraces")){
+                        if (config.get<bool>("normalizeTraces")){
                             receivers.getSeismogramHandler().normalize();
                             receiversTrue.getSeismogramHandler().normalize();
                         }
@@ -651,7 +651,7 @@ int main(int argc, char *argv[])
                 seismogramTaper1D.apply(receivers.getSeismogramHandler());
             
                 /* Normalize observed and synthetic data */
-                if (config.get<bool>("NormalizeTraces")){
+                if (config.get<bool>("normalizeTraces")){
                     receivers.getSeismogramHandler().normalize();
                     receiversTrue.getSeismogramHandler().normalize();
                 }
@@ -875,7 +875,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
                 
                     /* Normalize observed and synthetic data */
-                    if (config.get<bool>("NormalizeTraces")){
+                    if (config.get<bool>("normalizeTraces")){
                         receivers.getSeismogramHandler().normalize();
                         receiversTrue.getSeismogramHandler().normalize();
                     }

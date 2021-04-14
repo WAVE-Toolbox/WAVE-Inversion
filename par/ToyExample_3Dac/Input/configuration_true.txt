@@ -11,7 +11,7 @@ useVariableGrid=0
 partitioning=1
 useVariableFDoperators=0
 
-coordinateWrite=0
+writeCoordinate=0
 
 NX=40                    # horizontal 1
 NY=40                    # depth
@@ -85,7 +85,7 @@ SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(bin
 writeSource=0                                  # 1=Writes used source wavelet/s per shot, filename=WriteSourceFilename+_shot_+<ShotNumber>+extension (specified by FileFormat)
 writeSourceFilename=SourceSignal/Source
 seismoDT=2.0e-03
-NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+normalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0
 initSourcesFromSU=0
 initReceiverFromSU=0

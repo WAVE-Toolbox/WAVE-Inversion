@@ -15,7 +15,7 @@ useVariableGrid=0
 partitioning=1
 useVariableFDoperators=0
 
-coordinateWrite=0
+writeCoordinate=0
 
 NX=100                    # horizontal 1
 NY=100                    # depth
@@ -84,7 +84,7 @@ SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(bin
 initSourcesFromSU=0                            # 1=initialize sources from SU file 0=not (one file per component, filename=SourceSignalFilename+.<component> + .SU)
 initReceiverFromSU=0                           # 1=initialize receiver from SU file 0=not (one file per component, filename=ReceiverFilename+.<component> + .SU)
 seismoDT=2.0e-03                               # Seismogram sampling in seconds
-NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+normalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0                          # 1=Uses an individual receiver geometry for each shot, the ending shot_<shotNumber>.mtx will be searched
 runForward=0
 

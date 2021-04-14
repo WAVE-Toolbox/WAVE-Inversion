@@ -11,7 +11,7 @@ useVariableGrid=0
 partitioning=1
 useVariableFDoperators=0
 
-coordinateWrite=0
+writeCoordinate=0
 
 NX=100                    # horizontal 1
 NY=100                    # depth
@@ -84,7 +84,7 @@ SeismogramFormat=1                             # 1=MTX (ascii serial), 2=lmf(bin
 # 4=su  : binary file - parallel IO - float - little endian - 240 byte header per trace
 
 seismoDT=2.0e-03
-NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+normalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 useReceiversPerShot=0
 initSourcesFromSU=0
 initReceiverFromSU=0

@@ -6,7 +6,7 @@ DH=50
 DT=1e-3
 T=0.5
 
-NormalizeTraces=0
+normalizeTraces=0
 seismoDT=1.0e-03                               # Seismogram sampling in seconds
 
 SourceFilename=../src/Tests/Testfiles/testSourceTimeInversion_sources

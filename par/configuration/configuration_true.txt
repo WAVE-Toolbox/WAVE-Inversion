@@ -68,6 +68,6 @@ ReceiverFilename=acquisition/receiver.mtx      # location of receiver file
 SeismogramFilename=seismograms/rectangle.true      # target location of seismogram
 SeismogramFormat=1                             # 1=MTX, 2=SU
 seismoDT=2.0e-03                               # Seismogram sampling in seconds
-NormalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
+normalizeTraces=0                              # 1=Normalize Traces of the Seismogram, 0=Not Normalized
 runSimultaneousShots=0
 runForward=1
