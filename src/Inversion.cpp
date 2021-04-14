@@ -754,13 +754,6 @@ int main(int argc, char *argv[])
             
             gradientOptimization->apply(*gradient, workflow, *model, config);
 
-            if (config.get<IndexType>("FreeSurface") == 2) {
-                lama::DenseVector<ValueType> mask;
-                mask = model->getVelocityP();
-                mask.unaryOp(mask, common::UnaryOp::SIGN);
-                *gradient *= mask;
-            }
-
             if (config.get<bool>("useGradientTaper"))
                 gradientTaper1D.apply(*gradient);
 
