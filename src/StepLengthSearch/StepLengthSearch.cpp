@@ -231,13 +231,20 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
-    scai::dmemo::DistributionPtr dist = wavefields.getRefVX().getDistributionPtr();
+    std::string equationType = config.get<std::string>("equationType");
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
+    scai::dmemo::DistributionPtr dist;
+    if(equationType.compare("sh") == 0){
+        dist = wavefields.getRefVZ().getDistributionPtr();
+    } else {
+        dist = wavefields.getRefVX().getDistributionPtr();      
+    }
     scai::dmemo::CommunicatorPtr commShot = dist->getCommunicatorPtr();
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
 
     SCAI_DMEMO_TASK(commShot)
 
-    KITGPI::Acquisition::Sources<ValueType> sources;
+    Acquisition::Sources<ValueType> sources;
     std::vector<scai::IndexType> uniqueShotNos;
     calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
@@ -252,8 +259,6 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
     //     double start_t, end_t; /* For timing */
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-    std::string equationType = config.get<std::string>("equationType");
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
     int testShotIncr = config.get<int>("testShotIncr");
 
     scai::lama::DenseVector<ValueType> misfitTest(numshots, 0, ctx);
@@ -301,7 +306,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
     IndexType shotNumber;  
     IndexType shotIndTrue = 0;  
-    // later it should be possible to select only a pershot of shots for the step length search    
+    // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
         if (config.get<IndexType>("useRandSource") == 0) {  
             shotNumber = uniqueShotNos[shotInd];
@@ -324,7 +329,6 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
-        Acquisition::Sources<ValueType> sources;
         sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
         if (!useStreamConfig) {
@@ -360,7 +364,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
 
         if (config.get<bool>("useSourceSignalInversion")) {
-            sourceEst.applyFilter(sources, shotNumber);
+            sourceEst.applyFilter(sources, shotIndTrue);
             if (config.get<bool>("useSourceSignalTaper"))
                 sourceSignalTaper.apply(sources.getSeismogramHandler());
         }
@@ -387,7 +391,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
 
         /* Normalize observed and synthetic data */
-        if (config.get<bool>("normalizeTraces")){
+        if (config.get<bool>("normalizeTraces")) {
             receivers.getSeismogramHandler().normalize();
             receiversTrue.getSeismogramHandler().normalize();
         }

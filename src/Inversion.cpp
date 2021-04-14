@@ -854,7 +854,7 @@ int main(int argc, char *argv[])
                     }
 
                     if (config.get<bool>("useSourceSignalInversion")) {
-                        sourceEst.applyFilter(sources, shotNumber);
+                        sourceEst.applyFilter(sources, shotIndTrue);
                         if (config.get<bool>("useSourceSignalTaper"))
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }
