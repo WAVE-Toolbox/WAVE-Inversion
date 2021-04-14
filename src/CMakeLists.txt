@@ -130,6 +130,7 @@ endif ()
 set ( Inversion_LIB_DIRS 
 	Common
 	Gradient
+	GradientEM
 	Misfit
 	Optimization
 	Preconditioning
@@ -137,7 +138,9 @@ set ( Inversion_LIB_DIRS
 	StepLengthSearch
 	Taper
 	Workflow
+	WorkflowEM
 	ZeroLagCrossCorrelation
+	ZeroLagCrossCorrelationEM
          )
 
 foreach ( dir ${Inversion_LIB_DIRS} ) 
@@ -159,7 +162,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 #  WAVE-Inversion library                                    #
 ####################################################
 
-include_directories( Common Gradient Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation )
+include_directories( Common Gradient GradientEM Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow WorkflowEM ZeroLagCrossCorrelation ZeroLagCrossCorrelationEM )
 
 add_library( Inversion ${Inversion_FILES} )
 
@@ -191,7 +194,7 @@ if ( ${GTEST_FOUND} )
 
   add_executable( utest ${Inversion_UNIT_TEST_SOURCES} )
 
-  target_include_directories( utest PRIVATE Common Gradient Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation  ${GTEST_INCLUDE_DIR} )
+  target_include_directories( utest PRIVATE Common Gradient GradientEM Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow WorkflowEM ZeroLagCrossCorrelation ZeroLagCrossCorrelationEM  ${GTEST_INCLUDE_DIR} )
   target_link_libraries( utest ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} Inversion ${Inversion_used_libs} )
 
   set_target_properties( utest PROPERTIES OUTPUT_NAME Test_unit )

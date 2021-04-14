@@ -2,6 +2,8 @@
 
 #include "../Gradient/GradientFactory.hpp"
 #include "../Workflow/Workflow.hpp"
+#include "../GradientEM/GradientFactory.hpp"
+#include "../WorkflowEM/Workflow.hpp"
 #include "./Optimization.hpp"
 
 namespace KITGPI
@@ -24,7 +26,8 @@ namespace KITGPI
             ConjugateGradient(scai::dmemo::DistributionPtr dist);
             
             void init(scai::dmemo::DistributionPtr dist);
-            void apply(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Configuration::Configuration config);          
+            void apply(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Configuration::Configuration config);
+            void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM);            
 
         private:
             
@@ -42,6 +45,16 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> lastGradientSaturation;
             scai::lama::DenseVector<ValueType> lastConjugateGradientPorosity;
             scai::lama::DenseVector<ValueType> lastConjugateGradientSaturation;
+            
+            /* Use KITGPI::Gradient::GradientEM<ValueType> lastGradient and KITGPI::Gradient::GradientEM<ValueType> lastConjugateGradient instead! */
+            scai::lama::DenseVector<ValueType> lastGradientSigmaEM;
+            scai::lama::DenseVector<ValueType> lastGradientEpsilonEM;
+            scai::lama::DenseVector<ValueType> lastGradientTauSigmaEM;
+            scai::lama::DenseVector<ValueType> lastGradientTauEpsilonEM;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientSigmaEM;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientEpsilonEM;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientTauSigmaEM;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientTauEpsilonEM;
         };
     }
 }

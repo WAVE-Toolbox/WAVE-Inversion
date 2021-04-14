@@ -157,6 +157,30 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<Va
     apply(seismogramData);
 }
 
+/*! \brief Wrapper to support SeismogramHandler
+ \param seismograms SeismogramHandler object
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> &seismograms) const
+{
+    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
+            Acquisition::SeismogramEM<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
+            apply(thisSeismogram);
+        }
+    }
+}
+
+/*! \brief Apply taper to a single seismogram
+ \param seismogram Seismogram
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogram) const
+{
+    lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
+    apply(seismogramData);
+}
+
 /*! \brief Apply taper to a DenseMatrix
  \param mat Seismogram
  */
@@ -174,6 +198,15 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
+{
+    grad *= data;
+}
+
+/*! \brief Apply taper to a Gradient
+ \param grad GradientEM
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &grad) const
 {
     grad *= data;
 }

@@ -8,11 +8,12 @@
 #include <scai/lama/GridWriteAccess.hpp>
 #include <scai/lama/GridReadAccess.hpp>
 
-
 #include <Acquisition/AcquisitionGeometry.hpp>
+#include <AcquisitionEM/AcquisitionGeometry.hpp>
 #include <Configuration/Configuration.hpp>
 
 #include "../Gradient/GradientFactory.hpp"
+#include "../GradientEM/GradientFactory.hpp"
 
 namespace KITGPI
 {
@@ -35,8 +36,10 @@ namespace KITGPI
 
             void getTaper();
             void apply(KITGPI::Gradient::Gradient<ValueType> &gradient);
-            void init(scai::dmemo::DistributionPtr dist,scai::hmemo::ContextPtr ctx,KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition,KITGPI::Configuration::Configuration config,KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates,scai::IndexType radius);
-
+            void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType radius);
+            
+            void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM);
+            void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometryEM<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType radius);
 
         private:
             scai::lama::SparseVector<ValueType> taper;

@@ -30,6 +30,15 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::init(scai::dmemo::Distr
     lastGradientSaturation.setSameValue(dist, 0);
     lastConjugateGradientPorosity.setSameValue(dist, 0);
     lastConjugateGradientSaturation.setSameValue(dist, 0);
+    
+    lastGradientSigmaEM.setSameValue(dist, 0);
+    lastGradientEpsilonEM.setSameValue(dist, 0);
+    lastGradientTauSigmaEM.setSameValue(dist, 0);
+    lastGradientTauEpsilonEM.setSameValue(dist, 0);
+    lastConjugateGradientSigmaEM.setSameValue(dist, 0);
+    lastConjugateGradientEpsilonEM.setSameValue(dist, 0);
+    lastConjugateGradientTauSigmaEM.setSameValue(dist, 0);
+    lastConjugateGradientTauEpsilonEM.setSameValue(dist, 0); 
 }
 
 /*! \brief Calculate the conjugate gradient direction after Polak and Ribiere for all used parameters
@@ -135,6 +144,129 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
     }
     
     gradient.scale(model, workflow, config);   
+}
+
+/*! \brief Calculate the conjugate gradientEM direction after Polak and Ribiere for all used parameters
+ * 
+ * 
+ \param gradientEM In- and output
+ \param workflowEM To check which parameter class is inverted for
+ */
+template <typename ValueType>
+void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM)
+{    
+    /* Should an automatic direction reset be implemented? -> beta = max{beta^PR, 0} */    
+    if(workflowEM.iteration==0){        
+        if(workflowEM.getInvertForSigmaEM()){
+            lastGradientSigmaEM = gradientEM.getConductivityEM();
+            lastConjugateGradientSigmaEM = gradientEM.getConductivityEM();
+        }
+        
+        if(workflowEM.getInvertForEpsilonEM()){
+            lastGradientEpsilonEM = gradientEM.getDielectricPermittivityEM();
+            lastConjugateGradientEpsilonEM = gradientEM.getDielectricPermittivityEM();
+        }
+        
+        if(workflowEM.getInvertForTauSigmaEM()){
+            lastGradientTauSigmaEM = gradientEM.getTauConductivityEM();
+            lastConjugateGradientTauSigmaEM = gradientEM.getTauConductivityEM();
+        }
+        
+        if(workflowEM.getInvertForTauEpsilonEM()){
+            lastGradientTauEpsilonEM = gradientEM.getTauDielectricPermittivityEM();
+            lastConjugateGradientTauEpsilonEM = gradientEM.getTauDielectricPermittivityEM();
+        }
+    
+        if(workflowEM.getInvertForPorosity()){
+            lastGradientPorosity = gradientEM.getPorosity();
+            lastConjugateGradientPorosity = gradientEM.getPorosity();
+        }
+        
+        if(workflowEM.getInvertForSaturation()){
+            lastGradientSaturation = gradientEM.getSaturation();
+            lastConjugateGradientSaturation = gradientEM.getSaturation();
+        } 
+    } else {    
+        if(workflowEM.getInvertForSigmaEM()){
+            scai::lama::DenseVector<ValueType> gradientSigmaEM; 
+            gradientSigmaEM = gradientEM.getConductivityEM();
+            scai::lama::DenseVector<ValueType> conjugateGradientSigmaEM;
+            
+            this->calcConjugateGradient(conjugateGradientSigmaEM, gradientSigmaEM, lastConjugateGradientSigmaEM, lastGradientSigmaEM);
+            
+            lastConjugateGradientSigmaEM = conjugateGradientSigmaEM;
+            lastGradientSigmaEM = gradientSigmaEM;
+            
+            gradientEM.setConductivityEM(conjugateGradientSigmaEM);
+        }
+        
+        if(workflowEM.getInvertForEpsilonEM()){
+            scai::lama::DenseVector<ValueType> gradientEpsilonEM;
+            gradientEpsilonEM = gradientEM.getDielectricPermittivityEM();
+            scai::lama::DenseVector<ValueType> conjugateGradientEpsilonEM;
+            
+            this->calcConjugateGradient(conjugateGradientEpsilonEM, gradientEpsilonEM, lastConjugateGradientEpsilonEM, lastGradientEpsilonEM);
+            
+            lastConjugateGradientEpsilonEM = conjugateGradientEpsilonEM;
+            lastGradientEpsilonEM = gradientEpsilonEM;
+            
+            gradientEM.setDielectricPermittivityEM(conjugateGradientEpsilonEM);
+        }
+        
+        if(workflowEM.getInvertForTauSigmaEM()){
+            scai::lama::DenseVector<ValueType> gradientTauConductivityEM;
+            gradientTauConductivityEM = gradientEM.getTauConductivityEM();
+            scai::lama::DenseVector<ValueType> conjugateGradientTauConductivityEM;
+            
+            this->calcConjugateGradient(conjugateGradientTauConductivityEM, gradientTauConductivityEM, lastConjugateGradientTauSigmaEM, lastGradientTauSigmaEM);
+            
+            lastConjugateGradientTauSigmaEM = conjugateGradientTauConductivityEM;
+            lastGradientTauSigmaEM = gradientTauConductivityEM;
+            
+            gradientEM.setTauConductivityEM(conjugateGradientTauConductivityEM);
+        }
+        
+        if(workflowEM.getInvertForTauEpsilonEM()){
+            scai::lama::DenseVector<ValueType> gradientTauDielectricPermittivityEM;
+            gradientTauDielectricPermittivityEM = gradientEM.getTauDielectricPermittivityEM();
+            scai::lama::DenseVector<ValueType> conjugateGradientTauDielectricPermittivityEM;
+            
+            this->calcConjugateGradient(conjugateGradientTauDielectricPermittivityEM, gradientTauDielectricPermittivityEM, lastConjugateGradientTauEpsilonEM, lastGradientTauEpsilonEM);
+            
+            lastConjugateGradientTauEpsilonEM = conjugateGradientTauDielectricPermittivityEM;
+            lastGradientTauEpsilonEM = gradientTauDielectricPermittivityEM;
+            
+            gradientEM.setTauDielectricPermittivityEM(conjugateGradientTauDielectricPermittivityEM);
+        }   
+        
+        if(workflowEM.getInvertForPorosity()){
+            scai::lama::DenseVector<ValueType> gradientPorosity;
+            gradientPorosity = gradientEM.getPorosity();
+            scai::lama::DenseVector<ValueType> conjugateGradientPorosity;
+            
+            this->calcConjugateGradient(conjugateGradientPorosity, gradientPorosity, lastConjugateGradientPorosity, lastGradientPorosity);
+            
+            lastConjugateGradientPorosity = conjugateGradientPorosity;
+            lastGradientPorosity = gradientPorosity;
+            
+            gradientEM.setPorosity(conjugateGradientPorosity);
+        } 
+        
+        if(workflowEM.getInvertForSaturation()){
+            scai::lama::DenseVector<ValueType> gradientSaturation;
+            gradientSaturation = gradientEM.getSaturation();
+            scai::lama::DenseVector<ValueType> conjugateGradientSaturation;
+            
+            this->calcConjugateGradient(conjugateGradientSaturation, gradientSaturation, lastConjugateGradientSaturation, lastGradientSaturation);
+            
+            lastConjugateGradientSaturation = conjugateGradientSaturation;
+            lastGradientSaturation = gradientSaturation;
+            
+            gradientEM.setSaturation(conjugateGradientSaturation);
+        } 
+    }
+    
+    gradientEM.scale(modelEM, workflowEM, configEM);   
 }
 
 /*! \brief Calculate the conjugate gradient direction after Polak and Ribiere for one parameter

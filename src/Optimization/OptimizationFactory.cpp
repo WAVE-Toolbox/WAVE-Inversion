@@ -21,7 +21,8 @@ typename KITGPI::Optimization::Optimization<ValueType>::OptimizationPtr KITGPI::
         COMMON_THROWEXCEPTION("No LBFGS implemented");
     }
     if (type.compare("truncatednewton") == 0) {
-        return OptimizationPtr(new SteepestDescent<ValueType>);
+//         return OptimizationPtr(new SteepestDescent<ValueType>);
+        COMMON_THROWEXCEPTION("No truncatednewton implemented");
     }
 
     COMMON_THROWEXCEPTION("Reached end of factory without match");

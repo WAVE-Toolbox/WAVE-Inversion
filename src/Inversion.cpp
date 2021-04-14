@@ -11,24 +11,28 @@
 
 #include <Configuration/Configuration.hpp>
 #include <Configuration/ValueType.hpp>
-#include <Acquisition/Receivers.hpp>
-#include <Acquisition/Sources.hpp>
-
-#include <ForwardSolver/ForwardSolver.hpp>
-
 #include <CheckParameter/CheckParameter.hpp>
-
 #include <Filter/Filter.hpp>
-#include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
-#include <ForwardSolver/ForwardSolverFactory.hpp>
-#include <Modelparameter/ModelparameterFactory.hpp>
-
+#include <Common/Common.hpp>
 #include <Partitioning/Partitioning.hpp>
 
+#include <Acquisition/Receivers.hpp>
+#include <Acquisition/Sources.hpp>
+#include <ForwardSolver/ForwardSolver.hpp>
+#include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
+#include <ForwardSolver/ForwardSolverFactory.hpp>
+#include <ForwardSolver/SourceReceiverImpl/SourceReceiverImpl.hpp>
+#include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
 
-#include "Gradient/GradientCalculation.hpp"
-#include "Gradient/GradientFactory.hpp"
+#include <AcquisitionEM/Receivers.hpp>
+#include <AcquisitionEM/Sources.hpp>
+#include <ForwardSolverEM/ForwardSolver.hpp>
+#include <ForwardSolverEM/ForwardSolverFactory.hpp>
+#include <ForwardSolverEM/SourceReceiverImpl/SourceReceiverImpl.hpp>
+#include <ModelparameterEM/ModelparameterFactory.hpp>
+#include <WavefieldsEM/WavefieldsFactory.hpp>
+
 #include "Misfit/AbortCriterion.hpp"
 #include "Misfit/Misfit.hpp"
 #include "Misfit/MisfitFactory.hpp"
@@ -38,7 +42,14 @@
 #include "StepLengthSearch/StepLengthSearch.hpp"
 #include "Taper/Taper1D.hpp"
 #include "Taper/Taper2D.hpp"
+
+#include "Gradient/GradientCalculation.hpp"
+#include "Gradient/GradientFactory.hpp"
 #include "Workflow/Workflow.hpp"
+
+#include "GradientEM/GradientCalculation.hpp"
+#include "GradientEM/GradientFactory.hpp"
+#include "WorkflowEM/Workflow.hpp"
 
 #include <Common/HostPrint.hpp>
 
@@ -74,12 +85,16 @@ int main(int argc, char *argv[])
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
+    bool isSeismic = Common::checkEquationType<ValueType>(equationType);
 
     verbose = config.get<bool>("verbose");
     
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
+    /*breakLoop: 0 = break iteration loop of which the abort criterion is true while do not influence another one. 0 is the same as individual inversion. 1 = break iteration loop if one of the two abort criterion is true. 2 = break iteration loop if both the two abort criterion is true. */
+    IndexType breakLoopType = config.get<IndexType>("breakLoopType"); 
+    
     std::string misfitType = config.get<std::string>("misfitType");
     std::string fieldSeisName(config.get<std::string>("fieldSeisName"));
     std::string gradname(config.get<std::string>("gradientFilename"));
@@ -346,6 +361,8 @@ int main(int argc, char *argv[])
     /* Abort criterion                         */
     /* --------------------------------------- */
     AbortCriterion<ValueType> abortCriterion;
+    bool breakLoop = false;
+    bool breakLoopEM = false;
 
     /* --------------------------------------- */
     /* Step length search                      */
@@ -413,7 +430,6 @@ int main(int argc, char *argv[])
             gradientTaper1D.read(configBig.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
         }  
     }
-    bool isSeismic = true;
     Taper::Taper2D<ValueType> gradientTaper2DPerShot;
     gradientTaper2DPerShot.initWavefieldTransform(config, distInversion, dist, ctx, isSeismic); 
     gradientTaper2DPerShot.calcInversionAverageMatrix(modelCoordinates, modelCoordinatesInversion);  
@@ -423,7 +439,7 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Preconditioning::EnergyPreconditioning<ValueType> energyPrecond;
     if (config.get<bool>("useEnergyPreconditioning") == 1) {
-        energyPrecond.init(dist, config);
+        energyPrecond.init(dist, config, isSeismic);
     }
 
     /* --------------------------------------- */
@@ -760,8 +776,12 @@ int main(int argc, char *argv[])
 
             /* Check abort criteria */
             HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
-
-            bool breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow);
+           
+            HOST_PRINT(commAll, "\n========== Check abort criteria 1 ==============\n"); 
+            
+            if (config.get<IndexType>("useRandSource") == 0) { 
+                breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
+            }
             if (breakLoop == true) {
                 break;
             }
