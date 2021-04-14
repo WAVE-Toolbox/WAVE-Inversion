@@ -40,7 +40,6 @@
 \setcounter{MaxMatrixCols}{50}
 
 \usepackage[left=25mm,right=25mm,bottom=35mm, footskip=20mm]{geometry}
-
 \usepackage{siunitx}		% Show units
 \sisetup{per-mode=fraction}	% Representation of fractions
 
@@ -553,7 +552,7 @@ As mentioned in the quick guide, the configuration can be found in \shellcmd{par
 
 FWI is an algorithm which needs and produces a lot of data. In this part, the general in- and output for inversion is described apart from the simulation options that have been given in WAVE-Simulation user manual. Some in-/output options for inversion are very specific and therefore described in the corresponding section and table \ref{tab:config_IO}.
 
-The core of every FWI is the field data that should be inverted. The folder and basename of the field data has to be defined with the parameter \verb+fieldSeisName+. The program is automatically appending the shot number and the seismogram type (p,vx,vy,vz). For example, if the parameter \verb+fieldSeisName+ is set to \verb+seismograms/fieldData+ and pressure seismograms are inverted, the complete file name that is tried to be read is \verb+seismograms/fieldData.shot_0.p.mtx+. Shot numbers are defined by user's own.
+The core of every FWI is the field data that should be inverted. The folder and basename of the field data has to be defined with the parameter \verb+fieldSeisName+. The program is automatically appending the shot number and the seismogram type (p, vx, vy, vz). For example, if the parameter \verb+fieldSeisName+ is set to \verb+seismograms/fieldData+ and pressure seismograms are inverted, the complete file name that is tried to be read is \verb+seismograms/fieldData.shot_0.p.mtx+. Shot numbers are defined by user's own.
 Synthetic seismograms are saved in the same way with the filename \verb+SeismogramFilename+. Note that seismograms with \verb+.It_0.+ correspond to the seismograms of the initial model of each workflow stage where \verb+It+ means iteration.
 
 With the parameters \verb+writeGradientPerShot+ and \verb+writeGradient+, it can be decided whether the gradients per shot and the summed gradients over all shots should be saved to disk. If yes, the gradients are stored with the name \verb+gradientFilename+. The workflow stage and iteration number and the parameter class are automatically appended, e.g., with \verb+gradients/grad+ as \verb+gradientFilename+ the first gradient with respect to the P-wave velocity will be \verb+gradients/grad.stage_1.It_1.vp.mtx+ if \verb+FileFormat+ = 1.
@@ -585,10 +584,10 @@ The program will create a log file with the name specified by \verb+logFilename+
 	\end{adjustbox}
 \end{table}
 
-The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_misfit}. Currently, the misfit type of L2, L7 (normalized L2), L8 (envelope L2) and L278 (randomly choose one of L2, L7 and L8 as a misfit function for each shot) are available. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+NormalizeTraces+ = 1. This option is recommended for seismic field data.
+The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_misfit}. Currently, the misfit type of L2 (L2 norm), L7 (normalized L2 norm), L8 (envelope L2 norm) and L278 (randomly choose one of L2, L7 and L8 as a misfit function for each shot) are available. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+ = 1. This option is recommended for seismic field data.
 
-The parameter \verb+DTInversion+ defines the factor of DT for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second time sample is picked. The highest possible value depends on the wave length.
-The parameter \verb+DHInversion+ defines the factor of DH for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second model space sample is picked. The highest possible value depends on the model resolution you want to obtain.
+The parameter \verb+DTInversion+ defines the factor of \verb+DT+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second time sample is picked. The highest possible value depends on the wave length.
+The parameter \verb+DHInversion+ defines the factor of \verb+DH+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second model space sample is picked. The highest possible value depends on the model resolution you want to obtain.
 
 \subsubsection{Optimization}
 Currently, there are two different optimization methods available, the steepest descent and the conjugate gradient method. Both can be used with gradient preconditioning (see subsection \ref{config:precond}). The method has to be chosen with the parameter \verb+optimizationType+. Possible values are \verb+steepestDescent+ and \verb+conjugateGradient+. The characters are internally transformed to lowercase letters, so \verb+STEEPESTDESCENT+ would also be valid.

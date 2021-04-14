@@ -65,12 +65,7 @@ int main(int argc, char *argv[])
     Configuration::Configuration config(argv[1]);
     
     Configuration::Configuration configBig;
-    bool useStreamConfig;
-    try {
-        useStreamConfig = config.get<bool>("useStreamConfig");
-    } catch(...) {
-        useStreamConfig = false;
-    }
+    bool useStreamConfig = config.getAndCatch("useStreamConfig", false);
     
     if (useStreamConfig){
         configBig.readFromFile(config.get<std::string>("streamConfigFilename"), true);
@@ -162,8 +157,7 @@ int main(int argc, char *argv[])
         COMMON_THROWEXCEPTION("unknown partitioning method");
     }
   
-    
-    if ((config.get<bool>("coordinateWrite")) && (shotDomain==0)) {
+    if ((config.get<bool>("writeCoordinate")) && (shotDomain==0)) {
         modelCoordinates.writeCoordinates(dist, ctx, config.get<std::string>("coordinateFilename"),config.get<IndexType>("FileFormat"));
     }
     
