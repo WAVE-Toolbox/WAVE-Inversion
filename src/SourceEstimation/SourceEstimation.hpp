@@ -6,11 +6,17 @@
 #include <Acquisition/Receivers.hpp>
 #include <Acquisition/SeismogramHandler.hpp>
 #include <Acquisition/Sources.hpp>
+#include <AcquisitionEM/Receivers.hpp>
+#include <AcquisitionEM/SeismogramHandler.hpp>
+#include <AcquisitionEM/Sources.hpp>
 #include <Configuration/Configuration.hpp>
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
 #include <ForwardSolver/ForwardSolver.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
+#include <ForwardSolverEM/ForwardSolver.hpp>
+#include <ModelparameterEM/ModelparameterFactory.hpp>
+#include <WavefieldsEM/WavefieldsFactory.hpp>
 
 #include <Common/Common.hpp>
 #include <scai/common/Complex.hpp>
@@ -22,7 +28,6 @@
 
 namespace KITGPI
 {
-
     /*! \brief Class to estimate the source time function from any synthetic source
      * 
      * Wiener filter to minimize the misfit between a synthetic and the observed source signal.
@@ -31,7 +36,6 @@ namespace KITGPI
     template <typename ValueType>
     class SourceEstimation
     {
-
       public:
         explicit SourceEstimation() : useOffsetMutes(false), mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE), readTaper(false), taperName(""){};
 
@@ -45,6 +49,10 @@ namespace KITGPI
         void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
         void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffsets, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
+        
+        void estimateSourceSignal(KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversTrueEM, IndexType shotInd, IndexType shotNr);
+        void applyFilter(KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, scai::IndexType shotInd) const;
+        void calcOffsetMutes(KITGPI::Acquisition::SourcesEM<ValueType> const &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversEM, ValueType maxOffsets, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM);
 
       private:
         ValueType waterLevel;
@@ -59,5 +67,6 @@ namespace KITGPI
 
         void matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B, scai::IndexType iComponent);
         void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB, scai::IndexType shotNumber);
+        void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversA, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversB, scai::IndexType shotNumber);
     };
 }
