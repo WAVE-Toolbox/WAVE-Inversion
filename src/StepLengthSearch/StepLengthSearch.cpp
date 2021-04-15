@@ -28,7 +28,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
 
     std::vector<scai::IndexType> uniqueShotNos;
-    calcuniqueShotNo(uniqueShotNos, sourceSettings);
+    Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.get<IndexType>("useRandSource") != 0) {  
@@ -47,7 +47,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
     int testShotIncr = config.get<int>("testShotIncr");
 
-    wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+    typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType));
     wavefields->init(ctx, dist);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
@@ -182,6 +182,183 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     HOST_PRINT(commAll, "\nFinished step length search in  " << end_t - start_t << " sec.\n\n\n");
 }
 
+/*! \brief Find the optimal steplength
+ *
+ *
+ \param solverEM Forward solver
+ \param derivativesEM Derivatives matrices
+ \param receiversEM Receivers
+ \param sourcesEM Sources 
+ \param modelEM Model for the finite-difference simulation
+ \param distEM Distribution
+ \param configEM Configuration
+ \param scaledGradientEM Misfit gradient 
+ \param steplengthInitEM Initial steplength
+ \param currentMisfitEM Current misfit
+ */
+template <typename ValueType>
+void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, std::vector<Acquisition::sourceSettings<ValueType>> &sourceSettingsEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversTrueEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, scai::dmemo::DistributionPtr distEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, KITGPI::Gradient::GradientEM<ValueType> &scaledGradientEM, ValueType steplengthInitEM, scai::lama::DenseVector<ValueType> currentMisfitEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Filter::Filter<ValueType> const &freqFilterEM, KITGPI::SourceEstimation<ValueType> const &sourceEstEM, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaperEM, std::vector<scai::IndexType> uniqueShotNosRandEM, std::vector<std::string> misfitTypeHistoryEM)
+{
+    double start_t, end_t; /* For timing */
+
+    scai::dmemo::CommunicatorPtr commShot = distEM->getCommunicatorPtr();
+    scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
+
+    std::vector<scai::IndexType> uniqueShotNosEM;
+    Acquisition::calcuniqueShotNo(uniqueShotNosEM, sourceSettingsEM);
+    IndexType numshotsEM = uniqueShotNosEM.size();
+    std::shared_ptr<const dmemo::BlockDistribution> shotDistEM;
+    if (configEM.get<IndexType>("useRandSource") != 0) {  
+        IndexType numShotDomainsEM = configEM.get<IndexType>("NumShotDomains");
+        shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
+    } else {
+        shotDistEM = dmemo::blockDistribution(numshotsEM, commInterShot);
+    }
+    /* ------------------------------------------- */
+    /* Get distribution, communication and context */
+    /* ------------------------------------------- */
+    scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
+    std::string dimensionEM = configEM.get<std::string>("dimension");
+    std::string equationTypeEM = configEM.get<std::string>("equationType");
+    std::transform(dimensionEM.begin(), dimensionEM.end(), dimensionEM.begin(), ::tolower);   
+    std::transform(equationTypeEM.begin(), equationTypeEM.end(), equationTypeEM.begin(), ::tolower); 
+    int testShotIncr = configEM.get<int>("testShotIncr");
+
+    typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr wavefieldsEM(KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM));
+    wavefieldsEM->init(ctx, distEM);
+
+    typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfitEM(KITGPI::Misfit::Factory<ValueType>::Create(configEM.get<std::string>("misfitType")));
+    dataMisfitEM->setMisfitTypeHistory(misfitTypeHistoryEM);
+
+    ValueType misfitTestSum;
+    ValueType steplength;
+
+    /* ------------------------------------------- */
+    /* Set values for step length search           */
+    /* ------------------------------------------- */
+    stepCalcCount = 1;                                // number of forward calculations to find a proper (steplength, misfit) pair
+    int maxStepCalc = configEM.get<int>("maxStepCalc"); // maximum number of forward calculations to find a proper (steplength, misfit) pair
+    ValueType scalingFactor = configEM.get<ValueType>("scalingFactor");
+    ValueType steplengthMin = configEM.get<ValueType>("steplengthMin");
+    ValueType steplengthMax = configEM.get<ValueType>("steplengthMax");
+
+    /* Save three pairs (steplength, misfit) for the parabolic fit */
+    steplengthParabola.setSameValue(3, 0);
+    misfitParabola.setSameValue(3, 0);
+
+    /* ------------------------------------------------------------------------------------------------------ */
+    /* Try to find a second step length which gives a smaller misfit and a third step length which gives again a larger misfit.
+       The first step length is zero so the misfit from the gradient calculation can be used to save computation time.
+       
+       Separate 4 cases: 
+       1) misfit 2 < misfit 1 AND misfit 3 > misfit 2: SL = minimum of parabola or SL = SLmax
+       2) misfit 2 < misfit 1 AND misfit 3 < misfit 2: SL = SL3 or SL = SLmax 
+       3) misfit 2 > misfit 1 AND misfit 3 < misfit 2 AND misfit 3 < misfit 1: SL = SL3 
+       4) misfit 2 > misfit 1 AND misfit 3 > misfit 1: SL = very small SL */
+    /* ------------------------------------------------------------------------------------------------------ */
+
+    start_t = scai::common::Walltime::get();
+
+    step2ok = false; // true if second step length decreases the misfit
+    step3ok = false; // true if second step length decreases the misfit AND third step length increases the misfit relative to second step length */
+
+    /* --- Save first step length (steplength=0 is used to save computational time) --- */
+    misfitTestSum = 0;
+    IndexType shotNumber;  
+    IndexType shotIndTrue = 0;  
+    for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd += testShotIncr) {
+        if (configEM.get<IndexType>("useRandSource") == 0) { 
+            shotIndTrue = shotInd;
+        } else {
+            shotNumber = uniqueShotNosRandEM[shotInd];
+            Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNosEM, shotNumber);
+        }
+        misfitTestSum += currentMisfitEM.getValue(shotIndTrue);
+    }
+    misfitTestSum = commInterShot->sum(misfitTestSum);
+
+    misfitParabola.setValue(0, misfitTestSum);
+
+    /* --- Save second step length (initial step length) in any case --- */
+    HOST_PRINT(commAll, "\nEstimation of 2nd steplength, forward test run no. " << stepCalcCount << " of maximum " << maxStepCalc << "\n");
+    misfitTestSum = this->calcMisfit(commAll, solverEM, derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, modelEM, *wavefieldsEM, configEM, modelCoordinatesEM, scaledGradientEM, *dataMisfitEM, steplengthInitEM, workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM);
+    steplengthParabola.setValue(1, steplengthInitEM);
+    misfitParabola.setValue(1, misfitTestSum);
+    if (misfitParabola.getValue(0) > misfitParabola.getValue(1)) {
+        step2ok = true;
+    }
+
+    /* --- Search for a third step length - case: misfit was DECREASED Case 1/2 --- */
+    steplength = steplengthInitEM;
+    while (step2ok == true && stepCalcCount < maxStepCalc) {
+        HOST_PRINT(commAll, "\nEstimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc << "\n");
+        steplength *= scalingFactor;
+        misfitTestSum = this->calcMisfit(commAll, solverEM, derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, modelEM, *wavefieldsEM, configEM, modelCoordinatesEM, scaledGradientEM, *dataMisfitEM, steplength, workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM);
+        steplengthParabola.setValue(2, steplength);
+        misfitParabola.setValue(2, misfitTestSum);
+        if (misfitTestSum > misfitParabola.getValue(1)) {
+            step3ok = true;
+            stepCalcCount += 1;
+            break;
+        } else {
+            stepCalcCount += 1;
+        }
+    }
+
+    /* --- Search for a third step length - case: misfit was INCREASED Case 3/4 --- */
+    steplength = steplengthInitEM;
+    while (step2ok == false && stepCalcCount < maxStepCalc) {
+        HOST_PRINT(commAll, "Estimation of 3rd steplength, forward test run no. " << stepCalcCount + 1 << " of maximum " << maxStepCalc << "\n");
+        steplength /= scalingFactor;
+        misfitTestSum = this->calcMisfit(commAll, solverEM, derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, modelEM, *wavefieldsEM, configEM, modelCoordinatesEM, scaledGradientEM, *dataMisfitEM, steplength, workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM);
+        steplengthParabola.setValue(2, steplength);
+        misfitParabola.setValue(2, misfitTestSum);
+        if (misfitTestSum < misfitParabola.getValue(0)) {
+            step3ok = true;
+            stepCalcCount += 1;
+            break;
+        } else {
+            stepCalcCount += 1;
+        }
+    }
+
+    /* Output of the three test step lengths and the corresponding misfit */
+    for (int i = 0; i < 3; i++) {
+        HOST_PRINT(commAll, "\nSteplength " << i + 1 << ": " << steplengthParabola.getValue(i) << ", Corresponding misfit: " << misfitParabola.getValue(i));
+    }
+
+    /* Set optimum step length */
+    if (step2ok == true && step3ok == true) {
+        steplengthOptimum = parabolicFit(steplengthParabola, misfitParabola);
+        HOST_PRINT(commAll, "\nApply parabolic fit");
+    } else if (step2ok == true && step3ok == false) {
+        if (maxStepCalc==1){
+            steplengthOptimum = steplengthParabola.getValue(1);}
+        else {
+            steplengthOptimum = steplengthParabola.getValue(2);}
+    } else if (step2ok == false && step3ok == true) {
+        steplengthOptimum = parabolicFit(steplengthParabola, misfitParabola); //case 3: parabolic fit instead of steplengthParabola.getValue(2)
+        HOST_PRINT(commAll, "\nApply parabolic fit");
+    } else if (step2ok == false && step3ok == false) {
+        steplengthOptimum = steplengthMin;
+        HOST_PRINT(commAll, "\nVariable steplengthMin used to update the model");
+    }
+
+    /* Check if accepted step length is smaller than maximally allowed step length */
+    if (steplengthOptimum > steplengthMax) {
+        steplengthOptimum = steplengthMax;
+        HOST_PRINT(commAll, "\nVariable steplengthMax used to update the model");
+    }
+
+    if (std::isnan(steplengthOptimum))
+        steplengthOptimum = steplengthMin;
+
+    HOST_PRINT(commAll, "\nOptimum step length: " << steplengthOptimum << "\n");
+
+    end_t = scai::common::Walltime::get();
+    HOST_PRINT(commAll, "\nFinished step length search in  " << end_t - start_t << " sec.\n\n\n");
+}
+
 /*! \brief Parabolic fit
  *
  *
@@ -246,7 +423,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
     Acquisition::Sources<ValueType> sources;
     std::vector<scai::IndexType> uniqueShotNos;
-    calcuniqueShotNo(uniqueShotNos, sourceSettings);
+    Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.get<IndexType>("useRandSource") != 0) {  
@@ -405,6 +582,201 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     HOST_PRINT(commAll, "\n================================================\n");
 
     return misfitTest.sum();
+}
+
+/*! \brief Calculate misfit 
+ *
+ *
+ \param solverEM Forward solver
+ \param derivativesEM Derivatives matrices
+ \param receiversEM Receivers
+ \param sourcesEM Sources 
+ \param modelEM Model for the finite-difference simulation
+ \param wavefieldsEM Wavefields
+ \param configEM Configuration
+ \param scaledGradientEM Misfit gradient 
+ \param steplength Steplength
+ */
+template <typename ValueType>
+ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, std::vector<Acquisition::sourceSettings<ValueType>> &sourceSettingsEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversTrueEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefieldsEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, KITGPI::Gradient::GradientEM<ValueType> &scaledGradientEM, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, ValueType steplength, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Filter::Filter<ValueType> const &freqFilterEM, KITGPI::SourceEstimation<ValueType> const &sourceEstEM, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaperEM, std::vector<scai::IndexType> uniqueShotNosRandEM)
+{
+    /* ------------------------------------------- */
+    /* Get distribution, communication and context */
+    /* ------------------------------------------- */
+    std::string equationTypeEM = configEM.get<std::string>("equationType");
+    std::transform(equationTypeEM.begin(), equationTypeEM.end(), equationTypeEM.begin(), ::tolower); 
+    scai::dmemo::DistributionPtr distEM;
+    if(equationTypeEM.compare("tmem") == 0 || equationTypeEM.compare("viscotmem") == 0){
+        distEM = wavefieldsEM.getRefEZ().getDistributionPtr();
+    } else {
+        distEM = wavefieldsEM.getRefEX().getDistributionPtr();      
+    }
+    scai::dmemo::CommunicatorPtr commShot = distEM->getCommunicatorPtr();
+    scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
+
+    SCAI_DMEMO_TASK(commShot)
+
+    Acquisition::SourcesEM<ValueType> sourcesEM;
+    std::vector<scai::IndexType> uniqueShotNosEM;
+    Acquisition::calcuniqueShotNo(uniqueShotNosEM, sourceSettingsEM);
+    IndexType numshotsEM = uniqueShotNosEM.size();
+    std::shared_ptr<const dmemo::BlockDistribution> shotDistEM;
+    if (configEM.get<IndexType>("useRandSource") != 0) {  
+        IndexType numShotDomainsEM = configEM.get<IndexType>("NumShotDomains");
+        shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
+    } else {
+        shotDistEM = dmemo::blockDistribution(numshotsEM, commInterShot);
+    }
+    scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr(); // default context, set by environment variable SCAI_CONTEXT
+
+    //     double start_t, end_t; /* For timing */
+    IndexType tStepEndEM = static_cast<IndexType>((configEM.get<ValueType>("T") / configEM.get<ValueType>("DT")) + 0.5);
+    int testShotIncr = configEM.get<int>("testShotIncr");
+
+    scai::lama::DenseVector<ValueType> misfitTestEM(numshotsEM, 0, ctx);
+
+    // Implement a (virtual) copy constructor in the abstract base class to simplify the following code -> virtual constructor idiom!
+    typename KITGPI::Modelparameter::ModelparameterEM<ValueType>::ModelparameterPtr testmodelEM(KITGPI::Modelparameter::FactoryEM<ValueType>::Create(equationTypeEM));
+    *testmodelEM = modelEM;
+    testmodelEM->prepareForInversion(configEM, commShot);
+    
+    typename KITGPI::Modelparameter::ModelparameterEM<ValueType>::ModelparameterPtr testmodelPerShotEM(KITGPI::Modelparameter::FactoryEM<ValueType>::Create(equationTypeEM));
+    testmodelPerShotEM->init(configEM, ctx, distEM, modelCoordinatesEM);  // init is necessary for modelPerShot to allocate distribution.
+    bool useStreamConfigEM = configEM.get<bool>("useStreamConfig");
+    Acquisition::Coordinates<ValueType> modelCoordinatesBigEM;
+    std::vector<Acquisition::coordinate3D> cutCoordinatesEM;
+    if (useStreamConfigEM) {
+        KITGPI::Configuration::Configuration configBigEM(configEM.get<std::string>("streamConfigFilename"));
+        modelCoordinatesBigEM.init(configBigEM);
+        std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBigEM;
+        sourcesEM.getAcquisitionSettings(configBigEM, sourceSettingsBigEM);
+        Acquisition::getCutCoord(cutCoordinatesEM, sourceSettingsBigEM);
+    }
+    
+    typename KITGPI::Gradient::GradientEM<ValueType>::GradientPtr testgradient(KITGPI::Gradient::FactoryEM<ValueType>::Create(equationTypeEM));
+    *testgradient = scaledGradientEM;
+
+    /* Update modelEM */
+    *testgradient *= steplength;
+    *testmodelEM -= *testgradient;
+    
+    if (configEM.get<bool>("useModelThresholds"))
+        testmodelEM->applyThresholds(configEM);
+
+    if (testmodelEM->getParameterisation() == 2 || testmodelEM->getParameterisation() == 1) {
+        HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics test =====\n");  
+        testmodelEM->calcWaveModulusFromPetrophysics();  
+    }
+    
+    if (configEM.get<bool>("useModelThresholds"))
+        testmodelEM->applyThresholds(configEM); 
+
+    if (!useStreamConfigEM) {
+        testmodelEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot);
+        solverEM.prepareForModelling(*testmodelEM, configEM.get<ValueType>("DT"));
+    }
+
+    IndexType shotNumber;  
+    IndexType shotIndTrue = 0;  
+    // later it should be possible to select only a subset of shots for the step length search
+    for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd += testShotIncr) {
+        if (configEM.get<IndexType>("useRandSource") == 0) {  
+            shotNumber = uniqueShotNosEM[shotInd];
+            shotIndTrue = shotInd;
+        } else {
+            shotNumber = uniqueShotNosRandEM[shotInd];
+            Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNosEM, shotNumber);
+        }
+
+        if (useStreamConfigEM) {
+            HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshotsEM << "\n");
+            testmodelEM->getModelPerShot(*testmodelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM.at(shotIndTrue));    
+            testmodelPerShotEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot); 
+            solverEM.prepareForModelling(*testmodelPerShotEM, configEM.get<ValueType>("DT"));
+        }
+
+        wavefieldsEM.resetWavefields();
+
+        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Test Forward\n");
+
+        std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
+        Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEM, shotNumber);
+        sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
+
+        if (!useStreamConfigEM) {
+            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *testmodelEM, modelCoordinatesEM, shotNumber);
+        } else {
+            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *testmodelPerShotEM, modelCoordinatesEM, shotNumber);
+        }
+        
+        if (configEM.get<bool>("useReceiversPerShot")) {
+            receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
+            receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
+        } else if (configEM.get<bool>("useReceiverMark")) {
+            receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
+            receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
+        }
+
+        receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("FieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
+
+        if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0) {
+            sourcesEM.getSeismogramHandler().filter(freqFilterEM);
+            receiversTrueEM.getSeismogramHandler().filter(freqFilterEM);
+        }
+        
+        Taper::Taper2D<ValueType> seismogramTaper2DEM;
+        Taper::Taper1D<ValueType> seismogramTaper1DEM;
+        seismogramTaper1DEM.init(std::make_shared<dmemo::NoDistribution>(tStepEndEM), ctx, 1);
+        seismogramTaper1DEM.calcTimeDampingTaper(workflowEM.getTimeDampingFactor(), configEM.get<ValueType>("DT"));  
+        if (configEM.get<IndexType>("useSeismogramTaper") == 2) {
+            seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
+            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            seismogramTaper2DEM.apply(receiversTrueEM.getSeismogramHandler());  
+        }
+        seismogramTaper1DEM.apply(receiversTrueEM.getSeismogramHandler());
+
+        if (configEM.get<bool>("useSourceSignalInversion")) {
+            sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
+            if (configEM.get<bool>("useSourceSignalTaper"))
+                sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
+        }
+        
+        if (!useStreamConfigEM) {
+            for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
+                solverEM.run(receiversEM, sourcesEM, *testmodelEM, wavefieldsEM, derivativesEM, tStep);
+            }
+        } else {
+            for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
+                solverEM.run(receiversEM, sourcesEM, *testmodelPerShotEM, wavefieldsEM, derivativesEM, tStep);
+            }
+        }
+
+        // check wavefield and seismogram for NaNs or infinite values
+        if ((commShot->any(!wavefieldsEM.isFinite(distEM)) || commShot->any(!receiversEM.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write modelEM and break
+            testmodelEM->write("model_crash", configEM.get<IndexType>("FileFormat"));
+            COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for modelEM in steplength search, output modelEM as model_crash.FILE_EXTENSION!");
+        }
+
+        if (configEM.get<IndexType>("useSeismogramTaper") == 2) {                                                   
+            seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
+        }
+        seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());
+
+        /* Normalize observed and synthetic data */
+        if (configEM.get<bool>("normalizeTraces")) {
+            receiversEM.getSeismogramHandler().normalize();
+            receiversTrueEM.getSeismogramHandler().normalize();
+        }
+
+        misfitTestEM.setValue(shotIndTrue, dataMisfitEM.calc(receiversEM, receiversTrueEM, shotIndTrue));
+    }
+
+    commInterShot->sumArray(misfitTestEM.getLocalValues());
+
+    HOST_PRINT(commAll, "\n======== Finished loop over test shots =========");
+    HOST_PRINT(commAll, "\n================================================\n");
+
+    return misfitTestEM.sum();
 }
 
 /*! \brief Initialize log-file

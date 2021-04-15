@@ -31,7 +31,7 @@ namespace KITGPI
             void init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms);
             void init(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> const seismograms);
             void initModelTransform(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distEM, scai::hmemo::ContextPtr ctx);
-            void initWavefieldTransform(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr averageDist, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool isSeismic);
+            void initWavefieldTransform(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool isSeismic);
 
             void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
@@ -66,8 +66,8 @@ namespace KITGPI
             wavefieldPtr wavefieldAverage;
             wavefieldPtr wavefieldRecover;
             typedef typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr wavefieldPtrEM; 
-            wavefieldPtrEM wavefieldEMAverage;
-            wavefieldPtrEM wavefieldEMRecover;
+            wavefieldPtrEM wavefieldAverageEM;
+            wavefieldPtrEM wavefieldRecoverEM;
         };
     }
 }

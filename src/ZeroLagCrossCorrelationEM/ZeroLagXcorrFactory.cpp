@@ -12,8 +12,8 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::ZeroLagXcorrPtr KITGPI
 
     // Assert correctness of input values
     SCAI_ASSERT_ERROR(dimensionEM.compare("2d") == 0 || dimensionEM.compare("3d") == 0, "Unkown dimensionEM");
-    SCAI_ASSERT_ERROR(type.compare("emem") == 0 || type.compare("tmem") == 0 || type.compare("viscoemem") == 0 || type.compare("viscotmem") == 0, "Unkown type");
-
+    SCAI_ASSERT_ERROR(type.compare("acoustic") == 0 || type.compare("elastic") == 0 || type.compare("viscoelastic") == 0 || type.compare("sh") == 0 || type.compare("emem") == 0 || type.compare("tmem") == 0 || type.compare("viscoemem") == 0 || type.compare("viscotmem") == 0, "Unkown type");
+    
     // 2D
     if (dimensionEM.compare("2d") == 0 && type.compare("emem") == 0) {
         return ZeroLagXcorrPtr(new ZeroLagXcorr2Demem<ValueType>);
@@ -35,7 +35,6 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::ZeroLagXcorrPtr KITGPI
 //         COMMON_THROWEXCEPTION("3Dviscoemem convolution is not implemented yet.");
 //     }
 
-    COMMON_THROWEXCEPTION("Reached end of factory without match");
     return ZeroLagXcorrPtr();
 }
 

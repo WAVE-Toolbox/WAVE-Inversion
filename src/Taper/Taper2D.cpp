@@ -66,11 +66,11 @@ void KITGPI::Taper::Taper2D<ValueType>::initModelTransform(scai::dmemo::Distribu
  \param ctx Context
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::initWavefieldTransform(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr averageDist, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool isSeismic)
+void KITGPI::Taper::Taper2D<ValueType>::initWavefieldTransform(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool isSeismic)
 {
-    wavefieldAverageMatrix = scai::lama::zero<SparseFormat>(averageDist, dist);
+    wavefieldAverageMatrix = scai::lama::zero<SparseFormat>(distInversion, dist);
     wavefieldAverageMatrix.setContextPtr(ctx);
-    wavefieldRecoverMatrix = scai::lama::zero<SparseFormat>(dist, averageDist);
+    wavefieldRecoverMatrix = scai::lama::zero<SparseFormat>(dist, distInversion);
     wavefieldRecoverMatrix.setContextPtr(ctx);
     
     std::string dimension = config.get<std::string>("dimension");
@@ -80,13 +80,13 @@ void KITGPI::Taper::Taper2D<ValueType>::initWavefieldTransform(KITGPI::Configura
     if (isSeismic) {
         wavefieldAverage = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
         wavefieldRecover = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-        wavefieldAverage->init(ctx, averageDist);
+        wavefieldAverage->init(ctx, distInversion);
         wavefieldRecover->init(ctx, dist);
     } else {
-        wavefieldEMAverage = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
-        wavefieldEMRecover = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
-        wavefieldEMAverage->init(ctx, averageDist);
-        wavefieldEMRecover->init(ctx, dist);        
+        wavefieldAverageEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+        wavefieldRecoverEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+        wavefieldAverageEM->init(ctx, distInversion);
+        wavefieldRecoverEM->init(ctx, dist);        
     }
 }
 
@@ -231,8 +231,8 @@ KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::ap
 template <typename ValueType>
 KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldAverage(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
 {
-    wavefieldEMAverage->applyWavefieldTransform(wavefieldAverageMatrix, *wavefieldPtrEM);
-    return *wavefieldEMAverage;
+    wavefieldAverageEM->applyWavefieldTransform(wavefieldAverageMatrix, *wavefieldPtrEM);
+    return *wavefieldAverageEM;
 }
 
 /*! \brief Apply model recover to a wavefield
@@ -241,8 +241,8 @@ KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::
 template <typename ValueType>
 KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldRecover(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
 {
-    wavefieldEMRecover->applyWavefieldTransform(wavefieldRecoverMatrix, *wavefieldPtrEM);
-    return *wavefieldEMRecover;
+    wavefieldRecoverEM->applyWavefieldTransform(wavefieldRecoverMatrix, *wavefieldPtrEM);
+    return *wavefieldRecoverEM;
 }
 
 /*! \brief Read a taper from file
