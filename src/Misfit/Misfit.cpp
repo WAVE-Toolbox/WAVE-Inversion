@@ -192,5 +192,37 @@ ValueType KITGPI::Misfit::Misfit<ValueType>::calcStablizingFunctionalPerModel(sc
     return tempValue; 
 }
 
+/*! \brief Get const reference to modelDerivativeX
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Misfit::Misfit<ValueType>::getModelDerivativeX()
+{
+    return (modelDerivativeX);
+}
+
+/*! \brief Set modelDerivativeX
+ */
+template <typename ValueType>
+void KITGPI::Misfit::Misfit<ValueType>::setModelDerivativeX(scai::lama::Vector<ValueType> const &setModelDerivativeX)
+{
+    modelDerivativeX = setModelDerivativeX;
+}
+
+/*! \brief Get const reference to modelDerivativeY
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Misfit::Misfit<ValueType>::getModelDerivativeY()
+{
+    return (modelDerivativeY);
+}
+
+/*! \brief Set modelDerivativeY
+ */
+template <typename ValueType>
+void KITGPI::Misfit::Misfit<ValueType>::setModelDerivativeY(scai::lama::Vector<ValueType> const &setModelDerivativeY)
+{
+    modelDerivativeY = setModelDerivativeY;
+}
+
 template class KITGPI::Misfit::Misfit<double>;
 template class KITGPI::Misfit::Misfit<float>;

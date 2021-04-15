@@ -185,6 +185,9 @@ int main(int argc, char *argv[])
     
     Acquisition::Coordinates<ValueType> modelCoordinatesEM(configEM);
     Acquisition::Coordinates<ValueType> modelCoordinatesInversionEM(configEM, configEM.get<IndexType>("DHInversion"));
+    
+    Acquisition::Coordinates<ValueType> modelCoordinatesBig;
+    Acquisition::Coordinates<ValueType> modelCoordinatesBigEM;
 
     if (inversionType != 0 && config.get<bool>("useVariableGrid")) {
         CheckParameter::checkVariableGrid(config, commAll, modelCoordinates);
@@ -231,6 +234,8 @@ int main(int argc, char *argv[])
     dmemo::DistributionPtr distInversion = nullptr;
     dmemo::DistributionPtr distEM = nullptr;
     dmemo::DistributionPtr distInversionEM = nullptr;
+    dmemo::DistributionPtr distBig = nullptr;
+    dmemo::DistributionPtr distBigEM = nullptr;
     if (inversionType != 0) {
         if (config.get<IndexType>("partitioning") == 0 || config.get<IndexType>("partitioning") == 2) {
             //Block distribution = starting distribution for graph partitioner
@@ -245,6 +250,10 @@ int main(int argc, char *argv[])
         if (config.get<bool>("writeCoordinate") && shotDomain == 0) {
             // every shotdomain owns the same coordinates
             modelCoordinates.writeCoordinates(dist, ctx, config.get<std::string>("coordinateFilename"), config.get<IndexType>("FileFormat"));
+        }
+        if (useStreamConfig) {
+            modelCoordinatesBig.init(configBig);
+            distBig = Partitioning::gridPartition<ValueType>(configBig, commShot);
         }
     }
     if (inversionTypeEM != 0) {
@@ -261,6 +270,10 @@ int main(int argc, char *argv[])
         if (configEM.get<bool>("writeCoordinate") && shotDomain == 0) {
             // every shotdomain owns the same coordinates
             modelCoordinatesEM.writeCoordinates(distEM, ctx, configEM.get<std::string>("coordinateFilename"), configEM.get<IndexType>("FileFormat"));
+        }
+        if (useStreamConfigEM) {
+            modelCoordinatesBigEM.init(configBigEM);
+            distBigEM = Partitioning::gridPartition<ValueType>(configBigEM, commShot);
         }
     }
     
@@ -366,6 +379,8 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Calculate derivative matrices           */
     /* --------------------------------------- */
+    ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr derivativesInversionEM(ForwardSolver::Derivatives::Factory<ValueType>::Create(dimensionEM));
+    
     if (inversionType != 0) {
         start_t = common::Walltime::get();
         derivatives->init(dist, ctx, config, modelCoordinates, commShot);
@@ -376,6 +391,11 @@ int main(int argc, char *argv[])
     if (inversionTypeEM != 0) {
         start_t = common::Walltime::get();
         derivativesEM->init(distEM, ctx, configEM, modelCoordinatesEM, commShot);
+        if (!useStreamConfigEM) {
+            derivativesInversionEM->init(distEM, ctx, configEM, modelCoordinatesEM, commShot);
+        } else {
+            derivativesInversionEM->init(distBigEM, ctx, configEM, modelCoordinatesBigEM, commShot);
+        }
         end_t = common::Walltime::get();
         HOST_PRINT(commAll, "", "Finished initializing matrices 2 in " << end_t - start_t << " sec.\n\n");
     }
@@ -390,12 +410,10 @@ int main(int argc, char *argv[])
     if (inversionType != 0) {
         wavefields->init(ctx, dist);
         wavefieldsInversion->init(ctx, distInversion);
-        HOST_PRINT(commAll, "", "Finished initializing wavefields 1\n\n");
     }    
     if (inversionTypeEM != 0) {
         wavefieldsEM->init(ctx, distEM);
         wavefieldsInversionEM->init(ctx, distInversionEM);
-        HOST_PRINT(commAll, "", "Finished initializing wavefields 2\n\n");
     }
 
     /* --------------------------------------- */
@@ -512,10 +530,6 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelPerShot(Modelparameter::Factory<ValueType>::Create(equationType));
     Modelparameter::ModelparameterEM<ValueType>::ModelparameterPtr modelPerShotEM(Modelparameter::FactoryEM<ValueType>::Create(equationTypeEM));
-    Acquisition::Coordinates<ValueType> modelCoordinatesBig;
-    Acquisition::Coordinates<ValueType> modelCoordinatesBigEM;
-    dmemo::DistributionPtr distBig = nullptr;
-    dmemo::DistributionPtr distBigEM = nullptr;
          
     if (inversionType != 0) {
         // load starting model
@@ -525,8 +539,6 @@ int main(int argc, char *argv[])
             model->prepareForInversion(config, commShot);
             modelPriori->prepareForInversion(config, commShot);
         } else {
-            modelCoordinatesBig.init(configBig);
-            distBig = Partitioning::gridPartition<ValueType>(configBig, commShot);
             model->init(configBig, ctx, distBig, modelCoordinatesBig);   
             modelPriori->init(configBig, ctx, distBig, modelCoordinatesBig);
             modelPerShot->init(config, ctx, dist, modelCoordinates);  
@@ -600,10 +612,12 @@ int main(int argc, char *argv[])
     Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(Misfit::Factory<ValueType>::Create(misfitType));
     lama::DenseVector<ValueType> misfitPerIt(numshots, 0, ctx);
     ValueType weightingStabilizingFunctionalGradient = 1.0;
+    ValueType weightingCrossGradient = 1.0;
     
     Misfit::Misfit<ValueType>::MisfitPtr dataMisfitEM(Misfit::Factory<ValueType>::Create(misfitTypeEM));
     lama::DenseVector<ValueType> misfitPerItEM(numshotsEM, 0, ctx);  
-    ValueType weightingStabilizingFunctionalGradientEM = 1.0;
+    ValueType weightingStabilizingFunctionalGradientEM = 1.0;   
+    ValueType weightingCrossGradientEM = 1.0;
 
     /* --------------------------------------- */
     /* Adjoint sources                         */
@@ -682,37 +696,45 @@ int main(int argc, char *argv[])
     gradientPtr gradient(Gradient::Factory<ValueType>::Create(equationType));
     gradientPtr gradientPerShot(Gradient::Factory<ValueType>::Create(equationType));
     gradientPtr stabilizingFunctionalGradient(Gradient::Factory<ValueType>::Create(equationType));
+    gradientPtr crossGradientDerivative(Gradient::Factory<ValueType>::Create(equationType));
     
     typedef typename Gradient::GradientEM<ValueType>::GradientPtr gradientPtrEM;
     gradientPtrEM gradientEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM));
     gradientPtrEM gradientPerShotEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM));
     gradientPtrEM stabilizingFunctionalGradientEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM));
+    gradientPtrEM crossGradientDerivativeEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM)); 
             
     if (inversionType != 0) {
         if (!useStreamConfig) {
             gradient->init(ctx, dist);
             gradientPerShot->init(ctx, dist);       
             stabilizingFunctionalGradient->init(ctx, dist);
+            crossGradientDerivative->init(ctx, dist);  
         } else {
             gradient->init(ctx, distBig);
             stabilizingFunctionalGradient->init(ctx, distBig);
+            crossGradientDerivative->init(ctx, distBig);
         }
         gradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));
         gradientPerShot->setNormalizeGradient(config.get<bool>("normalizeGradient"));  
-        stabilizingFunctionalGradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));    
+        stabilizingFunctionalGradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));
+        crossGradientDerivative->setNormalizeGradient(config.get<bool>("normalizeGradient"));     
     }
     if (inversionTypeEM != 0) {
         if (!useStreamConfigEM) {
             gradientEM->init(ctx, distEM);
             gradientPerShotEM->init(ctx, distEM);      
             stabilizingFunctionalGradientEM->init(ctx, distEM); 
+            crossGradientDerivativeEM->init(ctx, distEM);  
         } else {
             gradientEM->init(ctx, distBigEM);
             stabilizingFunctionalGradientEM->init(ctx, distBigEM);
+            crossGradientDerivativeEM->init(ctx, distBigEM);
         }
         gradientEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));
         gradientPerShotEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));  
         stabilizingFunctionalGradientEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient")); 
+        crossGradientDerivativeEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));     
     }
     
     /* --------------------------------------- */
@@ -730,6 +752,7 @@ int main(int argc, char *argv[])
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaperEM;
     Taper::Taper1D<ValueType> gradientTaper1DEM; 
     Taper::Taper2D<ValueType> gradientTaper2DPerShotEM;
+    Taper::Taper2D<ValueType> gradientTaper2DJoint;
     
     if (inversionType != 0) {
         if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark"))
@@ -758,16 +781,19 @@ int main(int argc, char *argv[])
                 gradientTaper1DEM.read(configBigEM.get<std::string>("gradientTaperName"), configEM.get<IndexType>("FileFormat"));
             }
         }
-        HOST_PRINT(commAll, "\n=============gradientTaper1DEM=================");
-        HOST_PRINT(commAll, "\n *distInversionEM: " << *distInversionEM << "\n");
-        HOST_PRINT(commAll, "\n *distEM: " << *distEM << "\n");
-        HOST_PRINT(commAll, "\n isSeismicEM: " << isSeismicEM << "\n");
-        HOST_PRINT(commAll, "\n modelCoordinatesEM.getNX(): " << modelCoordinatesEM.getNX() << "\n");
-        HOST_PRINT(commAll, "\n modelCoordinatesInversionEM.getNX(): " << modelCoordinatesInversionEM.getNX() << "\n");
-        gradientTaper2DPerShotEM.initWavefieldTransform(configEM, distInversionEM, distEM, ctx, isSeismicEM); 
-        HOST_PRINT(commAll, "\n=============initWavefieldTransform=================");
+        gradientTaper2DPerShotEM.initWavefieldTransform(configEM, distInversionEM, distEM, ctx, isSeismicEM);
         gradientTaper2DPerShotEM.calcInversionAverageMatrix(modelCoordinatesEM, modelCoordinatesInversionEM);
-        HOST_PRINT(commAll, "\n=============calcInversionAverageMatrix=================");
+    } 
+    if (inversionType != 0 && inversionTypeEM != 0) {
+        if (!useStreamConfig) {
+            gradientTaper2DJoint.initModelTransform(dist, distEM, ctx);  
+            gradientTaper2DJoint.calcSeismictoEMMatrix(modelCoordinates, config, modelCoordinatesEM, configEM);
+            gradientTaper2DJoint.calcEMtoSeismicMatrix(modelCoordinates, config, modelCoordinatesEM, configEM); 
+        } else {
+            gradientTaper2DJoint.initModelTransform(distBig, distBigEM, ctx);  
+            gradientTaper2DJoint.calcSeismictoEMMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM);
+            gradientTaper2DJoint.calcEMtoSeismicMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM); 
+        }
     }
     
     /* --------------------------------------- */
@@ -804,7 +830,7 @@ int main(int argc, char *argv[])
         // in case of using porosity and saturation in inversion
         modelEM->calcRockMatrixParameter(configEM);     
     }
-    HOST_PRINT(commAll, "\n=============calcRockMatrixParameter=================\n");
+    
     /* --------------------------------------- */
     /*       Loop over workflow stages         */
     /* --------------------------------------- */
@@ -878,6 +904,7 @@ int main(int argc, char *argv[])
                 /*        Loop over Seismic shots          */
                 /* --------------------------------------- */
                 gradient->resetGradient(); // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
+                crossGradientDerivative->resetGradient();
                 misfitPerIt = 0;
 
                 if (config.get<IndexType>("useRandSource") != 0) { 
@@ -1114,6 +1141,45 @@ int main(int argc, char *argv[])
                 
                 gradient->applyMedianFilter(config);  
 
+                if (inversionType == 2) {                        
+                    
+                    // joint inversion with cross-gradient constraint
+                    HOST_PRINT(commAll, "\n===========================================");
+                    HOST_PRINT(commAll, "\n========= calcCrossGradient 1 =============");
+                    HOST_PRINT(commAll, "\n===========================================\n");
+                    gradient->normalize();  
+                    
+                    crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, workflowEM);
+                    
+                    crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflow);  
+                    if (config.get<bool>("useGradientTaper")) {
+                        gradientTaper1D.apply(*crossGradientDerivative);
+                    }  
+                    crossGradientDerivative->applyMedianFilter(config); 
+                    crossGradientDerivative->normalize();  
+                    if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                        crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradient", config.get<IndexType>("FileFormat"), workflow);
+                    }
+                                            
+                    crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflow);
+                    if (config.get<bool>("useGradientTaper")) {
+                        gradientTaper1D.apply(*crossGradientDerivative);
+                    }  
+                    crossGradientDerivative->applyMedianFilter(config); 
+                    crossGradientDerivative->normalize();              
+                    if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                        crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradientDerivative", config.get<IndexType>("FileFormat"), workflow);
+                    }      
+                    if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1 ) < 0)) {
+                        weightingCrossGradient *= 0.8;
+                    }
+                    HOST_PRINT(commAll, "weightingCrossGradient 1 = " << weightingCrossGradient << "\n");  
+                    HOST_PRINT(commAll, "\n===========================================\n");
+                    
+                    *crossGradientDerivative *= weightingCrossGradient;            
+                    *gradient += *crossGradientDerivative;
+                }
+                
                 if (workflow.iteration != 0 && config.get<IndexType>("stablizingFunctionalType") != 0) {
                     
                     // inversion with regularization constraint
@@ -1234,6 +1300,7 @@ int main(int argc, char *argv[])
                 /*        Loop over EM shots               */
                 /* --------------------------------------- */
                 gradientEM->resetGradient(); // reset gradient because gradient is a sum of all gradientsPerShot gradients+=gradientPerShot
+                crossGradientDerivativeEM->resetGradient();
                 misfitPerItEM = 0;
 
                 if (configEM.get<IndexType>("useRandSource") != 0) { 
@@ -1470,6 +1537,45 @@ int main(int argc, char *argv[])
                 
                 gradientEM->applyMedianFilter(configEM);  
 
+                if (inversionTypeEM == 2) {
+                    
+                    // joint inversion with cross-gradient constraint
+                    HOST_PRINT(commAll, "\n===========================================");
+                    HOST_PRINT(commAll, "\n========== calcCrossGradient 2 ============");
+                    HOST_PRINT(commAll, "\n===========================================\n");
+                    gradientEM->normalize();  
+                    
+                    crossGradientDerivative->calcModelDerivative(*dataMisfit, *model, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflow);
+                    
+                    crossGradientDerivativeEM->calcCrossGradient(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflowEM);
+                    if (configEM.get<bool>("useGradientTaper")) {
+                        gradientTaper1DEM.apply(*crossGradientDerivativeEM);
+                    }  
+                    crossGradientDerivativeEM->applyMedianFilter(configEM);  
+                    crossGradientDerivativeEM->normalize();  
+                    if (configEM.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                        crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradient", configEM.get<IndexType>("FileFormat"), workflowEM);
+                    }  
+                    
+                    crossGradientDerivativeEM->calcCrossGradientDerivative(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflowEM); 
+                    if (configEM.get<bool>("useGradientTaper")) {
+                        gradientTaper1DEM.apply(*crossGradientDerivativeEM);
+                    }   
+                    crossGradientDerivativeEM->applyMedianFilter(configEM);      
+                    crossGradientDerivativeEM->normalize();   
+                    if (configEM.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                        crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradientDerivative", configEM.get<IndexType>("FileFormat"), workflowEM);
+                    }             
+                    if ((workflowEM.iteration > 0) && (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration) - 0.01 * dataMisfitEM->getMisfitSum(workflowEM.iteration - 1 ) < 0)) {
+                        weightingCrossGradientEM *= 0.8;
+                    }
+                    HOST_PRINT(commAll, "weightingCrossGradient 2 = " << weightingCrossGradientEM << "\n");  
+                    HOST_PRINT(commAll, "\n===========================================\n");
+                    
+                    *crossGradientDerivativeEM *= weightingCrossGradientEM;
+                    *gradientEM += *crossGradientDerivativeEM;           
+                }
+                
                 if (workflowEM.iteration != 0 && configEM.get<IndexType>("stablizingFunctionalType") != 0) {
                     
                     // inversion with regularization constraint

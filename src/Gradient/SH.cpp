@@ -590,6 +590,202 @@ void KITGPI::Gradient::SH<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::Ze
 }
 
 template <typename ValueType>
+void KITGPI::Gradient::SH<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    scai::lama::DenseVector<ValueType> densitytemp;
+    scai::lama::DenseVector<ValueType> velocityStemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> tempX;
+    scai::lama::DenseVector<ValueType> tempY;
+    ValueType modelMax;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
+    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+        
+    /* Get references to required derivatives matrixes */
+    auto const &DxfEM = derivativesEM.getDxf();
+    auto const &DyfEM = derivativesEM.getDyf();  
+          
+    densitytemp = model.getDensity(); 
+    velocityStemp = model.getVelocityS();                   
+                      
+    scai::hmemo::ContextPtr ctx = densitytemp.getContextPtr();
+    scai::dmemo::DistributionPtr dist = densitytemp.getDistributionPtr();  
+          
+    if (workflow.getInvertForDensity()) {
+        densitytemp = gradientTaper2DJoint.applyGradientTransformToEM(densitytemp); 
+        
+        tempX = DxfEM * densitytemp;    
+        tempY = DyfEM * densitytemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);   
+        
+        modelMax = tempX.maxNorm();
+        if (modelMax != 0)
+            tempX *= 1 / modelMax;  
+        modelMax = tempY.maxNorm();
+        if (modelMax != 0)
+            tempY *= 1 / modelMax; 
+        
+        tempX = gradientTaper2DJoint.applyGradientTransformToSeismic(tempX); 
+        tempY = gradientTaper2DJoint.applyGradientTransformToSeismic(tempY);                            
+    } else {
+        this->initParameterisation(tempX, ctx, dist, 0.0);
+        this->initParameterisation(tempY, ctx, dist, 0.0);
+    }   
+    
+    modelDerivativeXtemp = tempX;
+    modelDerivativeYtemp = tempY;   
+               
+    if (workflow.getInvertForVs()) {
+        velocityStemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityStemp); 
+        
+        tempX = DxfEM * velocityStemp;    
+        tempY = DyfEM * velocityStemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);  
+        
+        modelMax = tempX.maxNorm();
+        if (modelMax != 0)
+            tempX *= 1 / modelMax;  
+        modelMax = tempY.maxNorm();
+        if (modelMax != 0)
+            tempY *= 1 / modelMax; 
+        
+        tempX = gradientTaper2DJoint.applyGradientTransformToSeismic(tempX);    
+        tempY = gradientTaper2DJoint.applyGradientTransformToSeismic(tempY);      
+    } else {
+        this->initParameterisation(tempX, ctx, dist, 0.0);
+        this->initParameterisation(tempY, ctx, dist, 0.0);
+    }    
+    
+    modelDerivativeXtemp += tempX;
+    modelDerivativeYtemp += tempY;    
+    
+    dataMisfit.setModelDerivativeX(modelDerivativeXtemp);
+    dataMisfit.setModelDerivativeY(modelDerivativeYtemp);
+}
+
+template <typename ValueType>
+void KITGPI::Gradient::SH<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    scai::lama::DenseVector<ValueType> densitytemp;
+    scai::lama::DenseVector<ValueType> velocityStemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> temp;
+    scai::lama::DenseVector<ValueType> tempX;
+    scai::lama::DenseVector<ValueType> tempY;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
+    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+    
+    /* Get references to required derivatives matrixes */
+    auto const &DxfEM = derivativesEM.getDxf();
+    auto const &DyfEM = derivativesEM.getDyf();  
+    
+    densitytemp = model.getDensity();    
+    velocityStemp = model.getVelocityS();  
+    
+    modelEMDerivativeXtemp = dataMisfitEM.getModelDerivativeX();  
+    modelEMDerivativeYtemp = dataMisfitEM.getModelDerivativeY();          
+                      
+    scai::hmemo::ContextPtr ctx = densitytemp.getContextPtr();
+    scai::dmemo::DistributionPtr dist = densitytemp.getDistributionPtr();  
+    scai::dmemo::DistributionPtr distEM = modelEMDerivativeXtemp.getDistributionPtr();  
+            
+    if (workflow.getInvertForDensity()) {
+        densitytemp = gradientTaper2DJoint.applyGradientTransformToEM(densitytemp); 
+        
+        tempX = DxfEM * densitytemp;    
+        tempY = DyfEM * densitytemp;          
+        
+        // cross-gradient of density and modelEMDerivative   
+        densitytemp = modelEMDerivativeXtemp * tempY;   
+        temp = modelEMDerivativeYtemp * tempX;   
+        densitytemp -= temp;         
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialFDorder);
+        
+        density = gradientTaper2DJoint.applyGradientTransformToSeismic(densitytemp);              
+    } else {
+        this->initParameterisation(density, ctx, dist, 0.0);
+    }    
+                 
+    if (workflow.getInvertForVs()) {
+        velocityStemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityStemp);  
+        
+        tempX = DxfEM * velocityStemp;    
+        tempY = DyfEM * velocityStemp;          
+        
+        // cross-gradient of vs and modelEMDerivative   
+        velocityStemp = modelEMDerivativeXtemp * tempY;   
+        temp = modelEMDerivativeYtemp * tempX;   
+        velocityStemp -= temp;   
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialFDorder);
+        
+        velocityS = gradientTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);          
+    } else {
+        this->initParameterisation(velocityS, ctx, dist, 0.0);
+    }      
+}
+
+template <typename ValueType>
+void KITGPI::Gradient::SH<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    scai::lama::DenseVector<ValueType> densitytemp;
+    scai::lama::DenseVector<ValueType> velocityStemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> temp;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
+    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+        
+    densitytemp = this->getDensity();
+    velocityStemp = this->getVelocityS();    
+        
+    modelEMDerivativeXtemp = dataMisfitEM.getModelDerivativeX();  
+    modelEMDerivativeYtemp = dataMisfitEM.getModelDerivativeY();          
+                      
+    scai::hmemo::ContextPtr ctx = densitytemp.getContextPtr();
+    scai::dmemo::DistributionPtr dist = densitytemp.getDistributionPtr();  
+    scai::dmemo::DistributionPtr distEM = modelEMDerivativeXtemp.getDistributionPtr();  
+                  
+    temp = modelEMDerivativeYtemp - modelEMDerivativeXtemp; 
+    
+    if (workflow.getInvertForDensity()) {
+        densitytemp = gradientTaper2DJoint.applyGradientTransformToEM(densitytemp);   
+        
+        // derivative of cross-gradient with respect to density   
+        densitytemp *= temp;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialFDorder);
+        
+        density = gradientTaper2DJoint.applyGradientTransformToSeismic(densitytemp);  
+    } else {
+        this->initParameterisation(density, ctx, dist, 0.0);
+    }    
+                 
+    if (workflow.getInvertForVs()) {
+        velocityStemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityStemp);  
+        
+        // derivative of cross-gradient with respect to vs  
+        velocityStemp *= temp;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialFDorder);
+        
+        velocityS = gradientTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);       
+    } else {
+        this->initParameterisation(velocityS, ctx, dist, 0.0);
+    }       
+}
+
+template <typename ValueType>
 void KITGPI::Gradient::SH<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    
     scai::lama::DenseVector<ValueType> velocitySPrioritemp;
@@ -632,18 +828,9 @@ void KITGPI::Gradient::SH<ValueType>::applyMedianFilter(KITGPI::Configuration::C
     velocityS_temp = this->getVelocityS();
     porosity_temp = this->getPorosity();
     saturation_temp = this->getSaturation();
-    
-    bool useStreamConfig = config.get<bool>("useStreamConfig");
-    scai::IndexType NX;
-    scai::IndexType NY;
-    if (!useStreamConfig) {
-        NX = config.get<IndexType>("NX");
-        NY = config.get<IndexType>("NY");
-    } else {
-        KITGPI::Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
-        NX = configBig.get<IndexType>("NX");
-        NY = configBig.get<IndexType>("NY");
-    }    
+
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
     
     KITGPI::Common::applyMedianFilterTo2DVector(density_temp, NX, NY, spatialFDorder);

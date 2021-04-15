@@ -14,8 +14,7 @@ namespace KITGPI
         /*! \brief Abstract class to store and calculate the misfit
          *
          * As this class is an abstract class, all constructors are protected.
-         */
-        
+         */        
         template <typename ValueType>
         class Misfit
         {
@@ -28,6 +27,10 @@ namespace KITGPI
             virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;            
             virtual void calcAdjointSources(KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;          
             
+            scai::lama::Vector<ValueType> const &getModelDerivativeX();
+            scai::lama::Vector<ValueType> const &getModelDerivativeY();
+            void setModelDerivativeX(scai::lama::Vector<ValueType> const &setModelDerivativeX);
+            void setModelDerivativeY(scai::lama::Vector<ValueType> const &setModelDerivativeY);
             ValueType calcStablizingFunctionalPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, ValueType focusingParameter, int stablizingFunctionalType);
             
             ValueType getMisfitSum(int iteration);
@@ -53,6 +56,8 @@ namespace KITGPI
             ~Misfit(){};
             
             std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;
+            scai::lama::DenseVector<ValueType> modelDerivativeX; //!< Vector storing model derivative in x direction.
+            scai::lama::DenseVector<ValueType> modelDerivativeY; //!< Vector storing model derivative in y direction.
             
         };
     }

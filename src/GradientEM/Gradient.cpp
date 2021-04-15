@@ -354,6 +354,230 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
     return dielectricPermittiviyDeSaturation;
 }
 
+template <typename ValueType>
+void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+{
+    scai::lama::DenseVector<ValueType> conductivityEMtemp;
+    scai::lama::DenseVector<ValueType> dielectricPermittivityEMtemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> tempX;
+    scai::lama::DenseVector<ValueType> tempY;
+    ValueType modelMax;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
+    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+    scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
+    ValueType const DielectricPermittivityVacuum = modelEM.getDielectricPermittivityVacuum();
+    ValueType const ConductivityReference = modelEM.getConductivityReference();
+        
+    /* Get references to required derivatives matrixes */
+    auto const &DxfEM = derivativesEM.getDxf();
+    auto const &DyfEM = derivativesEM.getDyf();  
+          
+    conductivityEMtemp = modelEM.getConductivityEM();  
+    dielectricPermittivityEMtemp = modelEM.getDielectricPermittivityEM();             
+                      
+    scai::hmemo::ContextPtr ctx = dielectricPermittivityEMtemp.getContextPtr();
+    scai::dmemo::DistributionPtr distEM = dielectricPermittivityEMtemp.getDistributionPtr();   
+      
+    this->exParameterisation(conductivityEMtemp, ConductivityReference, modelEM.getParameterisation());       
+    this->exParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());       
+               
+    if (workflowEM.getInvertForEpsilonEM()) {
+        tempX = DxfEM * dielectricPermittivityEMtemp;    
+        tempY = DyfEM * dielectricPermittivityEMtemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);  
+        
+        modelMax = tempX.maxNorm();
+        if (modelMax != 0)
+            tempX *= 1 / modelMax;  
+        modelMax = tempY.maxNorm();
+        if (modelMax != 0)
+            tempY *= 1 / modelMax;                       
+    } else {
+        this->initParameterisation(tempX, ctx, distEM, 0.0);
+        this->initParameterisation(tempY, ctx, distEM, 0.0);
+    }    
+    
+    modelEMDerivativeXtemp = tempX;
+    modelEMDerivativeYtemp = tempY;   
+    
+    if (exchangeStrategy == 2) {
+        if (workflowEM.getInvertForSigmaEM()) {        
+            tempX = DxfEM * conductivityEMtemp;    
+            tempY = DyfEM * conductivityEMtemp;
+            
+            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
+            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);   
+            
+            modelMax = tempX.maxNorm();
+            if (modelMax != 0)
+                tempX *= 1 / modelMax;  
+            modelMax = tempY.maxNorm();
+            if (modelMax != 0)
+                tempY *= 1 / modelMax;                                       
+        } else {
+            this->initParameterisation(tempX, ctx, distEM, 0.0);
+            this->initParameterisation(tempY, ctx, distEM, 0.0);
+        }   
+        
+        modelEMDerivativeXtemp += tempX;
+        modelEMDerivativeYtemp += tempY; 
+    }
+    
+    dataMisfitEM.setModelDerivativeX(modelEMDerivativeXtemp);
+    dataMisfitEM.setModelDerivativeY(modelEMDerivativeYtemp);
+}
+
+template <typename ValueType>
+void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+{
+    scai::lama::DenseVector<ValueType> conductivityEMtemp;
+    scai::lama::DenseVector<ValueType> dielectricPermittivityEMtemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelEMDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> temp;
+    scai::lama::DenseVector<ValueType> tempX;
+    scai::lama::DenseVector<ValueType> tempY;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
+    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+    scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
+    ValueType const DielectricPermittivityVacuum = modelEM.getDielectricPermittivityVacuum();
+    ValueType const ConductivityReference = modelEM.getConductivityReference();
+    
+    /* Get references to required derivatives matrixes */
+    auto const &DxfEM = derivativesEM.getDxf();
+    auto const &DyfEM = derivativesEM.getDyf();  
+    
+    conductivityEMtemp = modelEM.getConductivityEM();
+    dielectricPermittivityEMtemp = modelEM.getDielectricPermittivityEM();  
+        
+    this->exParameterisation(conductivityEMtemp, ConductivityReference, modelEM.getParameterisation());       
+    this->exParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());       
+    
+    scai::hmemo::ContextPtr ctx = dielectricPermittivityEMtemp.getContextPtr();
+    scai::dmemo::DistributionPtr distEM = dielectricPermittivityEMtemp.getDistributionPtr();        
+                              
+    modelDerivativeXtemp = dataMisfit.getModelDerivativeX();  
+    modelDerivativeYtemp = dataMisfit.getModelDerivativeY();   
+    modelDerivativeXtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
+    modelDerivativeYtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp); 
+                 
+    if (workflowEM.getInvertForEpsilonEM()) {    
+        tempX = DxfEM * dielectricPermittivityEMtemp;    
+        tempY = DyfEM * dielectricPermittivityEMtemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder); 
+        
+        if (exchangeStrategy != 0) {
+            // cross-gradient of vs and modelDerivative   
+            dielectricPermittivityEMtemp = modelDerivativeYtemp * tempX;   
+            temp = modelDerivativeXtemp * tempY;   
+            dielectricPermittivityEMtemp -= temp;  
+            
+            dielectricPermittivityEM = dielectricPermittivityEMtemp;   
+        }
+    } else {
+        this->initParameterisation(dielectricPermittivityEM, ctx, distEM, 0.0);
+        this->initParameterisation(tempX, ctx, distEM, 0.0);
+        this->initParameterisation(tempY, ctx, distEM, 0.0);
+    }   
+    
+    modelEMDerivativeXtemp = tempX;
+    modelEMDerivativeYtemp = tempY; 
+            
+    if (workflowEM.getInvertForSigmaEM()) {
+        tempX = DxfEM * conductivityEMtemp;    
+        tempY = DyfEM * conductivityEMtemp;          
+        
+        // cross-gradient of conductivityEM and modelDerivative   
+        conductivityEMtemp = modelEMDerivativeYtemp * tempX;   
+        temp = modelEMDerivativeXtemp * tempY;   
+        conductivityEMtemp -= temp;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(conductivityEMtemp, NX, NY, spatialFDorder);        
+        conductivityEM = conductivityEMtemp;                
+    } else {
+        this->initParameterisation(conductivityEM, ctx, distEM, 0.0);
+    }       
+}
+
+template <typename ValueType>
+void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+{
+    scai::lama::DenseVector<ValueType> conductivityEMtemp;
+    scai::lama::DenseVector<ValueType> dielectricPermittivityEMtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> tempX;
+    scai::lama::DenseVector<ValueType> tempY;
+    scai::lama::DenseVector<ValueType> temp;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
+    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+    scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
+    ValueType const DielectricPermittivityVacuum = modelEM.getDielectricPermittivityVacuum();
+        
+    dielectricPermittivityEMtemp = modelEM.getDielectricPermittivityEM();
+    this->exParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());      
+               
+    modelDerivativeXtemp = dataMisfit.getModelDerivativeX();  
+    modelDerivativeYtemp = dataMisfit.getModelDerivativeY();
+                      
+    scai::hmemo::ContextPtr ctx = dielectricPermittivityEMtemp.getContextPtr();
+    scai::dmemo::DistributionPtr distEM = dielectricPermittivityEMtemp.getDistributionPtr();  
+        
+    /* Get references to required derivatives matrixes */
+    auto const &DxfEM = derivativesEM.getDxf();
+    auto const &DyfEM = derivativesEM.getDyf();  
+    
+    modelDerivativeXtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
+    modelDerivativeYtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp);   
+            
+    temp = modelDerivativeXtemp - modelDerivativeYtemp; 
+                 
+    if (workflowEM.getInvertForEpsilonEM()) {
+        tempX = DxfEM * dielectricPermittivityEMtemp;    
+        tempY = DyfEM * dielectricPermittivityEMtemp;   
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);
+        
+        if (exchangeStrategy != 0) {
+            // derivative of cross-gradient with respect to dielectricPermittivityEM 
+            dielectricPermittivityEMtemp = this->getDielectricPermittivityEM();
+            dielectricPermittivityEMtemp *= temp;  
+            
+            dielectricPermittivityEM = dielectricPermittivityEMtemp;          
+        } else {
+            this->initParameterisation(dielectricPermittivityEM, ctx, distEM, 0.0);
+        }              
+    } else {
+        this->initParameterisation(dielectricPermittivityEM, ctx, distEM, 0.0);
+        this->initParameterisation(tempX, ctx, distEM, 0.0);
+        this->initParameterisation(tempY, ctx, distEM, 0.0);
+    }        
+    
+    temp = tempX - tempY; 
+        
+    if (workflowEM.getInvertForSigmaEM()) {      
+        // derivative of cross-gradient with respect to conductivityEM   
+        conductivityEMtemp = this->getConductivityEM();
+        conductivityEMtemp *= temp;  
+                      
+        conductivityEM = conductivityEMtemp;
+    } else {
+        this->initParameterisation(conductivityEM, ctx, distEM, 0.0);
+    }     
+}
+
 /*! \brief calculate the gradient of stabilizing functional of each model parameter */
 template <typename ValueType>
 scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::calcStabilizingFunctionalGradientPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, KITGPI::Configuration::Configuration configEM, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM)

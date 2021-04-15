@@ -628,17 +628,8 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration:
     porosity_temp = this->getPorosity();
     saturation_temp = this->getSaturation();
     
-    bool useStreamConfig = configEM.get<bool>("useStreamConfig");
-    scai::IndexType NX;
-    scai::IndexType NY;
-    if (!useStreamConfig) {
-        NX = configEM.get<IndexType>("NX");
-        NY = configEM.get<IndexType>("NY");
-    } else {
-        KITGPI::Configuration::Configuration configBigEM(configEM.get<std::string>("streamConfigFilename"));
-        NX = configBigEM.get<IndexType>("NX");
-        NY = configBigEM.get<IndexType>("NY");
-    }          
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
     scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
     
     KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialFDorder);

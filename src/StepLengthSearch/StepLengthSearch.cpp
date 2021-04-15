@@ -447,7 +447,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     
     typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodelPerShot(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
     testmodelPerShot->init(config, ctx, dist, modelCoordinates);  // init is necessary for modelPerShot to allocate distribution.
-    bool useStreamConfig = config.get<bool>("useStreamConfig");
+    bool useStreamConfig = config.getAndCatch("useStreamConfig", false);
     Acquisition::Coordinates<ValueType> modelCoordinatesBig;
     std::vector<Acquisition::coordinate3D> cutCoordinates;
     if (useStreamConfig) {
@@ -642,7 +642,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     
     typename KITGPI::Modelparameter::ModelparameterEM<ValueType>::ModelparameterPtr testmodelPerShotEM(KITGPI::Modelparameter::FactoryEM<ValueType>::Create(equationTypeEM));
     testmodelPerShotEM->init(configEM, ctx, distEM, modelCoordinatesEM);  // init is necessary for modelPerShot to allocate distribution.
-    bool useStreamConfigEM = configEM.get<bool>("useStreamConfig");
+    bool useStreamConfigEM = configEM.getAndCatch("useStreamConfig", false);
     Acquisition::Coordinates<ValueType> modelCoordinatesBigEM;
     std::vector<Acquisition::coordinate3D> cutCoordinatesEM;
     if (useStreamConfigEM) {
