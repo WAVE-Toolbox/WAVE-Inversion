@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
         if (numShotDomains > 1)
             HOST_PRINT(commAll, "\n Total Memory Usage (" << numShotDomains << " shot Domains ): \n " << memTotal * numShotDomains << " MB  ");
 
-        HOST_PRINT(commAll, "\n\n========================================================================\n\n")
+        HOST_PRINT(commAll, "\n\n ===================================================\n\n")    
     }    
     if (inversionTypeEM != 0) {
         ValueType memDerivativesEM = derivativesEM->estimateMemory(configEM, distEM, modelCoordinatesEM);
@@ -547,7 +547,7 @@ int main(int argc, char *argv[])
             modelPerShot->prepareForInversion(config, commShot); // prepareForInversion is necessary for modelPerShot to calculate gradient.
         }
     }    
-    if (inversionTypeEM != 0) {
+    if (inversionTypeEM != 0 || exchangeStrategy == 4 || exchangeStrategy == 6) {
         if (!useStreamConfigEM) {    
             modelEM->init(configEM, ctx, distEM, modelCoordinatesEM);
             modelPrioriEM->init(configEM, ctx, distEM, modelCoordinatesEM);
@@ -1964,7 +1964,11 @@ int main(int argc, char *argv[])
         modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM); 
         if (commInterShot->getRank() == 0) {
             /* only shot Domain 0 writes output */
-            modelEM->write(configEM.get<std::string>("ModelFilename"), configEM.get<IndexType>("FileFormat"));
+            if (!useStreamConfigEM) {
+                modelEM->write(configEM.get<std::string>("ModelFilename"), configEM.get<IndexType>("FileFormat"));
+            } else {
+                modelEM->write(configBigEM.get<std::string>("ModelFilename"), configEM.get<IndexType>("FileFormat"));
+            }
         }
     }
     
