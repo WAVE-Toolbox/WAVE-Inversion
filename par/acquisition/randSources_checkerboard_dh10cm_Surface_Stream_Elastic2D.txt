@@ -2,4 +2,3 @@
 # random source type = 1 (0=all sequential shot, 1=numShotDomains random shot, 2=numShotDomains sequential shot)
 # Stage | Iteration | shotNumbers
     1         1        0
-    1         2        0

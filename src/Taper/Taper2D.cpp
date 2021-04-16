@@ -496,5 +496,67 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
     modelTransformMatrixToSeismic.writeToFile("model/modelTransformMatrixToSeismic_" + std::to_string(modelCoordinatesEM.getNX()) + "_" + std::to_string(modelCoordinatesEM.getNY()) + "_" + std::to_string(modelCoordinatesEM.getNZ()) + ".mtx");
 }
 
+/*! \brief exchange porosity and saturation from EM to seismic
+ * \param modelEM EM model
+ * \param model Seismic model
+ * \param config Seismic config
+ */
+template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config)
+{
+    scai::lama::DenseVector<ValueType> porosityEMtemp;
+    scai::lama::DenseVector<ValueType> saturationEMtemp;
+    
+    IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");  
+            
+    if (exchangeStrategy == 2) {
+        // case 2: exchange all of the petrophysical parameters 
+        porosityEMtemp = this->applyModelTransformToSeismic(model.getPorosity(), modelEM.getPorosity()); 
+        saturationEMtemp = this->applyModelTransformToSeismic(model.getSaturation(), modelEM.getSaturation()); 
+                
+        model.setPorosity(porosityEMtemp);
+        model.setSaturation(saturationEMtemp);           
+    } else if (exchangeStrategy != 0) {     
+        // case 1,3,4,5,6: exchange saturation to seismic model             
+        saturationEMtemp = this->applyModelTransformToSeismic(model.getSaturation(), modelEM.getSaturation()); 
+                
+        model.setSaturation(saturationEMtemp); 
+    } 
+    // case 0,1,2,3,4: self-constraint of the petrophysical relationship                     
+    model.calcWaveModulusFromPetrophysics(); 
+    if (config.get<bool>("useModelThresholds"))
+        model.applyThresholds(config); 
+}
+
+/*! \brief exchange porosity and saturation from seismic to EM
+ * \param model Seismic model
+ * \param modelEM EM model
+ * \param configEM EM config
+ */
+template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Configuration::Configuration configEM)
+{
+    scai::lama::DenseVector<ValueType> porositytemp;
+    scai::lama::DenseVector<ValueType> saturationtemp;
+        
+    IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");  
+    
+    if (exchangeStrategy == 2) {
+        // case 2: exchange all of the petrophysical parameters 
+        porositytemp = this->applyModelTransformToEM(model.getPorosity(), modelEM.getPorosity()); 
+        saturationtemp = this->applyModelTransformToEM(model.getSaturation(), modelEM.getSaturation()); 
+                
+        modelEM.setPorosity(porositytemp);
+        modelEM.setSaturation(saturationtemp);           
+    } else if (exchangeStrategy != 0) {
+        // case 1,3,4,5,6: exchange porosity to EM model  
+        porositytemp = this->applyModelTransformToEM(model.getPorosity(), modelEM.getPorosity());
+                
+        modelEM.setPorosity(porositytemp);
+    } 
+    // case 0,1,2,3,4: self-constraint of the petrophysical relationship   
+    modelEM.calcWaveModulusFromPetrophysics();   
+    if (configEM.get<bool>("useModelThresholds"))
+        modelEM.applyThresholds(configEM); 
+}
+
 template class KITGPI::Taper::Taper2D<double>;
 template class KITGPI::Taper::Taper2D<float>;
