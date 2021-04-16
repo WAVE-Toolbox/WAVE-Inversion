@@ -42,7 +42,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DPerShot)
+void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Taper::Taper2D<ValueType> wavefieldTaper2D)
 {
     IndexType t = 0;
     IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
@@ -76,18 +76,18 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         /* --------------------------------------- */
         if (t % dtinversion == 0) {
             if (t != 0) {
-                *wavefieldsTemp = gradientTaper2DPerShot.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]);
+                *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]);
                 //calculate temporal derivative of wavefield
-                *wavefieldsTemp -= gradientTaper2DPerShot.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion - 0.5)]);
+                *wavefieldsTemp -= wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion - 0.5)]);
                 *wavefieldsTemp *= DTinv;      
             } else {
-                *wavefieldsTemp = gradientTaper2DPerShot.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 1.5)]);
+                *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 1.5)]);
                 //calculate temporal derivative of wavefield
-                *wavefieldsTemp -= gradientTaper2DPerShot.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]);
+                *wavefieldsTemp -= wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]);
                 *wavefieldsTemp *= DTinv;      
             }
             *wavefieldsTemp *= dtinversion; 
-            ZeroLagXcorr->update(*wavefieldsTemp, gradientTaper2DPerShot.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]), *wavefields, workflow);
+            ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]), *wavefields, workflow);
         }
     }
 

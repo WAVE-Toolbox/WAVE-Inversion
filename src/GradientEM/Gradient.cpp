@@ -433,7 +433,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
 {
     scai::lama::DenseVector<ValueType> conductivityEMtemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivityEMtemp;
@@ -466,8 +466,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
                               
     modelDerivativeXtemp = dataMisfit.getModelDerivativeX();  
     modelDerivativeYtemp = dataMisfit.getModelDerivativeY();   
-    modelDerivativeXtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
-    modelDerivativeYtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp); 
+    modelDerivativeXtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
+    modelDerivativeYtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp); 
                  
     if (workflowEM.getInvertForEpsilonEM()) {    
         tempX = DxfEM * dielectricPermittivityEMtemp;    
@@ -510,7 +510,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
 {
     scai::lama::DenseVector<ValueType> conductivityEMtemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivityEMtemp;
@@ -538,8 +538,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     auto const &DxfEM = derivativesEM.getDxf();
     auto const &DyfEM = derivativesEM.getDyf();  
     
-    modelDerivativeXtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
-    modelDerivativeYtemp = gradientTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp);   
+    modelDerivativeXtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
+    modelDerivativeYtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp);   
             
     temp = modelDerivativeXtemp - modelDerivativeYtemp; 
                  

@@ -554,8 +554,6 @@ int main(int argc, char *argv[])
             modelEM->prepareForInversion(configEM, commShot);
             modelPrioriEM->prepareForInversion(configEM, commShot);
         } else {
-            modelCoordinatesBigEM.init(configBigEM);
-            distBigEM = Partitioning::gridPartition<ValueType>(configBigEM, commShot);
             modelEM->init(configBigEM, ctx, distBigEM, modelCoordinatesBigEM);  
             modelPrioriEM->init(configBigEM, ctx, distBigEM, modelCoordinatesBigEM);
             modelPerShotEM->init(configEM, ctx, distEM, modelCoordinatesEM);  
@@ -748,11 +746,11 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     Taper::Taper1D<ValueType> gradientTaper1D;
-    Taper::Taper2D<ValueType> gradientTaper2DPerShot;
+    Taper::Taper2D<ValueType> wavefieldTaper2D;
     Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaperEM;
     Taper::Taper1D<ValueType> gradientTaper1DEM; 
-    Taper::Taper2D<ValueType> gradientTaper2DPerShotEM;
-    Taper::Taper2D<ValueType> gradientTaper2DJoint;
+    Taper::Taper2D<ValueType> wavefieldTaper2DEM;
+    Taper::Taper2D<ValueType> modelTaper2DJoint;
     
     if (inversionType != 0) {
         if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark"))
@@ -766,8 +764,8 @@ int main(int argc, char *argv[])
                 gradientTaper1D.read(configBig.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
             }  
         }
-        gradientTaper2DPerShot.initWavefieldTransform(config, distInversion, dist, ctx, isSeismic); 
-        gradientTaper2DPerShot.calcInversionAverageMatrix(modelCoordinates, modelCoordinatesInversion);  
+        wavefieldTaper2D.initWavefieldTransform(config, distInversion, dist, ctx, isSeismic); 
+        wavefieldTaper2D.calcInversionAverageMatrix(modelCoordinates, modelCoordinatesInversion);  
     }
     if (inversionTypeEM != 0) {
         if (!configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark"))
@@ -781,18 +779,18 @@ int main(int argc, char *argv[])
                 gradientTaper1DEM.read(configBigEM.get<std::string>("gradientTaperName"), configEM.get<IndexType>("FileFormat"));
             }
         }
-        gradientTaper2DPerShotEM.initWavefieldTransform(configEM, distInversionEM, distEM, ctx, isSeismicEM);
-        gradientTaper2DPerShotEM.calcInversionAverageMatrix(modelCoordinatesEM, modelCoordinatesInversionEM);
+        wavefieldTaper2DEM.initWavefieldTransform(configEM, distInversionEM, distEM, ctx, isSeismicEM);
+        wavefieldTaper2DEM.calcInversionAverageMatrix(modelCoordinatesEM, modelCoordinatesInversionEM);
     } 
     if (inversionType != 0 && inversionTypeEM != 0) {
         if (!useStreamConfig) {
-            gradientTaper2DJoint.initModelTransform(dist, distEM, ctx);  
-            gradientTaper2DJoint.calcSeismictoEMMatrix(modelCoordinates, config, modelCoordinatesEM, configEM);
-            gradientTaper2DJoint.calcEMtoSeismicMatrix(modelCoordinates, config, modelCoordinatesEM, configEM); 
+            modelTaper2DJoint.initModelTransform(dist, distEM, ctx);  
+            modelTaper2DJoint.calcSeismictoEMMatrix(modelCoordinates, config, modelCoordinatesEM, configEM);
+            modelTaper2DJoint.calcEMtoSeismicMatrix(modelCoordinates, config, modelCoordinatesEM, configEM); 
         } else {
-            gradientTaper2DJoint.initModelTransform(distBig, distBigEM, ctx);  
-            gradientTaper2DJoint.calcSeismictoEMMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM);
-            gradientTaper2DJoint.calcEMtoSeismicMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM); 
+            modelTaper2DJoint.initModelTransform(distBig, distBigEM, ctx);  
+            modelTaper2DJoint.calcSeismictoEMMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM);
+            modelTaper2DJoint.calcEMtoSeismicMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM); 
         }
     }
     
@@ -1043,7 +1041,7 @@ int main(int argc, char *argv[])
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
-                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] =  gradientTaper2DPerShot.applyWavefieldAverage(wavefields);
+                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2D.applyWavefieldAverage(wavefields);
                             }
                             if (config.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
@@ -1055,7 +1053,7 @@ int main(int argc, char *argv[])
                             solver->run(receivers, sources, *modelPerShot, *wavefields, *derivatives, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
-                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] =  gradientTaper2DPerShot.applyWavefieldAverage(wavefields);
+                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2D.applyWavefieldAverage(wavefields);
                             }
                             if (config.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
@@ -1093,9 +1091,9 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Backward\n");
                     if (!useStreamConfig) {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, gradientTaper2DPerShot);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D);
                     } else {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, gradientTaper2DPerShot);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D);
                     }
 
                     /* Apply energy preconditioning per shot */
@@ -1151,7 +1149,7 @@ int main(int argc, char *argv[])
                     
                     crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, workflowEM);
                     
-                    crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflow);  
+                    crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);  
                     if (config.get<bool>("useGradientTaper")) {
                         gradientTaper1D.apply(*crossGradientDerivative);
                     }  
@@ -1161,7 +1159,7 @@ int main(int argc, char *argv[])
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradient", config.get<IndexType>("FileFormat"), workflow);
                     }
                                             
-                    crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflow);
+                    crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
                     if (config.get<bool>("useGradientTaper")) {
                         gradientTaper1D.apply(*crossGradientDerivative);
                     }  
@@ -1439,7 +1437,7 @@ int main(int argc, char *argv[])
                             solverEM->run(receiversEM, sourcesEM, *modelEM, *wavefieldsEM, *derivativesEM, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefieldsEM in std::vector
-                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] =  gradientTaper2DPerShotEM.applyWavefieldAverage(wavefieldsEM);
+                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
                             }
                             if (configEM.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecondEM.intSquaredWavefields(*wavefieldsEM, configEM.get<ValueType>("DT"));
@@ -1451,7 +1449,7 @@ int main(int argc, char *argv[])
                             solverEM->run(receiversEM, sourcesEM, *modelPerShotEM, *wavefieldsEM, *derivativesEM, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefieldsEM in std::vector
-                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] =  gradientTaper2DPerShotEM.applyWavefieldAverage(wavefieldsEM);
+                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
                             }
                             if (configEM.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecondEM.intSquaredWavefields(*wavefieldsEM, configEM.get<ValueType>("DT"));
@@ -1489,9 +1487,9 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Backward\n");
                     if (!useStreamConfigEM) {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, gradientTaper2DPerShotEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM);
                     } else {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, gradientTaper2DPerShotEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM);
                     }
 
                     /* Apply energy preconditioning per shot */
@@ -1545,9 +1543,9 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n===========================================\n");
                     gradientEM->normalize();  
                     
-                    crossGradientDerivative->calcModelDerivative(*dataMisfit, *model, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflow);
+                    crossGradientDerivative->calcModelDerivative(*dataMisfit, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
                     
-                    crossGradientDerivativeEM->calcCrossGradient(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflowEM);
+                    crossGradientDerivativeEM->calcCrossGradient(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM);
                     if (configEM.get<bool>("useGradientTaper")) {
                         gradientTaper1DEM.apply(*crossGradientDerivativeEM);
                     }  
@@ -1557,7 +1555,7 @@ int main(int argc, char *argv[])
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradient", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  
                     
-                    crossGradientDerivativeEM->calcCrossGradientDerivative(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, gradientTaper2DJoint, workflowEM); 
+                    crossGradientDerivativeEM->calcCrossGradientDerivative(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM); 
                     if (configEM.get<bool>("useGradientTaper")) {
                         gradientTaper1DEM.apply(*crossGradientDerivativeEM);
                     }   

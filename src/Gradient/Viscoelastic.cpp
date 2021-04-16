@@ -726,7 +726,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::estimateParameter(KITGPI::ZeroLa
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> densitytemp;
     scai::lama::DenseVector<ValueType> velocityStemp;
@@ -752,7 +752,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
     scai::dmemo::DistributionPtr dist = densitytemp.getDistributionPtr();  
           
     if (workflow.getInvertForDensity()) {
-        densitytemp = gradientTaper2DJoint.applyGradientTransformToEM(densitytemp);          
+        densitytemp = modelTaper2DJoint.applyGradientTransformToEM(densitytemp);          
         
         tempX = DxfEM * densitytemp;    
         tempY = DyfEM * densitytemp;
@@ -767,8 +767,8 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
         if (modelMax != 0)
             tempY *= 1 / modelMax; 
         
-        tempX = gradientTaper2DJoint.applyGradientTransformToSeismic(tempX);  
-        tempY = gradientTaper2DJoint.applyGradientTransformToSeismic(tempY);                           
+        tempX = modelTaper2DJoint.applyGradientTransformToSeismic(tempX);  
+        tempY = modelTaper2DJoint.applyGradientTransformToSeismic(tempY);                           
     } else {
         this->initParameterisation(tempX, ctx, dist, 0.0);
         this->initParameterisation(tempY, ctx, dist, 0.0);
@@ -778,7 +778,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
     modelDerivativeYtemp = tempY;   
                
     if (workflow.getInvertForVs()) {
-        velocityStemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityStemp); 
+        velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(velocityStemp); 
         
         tempX = DxfEM * velocityStemp;    
         tempY = DyfEM * velocityStemp;
@@ -793,8 +793,8 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
         if (modelMax != 0)
             tempY *= 1 / modelMax; 
         
-        tempX = gradientTaper2DJoint.applyGradientTransformToSeismic(tempX);    
-        tempY = gradientTaper2DJoint.applyGradientTransformToSeismic(tempY);                       
+        tempX = modelTaper2DJoint.applyGradientTransformToSeismic(tempX);    
+        tempY = modelTaper2DJoint.applyGradientTransformToSeismic(tempY);                       
     } else {
         this->initParameterisation(tempX, ctx, dist, 0.0);
         this->initParameterisation(tempY, ctx, dist, 0.0);
@@ -804,7 +804,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
     modelDerivativeYtemp += tempY;    
     
     if (workflow.getInvertForVp()) {
-        velocityPtemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityPtemp);  
+        velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(velocityPtemp);  
         
         tempX = DxfEM * velocityPtemp;    
         tempY = DyfEM * velocityPtemp;
@@ -819,8 +819,8 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
         if (modelMax != 0)
             tempY *= 1 / modelMax; 
         
-        tempX = gradientTaper2DJoint.applyGradientTransformToSeismic(tempX);  
-        tempY = gradientTaper2DJoint.applyGradientTransformToSeismic(tempY);   
+        tempX = modelTaper2DJoint.applyGradientTransformToSeismic(tempX);  
+        tempY = modelTaper2DJoint.applyGradientTransformToSeismic(tempY);   
     } else {
         this->initParameterisation(tempX, ctx, dist, 0.0);
         this->initParameterisation(tempY, ctx, dist, 0.0);
@@ -835,7 +835,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
 
 
 template <typename ValueType>
-void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> densitytemp;
     scai::lama::DenseVector<ValueType> velocityStemp;
@@ -865,7 +865,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
     scai::dmemo::DistributionPtr distEM = modelEMDerivativeXtemp.getDistributionPtr();  
                 
     if (workflow.getInvertForDensity()) {
-        densitytemp = gradientTaper2DJoint.applyGradientTransformToEM(densitytemp); 
+        densitytemp = modelTaper2DJoint.applyGradientTransformToEM(densitytemp); 
         
         tempX = DxfEM * densitytemp;    
         tempY = DyfEM * densitytemp;          
@@ -877,13 +877,13 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
         
         KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialFDorder);
         
-        density = gradientTaper2DJoint.applyGradientTransformToSeismic(densitytemp);
+        density = modelTaper2DJoint.applyGradientTransformToSeismic(densitytemp);
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }    
                  
     if (workflow.getInvertForVs()) {
-        velocityStemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityStemp); 
+        velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(velocityStemp); 
         
         tempX = DxfEM * velocityStemp;    
         tempY = DyfEM * velocityStemp;          
@@ -895,13 +895,13 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
         
         KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialFDorder);
         
-        velocityS = gradientTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);      
+        velocityS = modelTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);      
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }       
     
     if (workflow.getInvertForVp()) {
-        velocityPtemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityPtemp);    
+        velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(velocityPtemp);    
         
         tempX = DxfEM * velocityPtemp;    
         tempY = DyfEM * velocityPtemp;          
@@ -913,14 +913,14 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
         
         KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialFDorder);
         
-        velocityP = gradientTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
+        velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
     } else {
         this->initParameterisation(velocityP, ctx, dist, 0.0);
     }      
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> gradientTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> densitytemp;
     scai::lama::DenseVector<ValueType> velocityStemp;
@@ -946,40 +946,40 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITG
     temp = modelEMDerivativeYtemp - modelEMDerivativeXtemp; 
     
     if (workflow.getInvertForDensity()) {
-        densitytemp = gradientTaper2DJoint.applyGradientTransformToEM(densitytemp);  
+        densitytemp = modelTaper2DJoint.applyGradientTransformToEM(densitytemp);  
         
         // derivative of cross-gradient with respect to density   
         densitytemp *= temp;  
         
         KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialFDorder);
                 
-        density = gradientTaper2DJoint.applyGradientTransformToSeismic(densitytemp); 
+        density = modelTaper2DJoint.applyGradientTransformToSeismic(densitytemp); 
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }    
                  
     if (workflow.getInvertForVs()) {
-        velocityStemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityStemp);          
+        velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(velocityStemp);          
         
         // derivative of cross-gradient with respect to vs  
         velocityStemp *= temp;  
         
         KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialFDorder);
         
-        velocityS = gradientTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);       
+        velocityS = modelTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);       
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }    
                  
     if (workflow.getInvertForVp()) { 
-        velocityPtemp = gradientTaper2DJoint.applyGradientTransformToEM(velocityPtemp);         
+        velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(velocityPtemp);         
         
         // derivative of cross-gradient with respect to vs  
         velocityPtemp *= temp;  
         
         KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialFDorder);
           
-        velocityP = gradientTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
+        velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
     } else {
         this->initParameterisation(velocityP, ctx, dist, 0.0);
     }       

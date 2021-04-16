@@ -42,7 +42,7 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
  \param dataMisfitEM Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &ReceiversEM, KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSourcesEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientEM, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecordEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Taper::Taper2D<ValueType> &gradientTaper2DPerShotEM)
+void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &ReceiversEM, KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSourcesEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientEM, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecordEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Taper::Taper2D<ValueType> &wavefieldTaper2DEM)
 {
     IndexType t = 0;
     IndexType tEnd = static_cast<IndexType>((configEM.get<ValueType>("T") / configEM.get<ValueType>("DT")) + 0.5);
@@ -89,20 +89,20 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         /* --------------------------------------- */
         if (t % dtinversionEM == 0) {
             if (t != 0) {
-                *wavefieldsTempEM = gradientTaper2DPerShotEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 0.5)]);
+                *wavefieldsTempEM = wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 0.5)]);
                 //calculate temporal derivative of wavefield
-                *wavefieldsTempEM -= gradientTaper2DPerShotEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM - 0.5)]);
+                *wavefieldsTempEM -= wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM - 0.5)]);
                 *wavefieldsTempEM *= DTinv;      
             } else {
-                *wavefieldsTempEM = gradientTaper2DPerShotEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 1.5)]);
+                *wavefieldsTempEM = wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 1.5)]);
                 //calculate temporal derivative of wavefield
-                *wavefieldsTempEM -= gradientTaper2DPerShotEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 0.5)]);
+                *wavefieldsTempEM -= wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 0.5)]);
                 *wavefieldsTempEM *= DTinv;      
             }
             *wavefieldsTempEM *= dtinversionEM; 
            
             /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
-            ZeroLagXcorr->update(*wavefieldsTempEM, gradientTaper2DPerShotEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 0.5)]), *wavefieldsEM, workflowEM);
+            ZeroLagXcorr->update(*wavefieldsTempEM, wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(t / dtinversionEM + 0.5)]), *wavefieldsEM, workflowEM);
         }
     }
 
