@@ -240,16 +240,13 @@ Supported by the German Ministry of Education and Research (BMBF) through the pr
 \chapter*{License}
 \addcontentsline{toc}{chapter}{License}
 
-WAVE-Inversion is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License (GNU AGPL v3) as published by the Free Software Foundation, version 3.0 of the License only.
- 
-WAVE-Inversion is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with FDSimulation. See file LICENSE and/or \url{https://www.gnu.org/licenses/agpl-3.0.de.html}.
-
+WAVE-Inversion is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License (GNU AGPL v3) as published by the Free Software Foundation, version 3.0 of the License only.\\ 
+WAVE-Inversion is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with FDSimulation. See file LICENSE and/or \url{https://www.gnu.org/licenses/agpl-3.0.de.html}.\\
 The authors of WAVE-Inversion are listed in file \lstinline{AUTHORS}.
 
 \chapter*{Acknowledgments}
 
-We would like to thank the German Ministry of Education and Research (BMBF) who financially supported this full-waveform inversion toolbox through the project WAVE, grant 01IH15004A.
-
+We would like to thank the German Ministry of Education and Research (BMBF) who financially supported this full-waveform inversion toolbox through the project WAVE, grant 01IH15004A.\\
 We would also like to acknowledge the developers of the FWI code IFOS2D and IFOS3D (\url{http://www.gpi.kit.edu/Software-FWI.php}). IFOS served as a reference for our new implementation and we further used parts of the user manual of IFOS in this manual.
 
 \chapter*{References}
@@ -263,28 +260,29 @@ A list of publications where WAVE-Inversion was used
 \addcontentsline{toc}{chapter}{Introduction}
 % -----------------------------------------------------------------------------------------------
  
-The aim of full-waveform inversion (FWI) is to estimate the elastic material parameters in the underground. This can be achieved by minimizing the misfit energy between the modeled and field data using a gradient optimization
-approach. Because FWI uses the full information content of each seismogram, structures below the seismic wave length can be resolved. This is a tremendous improvement in resolution compared to travel time tomography \citep{pratt2002the}. The concept of FWI was originally developed by Albert Tarantola in the 1980s for the acoustic, isotropic elastic, and viscoelastic case \citep{tarantola1984inversion,tarantola1984linearized,tarantola1986a,tarantola1988theoretical}. First numerical implementations were realized at the end of the 1980s \citep{gauthier1986two,mora1987nonlinear,pica1990nonlinear}, but due to limited computational resources, the application was restricted to simple 2D synthetic test problems and small near offset datasets. At the begining of the 1990s the original time domain formulation was transfered to a robust frequency domain approach \citep{pratt1990inverse_a,pratt1990inverse_b}. With the increasing performance of supercomputers moderately sized problems could be inverted with frequency domain approaches. A spectacular result to prove the application of acoustic FWI on laboratory scale was presented by \cite{pratt1999seismic} for ultrasonic tomography measurements on a simple block model. In a numerical blind test \cite{brenders2007full} achieved a very good agreement between their inversion result and the unknown true P-wave velocity model. The parallelization and performance optimizations of the frequency domain approach \citep[see e.g., ][]{sourbier2009fwt2d_a,sourbier2009fwt2d_b} led to a wide range of acoustic FWI applications for problems on different scales, from the global scale, crustal scale over engineering and near surface scale, down to laboratory scale \citep{pratt2004velocity}. Beside the application to geophysical problems, the acoustic FWI is also used to improve the resolution in medical cancer diagnostics \citep{pratt2007sound}. However, all these examples are restricted to the inversion of the acoustic material parameters: P-wave velocity, density and additionally the viscoacoustic damping $Q_p$ for the P-waves. Even today the independent 2D FWI of all three isotropic elastic material parameters is still a challenge. Most elastic approaches invert for P-wave velocity only and use empirical relationships to deduce the distribution of S-wave velocity and density \citep{shipp2002two,sheen2006time}. Recently some authors also investigated the independent multiparameter FWI in the frequency domain \citep{choi2008frequency,choi2008two,brossier2009imagerie}.
+The aim of full-waveform inversion (FWI) is to estimate the elastic or electromagnetic (EM) material parameters in the underground. This can be achieved by minimizing the misfit energy between the modeled and field data using a gradient optimization approach. Because FWI uses the full information content of each seismogram or radargram, structures below the seismic or EM wave length can be resolved. This is a tremendous improvement in resolution compared to travel time tomography \citep{pratt2002the,ernst2007full}. \\
+The concept of FWI was originally developed by Albert Tarantola in the 1980s for the acoustic, isotropic elastic, and viscoelastic case \citep{tarantola1984inversion,tarantola1984linearized,tarantola1986a,tarantola1988theoretical}. First numerical implementations were realized at the end of the 1980s \citep{gauthier1986two,mora1987nonlinear,pica1990nonlinear}, but due to limited computational resources, the application was restricted to simple 2D synthetic test problems and small near offset datasets. At the begining of the 1990s the original time domain formulation was transfered to a robust frequency domain approach \citep{pratt1990inverse_a,pratt1990inverse_b}. With the increasing performance of supercomputers moderately sized problems could be inverted with frequency domain approaches. A spectacular result to prove the application of acoustic FWI on laboratory scale was presented by \cite{pratt1999seismic} for ultrasonic tomography measurements on a simple block model. In a numerical blind test \cite{brenders2007full} achieved a very good agreement between their inversion result and the unknown true P-wave velocity $v_p$ model. The parallelization and performance optimizations of the frequency domain approach \citep[see e.g., ][]{sourbier2009fwt2d_a,sourbier2009fwt2d_b} led to a wide range of acoustic FWI applications for problems on different scales, from the global scale, crustal scale over engineering and near surface scale, down to laboratory scale \citep{pratt2004velocity}. Beside the application to geophysical problems, the acoustic FWI is also used to improve the resolution in medical cancer diagnostics \citep{pratt2007sound}. However, all these examples are restricted to the inversion of the acoustic material parameters: P-wave velocity $v_p$, density $\rho$ and additionally the viscoacoustic damping $Q_p$ for the P-waves. Even today the independent 2D FWI of all three isotropic elastic material parameters is still a challenge. Most elastic approaches invert for P-wave velocity only and use empirical relationships to deduce the distribution of S-wave velocity $v_s$ and density \citep{shipp2002two,sheen2006time}. Recently some authors also investigated the independent multiparameter FWI in the frequency domain \citep{choi2008frequency,choi2008two,brossier2009imagerie}.
 In order to extract information about the structure and composition of the crust from seismic observations, it is necessary to be able to predict how seismic wavefields are affected by complex structures. Since exact analytical
-solutions to the wave equations do not exist for most subsurface configurations, the solutions can be obtained only by numerical methods. 
-
-For iterative calculations of synthetic seismograms with limited computer resources fast and accurate modeling methods are needed. The FWI program WAVE-Inversion (C++) is using the finite difference simulation software WAVE-Simulation (insert link). It is also possible to use the WAVE-Inversion library with different simulation software.
-
+solutions to the wave equations do not exist for most subsurface configurations, the solutions can be obtained only by numerical methods. \\
+When it comes to ground penetrating radar (GPR), FWI was introduced to crosshole GPR first by \cite{ernst2007full} and applied to the field data by \cite{ernst2007application} to recover the relative dielectric permittivity $\varepsilon_r$ and electric conductivity $\sigma_e$. Then the theory of GPR FWI was improved by \cite{meles2010new} to a vector formalisation and to simultaneously update  $\varepsilon_r$ and $\sigma_e$. For more details about the development of GPR FWI in the last decade, the readers are recommended to the review paper of \cite{klotzsche2019review}.\\
+For iterative calculations of synthetic seismograms or radargrams with limited computer resources fast and accurate modeling methods are needed. The FWI program WAVE-Inversion (C++) is using the finite difference simulation software WAVE-Simulation (insert link). It is also possible to use the WAVE-Inversion library with different simulation software.\\
+In the following sections, by taking 3D elastic wave equation as an example, we give a short description of the derivation of the gradients of the objective function and how the program is used and executed. In the current version of WAVE-Inversion, FWI of viscoelastic is possible with the passive parameters $\tau_p$ and $\tau_s$, which actually use the same gradient derived from elastic wave equation. The others such as the acoustic, EM and visco-EM wave equations are shown in the appendix \ref{sec:Acoustic_wave_equation}-\ref{sec:Visco_EM_wave_equation}.
+We recommend you to read the theory of seismic FWI from IFOS2D and IFOS3D first for better understanding of the adjoint method we used. 
 % -----------------------------------------------------------------------------------------------
 \cleardoublepage
 \part{Theory of Full-Waveform Inversion}
 
-We recommend you to read the theory of FWI from IFOS2D and IFOS3D first. In the current version of user manual, we only describe the derivation of the gradients of the objective function in elastic case and acoustic case. FWI of viscoelastic is possible with the passive parameters $\tau_p$ and $\tau_s$, which actually use the same gradient derived from elastic wave equation.
-
-\chapter{Derivation of the gradients of the objective function}
-% -----------------------------------------------------------------------------------------------
-
-% -----------------------------------------------------------------------------------------------
-\section{Elastic}
-\label{kap:el}
-% -----------------------------------------------------------------------------------------------
-
-3D elastic Wave Equation:
+\chapter{Derivation of the seismic gradients of the objective function}
+\section{Elastic wave equation}
+\label{sec:elastic}
+The elastic wave equations for stress and velocity.
+\begin{align}
+\label{eqn:elastic_wave_stress_xx}
+\rho\pdv{v_i}{t}&=\pdv{\sigma_{ij}}{x_j}+ f_i\\
+\pdv{\sigma_{ii}}{t} &= \lambda \pdv{v_k}{x_k} + 2\mu \pdv{v_i}{x_i}+\pdv{\sigma_{ii0}}{t}\\
+\pdv{\sigma_{ij}}{t} &= \mu \left(\pdv{v_i}{x_j} +\pdv{v_j}{x_i}\right), \quad i \neq j
+\end{align}
+We explicitly write it in 3D case:
 \begin{align}
 \rho\pdv{v_x}{t}&=\pdv{\sigma_{xx}}{x}+\pdv{\sigma_{xy}}{y} + \pdv{\sigma_{xz}}{z}+ f_x\\
 \rho\pdv{v_y}{t}&=\pdv{\sigma_{xy}}{x}+\pdv{\sigma_{yy}}{y} + \pdv{\sigma_{yz}}{z} + f_y\\
@@ -294,36 +292,39 @@ We recommend you to read the theory of FWI from IFOS2D and IFOS3D first. In the 
 \label{eqn:elastic_wave_stress_yy}
 \pdv{\sigma_{yy}}{t} &= \lambda \pdv{v_x}{x} + (\lambda+2\mu) \pdv{v_y}{y} + \lambda \pdv{v_z}{z} + \pdv{\sigma_{yy0}}{t}\\ 
 \label{eqn:elastic_wave_stress_zz}
-\pdv{\sigma_{zz}}{t} &= \lambda \pdv{v_x}{x} +  \lambda \pdv{v_y}{y} + (\lambda+2\mu) \pdv{v_z}{z} + \pdv{\sigma_{yy0}}{t}\\
-\pdv{\sigma_{xy}}{t} &= \mu \left(\pdv{v_x}{y} +\pdv{v_y}{x}\right) + \pdv{\sigma_{xy0}}{t}\\
-\pdv{\sigma_{yz}}{t} &= \mu \left(\pdv{v_y}{z} +\pdv{v_z}{y}\right) + \pdv{\sigma_{yz0}}{t}\\
-\pdv{\sigma_{xz}}{t} &= \mu \left(\pdv{v_x}{z} +\pdv{v_z}{x}\right) + \pdv{\sigma_{xz0}}{t}
+\pdv{\sigma_{zz}}{t} &= \lambda \pdv{v_x}{x} +  \lambda \pdv{v_y}{y} + (\lambda+2\mu) \pdv{v_z}{z} + \pdv{\sigma_{zz0}}{t}\\
+\pdv{\sigma_{xy}}{t} &= \mu \left(\pdv{v_x}{y} +\pdv{v_y}{x}\right)\\
+\pdv{\sigma_{yz}}{t} &= \mu \left(\pdv{v_y}{z} +\pdv{v_z}{y}\right) \\
+\pdv{\sigma_{xz}}{t} &= \mu \left(\pdv{v_x}{z} +\pdv{v_z}{x}\right)
 \end{align}
-equation \ref{eqn:elastic_wave_stress_xx} + \ref{eqn:elastic_wave_stress_yy} + \ref{eqn:elastic_wave_stress_zz} (ignoring the stress sources):
+Sum equation \ref{eqn:elastic_wave_stress_xx} + \ref{eqn:elastic_wave_stress_yy} + \ref{eqn:elastic_wave_stress_zz}:
 \begin{equation}
- \pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}=\left(3\lambda+2\mu\right)\left(\pdv{v_x}{x}+\pdv{v_y}{y}+ \pdv{v_z}{z}\right)
+\begin{align}
+ \pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t} =& \left(3\lambda+2\mu\right)\left(\pdv{v_x}{x}+\pdv{v_y}{y}+ \pdv{v_z}{z}\right) + 3 \pdv{p_0}{t}\\ 
+ p_0 =& \frac{1}{3} \left( \sigma_{xx0}+\sigma_{yy0}+\sigma_{zz0} \right)
+\end{align}
 \end{equation}
-equation \ref{eqn:elastic_wave_stress_xx} to \ref{eqn:elastic_wave_stress_zz} rewritten:
+where $p_0$ is a point source.\\
+Then equation \ref{eqn:elastic_wave_stress_xx} to \ref{eqn:elastic_wave_stress_zz} can be rewritten:
 \begin{align}
 \label{eqn:elastic_wave_velocity_xx}
-\pdv{v_x}{x}=\frac{1}{2\mu} \left(\pdv{\sigma_{xx}}{t} - \frac{\lambda}{3\lambda+2\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\right)\\
-\pdv{v_y}{y}=\frac{1}{2\mu} \left(\pdv{\sigma_{yy}}{t} - \frac{\lambda}{3\lambda+2\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\right)\\
+\pdv{v_x}{x}=\frac{1}{2\mu} \left[\pdv{\sigma_{xx}}{t} - \frac{\lambda}{3\lambda+2\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}-3\pdv{p_0}{t}\right)\right]\\
+\pdv{v_y}{y}=\frac{1}{2\mu} \left[\pdv{\sigma_{yy}}{t} - \frac{\lambda}{3\lambda+2\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}-3\pdv{p_0}{t}\right)\right]\\
 \label{eqn:elastic_wave_velocity_zz}
-\pdv{v_z}{z}=\frac{1}{2\mu} \left(\pdv{\sigma_{zz}}{t} - \frac{\lambda}{3\lambda+2\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\right)
+\pdv{v_z}{z}=\frac{1}{2\mu} \left[\pdv{\sigma_{zz}}{t} - \frac{\lambda}{3\lambda+2\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}-3\pdv{p_0}{t}\right)\right]
 \end{align}
 We change the position of time derivatives from right to left and get:
 \begin{align}
-A\pdv{\sigma_{xx}}{t} + B \pdv{\sigma_{yy}}{t}+B\pdv{\sigma_{zz}}{t}=\pdv{v_x}{x}\\
-B\pdv{\sigma_{xx}}{t} + A \pdv{\sigma_{yy}}{t}+B\pdv{\sigma_{zz}}{t}=\pdv{v_y}{y}\\
-B\pdv{\sigma_{xx}}{t} + B \pdv{\sigma_{yy}}{t}+A\pdv{\sigma_{zz}}{t}=\pdv{v_z}{z}
+A \left( \pdv{\sigma_{xx}}{t}-\frac{NB}{A} \pdv{p_0}{t} \right) + B \pdv{\sigma_{yy}}{t}+B\pdv{\sigma_{zz}}{t}=\pdv{v_x}{x}\\
+B\pdv{\sigma_{xx}}{t} + A \left( \pdv{\sigma_{yy}}{t}-\frac{NB}{A} \pdv{p_0}{t} \right)+B\pdv{\sigma_{zz}}{t}=\pdv{v_y}{y}\\
+B\pdv{\sigma_{xx}}{t} + B \pdv{\sigma_{yy}}{t}+A \left( \pdv{\sigma_{zz}}{t}-\frac{NB}{A} \pdv{p_0}{t} \right)=\pdv{v_z}{z}
 \end{align}
 with:
 \begin{align}
-A=\frac{1}{2\mu}-\frac{\lambda}{2\mu(N\lambda+2\mu)}\\
-B=-\frac{\lambda}{2\mu(N\lambda+2\mu)}
+A=&\frac{1}{2\mu}-\frac{\lambda}{2\mu(N\lambda+2\mu)}\\
+B=&-\frac{\lambda}{2\mu(N\lambda+2\mu)}
 \end{align}
-where $N\in[2,3]$ (Number of dimensions).
-
+where $N\in[2,3]$ (Number of dimensions).\\
 Then we obtain the matrix formulation of forward problem as follows:
 \begin{equation}
  M^{-1}\left( \pdv{}{t}\mathbf{u}-b \right) =Q\mathbf{u}
@@ -332,7 +333,7 @@ Then we obtain the matrix formulation of forward problem as follows:
 \mathbf{u}=\left(v_x,v_y,v_z,\sigma_{xx},\sigma_{yy},\sigma_{zz},\sigma_{xy},\sigma_{yz} ,\sigma_{xz} \right)^T
 \end{equation}
 \begin{equation}
-\mathbf{b}=\left(f_x,f_y,f_z,\pdv{\sigma_{xx0}}{t},\pdv{\sigma_{yy0}}{t},\pdv{\sigma_{zz0}}{t},\pdv{\sigma_{xy0}}{t},\pdv{\sigma_{yz0}}{t},\pdv{\sigma_{xz0}}{t}\right)^T
+\mathbf{b}=\left(\frac{f_x}{\rho}, \frac{f_y}{\rho}, \frac{f_z}{\rho},\frac{NB}{A} \pdv{p_0}{t},\frac{NB}{A} \pdv{p_0}{t},\frac{NB}{A} \pdv{p_0}{t},0,0,0\right)^T
 \end{equation}
 \begin{equation}
 Q=
@@ -364,31 +365,113 @@ M^{-1}=
  \end{pmatrix}
 \end{equation}
 
-\begin{center} \Large{Gradient:}\end{center}
-
+\section{1st order adjoint method}
 The misfit function $\Phi_1$:
 \begin{equation}
- \Phi_1(\mathbf{m}) = \Phi_1(\mathbf{u}) = \frac{1}{2} || R\mathbf{u}(\mathbf{m}) - \mathbf{d}_{obs} ||_2^2 \\
+ \Phi_1(\mathbf{m}) = \Phi_1(\mathbf{u}) = \frac{1}{2} || \mathbf{d}^{cal} - \mathbf{d}^{obs} ||_2^2 = \frac{1}{2} || R\mathbf{u}(\mathbf{m}) - \mathbf{d}^{obs} ||_2^2 \\
 \end{equation}
-To identify with the 2$nd$ order adjoint method used in truncated Newton method, we add a subscript ``1'' to the misfit function used by the 1$st$ order adjoint method in this manual.
-
-Gradient:
+where the synthetic data $\mathbf{d}^{cal}$ is extracted by the restriction operator $R$ from the synthetic wavefield $\mathbf{u}$. $\mathbf{d}^{obs}$ is the observed data. To identify with the 2$nd$ order adjoint method used in truncated Newton method, we add a subscript ``1'' to the misfit function used by the 1$st$ order adjoint method in this manual.\\
+Augmented functional $L_1$ used in 1st order adjoint method:
 \begin{equation}
- \pdv{\Phi_1}{m}=\int_T dt\mathbf{u}_1^T \pdv{M^{-1}}{m}\left( \pdv{}{t}\mathbf{u}-b \right)
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \Phi_1(\mathbf{u}) + \langle \mathbf{u}_{1}, F(\mathbf{u},\mathbf{m}) \rangle_W \\
+\end{equation}
+with
+\begin{equation}
+\begin{split}
+\label{eqn:initialCondition1}
+ & F(\mathbf{u},\mathbf{m}) = M^{-1} \partial_{t} \mathbf{u}  - Q\mathbf{u} - M^{-1} \mathbf{b} = 0 \\
+ & \mathbf{m} = (\rho, \lambda, \mu)^T, \mathbf{u}|_{t=0} = 0, \mathbf{u}|_{x\in \partial \Omega} = 0
+ \end{split}
+\end{equation}
+where the inner product $\langle h_1, h_2 \rangle_W$ in the domain $W=\Omega \times [0, T]$ is defined by ($\Omega$ is the spatial computation domain)\\
+\begin{equation}
+ \langle h_1, h_2 \rangle_W = \int_0^T \int_\Omega h_1(x,t) h_2(x,t) dt dx\\
+\end{equation}
+For any $\mathbf{u}_{1}$:
+\begin{equation}
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \Phi_1(\mathbf{u}) \\
+\end{equation}
+We write the augmented functional explicitly:
+\begin{equation}
+\label{eqn:AugmentFunctional}
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega \mathbf{u}_{1} (M^{-1} \partial_{t} \mathbf{u} - Q \mathbf{u} - M^{-1} \mathbf{b})  dt dx\\
+\end{equation}
+If the final condition and boundary condition of $\mathbf{u}_{1}$ are satisfied by:
+\begin{equation}
+\label{eqn:initialCondition2}
+ \mathbf{u}_{1}|_{t=T} = 0, \mathbf{u}_{1}|_{x\in \partial \Omega} = 0\\
+\end{equation}
+Integration by parts and then we get:
+\begin{equation}
+\begin{split}
+L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1})
+  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega ((M^{-1} \partial_{t})^* \mathbf{u}_{1} \mathbf{u} - Q^* \mathbf{u}_{1} \mathbf{u} - {M^{-1}}^{*} \mathbf{u}_{1} \mathbf{b})  dt dx \\
+  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1} \mathbf{u} - Q \mathbf{u}_{1} \mathbf{u} - M^{-1} \mathbf{u}_{1} \mathbf{b})  dt dx\\
+ \end{split}
+\end{equation}
+where 
+\begin{equation}
+\begin{split}
+& {M^{-1}}^{*} =  M^{-1}, (M^{-1} \partial_{t}) ^{*} = -{M^{-1}}^{*} \partial_{t} = -M^{-1} \partial_{t}, \quad Q^{*} = Q\\
+ \end{split}
+\end{equation}
+which is derived from the initial, final condition and boundary condition \ref{eqn:initialCondition1} and \ref{eqn:initialCondition2} \citep{yang2016review}.\\
+The derivative of $L_1$ with respect to wavefields $\mathbf{u}$:
+\begin{equation}
+ \pdv{L_1}{\mathbf{u}} = \int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx + \int_0^T \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1} - Q \mathbf{u}_{1})  dt dx\\
+\end{equation}
+The operator $R^{*}$ force the virtual sources injected at the receiver location. By making $\pdv{L_1}{\mathbf{u}} = 0$, we get:
+\begin{equation}
+ \int_0^T \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1}  - Q \mathbf{u}_{1})  dt dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx\\
+\end{equation}
+Reverse time: $t \to T-t$
+\begin{equation}
+ \int_T^0 \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1}(T-t) - Q \mathbf{u}_{1}(T-t) )  dt dx = -\int_T^0 \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(T-t) dt dx\\
+\end{equation}
+Substition: 
+\begin{equation}
+ \tau = T - t, d\tau = -dt, \partial \tau = -\partial t\\
+\end{equation}
+Boundaries $T \to 0$ to $0 \to T$
+\begin{equation}
+ \int_0^T \int_\Omega (M^{-1} \partial_{\tau} \mathbf{u}_{1}(\tau) - Q \mathbf{u}_{1}(\tau) )  d\tau dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(\tau) d\tau dx\\
+\end{equation}
+Therefore we obtain a self-adjoint equation:
+\begin{equation}
+\begin{align*}
+\label{eqn:AdjointEquation1}
+& M^{-1} \partial_{\tau} \mathbf{u}_{1} - Q \mathbf{u}_{1} =  - R^{*}(R\mathbf{u} - \mathbf{d}^{obs})
+\end{align*}
 \end{equation}
 The 1$st$ order adjoint wavefields:
 \begin{equation}
-\mathbf{ u}_1=\left(v_{1x},v_{1y},v_{1z},\sigma_{1xx},\sigma_{1yy},\sigma_{1zz},\sigma_{1xy},\sigma_{1yz} ,\sigma_{1xz} \right)^T
+\mathbf{ u}_1=\left(v_{1x},v_{1y},v_{1z},\sigma_{1xx},\sigma_{1yy},\sigma_{1zz},\sigma_{1xy},\sigma_{1yz},\sigma_{1xz}\right)^T
 \end{equation}
-Gradient in details:
+Here the postive wavefield residual $R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) $ is used as the sources for back propagation. \\
+The 1st order adjoint equation is:
+\begin{equation}
+\label{eqn:AdjointEquation11}
+\mathbf{u}_{1}:
+\begin{cases}
+\rho\pdv{v_{1i}}{t}=\pdv{\sigma_{1ij}}{x_j}-R^{*}(R v_i -v_i^{obs})\\
+\pdv{\sigma_{1ii}}{t} = \lambda \pdv{v_{1k}}{x_k} + 2\mu \pdv{v_{1i}}{x_i}-\pdv{R^{*}(R p - p^{obs})}{t}\\
+\pdv{\sigma_{1ij}}{t} = \mu \left(\pdv{v_{1i}}{x_j} +\pdv{v_{1j}}{x_i}\right), \quad i \neq j
+\end{cases}
+\end{equation}
+where $p=\frac{1}{N} \sum \sigma_{ii}$.\\
+The derivative of $L_1$ with respect to model parameters $\mathbf{m}$ can be obtained from Eq. \ref{eqn:AugmentFunctional} as follows:
+\begin{equation}
+ \pdv{\Phi_1}{\mathbf{m}} = \pdv{L_1}{\mathbf{u}}\pdv{\mathbf{u}}{\mathbf{m}} + \pdv{L_1}{\mathbf{m}} =  \pdv{L_1}{\mathbf{m}} = \int_0^T \mathbf{u}_{1}^T \pdv{M^{-1}}{\mathbf{m}} \left( \partial_{t}\mathbf{u} -b \right) dt\\ 
+\end{equation}
+The gradient of the objective function $\Phi_1(\mathbf{m})$ with respect to elastic parameters are shown as:
 \begin{align}
- \pdv{\Phi_1}{\rho}&=\int_T dt \left[ \left(\pdv{v_x}{t}-f_x\right)v_{1x} +\left(\pdv{v_y}{t}-f_y\right)v_{1y} +\left(\pdv{v_z}{t}-f_z\right)v_{1z} \right]\\
- \pdv{\Phi_1}{\lambda}&=\pdv{A}{\lambda}\int_T dt  \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right) \left(\sigma_{1xx}+\sigma_{1yy}+\sigma_{1zz}\right) \\
- \pdv{\Phi_1}{\mu}&=\int_T dt \left[\pdv{A}{\mu}\left(\pdv{\sigma_{xx}}{t}\sigma_{1xx}+\pdv{\sigma_{yy}}{t}\sigma_{1yy}+\pdv{\sigma_{zz}}{t}\sigma_{1zz}\right)\right. \\
- &+ \pdv{B}{\mu} \left(\left(\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1xx}
+ \pdv{\Phi_1}{\rho}&=\int_T \left( \pdv{v_x}{t} v_{1x} + \pdv{v_y}{t} v_{1y} + \pdv{v_z}{t} v_{1z} \right) dt\\
+ \pdv{\Phi_1}{\lambda}&=\pdv{A}{\lambda}\int_T  \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right) \left(\sigma_{1xx}+\sigma_{1yy}+\sigma_{1zz}\right)  dt\\
+ \pdv{\Phi_1}{\mu}&=\int_T \left\{\pdv{A}{\mu}\left(\pdv{\sigma_{xx}}{t}\sigma_{1xx}+\pdv{\sigma_{yy}}{t}\sigma_{1yy}+\pdv{\sigma_{zz}}{t}\sigma_{1zz}\right)\right. \\
+ &+ \pdv{B}{\mu} \left[\left(\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1xx}
  + \pdv{B}{\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1yy}
-  + \pdv{B}{\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}\right)\sigma_{1zz}\right)\\
-  &-\left.\frac{1}{\mu^2}\left(\pdv{\sigma_{xy}}{t}\sigma_{1xy}+\pdv{\sigma_{yz}}{t}\sigma_{1yz}+\pdv{\sigma_{xz}}{t}\sigma_{1xz}\right)\right]
+  + \pdv{B}{\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}\right)\sigma_{1zz}\right]\\
+  &-\left.\frac{1}{\mu^2}\left(\pdv{\sigma_{xy}}{t}\sigma_{1xy}+\pdv{\sigma_{yz}}{t}\sigma_{1yz}+\pdv{\sigma_{xz}}{t}\sigma_{1xz}\right)\right\} dt
 \end{align}
 with:
 \begin{align}
@@ -397,61 +480,6 @@ with:
  \pdv{A}{\mu}&=-\frac{1}{2\mu^2}+\pdv{B}{\mu}
 \end{align}
 % -----------------------------------------------------------------------------------------------
-\section{Acoustic}
-\label{kap:ac}
-% -----------------------------------------------------------------------------------------------
-
-3D acoustic Wave Equation:
-\begin{align}
-\rho\pdv{v_x}{t}&=\pdv{p}{x}+ f_x\\
-\rho\pdv{v_y}{t}&=\pdv{p}{y} + f_y\\
-\rho\pdv{v_z}{t}&=\pdv{p}{z} + f_z\\
-\frac{1}{\lambda}\pdv{p}{t} &= \pdv{v_x}{x} +  \pdv{v_y}{y} + \pdv{v_z}{z} + \frac{1}{\lambda}\pdv{p_0}{t}\\
-\end{align}
-Matrix formulation of forward problem:
-\begin{equation}
- M^{-1}\left( \pdv{}{t}\mathbf{u}-b \right) =Q\mathbf{u}
-\end{equation}
-\begin{equation}
-\mathbf{u}=\left(v_x,v_y,v_z,p \right)^T
-\end{equation}
-\begin{equation}
-\mathbf{b}=\left(f_x,f_y,f_z,\pdv{p_0}{t}\right)^T
-\end{equation}
-\begin{equation}
-Q=
- \begin{pmatrix}
-   0         & 0         & 0         & \pdv{}{x}\\
-   0         & 0         & 0         & \pdv{}{y}\\
-   0         & 0         & 0         & \pdv{}{z}\\
-   \pdv{}{x} & \pdv{}{y} & \pdv{}{z} & 0        \\
-
- \end{pmatrix}
-\end{equation}
-\begin{equation}
-M^{-1}=
- \begin{pmatrix}
-   \rho       & 0         & 0         & 0                \\
-   0          & \rho      & 0         & 0                \\
-   0          & 0         & \rho      & 0                \\
-   0          & 0         & 0         & \frac{1}{\lambda}\\
- \end{pmatrix}
-\end{equation}
-
-\begin{center} \Large{Gradient:}\end{center}
-Gradient:
-\begin{equation}
- \pdv{\Phi_1}{m}=\int_T dt\mathbf{u}_1^T \pdv{M^{-1}}{m}\left( \pdv{}{t}\mathbf{u}-b \right)
-\end{equation}
-The 1$st$ order adjoint wavefields:
-\begin{equation}
-\mathbf{ u}_1=\left(v_{1x},v_{1y},v_{1z},p_1\right)^T
-\end{equation}
-Gradient in details:
-\begin{align}
- \pdv{\Phi_1}{\rho}&= (-)\int_T dt \left[ \left(\pdv{v_x}{t}-f_x\right)v_{1x} +\left(\pdv{v_y}{t}-f_y\right)v_{1y} +\left(\pdv{v_z}{t}-f_z\right)v_{1z} \right]\\
- \pdv{\Phi_1}{\lambda}&=- \frac{1}{\lambda^2}\int_T dt  \pdv{p}{t}p_1 \\
-\end{align}
 
 \part{Software Guide to WAVE-Inversion}
 \chapter{Software Requirements and Quick Guide}
@@ -462,7 +490,6 @@ WAVE-Inversion is developed as a part of the WAVE-project (\url{http://wave-tool
 
 To begin with, a \CC-compiler has to be available. A compiler with  \CC[11]-standard support is needed. To compile WAVE-Inversion, make sure a couple of libraries are installed and running properly. All necessary libraries for proper usage and a short description can be seen in table \ref{tab:pack}. A \CC-compiler and LAMA are mandatory whereas the other libraries and software are optional to execute WAVE-Inversion.
 As the software is meant for high performance computing (HPC) on cluster networks, it is primarily designed to run on Linux-platforms. The code has been tested using \gCC[4.9.3], \clang[3.9] as a  \CC-compiler and using OpenMPI (1.7.2, 1.10.0) as MPI implementation.
-
 \begin{table}[h!]
 \caption{List of necessary libraries, packages and compiler.}\label{tab:pack}
 \centering
@@ -561,15 +588,17 @@ The program will create a log file with the name specified by \verb+logFilename+
 
 \subsection{General inversion setting}
 
-\subsubsection{Misfit}
 \begin{table}[h!]
-\caption[List of misfit configuration parameters.]{List of misfit configuration parameters, that can be added and changed in the config-file.}\label{tab:config_misfit}
+\caption[List of general inversion configuration parameters.]{List of general inversion configuration parameters, that can be added and changed in the config-file.}\label{tab:config_general_inversion_setting}
 \centering
 \begin{adjustbox}{width=1\textwidth,center=\textwidth}
 	\begin{tabular}{llll}
 	\toprule
          Variable                 & Short description                                                   & Type   & Example value \\
 	\midrule                 
+         inversionType               & Type of inversion (0, 1, 2 and 3)                                                    & int & 1  \\
+         exchangeStrategy               & Strategy of model exchange (0, 1, 2, 3, 4, 5 and 6)                                                    & int & 0  \\
+         breakLoopType               & Type of breaking loop (0, 1 and 2)                                                    & int & 0  \\
          misfitType               & Type of misfit (L2, L7, L8 and L278)                                                    & string & L2  \\
          DTInversion              & Factor of DT to save time in gradient calculation   &  int   & 1 \\
          DHInversion              & Factor of DH to save memory in gradient calculation   &  int   & 1 \\
@@ -584,7 +613,16 @@ The program will create a log file with the name specified by \verb+logFilename+
 	\end{adjustbox}
 \end{table}
 
-The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_misfit}. Currently, the misfit type of L2 (L2 norm), L7 (normalized L2 norm), L8 (envelope L2 norm) and L278 (randomly choose one of L2, L7 and L8 as a misfit function for each shot) are available. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+ = 1. This option is recommended for seismic field data.
+\subsubsection{Individual/Joint inversion}
+Due to that we have included the forward solver of seismic wave equations and EM wave equations in WAVE-Simulation, it is possible to run an individual inversion of one wave by \verb+inversionType+=1 or run a joint inversion of seismic and EM waves by \verb+inversionType+=2 or 3. \verb+inversionType+=2 and 3 are corresponding to the joint structural inversion (JSI) and joint petrophysical inversion (JPI), respectively. In JSI, it is assumed that the coupled parameter models share similar structures and the structural similarity is enhanced by cross-gradient during the inversion \citep{gallardo2003characterization}. JPI is based on empirical or experimental petrophysical relationships that connect different physical parameters through the common petrophysical properties, i.e., porosity and saturation \citep{qin2021joint}. If you work with OpenMPI, you may use the following command in \shellcmdline{start\_Inversion.sh} to run an individual inversion:\\
+    \shellcmd{mpirun ./../build/bin/Inversion "configuration/configuration\_Elastic2D.txt"}\\
+or run a joint inversion by:\\
+    \shellcmd{mpirun ./../build/bin/Inversion "configuration/configuration\_Elastic2D.txt" "configuration/configuration\_TMEM2D.txt"}\\
+For the joint inversion, \verb+inversionType+>0 must be the same in \shellcmd{configuration\_Elastic2D.txt} and \shellcmd{configuration\_TMEM2D.txt}. Besides, you can set \verb+inversionType+=1 in two configuration files to run two individual inversion or set \verb+inversionType+=1 in one and \verb+inversionType+=0 in another to run an individual inversion.\\
+The parameter \verb+exchangeStrategy+ define the rule of model self-constraint and mutual constraint in joint inversion. Hence for an individual inversion, \verb+exchangeStrategy+ has to be 0. In case of JSI, \verb+exchangeStrategy+=1 represent only one parameter of each model, namely S-wave velocity $v_s$ in seismic model and dielectric permittivity $\varepsilon$ in EM model, will be used to calculate the cross-gradient and mutually constrain each other. The other parameters of each model, namely P-wave velocity $v_p$ and density $\rho$ in seismic model and electric conductivity $\sigma_e$ in EM model, will be self-constrained by their corss-gradient with $v_s$ or $\varepsilon$. \verb+exchangeStrategy+=2 means the averaged model derivative of all parameters in each model is used to calculate the cross-gradient. In this case, all parameters contribute equally in JSI.´For JPI, more options of \verb+exchangeStrategy+ can be chosen. \verb+exchangeStrategy+=0 means there is no petrophysical parameter exchange between to inversions, but each inversion are constrained by petrophysical relationships. \verb+exchangeStrategy+=1 means only the porosity $\phi$ calculated by seismic inversion and the saturation $S_w$ calculated by GPR inversion will be exchanged to each other. \verb+exchangeStrategy+=2 represents both $\phi$ and $S_w$ will be exchanged iteratively. \verb+exchangeStrategy+=3 is the same as \verb+exchangeStrategy+=1 but the parameter exchange is only implemented at the end of each inversion stage. \verb+exchangeStrategy+=4 is the same as \verb+exchangeStrategy+=1 but the parameter exchange is only implemented once at the end of each inversion. \verb+exchangeStrategy+=5 is the same as \verb+exchangeStrategy+=3 but in the non-exchange gap petrophysical parameters are not updated. \verb+exchangeStrategy+=6 is the same as \verb+exchangeStrategy+=4 but in the non-exchange gap petrophysical parameters are not updated. \verb+exchangeStrategy+=5 and 6 give the inversion more freedom, however, it does not mean better inversion results \cite{qin2021joint}.\\
+In case of two configuration files are imported into the software, you may set \verb+breakLoopType+=0 for two individual inversions, which ensures that the iteration loop of one inversion will not be affected by another inversion. If you set \verb+breakLoopType+=1 for JSI or JPI, then the iteration loop will be broken when one of the inversions satisfies its abort criterion. \verb+breakLoopType+= 2 means the iteration loop can be broken only if both the two abort criteria are satisfied. \\
+\subsubsection{Misfit}
+The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_general_inversion_setting}. Currently, the misfit type of L2 (L2 norm), L7 (normalized L2 norm), L8 (envelope L2 norm) and L278 (randomly choose one of L2, L7 and L8 as a misfit function for each shot) are available. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+ = 1. This option is recommended for seismic field data.
 
 The parameter \verb+DTInversion+ defines the factor of \verb+DT+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second time sample is picked. The highest possible value depends on the wave length.
 The parameter \verb+DHInversion+ defines the factor of \verb+DH+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second model space sample is picked. The highest possible value depends on the model resolution you want to obtain.
@@ -607,7 +645,7 @@ Note that a steepest descent update is performed in the first iteration of every
 The L-BFGS and the truncated Newton method are in developing and not available currently.
 
 \subsubsection{Workflow file}
-Additional to the configuration file a workflow file has to be used because some parameters are only defined there and are not available in the configuration file! The name is set by the parameter \verb+workflowFilename+. At the moment, the workflow file contains the following parameters: \verb+invertForVp+, \verb+invertForVs+, \verb+invertForDensity+,  \verb+invertForPorosity+, \verb+invertForSaturation+,  \verb+relativeMisfitChange+, \verb+filterOrder+,  \verb+lowerCornerFreq+ and \verb+upperCornerFreq+. Its structure is 
+Additional to the configuration file a workflow file has to be used because some parameters are only defined there and are not available in the configuration file! The name is set by the parameter \verb+workflowFilename+. At the moment, the seismic workflow file contains the following parameters: \verb+invertForVp+, \verb+invertForVs+, \verb+invertForDensity+, \verb+invertForPorosity+, \verb+invertForSaturation+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+ and \verb+upperCornerFreq+. Its structure is 
 \begin{verbnobox}[\fontsize{11pt}{11pt}\selectfont]
 #invertForVp invertForVs invertForDensity invertForPorosity invertForSaturation ...
       1           1            0                0                 0
@@ -620,8 +658,20 @@ Additional to the configuration file a workflow file has to be used because some
              0.02            4             5                   40
              0.01            4             5                   60
 \end{verbnobox}
-With the first three parameters it can be decided which seismic parameter class should be updated. The parameter \verb+invertForPorosity+ and \verb+invertForSaturation+ are available for porosity and saturation update in petrophysical inversion. \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of WAVE-Simulation (insert link). 
-
+With the first three parameters it can be decided which seismic parameter class should be updated. The parameter \verb+invertForPorosity+ and \verb+invertForSaturation+ are available for porosity and saturation update in petrophysical inversion. \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of WAVE-Simulation (insert link). \\
+The GPR workflow file contains the following parameters: \verb+invertForSigmaEM+, \verb+invertForEpsilonEM+, \verb+invertForTauSigmaEM+, \verb+invertForTauEpsilonEM+, \verb+invertForPorosity+, \verb+invertForSaturation+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+ and \verb+upperCornerFreq+. Its structure is 
+\begin{verbnobox}[\fontsize{11pt}{11pt}\selectfont]
+invertForSigmaEM invertForEpsilonEM invertForTauSigmaEM invertForTauEpsilonEM invertForPorosity invertForSaturation ...
+      1           1            0                0                 0
+      0           1            1                0                 0
+      1           0            1                0                 0
+\end{verbnobox}
+\begin{verbnobox}[\fontsize{11pt}{11pt}\selectfont]
+... relativeMisfitChange filterOrder lowerCornerFreq(Hz) upperCornerFreq(Hz)
+             0.05            4             5                   20
+             0.02            4             5                   40
+             0.01            4             5                   60
+\end{verbnobox}
 \subsubsection{Parameterisation}
 Parameter \verb+parametersation+ specifies a type of parametersation with 0 = modulus parametersation, 1 = petrophysical parametersation in which only porosity is used to calculate seismic parameters, 2 = petrophysical parametersation in which both porosity and saturation are used to calculate seismic parameters, 3 = velocity parameterisation (set as default). Gassmann equation is employed in petrophysical parametersation. When \verb+parametersation+ = 0 or 3 is set, you should only use the seismic parameter class in \verb+workflowFilename+, in which case porosity will be estimated by the updated seismic parameters while saturation is unchanged. On the contrast, if you choose \verb+parametersation+ = 1 or 2, then you should only use the petrophysical parameter class in \verb+workflowFilename+, in which case the seismic parameters will be calculated from the updated petrophysical parameters.
 
@@ -710,7 +760,7 @@ with $k$ as iteration number and $\alpha$ as step length. Thus, a step length of
 	\end{adjustbox}
 \end{table}
 
-As the source that generates the observed data $d_{obs}$ is unknown, the source signature is unknown as well. By using the source time function (STF) inversion, the true source is approximated by a filtered synthetic one. Choosing the filter so that filtered synthetic source signature is as close to the real source signature leads to a minimized misfit function by L2 norm. The wanted result is 
+As the source that generates the observed data $d^{obs}$ is unknown, the source signature is unknown as well. By using the source time function (STF) inversion, the true source is approximated by a filtered synthetic one. Choosing the filter so that filtered synthetic source signature is as close to the real source signature leads to a minimized misfit function by L2 norm. The wanted result is 
 \begin{equation*}
  s(w)=\dfrac{\vec{d}^T\vec{u}^*}{\vec{u}^T\vec{u}^*+\epsilon}
 \end{equation*}
@@ -828,6 +878,261 @@ For faultless function of WAVE-Inversion all tests should execute without failur
 \addcontentsline{toc}{chapter}{List of Tables}
 \cleardoublepage
 % \bibliography{@CMAKE_SOURCE_DIR@/../doc/guide/WAVE_guide}
-\bibliography{WAVE_guide}
+\bibliography{WAVE_Inversion_guide}
 \bibliographystyle{apalike}
+
+\appendix
+\chapter{Acoustic wave}
+\label{sec:Acoustic_wave_equation}
+\section{Acoustic wave equation}
+3D acoustic Wave Equation:
+\begin{align}
+\rho\pdv{v_x}{t}&=\pdv{p}{x} + f_x\\
+\rho\pdv{v_y}{t}&=\pdv{p}{y} + f_y\\
+\rho\pdv{v_z}{t}&=\pdv{p}{z} + f_z\\
+\frac{1}{\lambda}\pdv{p}{t} &= \pdv{v_x}{x} +  \pdv{v_y}{y} + \pdv{v_z}{z} + \frac{1}{\lambda}\pdv{p_0}{t}\\
+\end{align}
+Matrix formulation of forward problem:
+\begin{equation}
+ M^{-1}\left( \pdv{}{t}\mathbf{u}-b \right) =Q\mathbf{u}
+\end{equation}
+\begin{equation}
+\mathbf{u}=\left(v_x,v_y,v_z,p \right)^T
+\end{equation}
+\begin{equation}
+\mathbf{b}=\left(\frac{f_x}{\rho},\frac{f_y}{\rho},\frac{f_z}{\rho},\pdv{p_0}{t}\right)^T
+\end{equation}
+\begin{equation}
+Q=
+ \begin{pmatrix}
+   0         & 0         & 0         & \pdv{}{x}\\
+   0         & 0         & 0         & \pdv{}{y}\\
+   0         & 0         & 0         & \pdv{}{z}\\
+   \pdv{}{x} & \pdv{}{y} & \pdv{}{z} & 0        \\
+
+ \end{pmatrix}
+\end{equation}
+\begin{equation}
+M^{-1}=
+ \begin{pmatrix}
+   \rho       & 0         & 0         & 0                \\
+   0          & \rho      & 0         & 0                \\
+   0          & 0         & \rho      & 0                \\
+   0          & 0         & 0         & \frac{1}{\lambda}\\
+ \end{pmatrix}
+\end{equation}
+
+\section{Gradient}
+\begin{equation}
+ \pdv{\Phi_1}{m}=\int_T \mathbf{u}_1^T \pdv{M^{-1}}{m}\left( \pdv{}{t}\mathbf{u}-b \right)dt
+\end{equation}
+The 1$st$ order adjoint wavefields:
+\begin{equation}
+\mathbf{ u}_1=\left(v_{1x},v_{1y},v_{1z},p_1\right)^T
+\end{equation}
+Gradient in details:
+\begin{align}
+ \pdv{\Phi_1}{\rho}&= \int_T \left( \pdv{v_x}{t} v_{1x} + \pdv{v_y}{t} v_{1y} + \pdv{v_z}{t} v_{1z} \right) dt\\
+ \pdv{\Phi_1}{\lambda}&=- \frac{1}{\lambda^2}\int_T  \pdv{p}{t}p_1 dt \\
+\end{align}
+
+\chapter{EM wave}
+\label{sec:EM_wave_equation}
+\section{EM wave equation}
+\par Maxwell equations including constitutive relations is shown as two rotation equations: \\
+\begin{equation}
+\begin{align*}
+\label{eqn:MaxwellEquation}
+&-\mu_{m} \pdv{ \mathbf{H}}{t} - \sigma_{m}\mathbf{H} - \nabla \times \mathbf{E} =  \mathbf{J_{m}} \\
+&\varepsilon\pdv{ \mathbf{E}}{t} + \sigma_{e}\mathbf{E} -\nabla \times \mathbf{H} =  - \mathbf{J_{e}}
+\end{align*}
+\end{equation}
+where $\sigma_{e}$, $\sigma_{m}$, $\varepsilon$ and $\mu_{m}$ are the electric conductivity, magnetic conductivity, dielectric permittivity and magnetic permeability. $\mathbf{J_{e}}$ and $\mathbf{J_{m}}$ are the electric and magnetic current sources. $\mathbf{H}$ and $\mathbf{E}$ are the magnetic intensity field tensor and electric intensity field tensor in Maxwell equations which explain the physical mechanism of electromagnetic (EM) wave propagation.\\
+\par 3D EM Wave Equation in anisotropic media:
+\begin{equation}
+\begin{align*}
+\label{eqn:MaxwellEquation1}
+&-\mu_{mx} \pdv{H_{x}}{t} - \sigma_{mx} H_{x} - (\pdv{E_z}{y} - \pdv{E_y}{z}) = J_{mx}\\
+&-\mu_{my} \pdv{H_{y}}{t} - \sigma_{my} H_{y} - (\pdv{E_x}{z} - \pdv{E_z}{x}) = J_{my}\\
+&-\mu_{mz} \pdv{H_{z}}{t} - \sigma_{mz} H_{z} - (\pdv{E_y}{x} - \pdv{E_x}{y}) = J_{mz}\\
+&\varepsilon_{x} \pdv{E_{x}}{t} + \sigma_{ex} E_{x} - (\pdv{H_z}{y} - \pdv{H_y}{z}) = -J_{ex}\\
+&\varepsilon_{y} \pdv{E_{y}}{t} + \sigma_{ey} E_{y} - (\pdv{H_x}{z} - \pdv{H_z}{x}) = -J_{ey}\\
+&\varepsilon_{z} \pdv{E_{z}}{t} + \sigma_{ez} E_{z} - (\pdv{H_y}{x} - \pdv{H_x}{y}) = -J_{ez}
+\end{align*}
+\end{equation}
+\par We rewrite the Eq.\ref{eqn:MaxwellEquation1} as:
+\begin{equation}
+\begin{align*}
+\label{eqn:MaxwellEquationMatrix}
+&M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q\mathbf{u} = \mathbf{b} \\
+&\mathbf{u} = (\mathbf{H}, \mathbf{E})^T, \mathbf{b} = (\mathbf{J_{m}}, -\mathbf{J_{e}})^T \\
+\end{align*}
+\end{equation}
+\begin{equation}
+\begin{align}
+\begin{split}
+& M_1 =
+ \begin{pmatrix}
+   -\mu_{mx}       & 0         & 0         & 0         & 0         & 0       \\
+   0          & -\mu_{my}      & 0         & 0         & 0         & 0        \\
+   0          & 0         & -\mu_{mx}      & 0         & 0         & 0        \\
+   0          & 0         & 0         & \varepsilon_{x}      & 0         & 0        \\
+   0          & 0         & 0         & 0         & \varepsilon_{y}      & 0        \\
+   0          & 0         & 0         & 0         & 0         & \varepsilon_{z}     \\
+ \end{pmatrix}, 
+ M_2 =
+ \begin{pmatrix}
+   -\sigma_{mx}       & 0         & 0         & 0         & 0         & 0       \\
+   0          & -\sigma_{my}      & 0         & 0         & 0         & 0        \\
+   0          & 0         & -\sigma_{mz}      & 0         & 0         & 0        \\
+   0          & 0         & 0         & \sigma_{ex}      & 0         & 0        \\
+   0          & 0         & 0         & 0         & \sigma_{ey}      & 0        \\
+   0          & 0         & 0         & 0         & 0         & \sigma_{ez}     \\
+ \end{pmatrix} \\
+& Q = 
+ \begin{pmatrix}
+   0          & 0         & 0         & 0 	  	& -\partial_{z}	& \partial_{y}   \\
+   0          & 0         & 0         & \partial_{z} 	& 0 	      	& -\partial_{x}  \\
+   0          & 0         & 0         & -\partial_{y}	& \partial_{x} 	& 0	      \\
+   0 	  	& -\partial_{z}	& \partial_{y}        & 0         & 0         & 0        \\
+   \partial_{z} 	& 0 	      	& -\partial_{x}       & 0 	       & 0         & 0        \\
+   -\partial_{y}	& \partial_{x} 	& 0         	   & 0	       & 0         & 0        \\
+ \end{pmatrix} = 
+ \begin{pmatrix}
+   0          & D         \\
+   D          & 0         \\
+ \end{pmatrix} = 
+ \begin{pmatrix}
+   0          & D_i \partial_{i}         \\
+   D_i \partial_{i}          & 0         \\
+ \end{pmatrix} \\
+& D_1= 
+ \begin{pmatrix}
+   0          & 0        & 0 \\
+   0          & 0        & -1 \\
+   0          & 1        & 0 
+ \end{pmatrix},  D_2= 
+ \begin{pmatrix}
+   0          & 0        & 1 \\
+   0          & 0        & 0 \\
+  -1          & 0        & 0 
+ \end{pmatrix},
+  D_3= 
+ \begin{pmatrix}
+   0          & -1        & 0 \\
+   1          & 0        & 0 \\
+   0          & 0        & 0 
+ \end{pmatrix} ,
+ D_i^{*} = D_i^T = -D_i\\
+\end{split}
+\end{align}
+\end{equation}
+$^{*}$ is the transpose conjugate operation. $\partial_{1} = \partial_{x}$, $\partial_{2} = \partial_{y}$, $\partial_{3} = \partial_{z}$.\\
+
+\section{1st order adjoint method}
+\par The misfit function
+\begin{equation}
+ \Phi_1(\mathbf{m}) = \Phi_1(\mathbf{u}) = \frac{1}{2} || R\mathbf{u}(\mathbf{m}) - \mathbf{d}^{obs} ||_2^2 \\
+\end{equation}
+where the synthetic data $\mathbf{d}^{cal}$ is extracted by the restriction operator $R$ from the synthetic wavefield $\mathbf{u}$. $\mathbf{d}^{obs}=(\mathbf{H}^{obs}, \mathbf{E}^{obs})$. \\
+\par Augmented functional used in 1st order adjoint method:
+\begin{equation}
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \Phi_1(\mathbf{u}) + \langle \mathbf{u}_{1}, F(\mathbf{u},\mathbf{m}) \rangle_W \\
+\end{equation}
+with
+\begin{equation}
+\begin{split}
+\label{eqn:initialCondition1}
+ & F(\mathbf{u},\mathbf{m}) = M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q\mathbf{u} - \mathbf{b} = 0 \\
+ & \mathbf{m} = (\varepsilon, \sigma_e, \mu_m, \sigma_m)^T, \mathbf{u}|_{t=0} = 0, \mathbf{u}|_{x\in \partial \Omega} = 0
+ \end{split}
+\end{equation}
+where the inner product $\langle h_1, h_2 \rangle_W$ in the domain $W=\Omega \times [0, T]$ is defined by ($\Omega$ is the spatial computation domain)\\
+\begin{equation}
+ \langle h_1, h_2 \rangle_W = \int_0^T \int_\Omega h_1(x,t) h_2(x,t) dt dx\\
+\end{equation}
+\par For any $\mathbf{u}_{1}$:
+\begin{equation}
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = f(\mathbf{u}) \\
+\end{equation}
+\par We write the augmented functional explicitly:
+\begin{equation}
+\label{eqn:AugmentFunctional}
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega \mathbf{u}_{1} (M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q \mathbf{u} - \mathbf{b})  dt dx\\
+\end{equation}
+\par If the final condition and boundary condition of $\mathbf{u}_{1}$ are satisfied by:
+\begin{equation}
+\label{eqn:initialCondition2}
+ \mathbf{u}_{1}|_{t=T} = 0, \mathbf{u}_{1}|_{x\in \partial \Omega} = 0\\
+\end{equation}
+\par Integration by parts and then we get:
+\begin{equation}
+\begin{split}
+L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1})
+  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega ((M_1 \partial_{t})^* \mathbf{u}_{1} \mathbf{u} + M_2^* \mathbf{u}_{1} \mathbf{u} - Q^* \mathbf{u}_{1} \mathbf{u} - \mathbf{u}_{1} \mathbf{b})  dt dx \\
+  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1} \mathbf{u} + M_2 \mathbf{u}_{1} \mathbf{u} - Q \mathbf{u}_{1} \mathbf{u} - \mathbf{u}_{1} \mathbf{b})  dt dx\\
+ \end{split}
+\end{equation}
+where 
+\begin{equation}
+\begin{split}
+& M_1^{*} =  M_1, (M_1 \partial_{t}) ^{*} = -M_1^{*} \partial_{t} = -M_1 \partial_{t}, M_2^{*} =  M_2\\
+& D^{*} = (D_i \partial_{i})^{*} = -D_i^{*} \partial_{i} = D_i \partial_{i} = D \Rightarrow Q^{*} = Q\\
+ \end{split}
+\end{equation}
+which is derived from the initial, final condition and boundary condition \ref{eqn:initialCondition1} and \ref{eqn:initialCondition2} \citep{yang2016review}.\\
+\par Derivative in respect to wavefields $\mathbf{u}$:
+\begin{equation}
+ \pdv{L_1}{\mathbf{u}} = \int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx + \int_0^T \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1}  + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1})  dt dx\\
+\end{equation}
+\par The operator $R^{*}$ force the virtual sources injected at the receiver location. By making $\pdv{L_1}{\mathbf{u}} = 0$, we get:
+\begin{equation}
+ \int_0^T \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1}  + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1})  dt dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx\\
+\end{equation}
+\par Reverse time: $t \to T-t$
+\begin{equation}
+ \int_T^0 \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1}(T-t)  + M_2 \mathbf{u}_{1}(T-t) - Q \mathbf{u}_{1}(T-t) )  dt dx = -\int_T^0 \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(T-t) dt dx\\
+\end{equation}
+\par Substition: 
+\begin{equation}
+ \tau = T - t, d\tau = -dt, \partial \tau = -\partial t\\
+\end{equation}
+\par Boundaries $T \to 0$ to $0 \to T$
+\begin{equation}
+ \int_0^T \int_\Omega (M_1 \partial_{\tau} \mathbf{u}_{1}(\tau) + M_2 \mathbf{u}_{1}(\tau) - Q \mathbf{u}_{1}(\tau) )  d\tau dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(\tau) d\tau dx\\
+\end{equation}
+\par Therefore we obtain a self-adjoint equation:
+\begin{equation}
+\begin{align*}
+\label{eqn:AdjointEquation1}
+& M_1 \partial_{\tau} \mathbf{u}_{1} + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1} =  - R^{*}(R\mathbf{u} - \mathbf{d}^{obs})  \\
+& \mathbf{u}_{1} = ( \mathbf{H}_{1}, \mathbf{E}_{1}) = (H_{1x}, H_{1y}, H_{1z}, E_{1x}, E_{1y}, E_{1z})^T  \\ 
+\end{align*}
+\end{equation}
+\par Here the postive wavefield residual $R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) $ is used as the sources for back propagation. \\
+\par The 1st order adjoint equation is:
+\begin{equation}
+\label{eqn:AdjointEquation11}
+\mathbf{u}_{1}:
+\begin{cases}
+-\mu_{m} \pdv{\mathbf{H}_{1}}{t} - \sigma_{m}\mathbf{H}_{1} - \nabla \times\mathbf{E}_{1} =  -R^{*}(R\mathbf{H} - \mathbf{H}^{obs}) \\
+\varepsilon\pdv{\mathbf{E}_{1}}{t} + \sigma_{e}\mathbf{E}_{1} -\nabla \times \mathbf{H}_{1} =  - R^{*}(R\mathbf{E} - \mathbf{E}^{obs})
+\end{cases}
+\end{equation}
+\par Derivative in respect to model parameters $\mathbf{m}$ from Eq. \ref{eqn:AugmentFunctional}:
+\begin{equation}
+ \nabla \Phi_1(\mathbf{m})=\pdv{\Phi_1}{\mathbf{m}} = \pdv{L_1}{\mathbf{u}}\pdv{\mathbf{u}}{\mathbf{m}} + \pdv{L_1}{\mathbf{m}} =  \pdv{L_1}{\mathbf{m}} = \int_0^T \mathbf{u}_{1} (\pdv{M_{1}}{\mathbf{m}} \partial_{t}\mathbf{u} + \pdv{M_{2}}{\mathbf{m}} \mathbf{u} ) dt\\ 
+\end{equation}
+\par The gradient of the objective function $\Phi_1(\mathbf{m})$ with respect to electric parameters are shown as:
+\begin{equation}
+\label{eqn:GradientAdjoint1}
+\begin{align*}
+& \nabla \Phi_1(\varepsilon) = \int_0^T ( E_{1x} \pdv{E_x}{t} + E_{1y} \pdv{E_y}{t} + E_{1z} \pdv{E_z}{t} ) dt\\
+& \nabla \Phi_1(\sigma_e) = \int_0^T ( E_{1x} E_x + E_{1y} E_y + E_{1z} E_z  ) dt\\
+\end{align*}
+\end{equation}
+
+\chapter{Visco-EM wave}
+\label{sec:Visco_EM_wave_equation}
+For more details about Visco-EM FWI, the readers are recommended to \cite{qin2020full}.
 \end{document}
