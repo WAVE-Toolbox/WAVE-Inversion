@@ -1,5 +1,10 @@
+# matrix data
 *.mtx
+*.cpp
+*.m
+*.m~
 *.eps
+*.pdf
+*.tif
 *.jpg
 *.png
-*.svg
