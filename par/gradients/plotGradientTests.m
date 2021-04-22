@@ -1,25 +1,66 @@
-% plotGradientTests
-clc
-close all
-clear all
+close all; clear all;
+addpath('../configuration');
+addpath('../common');
 
+modelName = 'checkerboard_dh10cm';
+observationType = 'Surface';
+equationType = 'Elastic';
+NoiseType = '';
+modelType = 'Inv';
+HPCType = 'HPC';
+dimension=cellMerge({equationType,'2D'},0);
+configFilename=cellMerge({'configuration',modelName,observationType,dimension...
+    ,NoiseType,modelType,HPCType},1);
+modelType = 'True';
+configTrueFilename=cellMerge({'configuration',modelName,observationType,dimension...
+    ,modelType},1);
+configFilename=addfileSuffix(configFilename,5);
+configTrueFilename=addfileSuffix(configTrueFilename,5);
+config=conf(configFilename);
+configTrue=conf(configTrueFilename);
+
+parameter='vs';   % model parameter
 stage=1;
-iteration=5;
+iteration=4;
+shotnr=0;
+gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative
+gradientPerShot=0; % 1 = gradientPerShot, other = gradientSum;
 
-parameter='vp';   % model parameter
+imagesave = 0;
+copy_inv = 0;
+DIR_PATH_NEW = 'test/';
+invertParameterType = 'PorositySaturation80';
+timeGain = '';
+sourceType = 'source40MHz';
+depthGain = 'DGaina2b2s8';
+bandPass = 'BP520Hz15MHz';
+NoisedB = '10dB25dB';
+NoisedB = cellMerge({NoiseType,NoisedB},0);
+Insert_name = cellMerge({invertParameterType,...
+    bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
 
 %% Usually, there is no need to change anything below this line
-
-addpath('../configuration')
-config=conf('../ci/configuration_ci.2D.acoustic.txt');
-
-geometry.NX=config.getValue('NX');  % Number of grid points in X
-geometry.NY=config.getValue('NY');  % Number of grid points in Y
-geometry.NZ=config.getValue('NZ');  % Number of grid points in Z
-geometry.DH=config.getValue('DH');   % Spatial grid sampling
 geometry.LAYER=1; % Define layer of 3D model to display as 2D slice
-
-gradientName=config.getString('gradientFilename');
-
-plotGradient(parameter,stage,iteration,geometry,gradientName);
-rmpath('../configuration')
+fileFormat=config.getValue('FileFormat');
+valueMax = 0e-1;
+if valueMax == 0    
+    clim=[ ];
+else
+    clim=[-valueMax valueMax];
+end
+plotGradient_TQ(clim,parameter,stage,shotnr,iteration,geometry...
+    ,config,configTrue,imagesave,gradientPerShot,gradientType);
+% cope the file to a defined directory
+if copy_inv == 1
+    % get the filename
+    if gradientPerShot == 1
+        filename=[gradientName '.stage_' num2str(stage) '.It_' num2str(iteration)...
+            '.Shot_' num2str(shotnr) '.' parameter]; % File name of the gradient
+    else
+        filename=[gradientName '.stage_' num2str(stage) '.It_' num2str(iteration)...
+            '.' parameter]; % File name of the gradient
+    end
+    copyfile_image(filename,fileFormat,DIR_PATH_NEW,Insert_name,config);
+end
+rmpath('../common');
+rmpath('../configuration');

@@ -3,6 +3,7 @@
 *.m
 *.m~
 *.mat
+*.py
 *.eps
 *.pdf
 *.tif

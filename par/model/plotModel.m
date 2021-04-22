@@ -57,7 +57,7 @@ Y=0:DH:(NY*DH-DH);
 figure
 switch nargin
 case 9
-subplot(1,3,3)
+subplot(3,1,3)
 case 8
 subplot(1,2,2)
 case default
@@ -68,33 +68,38 @@ if iteration > 0
 imagesc(X,Y,model(:,:,LAYER))
 end
 caxis([Min Max])
-colorbar('location','southoutside');
+colorbar('location','eastoutside');
 colormap('jet')
 xlabel('X in meter')
 ylabel('Y in meter')
 title([parameter ' model at iteration ' num2str(iteration)])
-
-
+hold on
+% plot(sources(:,2)*DH,sources(:,3)*DH,'r*')
+% plot(receiver(:,1)*DH,receiver(:,2)*DH,'kv')
+axis equal
+axis([min(X) max(X) min(Y) max(Y)]);
 
 if nargin > 7
 %% Read model
 model=readModelfromMtx(startingModel,NX,NY,NZ);
 
 %% Plot
-if nargin > 8
-subplot(1,3,2)
+if nargin > 7
+subplot(3,1,2)
 else
 subplot(1,2,1)
 end
 imagesc(X,Y,model(:,:,LAYER))
 caxis([Min Max])
-colorbar('location','southoutside');
+colorbar('location','eastoutside');
 xlabel('X in meter')
 ylabel('Y in meter')
-hold on
-plot(sources(:,2)*DH,sources(:,3)*DH,'*')
-plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
 title([parameter ' starting model'])
+hold on
+plot(sources(:,2)*DH,sources(:,3)*DH,'r*')
+plot(receiver(:,1)*DH,receiver(:,2)*DH,'kv')
+axis equal
+axis([min(X) max(X) min(Y) max(Y)]);
 end
 
 if nargin > 8
@@ -102,14 +107,21 @@ if nargin > 8
 model=readModelfromMtx(trueModel,NX,NY,NZ);
 
 %% Plot
-subplot(1,3,1)
+subplot(3,1,1)
 imagesc(X,Y,model(:,:,LAYER))
 caxis([Min Max])
-colorbar('location','southoutside');
+colorbar('location','eastoutside');
 xlabel('X in meter')
 ylabel('Y in meter')
 hold on
-plot(sources(:,2)*DH,sources(:,3)*DH,'*')
-plot(receiver(:,1)*DH,receiver(:,2)*DH,'.')
+plot(sources(:,2)*DH,sources(:,3)*DH,'r*')
+plot(receiver(:,1)*DH,receiver(:,2)*DH,'kv')
+axis equal
+axis([min(X) max(X) min(Y) max(Y)]);
 title([parameter ' true model'])
+numbOFcont=8;
+subplot(3,1,3)
+hold on
+contour(X,Y,model(:,:,LAYER),numbOFcont,'k-','LineWidth',1);
+hold off
 end

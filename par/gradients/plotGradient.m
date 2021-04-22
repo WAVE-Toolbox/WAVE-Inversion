@@ -4,7 +4,7 @@ load 'seismic.map'
 
 
 %% Define input parameter
-filename=[gradientName '.stage_' num2str(stage) '.It_' num2str(iteration)  '.' parameter '.mtx']; % File name of the gradient
+filename=[gradientName '.stage_' num2str(stage) '.It_' num2str(iteration) '.' parameter '.mtx']; % File name of the gradient
 NX=geometry.NX;  % Number of grid points in X
 NY=geometry.NY;  % Number of grid points in Y
 NZ=geometry.NZ;  % Number of grid points in Z
@@ -24,10 +24,11 @@ end
 %% Plot gradient
 figure
 colormap(seismic);
-imagesc(X,Y,gradient(:,:,LAYER)/max(max(max(abs(gradient)))))
+imagesc(X,Y,gradient(:,:,LAYER))
 colorbar
- caxis([-1 1])
+caxis([-max(max(max(abs(gradient(:,:,LAYER))))) max(max(max(abs(gradient(:,:,LAYER)))))])
 xlabel('X in meter')
 ylabel('Y in meter')
-title('normed gradient')
-
+title('gradient')
+axis equal
+axis([min(X) max(X) min(Y) max(Y)]);
