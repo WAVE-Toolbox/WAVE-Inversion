@@ -1,4 +1,4 @@
-# Input file WAVE-Inversion
+# Input file IFOS
 # The format has to be name=value (without any white spaces)
 # Use the hashtag "#" for comments
 
