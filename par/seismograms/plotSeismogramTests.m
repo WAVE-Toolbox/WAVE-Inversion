@@ -26,3 +26,4 @@ plotSeismogram(DT,stage,iteration,shot,component,skipTraces,syntheticData,fieldD
 
 cd (currentDir)
 rmpath(currentDir)
+

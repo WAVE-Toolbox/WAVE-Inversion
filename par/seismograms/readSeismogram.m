@@ -1,4 +1,3 @@
-
 function [Seismogram]=readSeismogram(filename)
 
 fileID = fopen(filename,'r');
@@ -9,3 +8,4 @@ A=fscanf(fileID,'%e',[1 size(1)*size(2)]);
 Seismogram=reshape(A(:),[size(1), size(2)]);
 
 end
+
