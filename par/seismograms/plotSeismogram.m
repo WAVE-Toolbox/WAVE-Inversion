@@ -28,7 +28,7 @@ function plotSeismogram(DT,stage,iteration,shot,component,skipTraces,syntheticDa
 
 
 %% Read seismogram
-filename=[fieldData '.stage_' num2str(stage) '.shot_' num2str(shot) '.' component '.mtx'];
+filename=[fieldData  '.stage_' num2str(stage) '.shot_' num2str(shot) '.' component '.mtx'];
 seismogramtrue=readSeismogram(filename);
 
 T=1*DT:DT:size(seismogramtrue,2)*DT;
@@ -38,7 +38,7 @@ for trace=1:skipTraces:size(seismogramtrue,1)
 plot(T,seismogramtrue(trace,:)/max(abs(seismogramtrue(trace,:)))+trace,'black');
 hold on
 end
-title(['field data (black) and modeled data (red): iteration ' num2str(iteration) ' shot ' num2str(shot)])
+title(['field data (black) and modeled data (red): stage ' num2str(stage) 'iteration ' num2str(iteration) ' shot ' num2str(shot)])
 xlabel('Time in seconds')
 ylabel('Traces')
 axis([0.0 size(seismogramtrue,2)*DT 0 size(seismogramtrue,1)+1])
