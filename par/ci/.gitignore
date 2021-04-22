@@ -15,7 +15,9 @@
 *.txt
 *.log
 *.sh
+*.dat
 data/
 image/
 test/
+build/
 mpi*
