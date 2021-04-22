@@ -134,14 +134,12 @@ int main(int argc, char *argv[])
     }
 
     std::string misfitType = config.get<std::string>("misfitType");
-    std::string fieldSeisName(config.get<std::string>("fieldSeisName"));
     std::string gradname(config.get<std::string>("gradientFilename"));
     std::string logFilename = config.get<std::string>("logFilename");
     ValueType steplengthInit = config.get<ValueType>("steplengthInit");
     std::string optimizationType = config.get<std::string>("optimizationType");
     
     std::string misfitTypeEM = configEM.get<std::string>("misfitType");
-    std::string fieldSeisNameEM(configEM.get<std::string>("fieldSeisName"));
     std::string gradnameEM(configEM.get<std::string>("gradientFilename"));
     std::string logFilenameEM = configEM.get<std::string>("logFilename");
     ValueType steplengthInitEM = configEM.get<ValueType>("steplengthInit");
@@ -586,6 +584,8 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receiversTrue;
     Acquisition::ReceiversEM<ValueType> receiversTrueEM;
+    Acquisition::Receivers<ValueType> receiversStart;
+    Acquisition::ReceiversEM<ValueType> receiversStartEM;
     Taper::Taper2D<ValueType> seismogramTaper2D;
     Taper::Taper1D<ValueType> seismogramTaper1D;
     Taper::Taper2D<ValueType> seismogramTaper2DEM;
@@ -594,12 +594,14 @@ int main(int argc, char *argv[])
     if (inversionType != 0) {
         if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark")) {
             receiversTrue.init(config, modelCoordinates, ctx, dist);
+            receiversStart.init(config, modelCoordinates, ctx, dist);
         }
         seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
     }
     if (inversionTypeEM != 0) {
         if (!configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark")) {
             receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM);
+            receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM);
         }
         seismogramTaper1DEM.init(std::make_shared<dmemo::NoDistribution>(tStepEndEM), ctx, 1);
     }
@@ -938,33 +940,40 @@ int main(int argc, char *argv[])
                     if (config.get<bool>("useReceiversPerShot")) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
+                        receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
 
                         ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
                     } else if (config.get<bool>("useReceiverMark")) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
+                        receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
 
                         ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
-                    receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
+                    receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
+                    receiversStart.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                                         
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
+                        receiversStart.getSeismogramHandler().filter(freqFilter);
                     }
                     
                     if (config.get<IndexType>("useSeismogramTaper") == 2) {
                         seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
                         seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
                         seismogramTaper2D.apply(receiversTrue.getSeismogramHandler()); 
+                        seismogramTaper2D.apply(receiversStart.getSeismogramHandler()); 
                     }
                     seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
+                    seismogramTaper1D.apply(receiversStart.getSeismogramHandler());
                     
                     if (workflow.iteration == 0){
-                        receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                        receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                        receiversStart.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     }
 
                     /* Reset approximated Hessian per shot */
@@ -1350,33 +1359,40 @@ int main(int argc, char *argv[])
                     if (configEM.get<bool>("useReceiversPerShot")) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
+                        receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
 
                         ReceiverTaperEM.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
                     } else if (configEM.get<bool>("useReceiverMark")) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
+                        receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
 
                         ReceiverTaperEM.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
-                    receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), fieldSeisNameEM + ".shot_" + std::to_string(shotNumber), 1);
+                    receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
+                    receiversStartEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                                         
                     if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0){
                         receiversTrueEM.getSeismogramHandler().filter(freqFilterEM);
+                        receiversStartEM.getSeismogramHandler().filter(freqFilterEM);
                     }
                     
                     if (configEM.get<IndexType>("useSeismogramTaper") == 2) {
                         seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
                         seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
                         seismogramTaper2DEM.apply(receiversTrueEM.getSeismogramHandler()); 
+                        seismogramTaper2DEM.apply(receiversStartEM.getSeismogramHandler()); 
                     }
                     seismogramTaper1DEM.apply(receiversTrueEM.getSeismogramHandler());
+                    seismogramTaper1DEM.apply(receiversStartEM.getSeismogramHandler());
                     
                     if (workflowEM.iteration == 0){
-                        receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), fieldSeisNameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
+                        receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
+                        receiversStartEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                     }
 
                     /* Reset approximated Hessian per shot */
@@ -1763,7 +1779,7 @@ int main(int argc, char *argv[])
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                     }
-                    receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), fieldSeisName + ".shot_" + std::to_string(shotNumber), 1);
+                    receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
 
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Additional forward run with " << tStepEnd << " time steps\n");
 
@@ -1876,7 +1892,7 @@ int main(int argc, char *argv[])
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                     }
-                    receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), fieldSeisNameEM + ".shot_" + std::to_string(shotNumber), 1);
+                    receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
 
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Additional forward run with " << tStepEnd << " time steps\n");
 
