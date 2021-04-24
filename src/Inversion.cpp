@@ -400,18 +400,12 @@ int main(int argc, char *argv[])
             
     /* --------------------------------------- */
     /* Wavefields                              */
-    /* --------------------------------------- */
-    //Temporary Wavefield for the derivative of the forward wavefields
-    wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
-    wavefieldPtrEM wavefieldsInversionEM = Wavefields::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM);
-    
+    /* --------------------------------------- */    
     if (inversionType != 0) {
         wavefields->init(ctx, dist);
-        wavefieldsInversion->init(ctx, distInversion);
     }    
     if (inversionTypeEM != 0) {
         wavefieldsEM->init(ctx, distEM);
-        wavefieldsInversionEM->init(ctx, distInversionEM);
     }
 
     /* --------------------------------------- */
@@ -423,6 +417,9 @@ int main(int argc, char *argv[])
     if (inversionType != 0) {
         for (IndexType i = 0; i < tStepEnd; i++) {
             if (i % dtinversion == 0) {
+                // Only the local shared_ptr can be used to initialize a std::vector
+                wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
+                wavefieldsInversion->init(ctx, distInversion);
                 wavefieldrecord.push_back(wavefieldsInversion);
             }
         }
@@ -430,6 +427,8 @@ int main(int argc, char *argv[])
     if (inversionTypeEM != 0) {
         for (IndexType i = 0; i < tStepEndEM; i++) {
             if (i % dtinversionEM == 0) {
+                wavefieldPtrEM wavefieldsInversionEM = Wavefields::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM);
+                wavefieldsInversionEM->init(ctx, distInversionEM);
                 wavefieldrecordEM.push_back(wavefieldsInversionEM);
             }
         }
@@ -1050,7 +1049,7 @@ int main(int argc, char *argv[])
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
-                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2D.applyWavefieldAverage(wavefields);
+                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2D.applyWavefieldAverage(wavefields);
                             }
                             if (config.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
@@ -1062,7 +1061,7 @@ int main(int argc, char *argv[])
                             solver->run(receivers, sources, *modelPerShot, *wavefields, *derivatives, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
-                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2D.applyWavefieldAverage(wavefields);
+                                *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2D.applyWavefieldAverage(wavefields);
                             }
                             if (config.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
@@ -1146,8 +1145,11 @@ int main(int argc, char *argv[])
                 if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark"))
                     ReceiverTaper.apply(*gradient);
                 
-                gradient->applyMedianFilter(config);  
+                if (config.get<bool>("useGradientTaper"))
+                    gradientTaper1D.apply(*gradient);
 
+                gradient->applyMedianFilter(config);  
+                
                 if (inversionType == 2) {                        
                     
                     // joint inversion with cross-gradient constraint
@@ -1196,6 +1198,9 @@ int main(int argc, char *argv[])
                     gradient->normalize();  
                     
                     stabilizingFunctionalGradient->calcStabilizingFunctionalGradient(*model, *modelPriori, config, *dataMisfit, workflow);
+                    if (config.get<bool>("useGradientTaper")) {
+                        gradientTaper1D.apply(*stabilizingFunctionalGradient);
+                    }  
                     stabilizingFunctionalGradient->applyMedianFilter(config);  
                     stabilizingFunctionalGradient->normalize();  
                     if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
@@ -1211,11 +1216,9 @@ int main(int argc, char *argv[])
                     *gradient += *stabilizingFunctionalGradient;   
                 }
                 
+                // scale function in gradientOptimization must be the final operation for gradient.
                 gradientOptimization->apply(*gradient, workflow, *model, config);
-
-                if (config.get<bool>("useGradientTaper"))
-                    gradientTaper1D.apply(*gradient);
-
+                
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
                 if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0) {
@@ -1469,7 +1472,7 @@ int main(int argc, char *argv[])
                             solverEM->run(receiversEM, sourcesEM, *modelEM, *wavefieldsEM, *derivativesEM, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefieldsEM in std::vector
-                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
+                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
                             }
                             if (configEM.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecondEM.intSquaredWavefields(*wavefieldsEM, configEM.get<ValueType>("DT"));
@@ -1481,7 +1484,7 @@ int main(int argc, char *argv[])
                             solverEM->run(receiversEM, sourcesEM, *modelPerShotEM, *wavefieldsEM, *derivativesEM, tStep);
                             if (tStep % dtinversion == 0) {
                                 // save wavefieldsEM in std::vector
-                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] =  wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
+                                *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
                             }
                             if (configEM.get<bool>("useEnergyPreconditioning")) {
                                 energyPrecondEM.intSquaredWavefields(*wavefieldsEM, configEM.get<ValueType>("DT"));
@@ -1564,6 +1567,9 @@ int main(int argc, char *argv[])
                 /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
                 if (!configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark"))
                     ReceiverTaperEM.apply(*gradientEM);
+
+                if (configEM.get<bool>("useGradientTaper"))
+                    gradientTaper1DEM.apply(*gradientEM);
                 
                 gradientEM->applyMedianFilter(configEM);  
 
@@ -1615,6 +1621,9 @@ int main(int argc, char *argv[])
                     gradientEM->normalize();  
                     
                     stabilizingFunctionalGradientEM->calcStabilizingFunctionalGradient(*modelEM, *modelPrioriEM, configEM, *dataMisfitEM, workflowEM);
+                    if (config.get<bool>("useGradientTaper")) {
+                        gradientTaper1DEM.apply(*stabilizingFunctionalGradientEM);
+                    }  
                     stabilizingFunctionalGradientEM->applyMedianFilter(configEM);  
                     stabilizingFunctionalGradientEM->normalize();  
                     if (configEM.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
@@ -1631,9 +1640,6 @@ int main(int argc, char *argv[])
                 }
                 
                 gradientOptimizationEM->apply(*gradientEM, workflowEM, *modelEM, configEM);
-
-                if (configEM.get<bool>("useGradientTaper"))
-                    gradientTaper1DEM.apply(*gradientEM);
 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */

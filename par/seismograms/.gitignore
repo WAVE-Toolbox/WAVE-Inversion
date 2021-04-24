@@ -15,6 +15,11 @@
 *.txt
 *.log
 *.sh
+*.mtx*
+*.lmf*
+*.frv*
+*.log*
+*.txt*
 *.dat
 data/
 image/

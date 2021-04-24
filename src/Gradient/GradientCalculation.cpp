@@ -18,7 +18,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);
 
     wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefields->init(ctx, dist);
@@ -44,15 +44,19 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
 template <typename ValueType>
 void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Taper::Taper2D<ValueType> wavefieldTaper2D)
 {
-    IndexType t = 0;
-    IndexType tEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
+    IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
-
-    scai::dmemo::DistributionPtr dist = wavefields->getRefVX().getDistributionPtr();
-    scai::dmemo::CommunicatorPtr comm = scai::dmemo::Communicator::getCommunicatorPtr(); // default communicator, set by environment variable SCAI_COMMUNICATOR
+    std::string equationType = config.get<std::string>("equationType");
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
+    scai::dmemo::DistributionPtr dist;
+    if(equationType.compare("sh") == 0){
+        dist = wavefields->getRefVZ().getDistributionPtr();
+    } else {
+        dist = wavefields->getRefVX().getDistributionPtr();        
+    }
     scai::dmemo::CommunicatorPtr commShot = model.getDensity().getDistributionPtr()->getCommunicatorPtr(); // get communicator for shot domain
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
@@ -64,30 +68,31 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     wavefields->resetWavefields();
     ZeroLagXcorr->resetXcorr(workflow);
 
-    IndexType dtinversion = config.get<IndexType>("DTInversion");  
+    IndexType dtinversion = config.get<IndexType>("DTInversion");
     ValueType DTinv = 1 / config.get<ValueType>("DT");
 
-    for (t = tEnd - 1; t >= 0; t--) {
+    if (shotNumber == 0) {
+        lama::DenseVector<ValueType> temp1;
+        IndexType tStep = 1000;
+        *wavefieldsTemp = *wavefieldrecord[floor(tStep / dtinversion + 0.5)];
+        temp1 = wavefieldsTemp->getRefSxx();
+        std::cout << "\n GradientCalculation run wavefieldrecord[" << floor(tStep / dtinversion + 0.5) << "][6150]: " << temp1[6150] << "\n"<< std::endl;
+    }
+    for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {
 
-        solver.run(receivers, adjointSources, model, *wavefields, derivatives, t);
+        solver.run(receivers, adjointSources, model, *wavefields, derivatives, tStep);
 
         /* --------------------------------------- */
         /*             Convolution                 */
         /* --------------------------------------- */
-        if (t % dtinversion == 0) {
-            if (t != 0) {
-                *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]);
-                //calculate temporal derivative of wavefield
-                *wavefieldsTemp -= wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion - 0.5)]);
-                *wavefieldsTemp *= DTinv;      
-            } else {
-                *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 1.5)]);
-                //calculate temporal derivative of wavefield
-                *wavefieldsTemp -= wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]);
-                *wavefieldsTemp *= DTinv;      
-            }
+        if (tStep % dtinversion == 0) {
+            *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]);
+            //calculate temporal derivative of wavefield
+            *wavefieldsTemp -= wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion - 0.5)]);
+            *wavefieldsTemp *= DTinv;
             *wavefieldsTemp *= dtinversion; 
-            ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(t / dtinversion + 0.5)]), *wavefields, workflow);
+            
+            ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow);
         }
     }
 

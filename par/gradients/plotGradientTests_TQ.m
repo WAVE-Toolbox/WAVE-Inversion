@@ -2,10 +2,10 @@ close all; clear all;
 addpath('../configuration');
 addpath('../common');
 
-modelName = 'checkerboard_dh10cm';
+modelName = 'sunken_dh10cm';
 observationType = 'Surface';
 equationType = 'Elastic';
-NoiseType = '';
+NoiseType = 'Noise';
 modelType = 'Inv';
 HPCType = 'HPC';
 dimension=cellMerge({equationType,'2D'},0);
@@ -20,8 +20,8 @@ config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
 parameter='vs';   % model parameter
-stage=1;
-iteration=4;
+stage=3;
+iteration=1;
 shotnr=0;
 gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative
 gradientPerShot=0; % 1 = gradientPerShot, other = gradientSum;

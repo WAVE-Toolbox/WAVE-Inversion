@@ -29,7 +29,7 @@ function plotSeismogram(DT,stage,iteration,shot,component,skipTraces,syntheticDa
 
 %% Read seismogram
 filename=[fieldData  '.stage_' num2str(stage) '.shot_' num2str(shot) '.' component '.mtx'];
-seismogramtrue=readSeismogram(filename);
+seismogramtrue=readSeismogramfromMtx(filename);
 
 T=1*DT:DT:size(seismogramtrue,2)*DT;
 %% Plot seismogram

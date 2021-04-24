@@ -8,6 +8,8 @@
 #include <Wavefields/WavefieldsFactory.hpp>
 #include <WavefieldsEM/WavefieldsFactory.hpp>
 #include <Configuration/Configuration.hpp>
+#include <Modelparameter/Modelparameter.hpp>
+#include <ModelparameterEM/Modelparameter.hpp>
 
 namespace KITGPI
 {

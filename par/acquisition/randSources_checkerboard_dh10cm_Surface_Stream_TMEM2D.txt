@@ -1,4 +1,5 @@
 # ShotNumber records during inversion
 # random source type = 1 (0=all sequential shot, 1=numShotDomains random shot, 2=numShotDomains sequential shot)
 # Stage | Iteration | shotNumbers
-    1         1        5   3   4
+    1         1        1   5   3
+    1         2        2   0   3
