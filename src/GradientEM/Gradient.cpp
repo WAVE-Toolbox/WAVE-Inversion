@@ -166,9 +166,9 @@ scai::lama::SparseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::get
     return eraseVector;
 }
 
-/*! \brief execute parameterisation of modelEM parameters */
+/*! \brief apply parameterisation of modelEM parameters */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::exParameterisation(ValueType &modelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
+void KITGPI::Gradient::GradientEM<ValueType>::applyParameterisation(ValueType &modelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
 {    
     switch (parameterisation) {
         case 3:            // sqrt  
@@ -190,7 +190,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::exParameterisation(ValueType &mode
 
 /*! \brief execute parameterisation of modelEM parameters */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::exParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
+void KITGPI::Gradient::GradientEM<ValueType>::applyParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
 {    
     switch (parameterisation) {
         case 3:            // sqrt  
@@ -212,7 +212,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::exParameterisation(scai::lama::Den
 
 /*! \brief delete parameterisation of modelEM parameters */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::deParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
+void KITGPI::Gradient::GradientEM<ValueType>::deleteParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
 {     
     switch (parameterisation) {
         case 3:            // sqrt   
@@ -381,8 +381,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
     scai::hmemo::ContextPtr ctx = dielectricPermittivityEMtemp.getContextPtr();
     scai::dmemo::DistributionPtr distEM = dielectricPermittivityEMtemp.getDistributionPtr();   
       
-    this->exParameterisation(conductivityEMtemp, ConductivityReference, modelEM.getParameterisation());       
-    this->exParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());       
+    this->applyParameterisation(conductivityEMtemp, ConductivityReference, modelEM.getParameterisation());       
+    this->applyParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());       
                
     if (workflowEM.getInvertForEpsilonEM()) {
         tempX = DxfEM * dielectricPermittivityEMtemp;    
@@ -458,8 +458,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
     conductivityEMtemp = modelEM.getConductivityEM();
     dielectricPermittivityEMtemp = modelEM.getDielectricPermittivityEM();  
         
-    this->exParameterisation(conductivityEMtemp, ConductivityReference, modelEM.getParameterisation());       
-    this->exParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());       
+    this->applyParameterisation(conductivityEMtemp, ConductivityReference, modelEM.getParameterisation());       
+    this->applyParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());       
     
     scai::hmemo::ContextPtr ctx = dielectricPermittivityEMtemp.getContextPtr();
     scai::dmemo::DistributionPtr distEM = dielectricPermittivityEMtemp.getDistributionPtr();        
@@ -526,7 +526,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     ValueType const DielectricPermittivityVacuum = modelEM.getDielectricPermittivityVacuum();
         
     dielectricPermittivityEMtemp = modelEM.getDielectricPermittivityEM();
-    this->exParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());      
+    this->applyParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, modelEM.getParameterisation());      
                
     modelDerivativeXtemp = dataMisfit.getModelDerivativeX();  
     modelDerivativeYtemp = dataMisfit.getModelDerivativeY();

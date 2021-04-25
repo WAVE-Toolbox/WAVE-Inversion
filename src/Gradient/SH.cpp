@@ -276,7 +276,6 @@ void KITGPI::Gradient::SH<ValueType>::minusAssign(KITGPI::Gradient::Gradient<Val
 template <typename ValueType>
 void KITGPI::Gradient::SH<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-
     density += rhs.getDensity();
     velocityS += rhs.getVelocityS();
     porosity += rhs.getPorosity();
@@ -318,16 +317,34 @@ template <typename ValueType>
 void KITGPI::Gradient::SH<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {    
     scai::lama::DenseVector<ValueType> temp;   
-    if (lhs.getParameterisation() == 2 || lhs.getParameterisation() == 1) {   
+    if (lhs.getParameterisation() == 1 || lhs.getParameterisation() == 2) {   
         temp = lhs.getPorosity() - rhs.getPorosity();
         lhs.setPorosity(temp);
         temp = lhs.getSaturation() - rhs.getSaturation();
         lhs.setSaturation(temp);       
-    } else {
+    } else if (lhs.getParameterisation() == 3) {
         temp = lhs.getVelocityS() - rhs.getVelocityS();
         lhs.setVelocityS(temp);
         temp = lhs.getDensity() - rhs.getDensity();
         lhs.setDensity(temp);
+    } else if (lhs.getParameterisation() == 0) {
+        scai::lama::DenseVector<ValueType> mu;
+        scai::lama::DenseVector<ValueType> rho;
+
+        rho = lhs.getDensity();
+        
+        mu = scai::lama::pow(lhs.getVelocityS(), 2);
+        mu *= rho;
+                
+        rho -= rhs.getDensity();
+        mu -= rhs.getVelocityS();
+        
+        lhs.setDensity(rho);
+        
+        temp = mu / rho;
+        temp = scai::lama::sqrt(temp);
+        Common::replaceInvalid<ValueType>(temp, 0.0);
+        lhs.setVelocityS(temp);
     }
 };
 
@@ -437,39 +454,66 @@ void KITGPI::Gradient::SH<ValueType>::sumGradientPerShot(KITGPI::Gradient::Gradi
 template <typename ValueType>
 void KITGPI::Gradient::SH<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {    
-    ValueType maxValue;      
+    ValueType maxValue = 0;      
     
-    IndexType scaleGradient = config.get<IndexType>("scaleGradient");
-    if (scaleGradient == 1) {
-        if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {
-            velocityS *= 1 / velocityS.maxNorm() * model.getVelocityS().maxNorm();
+    IndexType scaleGradient = config.get<IndexType>("scaleGradient");    
+    if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {
+        if (scaleGradient == 1) {
+            if (model.getParameterisation() == 3) {
+                maxValue = model.getVelocityS().maxNorm();
+            } else if (model.getParameterisation() == 0) {
+                scai::lama::DenseVector<ValueType> mu;
+                mu = scai::lama::pow(model.getVelocityS(), 2);
+                mu *= model.getDensity();
+                maxValue = mu.maxNorm();
+            }
+        } else if (scaleGradient == 2) {
+            if (model.getParameterisation() == 3) {
+                maxValue = config.get<ValueType>("upperVSTh") - config.get<ValueType>("lowerVSTh");
+            } else if (model.getParameterisation() == 0) {
+                ValueType muMax;
+                ValueType muMin;
+                muMax = pow(config.get<ValueType>("upperVSTh"), 2);
+                muMax *= config.get<ValueType>("upperDensityTh");
+                muMin = pow(config.get<ValueType>("lowerVSTh"), 2);
+                muMin *= config.get<ValueType>("lowerDensityTh");
+                maxValue = muMax - muMin;
+            }
         }
-        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
-            density *= 1 / density.maxNorm() * model.getDensity().maxNorm();
-        }    
-        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {        
-            porosity *= 1 / porosity.maxNorm() * model.getPorosity().maxNorm();
-        }    
-        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) {       
-            saturation *= 1 / saturation.maxNorm() * model.getSaturation().maxNorm();        
-        } 
-    } else if (scaleGradient == 2) {
-        if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {
-            maxValue = config.get<ValueType>("upperVSTh") - config.get<ValueType>("lowerVSTh");
-            velocityS *= 1 / velocityS.maxNorm() * maxValue;
+        velocityS *= 1 / velocityS.maxNorm() * maxValue;
+    }
+    
+    if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
+        if (model.getParameterisation() != 1 && model.getParameterisation() != 2) {
+            if (scaleGradient == 1) {
+                maxValue = model.getDensity().maxNorm();
+            } else if (scaleGradient == 2) {
+                maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
+            }
         }
-        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
-            maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
-            density *= 1 / density.maxNorm() * maxValue;
-        }    
-        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {  
-            maxValue = config.get<ValueType>("upperPorosityTh") - config.get<ValueType>("lowerPorosityTh");      
-            porosity *= 1 / porosity.maxNorm() * maxValue;
-        }    
-        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) {  
-            maxValue = config.get<ValueType>("upperSaturationTh") - config.get<ValueType>("lowerSaturationTh");     
-            saturation *= 1 / saturation.maxNorm() * maxValue;        
-        } 
+        density *= 1 / density.maxNorm() * maxValue;
+    }    
+    
+    if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {
+        if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+            if (scaleGradient == 1) {
+                maxValue = model.getPorosity().maxNorm();
+            } else if (scaleGradient == 2) {
+                maxValue = config.get<ValueType>("upperPorosityTh") - config.get<ValueType>("lowerPorosityTh");
+            }
+        }        
+        porosity *= 1 / porosity.maxNorm() * maxValue;
+    }    
+    
+    if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) { 
+        if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+            if (scaleGradient == 1) {
+                maxValue = model.getSaturation().maxNorm();
+            } else if (scaleGradient == 2) {
+                maxValue = config.get<ValueType>("upperSaturationTh") - config.get<ValueType>("lowerSaturationTh");
+            }
+        }              
+        saturation *= 1 / saturation.maxNorm() * maxValue;        
     }
 }
 
@@ -528,32 +572,42 @@ void KITGPI::Gradient::SH<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::Ze
     Common::replaceInvalid<ValueType>(gradMu, 0.0);
 
     gradMu *= correlatedWavefields.getXcorrMuC();
-    gradMu *= -DT;
+    gradMu *= -DT;        
         
     scai::hmemo::ContextPtr ctx = gradMu.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradMu.getDistributionPtr();
              
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+        gradRho = -DT * correlatedWavefields.getXcorrRho(); 
+    }
+    
     if (workflow.getInvertForVs()) {
-        //grad_vs = 2 * rho *vs * gradMu
-        velocityS = 2 * gradMu;
-        velocityS *= model.getDensity();
-        velocityS *= model.getVelocityS();
+        if (model.getParameterisation() == 0) {
+            velocityS = gradMu;
+        } else if (model.getParameterisation() == 3) {
+            //grad_vs = 2 * rho *vs * gradMu
+            velocityS = 2 * gradMu;
+            velocityS *= model.getDensity();
+            velocityS *= model.getVelocityS();
+        }
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }
 
-    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        //grad_densityRaw
-        //grad_density' = vs^2 * gradMu + (-) (sum(i) (dt Vadj,i * dVfw,i/dt))
-        density = scai::lama::pow(model.getVelocityS(), 2);
-        density *= gradMu;
-        gradRho = -DT * correlatedWavefields.getXcorrRho();  
-        density += gradRho;
+    if (workflow.getInvertForDensity()) {
+        if (model.getParameterisation() == 0) {
+            density = gradRho;            
+        } else if (model.getParameterisation() == 3) {
+            //grad_density' = vs^2 * gradMu + (-) (sum(i) (dt Vadj,i * dVfw,i/dt))
+            density = scai::lama::pow(model.getVelocityS(), 2);
+            density *= gradMu;
+            density += gradRho;
+        }
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }
     
-    if (workflow.getInvertForPorosity()) {       
+    if (workflow.getInvertForPorosity() && (model.getParameterisation() == 1 || model.getParameterisation() == 2)) {       
         scai::lama::DenseVector<ValueType> rho_satDePorosity;
         scai::lama::DenseVector<ValueType> mu_satDePorosity;
         // Based on Gassmann equation   

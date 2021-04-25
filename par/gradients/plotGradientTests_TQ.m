@@ -19,8 +19,8 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-parameter='vs';   % model parameter
-stage=3;
+parameter='density';   % model parameter
+stage=1;
 iteration=1;
 shotnr=0;
 gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative
