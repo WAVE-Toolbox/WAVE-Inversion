@@ -4,7 +4,7 @@ addpath('../common');
 
 modelName = 'sunken_dh10cm';
 observationType = 'Surface';
-equationType = 'Elastic';
+equationType = 'TMEM';
 NoiseType = 'Noise';
 modelType = 'Inv';
 HPCType = 'HPC';
@@ -19,7 +19,7 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-parameter='density';   % model parameter
+parameter='sigmaEM';   % model parameter
 stage=1;
 iteration=1;
 shotnr=0;

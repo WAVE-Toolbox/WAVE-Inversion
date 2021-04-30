@@ -181,6 +181,9 @@ void KITGPI::Gradient::GradientEM<ValueType>::applyParameterisation(ValueType &m
             modelParameter /= modelParameterReference;
             modelParameter += 1; // in case that modelParameter = 0
             modelParameter = log(modelParameter); 
+            if (std::isnan(modelParameter) || modelParameter == std::numeric_limits<ValueType>::infinity() || -modelParameter == std::numeric_limits<ValueType>::infinity()) {
+                modelParameter = 0.0;
+            }
             break;
         default:          // case 0: no parameterisation 
             // x/x_0   
@@ -203,6 +206,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::applyParameterisation(scai::lama::
             vecModelParameter /= modelParameterReference;
             vecModelParameter += 1; // in case that vecModelParameter = 0
             vecModelParameter = scai::lama::log(vecModelParameter); 
+            Common::replaceInvalid<ValueType>(vecModelParameter, 0.0);
             break;
         default:          // case 0: no parameterisation 
             // x/x_0   
