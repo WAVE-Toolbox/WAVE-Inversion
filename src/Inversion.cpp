@@ -531,32 +531,32 @@ int main(int argc, char *argv[])
     if (inversionType != 0) {
         // load starting model
         if (!useStreamConfig) {    
-            model->init(config, ctx, dist, modelCoordinates);
-            modelPriori->init(config, ctx, dist, modelCoordinates);
             model->prepareForInversion(config, commShot);
             modelPriori->prepareForInversion(config, commShot);
-        } else {
-            model->init(configBig, ctx, distBig, modelCoordinatesBig);   
-            modelPriori->init(configBig, ctx, distBig, modelCoordinatesBig);
-            modelPerShot->init(config, ctx, dist, modelCoordinates);  
+            model->init(config, ctx, dist, modelCoordinates);
+            modelPriori->init(config, ctx, dist, modelCoordinates);
+        } else { 
             model->prepareForInversion(config, commShot);
             modelPriori->prepareForInversion(config, commShot);
             modelPerShot->prepareForInversion(config, commShot); // prepareForInversion is necessary for modelPerShot to calculate gradient.
+            model->init(configBig, ctx, distBig, modelCoordinatesBig);   
+            modelPriori->init(configBig, ctx, distBig, modelCoordinatesBig);
+            modelPerShot->init(config, ctx, dist, modelCoordinates); 
         }
     }    
     if (inversionTypeEM != 0 || exchangeStrategy == 4 || exchangeStrategy == 6) {
         if (!useStreamConfigEM) {    
-            modelEM->init(configEM, ctx, distEM, modelCoordinatesEM);
-            modelPrioriEM->init(configEM, ctx, distEM, modelCoordinatesEM);
             modelEM->prepareForInversion(configEM, commShot);
             modelPrioriEM->prepareForInversion(configEM, commShot);
+            modelEM->init(configEM, ctx, distEM, modelCoordinatesEM);
+            modelPrioriEM->init(configEM, ctx, distEM, modelCoordinatesEM);
         } else {
-            modelEM->init(configBigEM, ctx, distBigEM, modelCoordinatesBigEM);  
-            modelPrioriEM->init(configBigEM, ctx, distBigEM, modelCoordinatesBigEM);
-            modelPerShotEM->init(configEM, ctx, distEM, modelCoordinatesEM);  
             modelEM->prepareForInversion(configEM, commShot);
             modelPrioriEM->prepareForInversion(configEM, commShot);
             modelPerShotEM->prepareForInversion(configEM, commShot);// prepareForInversion is necessary for modelPerShot to calculate gradient.
+            modelEM->init(configBigEM, ctx, distBigEM, modelCoordinatesBigEM);  
+            modelPrioriEM->init(configBigEM, ctx, distBigEM, modelCoordinatesBigEM);
+            modelPerShotEM->init(configEM, ctx, distEM, modelCoordinatesEM);  
         }
     }
 

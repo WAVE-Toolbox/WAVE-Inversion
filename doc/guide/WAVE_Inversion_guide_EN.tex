@@ -266,7 +266,7 @@ In order to extract information about the structure and composition of the crust
 solutions to the wave equations do not exist for most subsurface configurations, the solutions can be obtained only by numerical methods. \\
 When it comes to ground penetrating radar (GPR), FWI was introduced to crosshole GPR first by \cite{ernst2007full} and applied to the field data by \cite{ernst2007application} to recover the relative dielectric permittivity $\varepsilon_r$ and electric conductivity $\sigma_e$. Then the theory of GPR FWI was improved by \cite{meles2010new} to a vector formalisation and to simultaneously update  $\varepsilon_r$ and $\sigma_e$. For more details about the development of GPR FWI in the last decade, the readers are recommended to the review paper of \cite{klotzsche2019review}.\\
 For iterative calculations of synthetic seismograms or radargrams with limited computer resources fast and accurate modeling methods are needed. The FWI program WAVE-Inversion (C++) is using the finite difference simulation software WAVE-Simulation (insert link). It is also possible to use the WAVE-Inversion library with different simulation software.\\
-In the following sections, by taking 3D elastic wave equation as an example, we give a short description of the derivation of the gradients of the objective function and how the program is used and executed. In the current version of WAVE-Inversion, FWI of viscoelastic is possible with the passive parameters $\tau_p$ and $\tau_s$, which actually use the same gradient derived from elastic wave equation. The others such as the acoustic, EM and visco-EM wave equations are shown in the appendix \ref{sec:Acoustic_wave_equation}-\ref{sec:Visco_EM_wave_equation}.
+In the following sections, by taking 3D elastic wave equation as an example, we give a short description of the derivation of the gradients of the objective function and how the program is used and executed. In the current version of WAVE-Inversion, FWI of viscoelastic is possible with the passive parameters $\tau^p$ and $\tau^s$, which actually use the same gradient derived from elastic wave equation. The others such as the acoustic, EM and visco-EM wave equations are shown in the appendix \ref{sec:Acoustic_wave_equation}-\ref{sec:Visco_EM_wave_equation}.
 We recommend you to read the theory of seismic FWI from IFOS2D and IFOS3D first for better understanding of the adjoint method we used. 
 % -----------------------------------------------------------------------------------------------
 \cleardoublepage
@@ -595,6 +595,7 @@ The program will create a log file with the name specified by \verb+logFilename+
          exchangeStrategy               & Strategy of model exchange (0, 1, 2, 3, 4, 5 and 6)                                                    & int & 0  \\
          breakLoopType               & Type of breaking loop (0, 1 and 2)                                                    & int & 0  \\
          misfitType               & Type of misfit (L2, L7, L8 and L278)                                                    & string & L2  \\
+         misfitTypeFilename               & Filename of misfit type                                                    & string & logs/misfitType.txt  \\
          DTInversion              & Factor of DT to save time in gradient calculation   &  int   & 1 \\
          DHInversion              & Factor of DH to save memory in gradient calculation   &  int   & 1 \\
          optimizationType         & Type of optimization                                     & string & conjugateGradient \\
@@ -611,7 +612,7 @@ The program will create a log file with the name specified by \verb+logFilename+
 	\end{adjustbox}
 \end{table}
 
-\subsubsection{Individual/Joint inversion}
+\subsubsection{Individual/Joint inversion} 
 Due to that we have included the forward solver of both seismic wave equations and EM wave equations in WAVE-Simulation, it is possible to run an individual inversion of one wave by \verb+inversionType+=1 or run a joint inversion of seismic and EM waves by \verb+inversionType+=2 or 3 in table \ref{tab:config_general_inversion_setting}. \verb+inversionType+=2 and 3 are corresponding to JSI and joint petrophysical inversion (JPI), respectively. In JSI, it is assumed that the coupled parameter models share similar structures and the structural similarity is enhanced by cross-gradient during the inversion \citep{gallardo2003characterization}. JPI is based on empirical or experimental petrophysical relationships that connect different physical parameters through the common petrophysical properties, i.e., porosity and saturation \citep{qin2021joint}. If you work with OpenMPI, you may use the following command in \shellcmdline{start\_Inversion.sh} to run an individual inversion:\\
     \shellcmd{mpirun ./../build/bin/Inversion "configuration/configuration\_Elastic2D.txt"}\\
 or run a joint inversion by:\\
@@ -624,8 +625,28 @@ The parameter \verb+exchangeStrategy+ defines the rule of model self-constraint 
 In case of two configuration files are imported into the software, you may set \verb+breakLoopType+=0 for two individual inversions, which ensures that the iteration loop of one inversion will not be affected by another inversion. If you set \verb+breakLoopType+=1 for joint inversion, then the iteration loop will be broken when one of the inversions satisfies its abort criterion. \verb+breakLoopType+= 2 means the iteration loop can be broken only if both the two abort criteria are satisfied.
 
 \subsubsection{Misfit}
-The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_general_inversion_setting}. Currently, the misfit type of L2 (L2 norm), L7 (normalized L2 norm), L8 (envelope L2 norm) and L278 (randomly choose one of L2, L7 and L8 as a misfit function for each shot) are available. Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+ = 1. This option is recommended for seismic field data.
+The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_general_inversion_setting}. Currently, the misfit type of L2 (L2 norm), L7 (normalized L2 norm), L8 (envelope L2 norm) and L278 (randomly choose one of L2, L7 and L8 as a misfit function for each shot) are available. 
 
+In WAVE-Simulation, we have introduced that \verb+useRandSource+ can be used to apply random shot inversion. Here, we show an example of random shot inversion with \verb+useRandSource+ = 1, \verb+NumShotDomains+ = 3 and 6 shots in total:
+\begin{verbatim}
+# ShotNumber records during inversion
+# random source type = 1 (0=all sequential shot,
+# 1=numShotDomains random shot, 2=numShotDomains sequential shot)
+# Stage | Iteration | shotNumbers
+    1         1        3   5   0
+    1         2        3   4   5
+\end{verbatim}
+If \verb+misfitType=L278+, then file \verb+misfitTypeFilename+ will be called to output the misfit type records during the random misfitType inversion.
+\begin{verbatim}
+# MisfitType records during inversion
+# random misfit type = L278
+# Stage | Iteration | misfitTypes
+    1         1       l7  l7  l2
+    1         2       l7  l2  l8
+\end{verbatim}
+Of course \verb+misfitType+ and \verb+useRandSource+ are independent. So you can implement the random objective waveform inversion (ROWI) \citep{pan2020random} by setting \verb+misfitType=L278+, \verb+useRandSource+ = 1 and \verb+NumShotDomains+ = 1, or implement the ROWI with shot parallelization by setting \verb+misfitType=L278+, \verb+useRandSource+ = 1 and \verb+NumShotDomains+ > 1, or set \verb+useRandSource+ = 1 to implement random source inversion with the same misfit function, or set \verb+misfitType=L278+ to implement random misfit inversion with all shots (\verb+useRandSource+ = 0) or sequential shots (\verb+useRandSource+ = 2).
+
+Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+ = 1. This option is recommended for seismic field data.
 The parameter \verb+DTInversion+ defines the factor of \verb+DT+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second time sample is picked. The highest possible value depends on the wave length.
 The parameter \verb+DHInversion+ defines the factor of \verb+DH+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second model space sample is picked. The highest possible value depends on the model resolution you want to obtain.
 
