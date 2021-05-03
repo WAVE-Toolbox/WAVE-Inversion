@@ -1166,7 +1166,7 @@ int main(int argc, char *argv[])
                     }  
                     crossGradientDerivative->applyMedianFilter(config); 
                     crossGradientDerivative->normalize();  
-                    if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                    if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradient", config.get<IndexType>("FileFormat"), workflow);
                     }
                                             
@@ -1176,7 +1176,7 @@ int main(int argc, char *argv[])
                     }  
                     crossGradientDerivative->applyMedianFilter(config); 
                     crossGradientDerivative->normalize();              
-                    if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                    if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradientDerivative", config.get<IndexType>("FileFormat"), workflow);
                     }      
                     if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1 ) < 0)) {
@@ -1203,7 +1203,7 @@ int main(int argc, char *argv[])
                     }  
                     stabilizingFunctionalGradient->applyMedianFilter(config);  
                     stabilizingFunctionalGradient->normalize();  
-                    if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                    if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         stabilizingFunctionalGradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".stabilizingFunctionalGradient", config.get<IndexType>("FileFormat"), workflow);
                     }  
                     if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1 ) < 0)) {
@@ -1221,7 +1221,7 @@ int main(int argc, char *argv[])
                 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
-                if (config.get<IndexType>("writeGradient") && commInterShot->getRank() == 0) {
+                if (config.get<IndexType>("writeGradient") == 1 && commInterShot->getRank() == 0) {
                     gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
                 }
                 
@@ -1589,7 +1589,7 @@ int main(int argc, char *argv[])
                     }  
                     crossGradientDerivativeEM->applyMedianFilter(configEM);  
                     crossGradientDerivativeEM->normalize();  
-                    if (configEM.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                    if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradient", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  
                     
@@ -1599,7 +1599,7 @@ int main(int argc, char *argv[])
                     }   
                     crossGradientDerivativeEM->applyMedianFilter(configEM);      
                     crossGradientDerivativeEM->normalize();   
-                    if (configEM.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                    if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradientDerivative", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }             
                     if ((workflowEM.iteration > 0) && (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration) - 0.01 * dataMisfitEM->getMisfitSum(workflowEM.iteration - 1 ) < 0)) {
@@ -1626,7 +1626,7 @@ int main(int argc, char *argv[])
                     }  
                     stabilizingFunctionalGradientEM->applyMedianFilter(configEM);  
                     stabilizingFunctionalGradientEM->normalize();  
-                    if (configEM.get<IndexType>("writeGradient") && commInterShot->getRank() == 0){
+                    if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         stabilizingFunctionalGradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".stabilizingFunctionalGradientEM", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  
                     if ((workflowEM.iteration > 0) && (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration) - 0.01 * dataMisfitEM->getMisfitSum(workflowEM.iteration - 1 ) < 0)) {
@@ -1643,7 +1643,7 @@ int main(int argc, char *argv[])
 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
-                if (configEM.get<IndexType>("writeGradient") && commInterShot->getRank() == 0) {
+                if (configEM.get<IndexType>("writeGradient") == 1 && commInterShot->getRank() == 0) {
                     gradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), configEM.get<IndexType>("FileFormat"), workflowEM);
                 }
                 
