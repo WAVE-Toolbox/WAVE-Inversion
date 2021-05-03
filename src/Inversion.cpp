@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
         if (config.get<IndexType>("useRandSource") != 0) { 
             maxcount = ceil((ValueType)maxiterations * numShotDomains / numshots);
         }
-        if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark")) {
+        if (config.get<IndexType>("useReceiversPerShot") == 0) {
             receivers.init(config, modelCoordinates, ctx, dist);
         }
     }
@@ -517,7 +517,7 @@ int main(int argc, char *argv[])
         if (configEM.get<IndexType>("useRandSource") != 0) { 
             maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM);
         }    
-        if (!configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark")) {
+        if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
             receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM);
         }
     }
@@ -591,14 +591,14 @@ int main(int argc, char *argv[])
     Taper::Taper1D<ValueType> seismogramTaper1DEM;
     
     if (inversionType != 0) {
-        if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark")) {
+        if (config.get<IndexType>("useReceiversPerShot") == 0) {
             receiversTrue.init(config, modelCoordinates, ctx, dist);
             receiversStart.init(config, modelCoordinates, ctx, dist);
         }
         seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
     }
     if (inversionTypeEM != 0) {
-        if (!configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark")) {
+        if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
             receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM);
             receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM);
         }
@@ -623,10 +623,10 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> adjointSources;
     Acquisition::ReceiversEM<ValueType> adjointSourcesEM;
-    if (inversionType != 0 && !config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark"))
+    if (inversionType != 0 && config.get<IndexType>("useReceiversPerShot") == 0)
         adjointSources.init(config, modelCoordinates, ctx, dist);
 
-    if (inversionTypeEM != 0 && !configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark"))
+    if (inversionTypeEM != 0 && configEM.get<IndexType>("useReceiversPerShot") == 0)
         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM);
     
     /* --------------------------------------- */
@@ -754,7 +754,7 @@ int main(int argc, char *argv[])
     Taper::Taper2D<ValueType> modelTaper2DJoint;
     
     if (inversionType != 0) {
-        if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark"))
+        if (config.get<IndexType>("useReceiversPerShot") == 0)
             ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
         if (config.get<bool>("useGradientTaper")) {
             if (!useStreamConfig) {
@@ -769,7 +769,7 @@ int main(int argc, char *argv[])
         wavefieldTaper2D.calcInversionAverageMatrix(modelCoordinates, modelCoordinatesInversion);  
     }
     if (inversionTypeEM != 0) {
-        if (!configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark"))
+        if (configEM.get<IndexType>("useReceiversPerShot") == 0)
             ReceiverTaperEM.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
         if (configEM.get<bool>("useGradientTaper")) {
             if (!useStreamConfigEM) {   
@@ -936,14 +936,14 @@ int main(int argc, char *argv[])
                         solver->prepareForModelling(*modelPerShot, config.get<ValueType>("DT"));
                     }
 
-                    if (config.get<bool>("useReceiversPerShot")) {
+                    if (config.get<IndexType>("useReceiversPerShot") == 1) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
                         receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
 
                         ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
-                    } else if (config.get<bool>("useReceiverMark")) {
+                    } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
@@ -1109,7 +1109,7 @@ int main(int argc, char *argv[])
                         energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
                     }
                     
-                    if (config.get<bool>("useReceiversPerShot") || config.get<bool>("useReceiverMark"))
+                    if (config.get<IndexType>("useReceiversPerShot") != 0)
                         ReceiverTaper.apply(*gradientPerShot);
 
                     gradientPerShot->normalize();
@@ -1142,7 +1142,7 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
             
                 /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-                if (!config.get<bool>("useReceiversPerShot") && !config.get<bool>("useReceiverMark"))
+                if (config.get<IndexType>("useReceiversPerShot") == 0)
                     ReceiverTaper.apply(*gradient);
                 
                 if (config.get<bool>("useGradientTaper"))
@@ -1359,14 +1359,14 @@ int main(int argc, char *argv[])
                         solverEM->prepareForModelling(*modelPerShotEM, configEM.get<ValueType>("DT"));
                     }
 
-                    if (configEM.get<bool>("useReceiversPerShot")) {
+                    if (configEM.get<IndexType>("useReceiversPerShot") == 1) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
 
                         ReceiverTaperEM.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
-                    } else if (configEM.get<bool>("useReceiverMark")) {
+                    } else if (configEM.get<IndexType>("useReceiversPerShot") == 2) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
@@ -1532,7 +1532,7 @@ int main(int argc, char *argv[])
                         energyPrecondEM.apply(*gradientPerShotEM, shotNumber, configEM.get<IndexType>("FileFormat"));
                     }
                     
-                    if (configEM.get<bool>("useReceiversPerShot") || configEM.get<bool>("useReceiverMark"))
+                    if (configEM.get<IndexType>("useReceiversPerShot") != 0)
                         ReceiverTaperEM.apply(*gradientPerShotEM);
 
                     gradientPerShotEM->normalize();
@@ -1565,7 +1565,7 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration) << "\n");
             
                 /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-                if (!configEM.get<bool>("useReceiversPerShot") && !configEM.get<bool>("useReceiverMark"))
+                if (configEM.get<IndexType>("useReceiversPerShot") == 0)
                     ReceiverTaperEM.apply(*gradientEM);
 
                 if (configEM.get<bool>("useGradientTaper"))
@@ -1778,10 +1778,10 @@ int main(int argc, char *argv[])
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
-                    if (config.get<bool>("useReceiversPerShot")) {
+                    if (config.get<IndexType>("useReceiversPerShot") == 1) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
-                    } else if (config.get<bool>("useReceiverMark")) {
+                    } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                     }
@@ -1891,10 +1891,10 @@ int main(int argc, char *argv[])
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
-                    if (configEM.get<bool>("useReceiversPerShot")) {
+                    if (configEM.get<IndexType>("useReceiversPerShot") == 1) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
-                    } else if (configEM.get<bool>("useReceiverMark")) {
+                    } else if (configEM.get<IndexType>("useReceiversPerShot") == 2) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                     }

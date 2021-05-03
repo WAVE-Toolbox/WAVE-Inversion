@@ -514,10 +514,10 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
         }
         
-        if (config.get<bool>("useReceiversPerShot")) {
+        if (config.get<IndexType>("useReceiversPerShot") == 1) {
             receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
             receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
-        } else if (config.get<bool>("useReceiverMark")) {
+        } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
             receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
             receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
         }
@@ -709,10 +709,10 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *testmodelPerShotEM, modelCoordinatesEM, shotNumber);
         }
         
-        if (configEM.get<bool>("useReceiversPerShot")) {
+        if (configEM.get<IndexType>("useReceiversPerShot") == 1) {
             receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
             receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
-        } else if (configEM.get<bool>("useReceiverMark")) {
+        } else if (configEM.get<IndexType>("useReceiversPerShot") == 2) {
             receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
             receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
         }

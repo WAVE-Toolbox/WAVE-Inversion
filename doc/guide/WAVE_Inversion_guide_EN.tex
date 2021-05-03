@@ -565,10 +565,10 @@ As mentioned in the quick guide, the configuration can be found in \shellcmd{par
 	\toprule
          Variable                 & Short description                                                   & Type   & Example value \\
 	\midrule
-         fieldSeisName            & Name of field data                                                  & string & ci/rectangle.true  \\    
+         fieldSeisName            & Filename-prefix of field data                                                  & string & ci/rectangle.true  \\    
          writeGradient            & Write gradient to file                                              &  int   & 1 (=yes) \\
          writeGradientPerShot     & Write gradient of each shot separately to file                      &  int   & 0 (=no) \\
-         gradientFilename         & Name of gradients                                                   & string & gradients/grad \\     
+         gradientFilename         & Filename-prefix of gradients                                                   & string & gradients/grad \\     
          logFilename              & Name of log file                                                    & string & logs/steplengthSearch.log  \\
 	\bottomrule
 	\end{tabular}
@@ -779,7 +779,7 @@ with $k$ as iteration number and $\alpha$ as step length. Thus, a step length of
          useSourceSignalInversion & Use source time inversion                                           &  int   & 0 (=no) \\
          waterLevel               & Water level of source time inversion                                & double & 0.01 \\
          writeInvertedSource      & Source signal will be written to disk                               &  int   & 1 (=yes) \\
-         sourceSeismogramFilename & Location/Name of output source signal                               & string & seismograms/invSource \\
+         sourceSeismogramFilename & Filename-prefix of output source signal                               & string & seismograms/invSource \\
          useSourceSignalTaper     & Use cosine taper for source signal                                  &  int   & 1 (=yes) \\
          sourceSignalTaperStart1  & Start index of first cosine taper                                   &  int   & 0 \\
          sourceSignalTaperEnd1    & End index of first cosine taper                                     &  int   & 100 \\
@@ -787,7 +787,7 @@ with $k$ as iteration number and $\alpha$ as step length. Thus, a step length of
          sourceSignalTaperEnd2    & End index of second cosine taper                                    &  int   & 0 \\
          maxOffsetSrcEst          & Maximum offset in grid points to allow                              &  int   & 0 \\
          useSeismogramTaper       & Use seismogram taper (0, 1 and 2)               &  int   & 0 (=no) \\
-         seismogramTaperName      & Location/Name of seismogram taper                                   & string & seismograms/seismoTaper \\
+         seismogramTaperName      & Filename-prefix of seismogram taper                                   & string & seismograms/seismoTaper \\
 	\bottomrule
 	\end{tabular}
 	\end{adjustbox}
@@ -815,11 +815,11 @@ A taper can also be used for the seismograms or radargrams by the parameter \ver
          sourceTaperRadius        & Circular source taper: Radius in grid points                        &  int   & 20 \\ 
          receiverTaperRadius      & Circular receiver taper: Radius in grid points                      &  int   & 20 \\
          useGradientTaper         & Use a taper for the gradient                                        &  int   & 0 (=no) \\
-         gradientTaperFilename    & Location/Name of the gradient taper                                 & string & \begin{tabular}{@{}l@{}}{gradients/} \\{gradientTaper}\end{tabular}   \\
+         gradientTaperFilename    & Filename-prefix of the gradient taper                                 & string & \begin{tabular}{@{}l@{}}{gradients/} \\{gradientTaper}\end{tabular}   \\
          useEnergyPreconditioning & \begin{tabular}{@{}l@{}}{Approximated diagonal of Hessian is applied to} \\{ gradient per shot}\end{tabular}    &  int   & 1 (=yes) \\ 
          epsilonHessian           & \begin{tabular}{@{}l@{}}{Water level to stabilize matrix inversion } \\{(recommended: 0.005)}\end{tabular}       & double & 0.005 \\      
          saveApproxHessian        & Save approximated diagonal of Hessian                               &  int   & 0 (=no) \\
-         approxHessianName        & Name of file for approximated diagonal of Hessian                   & string & gradients/Hessian \\
+         approxHessianName        & Filename-prefix for approximated diagonal of Hessian                   & string & gradients/Hessian \\
          normalizeGradient        & Normalize gradient of each shot                                     &  int   & 0 (=no) \\
          scaleGradient        & Scale gradient of each shot (0, 1 and 2)                                     &  int   & 1 \\
 	\bottomrule
