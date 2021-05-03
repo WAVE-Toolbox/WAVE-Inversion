@@ -31,7 +31,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
-    if (config.get<IndexType>("useRandSource") != 0) {  
+    if (config.get<IndexType>("useRandomSource") != 0) {  
         IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
@@ -90,7 +90,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     IndexType shotNumber;  
     IndexType shotIndTrue = 0;  
     for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
-        if (config.get<IndexType>("useRandSource") == 0) { 
+        if (config.get<IndexType>("useRandomSource") == 0) { 
             shotIndTrue = shotInd;
         } else {
             shotNumber = uniqueShotNosRand[shotInd];
@@ -208,7 +208,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     Acquisition::calcuniqueShotNo(uniqueShotNosEM, sourceSettingsEM);
     IndexType numshotsEM = uniqueShotNosEM.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDistEM;
-    if (configEM.get<IndexType>("useRandSource") != 0) {  
+    if (configEM.get<IndexType>("useRandomSource") != 0) {  
         IndexType numShotDomainsEM = configEM.get<IndexType>("NumShotDomains");
         shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
     } else {
@@ -267,7 +267,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     IndexType shotNumber;  
     IndexType shotIndTrue = 0;  
     for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd += testShotIncr) {
-        if (configEM.get<IndexType>("useRandSource") == 0) { 
+        if (configEM.get<IndexType>("useRandomSource") == 0) { 
             shotIndTrue = shotInd;
         } else {
             shotNumber = uniqueShotNosRandEM[shotInd];
@@ -426,7 +426,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
-    if (config.get<IndexType>("useRandSource") != 0) {  
+    if (config.get<IndexType>("useRandomSource") != 0) {  
         IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
@@ -485,7 +485,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     IndexType shotIndTrue = 0;  
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
-        if (config.get<IndexType>("useRandSource") == 0) {  
+        if (config.get<IndexType>("useRandomSource") == 0) {  
             shotNumber = uniqueShotNos[shotInd];
             shotIndTrue = shotInd;
         } else {
@@ -621,7 +621,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     Acquisition::calcuniqueShotNo(uniqueShotNosEM, sourceSettingsEM);
     IndexType numshotsEM = uniqueShotNosEM.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDistEM;
-    if (configEM.get<IndexType>("useRandSource") != 0) {  
+    if (configEM.get<IndexType>("useRandomSource") != 0) {  
         IndexType numShotDomainsEM = configEM.get<IndexType>("NumShotDomains");
         shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
     } else {
@@ -680,7 +680,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     IndexType shotIndTrue = 0;  
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd += testShotIncr) {
-        if (configEM.get<IndexType>("useRandSource") == 0) {  
+        if (configEM.get<IndexType>("useRandomSource") == 0) {  
             shotNumber = uniqueShotNosEM[shotInd];
             shotIndTrue = shotInd;
         } else {

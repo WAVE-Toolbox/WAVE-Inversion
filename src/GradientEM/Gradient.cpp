@@ -264,19 +264,19 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
     scai::lama::DenseVector<ValueType> temp;  
 
     // \pdv{\sigma_e}{\phi} = \frac{m}{a} \sigma_{ew} \phi^{m-1} S_w^{n}
-    ValueType a_Archietemp;
-    ValueType m_Archietemp;
-    ValueType n_Archietemp;
-    a_Archietemp = modelEM.getArchie_a();
-    m_Archietemp = modelEM.getArchie_m();
-    n_Archietemp = modelEM.getArchie_n();
+    ValueType aArchietemp;
+    ValueType mArchietemp;
+    ValueType nArchietemp;
+    aArchietemp = modelEM.getArchie_a();
+    mArchietemp = modelEM.getArchie_m();
+    nArchietemp = modelEM.getArchie_n();
     // Based on Archie equation
     conductivityDePorosity = modelEM.getConductivityEMWater();   
-    conductivityDePorosity *= m_Archietemp / a_Archietemp;
-    temp = scai::lama::pow(modelEM.getPorosity(), m_Archietemp - 1); 
+    conductivityDePorosity *= mArchietemp / aArchietemp;
+    temp = scai::lama::pow(modelEM.getPorosity(), mArchietemp - 1); 
     Common::replaceInvalid<ValueType>(temp, 0.0);
     conductivityDePorosity *= temp;
-    temp = scai::lama::pow(modelEM.getSaturation(), n_Archietemp); 
+    temp = scai::lama::pow(modelEM.getSaturation(), nArchietemp); 
     conductivityDePorosity *= temp; 
     
     return conductivityDePorosity;
@@ -316,18 +316,18 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
     scai::lama::DenseVector<ValueType> temp;  
     
     // \pdv{\sigma_e}{S_w} = \frac{n}{a} \sigma_{ew} \phi^m S_w^{n-1}
-    ValueType a_Archietemp;
-    ValueType m_Archietemp;
-    ValueType n_Archietemp;
-    a_Archietemp = modelEM.getArchie_a();
-    m_Archietemp = modelEM.getArchie_m();
-    n_Archietemp = modelEM.getArchie_n();
+    ValueType aArchietemp;
+    ValueType mArchietemp;
+    ValueType nArchietemp;
+    aArchietemp = modelEM.getArchie_a();
+    mArchietemp = modelEM.getArchie_m();
+    nArchietemp = modelEM.getArchie_n();
     // Based on Archie equation
     conductivityDeSaturation = modelEM.getConductivityEMWater();   
-    conductivityDeSaturation *= n_Archietemp / a_Archietemp;
-    temp = scai::lama::pow(modelEM.getPorosity(), m_Archietemp); 
+    conductivityDeSaturation *= nArchietemp / aArchietemp;
+    temp = scai::lama::pow(modelEM.getPorosity(), mArchietemp); 
     conductivityDeSaturation *= temp;
-    temp = scai::lama::pow(modelEM.getSaturation(), n_Archietemp - 1); 
+    temp = scai::lama::pow(modelEM.getSaturation(), nArchietemp - 1); 
     Common::replaceInvalid<ValueType>(temp, 0.0);
     conductivityDeSaturation *= temp; 
     

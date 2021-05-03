@@ -478,12 +478,12 @@ int main(int argc, char *argv[])
             SCAI_ASSERT_ERROR(numshots == numCuts, "numshots != numCuts"); // check whether mdel pershot has been applied sucessfully.
             Acquisition::writeCutCoordToFile(config.get<std::string>("cutCoordinatesFilename"), cutCoordinates, uniqueShotNos);        
         }
-        if (config.get<IndexType>("useRandSource") != 0) {  
+        if (config.get<IndexType>("useRandomSource") != 0) {  
             shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
         } else {
             shotDist = dmemo::blockDistribution(numshots, commInterShot);
         }
-        if (config.get<IndexType>("useRandSource") != 0) { 
+        if (config.get<IndexType>("useRandomSource") != 0) { 
             maxcount = ceil((ValueType)maxiterations * numShotDomains / numshots);
         }
         if (config.get<IndexType>("useReceiversPerShot") == 0) {
@@ -509,12 +509,12 @@ int main(int argc, char *argv[])
             SCAI_ASSERT_ERROR(numshotsEM == numCutsEM, "numshotsEM != numCutsEM"); // check whether mdel pershot has been applied sucessfully.
             Acquisition::writeCutCoordToFile(configEM.get<std::string>("cutCoordinatesFilename"), cutCoordinatesEM, uniqueShotNosEM);        
         }    
-        if (configEM.get<IndexType>("useRandSource") != 0) {  
+        if (configEM.get<IndexType>("useRandomSource") != 0) {  
             shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
         } else {
             shotDistEM = dmemo::blockDistribution(numshotsEM, commInterShot);
         }     
-        if (configEM.get<IndexType>("useRandSource") != 0) { 
+        if (configEM.get<IndexType>("useRandomSource") != 0) { 
             maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM);
         }    
         if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
@@ -906,10 +906,10 @@ int main(int argc, char *argv[])
                 crossGradientDerivative->resetGradient();
                 misfitPerIt = 0;
 
-                if (config.get<IndexType>("useRandSource") != 0) { 
+                if (config.get<IndexType>("useRandomSource") != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRand, filterHistoryCount, uniqueShotNos, maxcount, config.get<IndexType>("useRandSource"));
-                    Acquisition::writeRandShotNosToFile(commAll, config.get<std::string>("randSourceFilename"), uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, config.get<IndexType>("useRandSource"));
+                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRand, filterHistoryCount, uniqueShotNos, maxcount, config.get<IndexType>("useRandomSource"));
+                    Acquisition::writeRandShotNosToFile(commAll, config.get<std::string>("randomSourceFilename"), uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, config.get<IndexType>("useRandomSource"));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
@@ -919,7 +919,7 @@ int main(int argc, char *argv[])
                 }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
-                    if (config.get<IndexType>("useRandSource") == 0) {  
+                    if (config.get<IndexType>("useRandomSource") == 0) {  
                         shotNumber = uniqueShotNos[shotInd];
                         shotIndTrue = shotInd;
                     } else {
@@ -1230,7 +1230,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */              
                 HOST_PRINT(commAll, "\n========== Check abort criteria 1 ==============\n"); 
                 
-                if (config.get<IndexType>("useRandSource") == 0) { 
+                if (config.get<IndexType>("useRandomSource") == 0) { 
                     breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
                 }
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
@@ -1329,10 +1329,10 @@ int main(int argc, char *argv[])
                 crossGradientDerivativeEM->resetGradient();
                 misfitPerItEM = 0;
 
-                if (configEM.get<IndexType>("useRandSource") != 0) { 
+                if (configEM.get<IndexType>("useRandomSource") != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRandEM, filterHistoryCountEM, uniqueShotNosEM, maxcountEM, configEM.get<IndexType>("useRandSource"));
-                    Acquisition::writeRandShotNosToFile(commAll, configEM.get<std::string>("randSourceFilename"), uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.get<IndexType>("useRandSource"));
+                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRandEM, filterHistoryCountEM, uniqueShotNosEM, maxcountEM, configEM.get<IndexType>("useRandomSource"));
+                    Acquisition::writeRandShotNosToFile(commAll, configEM.get<std::string>("randomSourceFilename"), uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.get<IndexType>("useRandomSource"));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
@@ -1342,7 +1342,7 @@ int main(int argc, char *argv[])
                 }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
-                    if (configEM.get<IndexType>("useRandSource") == 0) {  
+                    if (configEM.get<IndexType>("useRandomSource") == 0) {  
                         shotNumber = uniqueShotNosEM[shotInd];
                         shotIndTrue = shotInd;
                     } else {
@@ -1652,7 +1652,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */   
                 HOST_PRINT(commAll, "\n========== Check abort criteria 2 ==============\n");  
                        
-                if (configEM.get<IndexType>("useRandSource") == 0) {     
+                if (configEM.get<IndexType>("useRandomSource") == 0) {     
                     breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
                 }
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
@@ -1762,7 +1762,7 @@ int main(int argc, char *argv[])
                 }
                                                 
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
-                    if (config.get<IndexType>("useRandSource") == 0) {  
+                    if (config.get<IndexType>("useRandomSource") == 0) {  
                         shotNumber = uniqueShotNos[shotInd];
                         shotIndTrue = shotInd;
                     } else {
@@ -1875,7 +1875,7 @@ int main(int argc, char *argv[])
                 }
                                                 
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
-                    if (configEM.get<IndexType>("useRandSource") == 0) {  
+                    if (configEM.get<IndexType>("useRandomSource") == 0) {  
                         shotNumber = uniqueShotNosEM[shotInd];
                         shotIndTrue = shotInd;
                     } else {

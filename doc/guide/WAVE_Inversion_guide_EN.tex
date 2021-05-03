@@ -602,9 +602,9 @@ The program will create a log file with the name specified by \verb+logFilename+
          optimizationType         & Type of optimization                                     & string & conjugateGradient \\
          workflowFilename         & Name of workflow file                                               & string & workflow/workflow.txt \\
          parametersation            & Parameterisation type (0, 1, 2, 3 and 4) &  int   & 3  \\
-         a\_Archie            & Tortuosity factor in Archie equation &  double   & 2.0  \\
-         m\_Archie            & Porosity exponent in Archie equation &  double   & 0.4  \\
-         n\_Archie            & Saturation exponent in Archie equation &  double   & 1.13  \\
+         aArchie            & Tortuosity factor in Archie's equation &  double   & 2.0  \\
+         mArchie            & Porosity exponent in Archie's equation &  double   & 0.4  \\
+         nArchie            & Saturation exponent in Archie's equation &  double   & 1.13  \\
          stablizingFunctionalType            & Regularization type (0, 1 and 2) &  int   & 0  \\
          focusingParameter            & Focusing parameter used in stablizing functional &  double   & 1.0e-1  \\
          maxIterations            & \begin{tabular}{@{}l@{}}{Maximum number of inversion iterations} \\{per workflow stage}\end{tabular} &  int   & 20  \\
@@ -628,7 +628,7 @@ In case of two configuration files are imported into the software, you may set \
 \subsubsection{Misfit}
 The misfit definition has to be specified with the parameter \verb+misfitType+ which is shown together with other parameters in table \ref{tab:config_general_inversion_setting}. Currently, the misfit type of L2 (L2 norm), L7 (normalized L2 norm), L8 (envelope L2 norm) and L278 (randomly choose one of L2, L7 and L8 as a misfit function for each shot) are available. 
 
-In WAVE-Simulation, we have introduced that \verb+useRandSource+ can be used to apply random shot inversion. Here, we show an example of random shot inversion with \verb+useRandSource+ = 1, \verb+NumShotDomains+ = 3 and 6 shots in total:
+In WAVE-Simulation, we have introduced that \verb+useRandomSource+ can be used to apply random shot inversion. Here, we show an example of random shot inversion with \verb+useRandomSource+ = 1, \verb+NumShotDomains+ = 3 and 6 shots in total:
 \begin{verbatim}
 # ShotNumber records during inversion
 # random source type = 1 (0=all sequential shot,
@@ -637,7 +637,7 @@ In WAVE-Simulation, we have introduced that \verb+useRandSource+ can be used to 
     1         1        3   5   0
     1         2        3   4   5
 \end{verbatim}
-If \verb+misfitType=L278+, then file \verb+misfitTypeFilename+ will be called to output the misfit type records during the random misfitType inversion.
+If \verb+misfitType = L278+, then file \verb+misfitTypeFilename+ will be called to output the misfit type records during the random misfit inversion.
 \begin{verbatim}
 # MisfitType records during inversion
 # random misfit type = L278
@@ -645,11 +645,11 @@ If \verb+misfitType=L278+, then file \verb+misfitTypeFilename+ will be called to
     1         1       l7  l7  l2
     1         2       l7  l2  l8
 \end{verbatim}
-Of course \verb+misfitType+ and \verb+useRandSource+ are independent. So you can implement the random objective waveform inversion (ROWI) \citep{pan2020random} by setting \verb+misfitType=L278+, \verb+useRandSource+ = 1 and \verb+NumShotDomains+ = 1, or implement the ROWI with shot parallelization by setting \verb+misfitType=L278+, \verb+useRandSource+ = 1 and \verb+NumShotDomains+ > 1, or set \verb+useRandSource+ = 1 to implement random source inversion with the same misfit function, or set \verb+misfitType=L278+ to implement random misfit inversion with all shots (\verb+useRandSource+ = 0) or sequential shots (\verb+useRandSource+ = 2).
+Of course \verb+misfitType+ and \verb+useRandomSource+ are independent. So you can implement the random objective waveform inversion (ROWI) \citep{pan2020random} by setting \verb+misfitType = L278+, \verb+useRandomSource+ = 1 and \verb+NumShotDomains+ = 1, or implement the ROWI with shot parallelization by setting \verb+misfitType = L278+, \verb+useRandomSource+ = 1 and \verb+NumShotDomains+ > 1, or set \verb+useRandomSource+ = 1 to implement random source inversion with the same misfit function, or set \verb+misfitType = L278+ to implement random misfit inversion with all shots (\verb+useRandomSource+ = 0) or sequential shots (\verb+useRandomSource+ = 2).
 
 Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+ = 1. This option is recommended for seismic field data.
 The parameter \verb+DTInversion+ defines the factor of \verb+DT+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second time sample is picked. The highest possible value depends on the wave length.
-The parameter \verb+DHInversion+ defines the factor of \verb+DH+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second model space sample is picked. The highest possible value depends on the model resolution you want to obtain.
+The parameter \verb+DHInversion+ defines the factor of \verb+DH+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second model space sample is picked on each direction, consequently, 1/4 or 1/8 memory is called in 2D or 3D waveform inversion. The highest possible value depends on the model resolution you want to obtain.
 
 \subsubsection{Optimization}
 Currently, there are two different optimization methods available, the steepest descent and the conjugate gradient method. Both can be used with gradient preconditioning (see subsection \ref{config:precond}). The method has to be chosen with the parameter \verb+optimizationType+. Possible values are \verb+steepestDescent+ and \verb+conjugateGradient+. The characters are internally transformed to lowercase letters, so \verb+STEEPESTDESCENT+ would also be valid.
@@ -712,7 +712,7 @@ invertForSigmaEM invertForEpsilonEM invertForTauSigmaEM invertForTauEpsilonEM
 With the first four parameters it can be decided which GPR parameter class should be updated. The next seven parameters are the same as that defined in seismic workflow.
 
 \subsubsection{Parameterisation and regularization}
-Parameter \verb+parametersation+ specifies a type of parametersation with 0 = modulus parametersation ($\lambda$, $\mu$, $\rho$ in seismic inversion and $\varepsilon$, $\sigma_e$ in GPR inversion), 1 = petrophysical parametersation in which petrophysical parameters are estimated by S-wave modulus in seismic inversion or by permittivity in GPR inversion, 2 = petrophysical parametersation in which petrophysical parameters are estimated by seismic modulus and density in seismic inversion or by permittivity and conductivity in GPR inversion, 3 = velocity parameterisation in seismic inversion or sqrt the reciprocal in GPR inversion ($v=1/\sqrt{\mu_m \varepsilon}$ and $\widetilde{\sigma_e}=1/\sqrt{\sigma_e}$), 4 = the modified logarithmic parameterisation in GPR inversion. Gassmann equation, Archie equation and the complex refractive index model (CRIM) are employed in petrophysical parametersation, please see details in \cite{qin2021joint}. When \verb+parametersation+ = 0 or 3 or 4 is set, you should only use the seismic parameter class in \verb+workflowFilename+. In JPI, that would lead to indirect petrophysical parameterisation  that porosity will be estimated by the updated seismic parameters while saturation is unchanged in seismic inversion, or saturation will be estimated by the updated GPR parameters while porosity is unchanged in GPR inversion. On the contrast, if you choose \verb+parametersation+ = 1 or 2, then you should only use the petrophysical parameter class in \verb+workflowFilename+. In JPI, that would lead to direct petrophysical parameterisation that the seismic parameters or GPR parameters will be calculated from the updated petrophysical parameters. Once you use the petrophysical relationships in GPR inversion, you have to define Archie coefficients \verb+a_Archie+, \verb+m_Archie+ and \verb+n_Archie+ in order to link conductivity with porosity and saturation.
+Parameter \verb+parametersation+ specifies a type of parametersation with 0 = modulus parametersation ($\lambda$, $\mu$, $\rho$ in seismic inversion and $\varepsilon$, $\sigma_e$ in GPR inversion), 1 = petrophysical parametersation in which petrophysical parameters are estimated by S-wave modulus in seismic inversion or by permittivity in GPR inversion, 2 = petrophysical parametersation in which petrophysical parameters are estimated by seismic modulus and density in seismic inversion or by permittivity and conductivity in GPR inversion, 3 = velocity parameterisation in seismic inversion or sqrt the reciprocal in GPR inversion ($v=1/\sqrt{\mu_m \varepsilon}$ and $\widetilde{\sigma_e}=1/\sqrt{\sigma_e}$), 4 = the modified logarithmic parameterisation in GPR inversion. Gassmann equation, Archie's equation and the complex refractive index model (CRIM) are employed in petrophysical parametersation, please see details in \cite{qin2021joint}. When \verb+parametersation+ = 0 or 3 or 4 is set, you should only use the seismic parameter class in \verb+workflowFilename+. In JPI, that would lead to indirect petrophysical parameterisation  that porosity will be estimated by the updated seismic parameters while saturation is unchanged in seismic inversion, or saturation will be estimated by the updated GPR parameters while porosity is unchanged in GPR inversion. On the contrast, if you choose \verb+parametersation+ = 1 or 2, then you should only use the petrophysical parameter class in \verb+workflowFilename+. In JPI, that would lead to direct petrophysical parameterisation that the seismic parameters or GPR parameters will be calculated from the updated petrophysical parameters. Once you use the petrophysical relationships in GPR inversion, you have to define Archie coefficients \verb+aArchie+, \verb+mArchie+ and \verb+nArchie+ in order to link conductivity with porosity and saturation.
 
 Parameter \verb+stablizingFunctionalType+ specifies a type of regularization with 0 = no regularization applied, 1 = arctangent(AT) functional, 2 = minimum support (MS) functional \citep{hu2017traveltime}. If \verb+stablizingFunctionalType+ $\neq$ 0, \verb+focusingParameter+ has to be set to ensure the stability of regularization.
 
@@ -848,7 +848,7 @@ As discussed previously, the gradient can be scaled to the maximum of the corres
 	\midrule
          useModelThresholds     & Use thresholds for model parameters                                 &  int   & 1 (=yes) \\
          lowerVpVsRatioTh                & Lower vp-vs ratio threshold, must be > sqrt(2.0)              & double & 1.5 \\
-         upperVpVsRatioTh                & upper vp-vs ratio threshold                        & double & 3.0 \\
+         upperVpVsRatioTh                & Upper vp-vs ratio threshold                        & double & 3.0 \\
          lowerVPTh                & Lower vp threshold in meter per seconds                             & double & 1481 \\
          upperVPTh                & Upper vp threshold in meter per seconds                             & double & 6000 \\
          lowerVSTh                & Lower vs threshold in meter per seconds                             & double & 700 \\
