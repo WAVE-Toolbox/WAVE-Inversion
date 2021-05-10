@@ -478,13 +478,13 @@ int main(int argc, char *argv[])
             SCAI_ASSERT_ERROR(numshots == numCuts, "numshots != numCuts"); // check whether mdel pershot has been applied sucessfully.
             Acquisition::writeCutCoordToFile(config.get<std::string>("cutCoordinatesFilename"), cutCoordinates, uniqueShotNos);        
         }
-        if (config.get<IndexType>("useRandomSource") != 0) {  
+        if (config.getAndCatch("useRandomSource", 0) != 0) {  
             shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
         } else {
             shotDist = dmemo::blockDistribution(numshots, commInterShot);
         }
-        if (config.get<IndexType>("useRandomSource") != 0) { 
-            maxcount = ceil((ValueType)maxiterations * numShotDomains / numshots);
+        if (config.getAndCatch("useRandomSource", 0) != 0) { 
+            maxcount = ceil((ValueType)maxiterations * numShotDomains / numshots * 1.2);
         }
         if (config.get<IndexType>("useReceiversPerShot") == 0) {
             receivers.init(config, modelCoordinates, ctx, dist);
@@ -515,7 +515,7 @@ int main(int argc, char *argv[])
             shotDistEM = dmemo::blockDistribution(numshotsEM, commInterShot);
         }     
         if (configEM.get<IndexType>("useRandomSource") != 0) { 
-            maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM);
+            maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM * 1.2);
         }    
         if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
             receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM);
@@ -906,10 +906,10 @@ int main(int argc, char *argv[])
                 crossGradientDerivative->resetGradient();
                 misfitPerIt = 0;
 
-                if (config.get<IndexType>("useRandomSource") != 0) { 
+                if (config.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRand, filterHistoryCount, uniqueShotNos, maxcount, config.get<IndexType>("useRandomSource"));
-                    Acquisition::writeRandShotNosToFile(commAll, config.get<std::string>("randomSourceFilename"), uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, config.get<IndexType>("useRandomSource"));
+                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRand, filterHistoryCount, uniqueShotNos, maxcount, config.getAndCatch("useRandomSource", 0));
+                    Acquisition::writeRandShotNosToFile(commAll, config.get<std::string>("randomSourceFilename"), uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
@@ -919,7 +919,7 @@ int main(int argc, char *argv[])
                 }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
-                    if (config.get<IndexType>("useRandomSource") == 0) {  
+                    if (config.getAndCatch("useRandomSource", 0) == 0) {  
                         shotNumber = uniqueShotNos[shotInd];
                         shotIndTrue = shotInd;
                     } else {
@@ -984,9 +984,9 @@ int main(int argc, char *argv[])
                     sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
                     if (!useStreamConfig) {
-                        CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model, modelCoordinates, shotNumber);
+                        CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model, modelCoordinates, shotNumber);
                     } else {
-                        CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *modelPerShot, modelCoordinates, shotNumber);
+                        CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *modelPerShot, modelCoordinates, shotNumber);
                     }
                     
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0)
@@ -994,7 +994,7 @@ int main(int argc, char *argv[])
                     
                     /* Source time function inversion */
                     if (config.get<bool>("useSourceSignalInversion")){
-                        if (workflow.iteration == 0) {
+                        if (workflow.iteration == 0 || filterHistoryCount[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist->getLocalSize() << " : Source Time Function Inversion\n");
 
                             wavefields->resetWavefields();
@@ -1230,7 +1230,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */              
                 HOST_PRINT(commAll, "\n========== Check abort criteria 1 ==============\n"); 
                 
-                if (config.get<IndexType>("useRandomSource") == 0) { 
+                if (config.getAndCatch("useRandomSource", 0) == 0) { 
                     breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
                 }
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
@@ -1407,9 +1407,9 @@ int main(int argc, char *argv[])
                     sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
 
                     if (!useStreamConfigEM) {
-                        CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *modelEM, modelCoordinatesEM, shotNumber);
+                        CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *modelEM, modelCoordinatesEM, shotNumber);
                     } else {
-                        CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *modelPerShotEM, modelCoordinatesEM, shotNumber);
+                        CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *modelPerShotEM, modelCoordinatesEM, shotNumber);
                     }
                     
                     if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0)
@@ -1417,7 +1417,7 @@ int main(int argc, char *argv[])
                     
                     /* Source time function inversion */
                     if (configEM.get<bool>("useSourceSignalInversion")){
-                        if (workflowEM.iteration == 0) {
+                        if (workflowEM.iteration == 0 || filterHistoryCountEM[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << " : Source Time Function Inversion\n");
 
                             wavefieldsEM->resetWavefields();
@@ -1762,7 +1762,7 @@ int main(int argc, char *argv[])
                 }
                                                 
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
-                    if (config.get<IndexType>("useRandomSource") == 0) {  
+                    if (config.getAndCatch("useRandomSource", 0) == 0) {  
                         shotNumber = uniqueShotNos[shotInd];
                         shotIndTrue = shotInd;
                     } else {

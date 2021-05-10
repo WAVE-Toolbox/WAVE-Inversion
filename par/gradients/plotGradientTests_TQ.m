@@ -2,10 +2,10 @@ close all; clear all;
 addpath('../configuration');
 addpath('../common');
 
-modelName = 'sunken_dh10cm';
-observationType = 'Surface';
+modelName = 'checkerboard_dh10cm';
+observationType = 'Surface_Stream';
 equationType = 'TMEM';
-NoiseType = 'Noise';
+NoiseType = '';
 modelType = 'Inv';
 HPCType = 'HPC';
 dimension=cellMerge({equationType,'2D'},0);
@@ -19,22 +19,22 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-parameter='sigmaEM';   % model parameter
-stage=1;
+parameter='epsilonEMr';   % model parameter
+stage=2;
 iteration=1;
 shotnr=0;
 gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative
 gradientPerShot=0; % 1 = gradientPerShot, other = gradientSum;
 
 imagesave = 0;
-copy_inv = 0;
-DIR_PATH_NEW = 'test/';
-invertParameterType = 'PorositySaturation80';
-timeGain = '';
-sourceType = 'source40MHz';
-depthGain = 'DGaina2b2s8';
+copy_inv = 1;
+DIR_PATH_NEW = 'data/';
+invertParameterType = 'PorositySaturation50';
 bandPass = 'BP520Hz15MHz';
-NoisedB = '10dB25dB';
+timeGain = '';
+sourceType = '';
+depthGain = '';
+NoisedB = '';
 NoisedB = cellMerge({NoiseType,NoisedB},0);
 Insert_name = cellMerge({invertParameterType,...
     bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
@@ -53,6 +53,7 @@ plotGradient_TQ(clim,parameter,stage,shotnr,iteration,geometry...
 % cope the file to a defined directory
 if copy_inv == 1
     % get the filename
+    gradientName=['../' config.getString('gradientFilename')];
     if gradientPerShot == 1
         filename=[gradientName '.stage_' num2str(stage) '.It_' num2str(iteration)...
             '.Shot_' num2str(shotnr) '.' parameter]; % File name of the gradient

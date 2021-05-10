@@ -11,11 +11,11 @@ modelName = 'Jiangwan_Wall3';
 observationType = 'Crosshole';
 equationType = 'EMEM';
 dimension = '2D';
-modelType = '_Inv';
+modelType = 'Inv';
 HPCType = '_HPC';
 config=conf(['configuration_' modelName '_' ...
     observationType '_' equationType dimension NoiseType modelType HPCType '.txt']);
-modelType = '_True';
+modelType = 'True';
 configTrue=conf(['configuration_' modelName '_' ...
     observationType '_' equationType dimension modelType '.txt']);
 
@@ -50,7 +50,7 @@ else
 end
 [Nshot n]=size(sources);
 seismogram=[];seismogramTrue=[];
-T0damp=10e-9; T1damp=30e-9; damp_factor=1e-2/DT;
+T0damp=10e-9; T1damp=30e-9; dampFactor=1e-2/DT;
 for ishot=1:Nshot
     SOURCE_TYPE=sources(ishot,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
     component = getSeismogramComponent(equationType,SOURCE_TYPE);
@@ -61,10 +61,10 @@ for ishot=1:Nshot
         '.shot_' num2str(ishot-1) '.' component];
     sourceInv=readSeismogram(filenameInv,fileFormat);
     T=1*DT:DT:size(sourceInv,2)*DT;
-    time_damping=ones(size(sourceInv));
-    time_damping(T<T0damp)=time_damping(T<T0damp).*exp(damp_factor*(T(T<T0damp)-T0damp));
-    time_damping(T>T1damp)=time_damping(T>T1damp).*exp(-damp_factor*(T(T>T1damp)-T1damp));
-    sourceInv=sourceInv.*time_damping;
+    timeDamping=ones(size(sourceInv));
+    timeDamping(T<T0damp)=timeDamping(T<T0damp).*exp(dampFactor*(T(T<T0damp)-T0damp));
+    timeDamping(T>T1damp)=timeDamping(T>T1damp).*exp(-dampFactor*(T(T>T1damp)-T1damp));
+    sourceInv=sourceInv.*timeDamping;
     writeSourceFilename=configTrue.getString('writeSourceFilename');
     if writeSource~=0        
         filenameTrue=['../' writeSourceFilename '_shot_' num2str(ishot-1)];

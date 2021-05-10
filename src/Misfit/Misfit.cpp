@@ -7,6 +7,7 @@
 template <typename ValueType>
 void KITGPI::Misfit::Misfit<ValueType>::init(std::string type, scai::IndexType numshots)
 {    
+    misfitTypeHistory.clear();
     // transform to lower cases
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
     if (type.length() == 2) {

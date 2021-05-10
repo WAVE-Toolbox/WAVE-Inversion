@@ -31,7 +31,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
-    if (config.get<IndexType>("useRandomSource") != 0) {  
+    if (config.getAndCatch("useRandomSource", 0) != 0) {  
         IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
@@ -90,7 +90,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
     IndexType shotNumber;  
     IndexType shotIndTrue = 0;  
     for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
-        if (config.get<IndexType>("useRandomSource") == 0) { 
+        if (config.getAndCatch("useRandomSource", 0) == 0) { 
             shotIndTrue = shotInd;
         } else {
             shotNumber = uniqueShotNosRand[shotInd];
@@ -426,7 +426,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = uniqueShotNos.size();
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
-    if (config.get<IndexType>("useRandomSource") != 0) {  
+    if (config.getAndCatch("useRandomSource", 0) != 0) {  
         IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
@@ -485,7 +485,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     IndexType shotIndTrue = 0;  
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
-        if (config.get<IndexType>("useRandomSource") == 0) {  
+        if (config.getAndCatch("useRandomSource", 0) == 0) {  
             shotNumber = uniqueShotNos[shotInd];
             shotIndTrue = shotInd;
         } else {
@@ -509,9 +509,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
         if (!useStreamConfig) {
-            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodel, modelCoordinates, shotNumber);
+            CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodel, modelCoordinates, shotNumber);
         } else {
-            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
+            CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
         }
         
         if (config.get<IndexType>("useReceiversPerShot") == 1) {
@@ -704,9 +704,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
 
         if (!useStreamConfigEM) {
-            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *testmodelEM, modelCoordinatesEM, shotNumber);
+            CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *testmodelEM, modelCoordinatesEM, shotNumber);
         } else {
-            CheckParameter::checkNumericalArtifactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *testmodelPerShotEM, modelCoordinatesEM, shotNumber);
+            CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *testmodelPerShotEM, modelCoordinatesEM, shotNumber);
         }
         
         if (configEM.get<IndexType>("useReceiversPerShot") == 1) {

@@ -1,12 +1,10 @@
 #!/bin/bash
 
-#SBATCH --nodes=6
-#SBATCH --ntasks-per-node=6
-#SBATCH --cpus-per-task=1
+#SBATCH --ntasks=12
 #SBATCH --output=mpi-out.%j
 #SBATCH --error=mpi-err.%j
-#SBATCH --time=01:30:00
-#SBATCH --partition=pool
+#SBATCH --time=03:30:00
+#SBATCH --partition=hpc2
 
 rm -f gradients/grad_checkerboard_dh10cm_Surface_Stream_Elastic2D*
 rm -f gradients/Hessian_checkerboard_dh10cm_Surface_Stream_Elastic2D*
@@ -28,4 +26,4 @@ export OMP_NUM_THREADS=1
 export SCAI_UNSUPPORTED=IGNORE
 export SCAI_TRACE=OFF
 
-mpirun -np 6 ./../build/bin/Inversion "configuration/configuration_checkerboard_dh10cm_Surface_Stream_Elastic2D_Inv_HPC.txt" "configuration/configuration_checkerboard_dh10cm_Surface_Stream_TMEM2D_Inv_HPC.txt"
+mpirun ./../build/bin/Inversion "configuration/configuration_checkerboard_dh10cm_Surface_Stream_Elastic2D_Inv_HPC.txt" "configuration/configuration_checkerboard_dh10cm_Surface_Stream_TMEM2D_Inv_HPC.txt"
