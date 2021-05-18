@@ -13,7 +13,7 @@ rm -f gradients/Hessian_checkerboard_dh10cm_Surface_Stream_Elastic2D*
 rm -f seismograms/seismograms_checkerboard_dh10cm_Surface_Stream_Elastic2D_Start.stage_*
 rm -f seismograms/seismograms_checkerboard_dh10cm_Surface_Stream_Elastic2D_True.stage_*
 rm -f model/model_checkerboard_dh10cm_Surface_Stream_Elastic2D_Start.stage_*
-rm -f sourceInversion/invSource_checkerboard_dh10cm_Surface_Stream_Elastic2D*
+rm -f sourceSignal/invSource_checkerboard_dh10cm_Surface_Stream_Elastic2D*
 rm -f logs/steplengthSearch_checkerboard_dh10cm_Surface_Stream_Elastic2D.log
 
 export OMP_NUM_THREADS=1

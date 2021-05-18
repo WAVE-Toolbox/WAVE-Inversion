@@ -23,9 +23,9 @@ skipTraces=3;  % every 'skipTraces' trace will be displayed
 shot=8;        % shot number
 component='p'; % seismogram component
 
-filename_source_true='sourceInversion/source_signal_ricker_shot_8.mtx';
-filename_source_guess='sourceInversion/source_signal_sin3_shot_8.mtx';
-filename_source_inv='sourceInversion/invSource.stage_4.shot_8.p.mtx';
+filename_source_true='sourceSignal/source_signal_ricker_shot_8.mtx';
+filename_source_guess='sourceSignal/source_signal_sin3_shot_8.mtx';
+filename_source_inv='sourceSignal/invSource.stage_4.shot_8.p.mtx';
 
 %% Usually, there is no need to change anything below this line
 

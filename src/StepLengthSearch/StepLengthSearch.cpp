@@ -533,9 +533,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         Taper::Taper1D<ValueType> seismogramTaper1D;
         seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
         seismogramTaper1D.calcTimeDampingTaper(workflow.getTimeDampingFactor(), config.get<ValueType>("DT"));  
-        if (config.get<IndexType>("useSeismogramTaper") == 2) {
+        if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {
             seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            seismogramTaper2D.read(config.get<std::string>("seismogramTaperMisfitName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
             seismogramTaper2D.apply(receiversTrue.getSeismogramHandler());  
         }
         seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
@@ -562,7 +562,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
 
-        if (config.get<IndexType>("useSeismogramTaper") == 2) {                                                   
+        if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {                                                   
             seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
         }
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
@@ -728,9 +728,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         Taper::Taper1D<ValueType> seismogramTaper1DEM;
         seismogramTaper1DEM.init(std::make_shared<dmemo::NoDistribution>(tStepEndEM), ctx, 1);
         seismogramTaper1DEM.calcTimeDampingTaper(workflowEM.getTimeDampingFactor(), configEM.get<ValueType>("DT"));  
-        if (configEM.get<IndexType>("useSeismogramTaper") == 2) {
+        if (configEM.get<IndexType>("useSeismogramTaper") == 2 || configEM.get<IndexType>("useSeismogramTaper") == 3) {
             seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
-            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperMisfitName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
             seismogramTaper2DEM.apply(receiversTrueEM.getSeismogramHandler());  
         }
         seismogramTaper1DEM.apply(receiversTrueEM.getSeismogramHandler());
@@ -757,7 +757,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for modelEM in steplength search, output modelEM as model_crash.FILE_EXTENSION!");
         }
 
-        if (configEM.get<IndexType>("useSeismogramTaper") == 2) {                                                   
+        if (configEM.get<IndexType>("useSeismogramTaper") == 2 || configEM.get<IndexType>("useSeismogramTaper") == 3) {                                                   
             seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
         }
         seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());

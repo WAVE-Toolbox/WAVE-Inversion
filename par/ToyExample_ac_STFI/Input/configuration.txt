@@ -136,7 +136,7 @@ sourceSignalTaperStart2=150                          # start index of second cos
 sourceSignalTaperEnd2=300                            # end index of second cosine taper (0=no second transition zone)
 maxOffsetSrcEst=0                                  # maximum offset in grid points to allow (0=no offset limits)
 useSeismogramTaper=0                               # 1=taper seismograms for source time function inversion 0=not
-seismogramTaperName=taper/seismoTaper              # location/basename of seismogram taper
+seismogramTaperSTFName=taper/seismoTaper              # location/basename of seismogram taper
 
 useModelThresholds=0
 

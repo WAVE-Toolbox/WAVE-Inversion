@@ -788,7 +788,7 @@ with $k$ as iteration number and $\alpha$ as step length. Thus, a step length of
          sourceSignalTaperEnd2    & End index of second cosine taper                                    &  int   & 0 \\
          maxOffsetSrcEst          & Maximum offset in grid points to allow                              &  int   & 0 \\
          useSeismogramTaper       & Use seismogram taper (0, 1 and 2)               &  int   & 0 (=no) \\
-         seismogramTaperName      & Filename-prefix of seismogram taper                                   & string & seismograms/seismoTaper \\
+         seismogramTaperSTFName      & Filename-prefix of seismogram taper                                   & string & seismograms/seismoTaper \\
 	\bottomrule
 	\end{tabular}
 	\end{adjustbox}
@@ -800,7 +800,7 @@ As the source that generates the observed data $d^{obs}$ is unknown, the source 
 where $w$ is angular frequency. $\epsilon$ is added to stabilize the equation if the denominator is small and can be modified by the parameter \verb+waterLevel+ which is shown together with the other parameters in table \ref{tab:config_sourcetime}. The source signature can be inverted at the first iteration of each workflow stage, used for one workflow stage and be written on the disk by \verb+writeInvertedSource+ with the location/name \verb+sourceSeismogramFilename+.
 
 In addition, a cosine taper can be used for the source signal, e.g., at the beginning or end of it by the parameter \verb+useSourceSignalTaper+. The start and end indices can be selected by \verb+sourceSignalTaperStart1+ and \verb+sourceSignalTaperEnd1+ or if a second taper is needed by \verb+sourceSignalTaperStart2+ and \verb+sourceSignalTaperEnd2+. The parameter , \verb+maxOffsetSrcEst+ can be set in case of that you want to use only the near-field data for STF inversion.
-A taper can also be used for the seismograms or radargrams by the parameter \verb+useSeismogramTaper+ and by specifying the location/name of it with \verb+seismogramTaperName.shot_<shot number>.mtx+. \verb+useSeismogramTaper+=1 represents this taper will be applied only for STF inversion, while \verb+useSeismogramTaper+=2 means this taper can be used for both STF inversion and data misfit calculation. The combination of \verb+useSeismogramTaper+ and \verb+timeDampingFactor+ is recommended to select the signal in desired offset region and travel time region for offset-time-frequency windowing.
+A taper can also be used for the seismograms or radargrams by the parameter \verb+useSeismogramTaper+ and by specifying the location/name of it with \verb+seismogramTaperSTFName.shot_<shot number>.mtx+. \verb+useSeismogramTaper+=1 represents this taper will be applied only for STF inversion, while \verb+useSeismogramTaper+=2 means this taper can be used for both STF inversion and data misfit calculation. The combination of \verb+useSeismogramTaper+ and \verb+timeDampingFactor+ is recommended to select the signal in desired offset region and travel time region for offset-time-frequency windowing.
 
 \subsection{Gradient preconditioning}
 \label{config:precond}

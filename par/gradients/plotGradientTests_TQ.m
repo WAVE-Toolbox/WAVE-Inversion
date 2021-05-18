@@ -2,7 +2,7 @@ close all; clear all;
 addpath('../configuration');
 addpath('../common');
 
-modelName = 'checkerboard_dh10cm';
+modelName = 'Horstwalde';
 observationType = 'Surface_Stream';
 equationType = 'TMEM';
 NoiseType = '';
@@ -19,15 +19,15 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
+imagesave = 0;
+copy_inv = 0;
 parameter='epsilonEMr';   % model parameter
-stage=2;
+stage=5;
 iteration=1;
 shotnr=0;
 gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative
 gradientPerShot=0; % 1 = gradientPerShot, other = gradientSum;
 
-imagesave = 0;
-copy_inv = 1;
 DIR_PATH_NEW = 'data/';
 invertParameterType = 'PorositySaturation50';
 bandPass = 'BP520Hz15MHz';
