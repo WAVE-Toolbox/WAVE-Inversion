@@ -23,12 +23,20 @@ classdef conf
             index=find(strcmp(obj.Variables, variable));
             value=str2num(obj.Entries{index,1});
         end
+        function value = getAndCatch(obj,variable,defaultValue)
+            % get Value from config file 
+            index=find(strcmp(obj.Variables, variable));
+            if isempty(index)
+                value=defaultValue;
+            else
+                value=str2num(obj.Entries{index,1});
+            end
+        end
         function string = getString(obj,variable)
             % get string from config file 
             index=find(strcmp(obj.Variables, variable));
             string=strrep(obj.Entries{index,1}, ' ', '');
         end  
     end
-    
 end
 

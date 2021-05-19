@@ -2,28 +2,27 @@ clear all;close all;
 addpath('../configuration');
 addpath('../common');
 
-dhType = '';
+modelName = 'Horstwalde';
+observationType = 'Surface_Stream';
+equationType = 'TMEM';
 NoiseType = '';
-NoisedB = '';
-blockType = '';  
-
-modelName = 'Jiangwan_Wall3';
-observationType = 'Crosshole';
-equationType = 'EMEM';
-dimension = '2D';
 modelType = 'Inv';
-HPCType = '_HPC';
-config=conf(['configuration_' modelName '_' ...
-    observationType '_' equationType dimension NoiseType modelType HPCType '.txt']);
+HPCType = 'HPC';
+dimension=cellMerge({equationType,'2D'},0);
+configFilename=cellMerge({'configuration',modelName,observationType,dimension...
+    ,NoiseType,modelType,HPCType},1);
 modelType = 'True';
-configTrue=conf(['configuration_' modelName '_' ...
-    observationType '_' equationType dimension modelType '.txt']);
+configTrueFilename=cellMerge({'configuration',modelName,observationType,dimension...
+    ,modelType},1);
+configFilename=addfileSuffix(configFilename,5);
+configTrueFilename=addfileSuffix(configTrueFilename,5);
+config=conf(configFilename);
+configTrue=conf(configTrueFilename);
 
 % Output file
 % switch for saving snapshots to picture file 1=yes (jpg) 2= yes (png) other=no
 imagesave=0;
 writefiles=1;
-
 stage=5;
 showLegend = 0;
 showResidual = 0;
@@ -32,15 +31,15 @@ legendType = 2; % 1 = parameter symblicName; 2 = inversionTypeName
 % 3 = parameter symblicName + inversionTypeName
 showTitle=1; showXlabel=1; showYlabel=1;
 
-normalize=config.getValue('normalizeTraces');
+normalize=1;
 inversionType = [-1 config.getValue('inversionType')];
 parameterisation = [0 config.getValue('parameterisation')];
 exchangeStrategy = [0 config.getValue('exchangeStrategy')];
 orientation = 'vertical';
 wiggleType='vararea';
 writeSource=configTrue.getValue('writeSource');
-writeSource=0;
-sources = readSourcesfromConfig(configTrue);
+%writeSource=0;
+source = readSourcesfromConfig(configTrue);
 DT=config.getValue('seismoDT');
 fileFormat=config.getValue('SeismogramFormat');
 if DT > 1e-8 
@@ -48,17 +47,18 @@ if DT > 1e-8
 else
     labelTime='Time (ns)';
 end
-[Nshot n]=size(sources);
+[Nshot n]=size(source);
 seismogram=[];seismogramTrue=[];
 T0damp=10e-9; T1damp=30e-9; dampFactor=1e-2/DT;
 for ishot=1:Nshot
-    SOURCE_TYPE=sources(ishot,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
+    shotnr=source(ishot,1);
+    SOURCE_TYPE=source(ishot,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
     component = getSeismogramComponent(equationType,SOURCE_TYPE);
     
     %% Read seismogram
     sourceSeismogramFilename=config.getString('sourceSeismogramFilename');
     filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage)...
-        '.shot_' num2str(ishot-1) '.' component];
+        '.shot_' num2str(shotnr) '.' component];
     sourceInv=readSeismogram(filenameInv,fileFormat);
     T=1*DT:DT:size(sourceInv,2)*DT;
     timeDamping=ones(size(sourceInv));
@@ -67,7 +67,7 @@ for ishot=1:Nshot
     sourceInv=sourceInv.*timeDamping;
     writeSourceFilename=configTrue.getString('writeSourceFilename');
     if writeSource~=0        
-        filenameTrue=['../' writeSourceFilename '_shot_' num2str(ishot-1)];
+        filenameTrue=['../' writeSourceFilename '_shot_' num2str(shotnr)];
         sourceTrue=readSeismogram(filenameTrue,fileFormat);
         seismogramTrue=[seismogramTrue;sourceTrue];
     end
@@ -81,26 +81,22 @@ if writefiles~=0
     answer=overwritedlg(filenameInv,fileFormat);
     if answer==0
         return;
-    else
-        filenameInv=filenameInv
     end
     writeSeismogram(filenameInv,seismogram,fileFormat);
     if writeSource~=0  
         answer=overwritedlg(filenameTrue,fileFormat);
         if answer==0
             return;
-        else
-            filenameTrue=filenameTrue
         end
         writeSeismogram(filenameTrue,seismogramTrue,fileFormat);
     end
 end
 %% plot
-imageScale=1;
+imageScale=2;
 symblicName='';
 legendNameAll = getLegendName(legendType,equationType,...
     inversionType,parameterisation,exchangeStrategy,symblicName);
-lineSettingAll = getLinesettingInv(inversionType,parameterisation,exchangeStrategy); 
+lineSettingAll = getLinesettingInv(equationType,inversionType,parameterisation,exchangeStrategy); 
 titleName = '';
 [titleLabelSettingAll] = getTitleLabelSettingAll(showTitle,showXlabel,showYlabel...
     ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType);

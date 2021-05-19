@@ -21,3 +21,4 @@ image/
 test/
 mpi*
 HRL_Radon/
+velocityAnalysis/

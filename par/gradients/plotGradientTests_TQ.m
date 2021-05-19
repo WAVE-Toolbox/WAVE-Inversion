@@ -22,7 +22,7 @@ configTrue=conf(configTrueFilename);
 imagesave = 0;
 copy_inv = 0;
 parameter='epsilonEMr';   % model parameter
-stage=5;
+stage=2;
 iteration=1;
 shotnr=0;
 gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative
