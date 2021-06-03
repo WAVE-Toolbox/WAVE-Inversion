@@ -509,12 +509,12 @@ int main(int argc, char *argv[])
             SCAI_ASSERT_ERROR(numshotsEM == numCutsEM, "numshotsEM != numCutsEM"); // check whether mdel pershot has been applied sucessfully.
             Acquisition::writeCutCoordToFile(configEM.get<std::string>("cutCoordinatesFilename"), cutCoordinatesEM, uniqueShotNosEM);        
         }    
-        if (configEM.get<IndexType>("useRandomSource") != 0) {  
+        if (configEM.getAndCatch("useRandomSource", 0) != 0) {  
             shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
         } else {
             shotDistEM = dmemo::blockDistribution(numshotsEM, commInterShot);
         }     
-        if (configEM.get<IndexType>("useRandomSource") != 0) { 
+        if (configEM.getAndCatch("useRandomSource", 0) != 0) { 
             maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM * 1.2);
         }    
         if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
@@ -1230,7 +1230,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */              
                 HOST_PRINT(commAll, "\n========== Check abort criteria 1 ==============\n"); 
                 
-                if (config.getAndCatch("useRandomSource", 0) == 0) { 
+                if (config.getAndCatch("useRandomSource", 0) == 0 || misfitType.length() > 2) { 
                     breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
                 }
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
@@ -1329,10 +1329,10 @@ int main(int argc, char *argv[])
                 crossGradientDerivativeEM->resetGradient();
                 misfitPerItEM = 0;
 
-                if (configEM.get<IndexType>("useRandomSource") != 0) { 
+                if (configEM.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRandEM, filterHistoryCountEM, uniqueShotNosEM, maxcountEM, configEM.get<IndexType>("useRandomSource"));
-                    Acquisition::writeRandShotNosToFile(commAll, configEM.get<std::string>("randomSourceFilename"), uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.get<IndexType>("useRandomSource"));
+                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRandEM, filterHistoryCountEM, uniqueShotNosEM, maxcountEM, configEM.getAndCatch("useRandomSource", 0));
+                    Acquisition::writeRandShotNosToFile(commAll, configEM.get<std::string>("randomSourceFilename"), uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
@@ -1342,7 +1342,7 @@ int main(int argc, char *argv[])
                 }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
-                    if (configEM.get<IndexType>("useRandomSource") == 0) {  
+                    if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
                         shotNumber = uniqueShotNosEM[shotInd];
                         shotIndTrue = shotInd;
                     } else {
@@ -1652,7 +1652,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */   
                 HOST_PRINT(commAll, "\n========== Check abort criteria 2 ==============\n");  
                        
-                if (configEM.get<IndexType>("useRandomSource") == 0) {     
+                if (configEM.getAndCatch("useRandomSource", 0) == 0 || misfitTypeEM.length() > 2) {     
                     breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
                 }
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
@@ -1875,7 +1875,7 @@ int main(int argc, char *argv[])
                 }
                                                 
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
-                    if (configEM.get<IndexType>("useRandomSource") == 0) {  
+                    if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
                         shotNumber = uniqueShotNosEM[shotInd];
                         shotIndTrue = shotInd;
                     } else {

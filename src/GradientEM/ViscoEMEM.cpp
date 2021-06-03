@@ -675,7 +675,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
         temp /= modelEM.getTauDisplacementEM(); 
         temp *= gradConductivityEMoptical;  
         tauDielectricPermittivityEM += temp;  
-        temp = modelEM.getDielectricPermittivityEM() / modelEM.getNumRelaxationMechanisms();
+        temp = modelEM.getDielectricPermittivityEM();
         temp = - temp;   
         temp *= gradEpsilonEMoptical; 
         tauDielectricPermittivityEM += temp;

@@ -2,10 +2,10 @@ close all; clear all;
 addpath('../configuration');
 addpath('../common');
 
-modelName = 'Horstwalde';
-observationType = 'Surface_Stream';
-equationType = 'TMEM';
-NoiseType = '';
+modelName = 'sunken_dh10cm';
+observationType = 'Crosshole';
+equationType = 'SH';
+NoiseType = 'Noise';
 modelType = 'Inv';
 HPCType = 'HPC';
 dimension=cellMerge({equationType,'2D'},0);
@@ -21,8 +21,8 @@ configTrue=conf(configTrueFilename);
 
 imagesave = 0;
 copy_inv = 0;
-parameter='epsilonEMr';   % model parameter
-stage=2;
+parameter='vs';   % model parameter
+stage=3;
 iteration=1;
 shotnr=0;
 gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative

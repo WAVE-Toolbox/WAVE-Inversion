@@ -71,13 +71,13 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     IndexType dtinversion = config.get<IndexType>("DTInversion");
     ValueType DTinv = 1 / config.get<ValueType>("DT");
 
-    if (shotNumber == 0) {
-        lama::DenseVector<ValueType> temp1;
-        IndexType tStep = 1000;
-        *wavefieldsTemp = *wavefieldrecord[floor(tStep / dtinversion + 0.5)];
-        temp1 = wavefieldsTemp->getRefSxx();
-        std::cout << "\n GradientCalculation run wavefieldrecord[" << floor(tStep / dtinversion + 0.5) << "][6150]: " << temp1[6150] << "\n"<< std::endl;
-    }
+//     if (shotNumber == 0) {
+//         lama::DenseVector<ValueType> temp1;
+//         IndexType tStep = 1000;
+//         *wavefieldsTemp = *wavefieldrecord[floor(tStep / dtinversion + 0.5)];
+//         temp1 = wavefieldsTemp->getRefSxx();
+//         std::cout << "\n GradientCalculation run wavefieldrecord[" << floor(tStep / dtinversion + 0.5) << "][6150]: " << temp1[6150] << "\n"<< std::endl;
+//     }
     for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {
 
         solver.run(receivers, adjointSources, model, *wavefields, derivatives, tStep);

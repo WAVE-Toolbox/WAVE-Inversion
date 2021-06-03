@@ -187,9 +187,9 @@ ValueType KITGPI::Misfit::Misfit<ValueType>::calcStablizingFunctionalPerModel(sc
     }     
     tempValue = temp.l1Norm();
         
-    std::cout << "calcStablizingFunctional stablizingFunctionalType = " << stablizingFunctionalType << std::endl;
-    std::cout << "calcStablizingFunctional stablizingFunctional = " << tempValue << std::endl;
-    
+//     std::cout << "calcStablizingFunctional stablizingFunctionalType = " << stablizingFunctionalType << std::endl;
+//     std::cout << "calcStablizingFunctional stablizingFunctional = " << tempValue << std::endl;
+//     
     return tempValue; 
 }
 
