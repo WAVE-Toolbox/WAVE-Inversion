@@ -39,16 +39,15 @@ namespace KITGPI
             void addToStorage(scai::lama::DenseVector<ValueType> vector);
             void clearStorage();            
             
-            void init(std::string type, scai::IndexType numshots);
-            std::string getMisfitType(scai::IndexType shotInd);
-            std::vector<std::string> getMisfitTypeHistory();
-            void setMisfitTypeHistory(std::vector<std::string> setMisfitTypeHistory);
-            void writeMisfitTypeToFile(scai::dmemo::CommunicatorPtr comm, std::string misfitTypeFilename, std::vector<scai::IndexType> uniqueShotNos, std::vector<scai::IndexType> uniqueShotNosRand, scai::IndexType stage, scai::IndexType iteration, std::string misfitType);
-                        
-            //! \brief Misfit pointer
-            typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;  
-            std::vector<std::string> misfitTypeHistory; 
+            void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots);
+            std::string getMisfitTypeShot(scai::IndexType shotInd);
+            std::vector<std::string> getMisfitTypeShots();
+            void setMisfitTypeShots(std::vector<std::string> setMisfitTypeShots);
+            void writeMisfitTypeToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration, std::string misfitType);
             
+            //! \brief Misfit pointer
+            typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
+                                    
         protected:
             
             /* Default constructor and destructor */
@@ -56,6 +55,7 @@ namespace KITGPI
             ~Misfit(){};
             
             std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;
+            std::vector<std::string> misfitTypeShots; 
             scai::lama::DenseVector<ValueType> modelDerivativeX; //!< Vector storing model derivative in x direction.
             scai::lama::DenseVector<ValueType> modelDerivativeY; //!< Vector storing model derivative in y direction.
             

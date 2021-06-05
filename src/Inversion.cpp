@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
         ValueType memSolver = solver->estimateMemory(config, dist, modelCoordinates);
         ValueType memTotal = memDerivatives + memWavefileds + memModel + memSolver + memWavefiledsStorage;
 
-        HOST_PRINT(commAll, "============== Memory Estimation 1: ===============\n\n")
+        HOST_PRINT(commAll, "============== Memory Estimation " << equationType << ": ===============\n\n")
         HOST_PRINT(commAll, " -  Derivative Matrices \t" << memDerivatives << " MB\n");
         HOST_PRINT(commAll, " -  Wavefield vectors \t\t" << memWavefileds << " MB\n");
         HOST_PRINT(commAll, " -  Forward wavefield storage \t" << memWavefiledsStorage << " MB\n");
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
         ValueType memSolverEM = solverEM->estimateMemory(configEM, distEM, modelCoordinatesEM);   
         ValueType memTotalEM = memDerivativesEM + memWavefiledsEM + memModelEM + memSolverEM + memWavefiledsStorageEM;
 
-        HOST_PRINT(commAll, " =============== Memory Estimation 2: =============\n\n");
+        HOST_PRINT(commAll, " =============== Memory Estimation " << equationTypeEM << ": =============\n\n");
         HOST_PRINT(commAll, "\n -  Derivative Matrices \t" << memDerivativesEM << " MB\n");
         HOST_PRINT(commAll, " -  Wavefield vectors \t\t" << memWavefiledsEM << " MB\n");
         HOST_PRINT(commAll, " -  Forward wavefield storage \t" << memWavefiledsStorageEM << " MB\n");
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
         start_t = common::Walltime::get();
         derivatives->init(dist, ctx, config, modelCoordinates, commShot);
         end_t = common::Walltime::get();
-        HOST_PRINT(commAll, "", "Finished initializing matrices 1 in " << end_t - start_t << " sec.\n\n");
+        HOST_PRINT(commAll, "", "Finished initializing matrices " << equationType << " in " << end_t - start_t << " sec.\n\n");
     }
     
     if (inversionTypeEM != 0) {
@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
             derivativesInversionEM->init(distBigEM, ctx, configEM, modelCoordinatesBigEM, commShot);
         }
         end_t = common::Walltime::get();
-        HOST_PRINT(commAll, "", "Finished initializing matrices 2 in " << end_t - start_t << " sec.\n\n");
+        HOST_PRINT(commAll, "", "Finished initializing matrices " << equationTypeEM << " in " << end_t - start_t << " sec.\n\n");
     }
             
     /* --------------------------------------- */
@@ -468,7 +468,7 @@ int main(int argc, char *argv[])
         } else {
             sources.getAcquisitionSettings(config, sourceSettings);
         }
-        HOST_PRINT(commAll, "\n================ checkSources 1 ===================\n");
+        HOST_PRINT(commAll, "\n================ checkSources " << equationType << " ===============\n");
         CheckParameter::checkSources(sourceSettings, modelCoordinates, commShot);
     
         Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
@@ -499,7 +499,7 @@ int main(int argc, char *argv[])
         } else {
             sourcesEM.getAcquisitionSettings(configEM, sourceSettingsEM);
         }
-        HOST_PRINT(commAll, "\n================ checkSources 2 ===================\n");
+        HOST_PRINT(commAll, "\n================ checkSources " << equationTypeEM << " ===============\n");
         CheckParameter::checkSources(sourceSettingsEM, modelCoordinatesEM, commShot);
     
         Acquisition::calcuniqueShotNo(uniqueShotNosEM, sourceSettingsEM);
@@ -869,10 +869,12 @@ int main(int argc, char *argv[])
         /* --------------------------------------- */
         /*        Loop over iterations             */
         /* --------------------------------------- */ 
-        std::vector<scai::IndexType> filterHistoryCount(numshots, 0);
         std::vector<scai::IndexType> uniqueShotNosRand(numShotDomains, 0); 
-        std::vector<scai::IndexType> filterHistoryCountEM(numshotsEM, 0);
         std::vector<scai::IndexType> uniqueShotNosRandEM(numShotDomainsEM, 0);
+        std::vector<scai::IndexType> shotHistory(numshots, 0);
+        std::vector<scai::IndexType> shotHistoryEM(numshotsEM, 0);
+        std::vector<scai::IndexType> misfitTypeHistory(misfitType.length()-1, 0);
+        std::vector<scai::IndexType> misfitTypeHistoryEM(misfitTypeEM.length()-1, 0);
         IndexType shotNumber;
         IndexType shotIndTrue = 0;            
         for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
@@ -885,7 +887,7 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\n=================================================");
                 HOST_PRINT(commAll, "\n=========== Workflow stage " << workflow.workflowStage + 1 << " of " << workflow.maxStage << " ===============");
                 HOST_PRINT(commAll, "\n============     Iteration " << workflow.iteration + 1 << "       ==============");
-                HOST_PRINT(commAll, "\n======================1==========================\n\n");
+                HOST_PRINT(commAll, "\n=================== " << equationType << " =======================\n\n");
                 start_t = common::Walltime::get();
                 
                 /* Update model for fd simulation (averaging, inverse Density ...) */
@@ -908,14 +910,14 @@ int main(int argc, char *argv[])
 
                 if (config.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRand, filterHistoryCount, uniqueShotNos, maxcount, config.getAndCatch("useRandomSource", 0));
-                    Acquisition::writeRandShotNosToFile(commAll, config.get<std::string>("randomSourceFilename"), uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
+                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRand, shotHistory, uniqueShotNos, maxcount, config.getAndCatch("useRandomSource", 0));
+                    Acquisition::writeRandShotNosToFile(commAll, logFilename, uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfit->init(misfitType, numshots); // in case of that random misfit function is used
+                dataMisfit->init(config, misfitTypeHistory, numshots); // in case of that random misfit function is used
                 if (misfitType.length() > 2) {
-                    dataMisfit->writeMisfitTypeToFile(commAll, config.get<std::string>("misfitTypeFilename"), uniqueShotNos, uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, misfitType);
+                    dataMisfit->writeMisfitTypeToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1, misfitType);
                 }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
@@ -980,7 +982,7 @@ int main(int argc, char *argv[])
                     
                     /* Source time function inversion */
                     if (config.get<bool>("useSourceSignalInversion")){
-                        if (workflow.iteration == 0 || filterHistoryCount[shotIndTrue] == 1) {
+                        if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist->getLocalSize() << " : Source Time Function Inversion\n");
 
                             wavefields->resetWavefields();
@@ -1130,7 +1132,7 @@ int main(int argc, char *argv[])
                 gradient->sumShotDomain(commInterShot);                
                 commInterShot->sumArray(misfitPerIt.getLocalValues());
 
-                HOST_PRINT(commAll, "\n======== Finished loop over shots 1 =============");
+                HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationType << " =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
 
                 dataMisfit->addToStorage(misfitPerIt);
@@ -1154,7 +1156,7 @@ int main(int argc, char *argv[])
                     
                     // joint inversion with cross-gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
-                    HOST_PRINT(commAll, "\n========= calcCrossGradient 1 =============");
+                    HOST_PRINT(commAll, "\n========= calcCrossGradient " << equationType << " =========");
                     HOST_PRINT(commAll, "\n===========================================\n");
                     gradient->normalize();  
                     
@@ -1182,7 +1184,7 @@ int main(int argc, char *argv[])
                     if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1 ) < 0)) {
                         weightingCrossGradient *= 0.8;
                     }
-                    HOST_PRINT(commAll, "weightingCrossGradient 1 = " << weightingCrossGradient << "\n");  
+                    HOST_PRINT(commAll, "weightingCrossGradient " << equationType << " = " << weightingCrossGradient << "\n");  
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
                     *crossGradientDerivative *= weightingCrossGradient;            
@@ -1193,7 +1195,7 @@ int main(int argc, char *argv[])
                     
                     // inversion with regularization constraint
                     HOST_PRINT(commAll, "\n===========================================");
-                    HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient 1 ===");
+                    HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient " << equationType << " ===");
                     HOST_PRINT(commAll, "\n===========================================\n");
                     gradient->normalize();  
                     
@@ -1228,9 +1230,9 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */
                 /* Check abort criteria for two inversions */
                 /* --------------------------------------- */              
-                HOST_PRINT(commAll, "\n========== Check abort criteria 1 ==============\n"); 
+                HOST_PRINT(commAll, "\n========== Check abort criteria " << equationType << " ==========\n"); 
                 
-                if (config.getAndCatch("useRandomSource", 0) == 0 || misfitType.length() > 2) { 
+                if (config.getAndCatch("useRandomSource", 0) == 0 && misfitType.length() == 2) { 
                     breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
                 }
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
@@ -1249,10 +1251,10 @@ int main(int argc, char *argv[])
 
                 if (breakLoop == false || breakLoopType == 2) {
                     HOST_PRINT(commAll, "\n================================================");
-                    HOST_PRINT(commAll, "\n========== Start step length search 1 ==========\n");
-                    SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotNosRand, dataMisfit->getMisfitTypeHistory());
+                    HOST_PRINT(commAll, "\n========== Start step length search " << equationType << " ======\n");
+                    SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotNosRand, dataMisfit->getMisfitTypeShots());
 
-                    HOST_PRINT(commAll, "================= Update Model 1 ================\n\n");
+                    HOST_PRINT(commAll, "================= Update Model " << equationType << " ============\n\n");
                     /* Apply model update */
                     *gradient *= SLsearch.getSteplength();
                     *model -= *gradient;
@@ -1261,18 +1263,18 @@ int main(int argc, char *argv[])
                         model->applyThresholds(config);
 
                     if (model->getParameterisation() == 2 || model->getParameterisation() == 1) {
-                        HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics 1 =======\n");  
+                        HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics " << equationType << " =======\n");  
                         model->calcWaveModulusFromPetrophysics();  
                         if (config.get<bool>("useModelThresholds"))
                             model->applyThresholds(config); 
                     } else if (inversionType == 3) {
-                        HOST_PRINT(commAll, "\n======= calcPetrophysicsFromWaveModulus 1 =======\n");  
+                        HOST_PRINT(commAll, "\n======= calcPetrophysicsFromWaveModulus " << equationType << " =======\n");  
                         model->calcPetrophysicsFromWaveModulus();
                         if (config.get<bool>("useModelThresholds"))
                             model->applyThresholds(config); 
                         if (exchangeStrategy != 5 && exchangeStrategy != 6) {
                             // case 0,1,2,3,4: self-constraint of the petrophysical relationship    
-                            HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics 1 =======\n");  
+                            HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics " << equationType << " =======\n");  
                             model->calcWaveModulusFromPetrophysics(); 
                             if (config.get<bool>("useModelThresholds"))
                                 model->applyThresholds(config); 
@@ -1308,7 +1310,7 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\n=================================================");
                 HOST_PRINT(commAll, "\n=========== Workflow stage " << workflowEM.workflowStage + 1 << " of " << workflowEM.maxStage << " ===============");
                 HOST_PRINT(commAll, "\n============     Iteration " << workflowEM.iteration + 1 << "       ==============");
-                HOST_PRINT(commAll, "\n======================2==========================\n\n");
+                HOST_PRINT(commAll, "\n=================== " << equationTypeEM << " =======================\n\n");
                 start_t = common::Walltime::get();
                 
                 /* Update modelEM for fd simulation (averaging, getVelocityEM ...) */
@@ -1331,14 +1333,14 @@ int main(int argc, char *argv[])
 
                 if (configEM.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRandEM, filterHistoryCountEM, uniqueShotNosEM, maxcountEM, configEM.getAndCatch("useRandomSource", 0));
-                    Acquisition::writeRandShotNosToFile(commAll, configEM.get<std::string>("randomSourceFilename"), uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0));
+                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRandEM, shotHistoryEM, uniqueShotNosEM, maxcountEM, configEM.getAndCatch("useRandomSource", 0));
+                    Acquisition::writeRandShotNosToFile(commAll, logFilenameEM, uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfitEM->init(misfitTypeEM, numshotsEM); // in case of that random misfit function is used
+                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM); // in case of that random misfit function is used
                 if (misfitTypeEM.length() > 2) {
-                    dataMisfitEM->writeMisfitTypeToFile(commAll, configEM.get<std::string>("misfitTypeFilename"), uniqueShotNosEM, uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, misfitTypeEM);
+                    dataMisfitEM->writeMisfitTypeToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, misfitTypeEM);
                 }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
@@ -1403,7 +1405,7 @@ int main(int argc, char *argv[])
                     
                     /* Source time function inversion */
                     if (configEM.get<bool>("useSourceSignalInversion")){
-                        if (workflowEM.iteration == 0 || filterHistoryCountEM[shotIndTrue] == 1) {
+                        if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << " : Source Time Function Inversion\n");
 
                             wavefieldsEM->resetWavefields();
@@ -1553,7 +1555,7 @@ int main(int argc, char *argv[])
                 gradientEM->sumShotDomain(commInterShot);                
                 commInterShot->sumArray(misfitPerItEM.getLocalValues());
 
-                HOST_PRINT(commAll, "\n======== Finished loop over shots 2 =============");
+                HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationTypeEM << " =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
 
                 dataMisfitEM->addToStorage(misfitPerItEM);
@@ -1577,7 +1579,7 @@ int main(int argc, char *argv[])
                     
                     // joint inversion with cross-gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
-                    HOST_PRINT(commAll, "\n========== calcCrossGradient 2 ============");
+                    HOST_PRINT(commAll, "\n========== calcCrossGradient " << equationTypeEM << " ========");
                     HOST_PRINT(commAll, "\n===========================================\n");
                     gradientEM->normalize();  
                     
@@ -1605,7 +1607,7 @@ int main(int argc, char *argv[])
                     if ((workflowEM.iteration > 0) && (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration) - 0.01 * dataMisfitEM->getMisfitSum(workflowEM.iteration - 1 ) < 0)) {
                         weightingCrossGradientEM *= 0.8;
                     }
-                    HOST_PRINT(commAll, "weightingCrossGradient 2 = " << weightingCrossGradientEM << "\n");  
+                    HOST_PRINT(commAll, "weightingCrossGradient " << equationTypeEM << " = " << weightingCrossGradientEM << "\n");  
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
                     *crossGradientDerivativeEM *= weightingCrossGradientEM;
@@ -1616,7 +1618,7 @@ int main(int argc, char *argv[])
                     
                     // inversion with regularization constraint
                     HOST_PRINT(commAll, "\n===========================================");
-                    HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient 2 ===");
+                    HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient " << equationTypeEM << " ===");
                     HOST_PRINT(commAll, "\n===========================================\n");
                     gradientEM->normalize();  
                     
@@ -1650,9 +1652,9 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */
                 /* Check abort criteria for two inversions */
                 /* --------------------------------------- */   
-                HOST_PRINT(commAll, "\n========== Check abort criteria 2 ==============\n");  
+                HOST_PRINT(commAll, "\n========== Check abort criteria " << equationTypeEM << " ==========\n");  
                        
-                if (configEM.getAndCatch("useRandomSource", 0) == 0 || misfitTypeEM.length() > 2) {     
+                if (configEM.getAndCatch("useRandomSource", 0) == 0 && misfitTypeEM.length() == 2) {     
                     breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
                 }
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
@@ -1699,10 +1701,10 @@ int main(int argc, char *argv[])
                 
                 if (breakLoopEM == false || breakLoopType == 2) {
                     HOST_PRINT(commAll, "\n================================================");
-                    HOST_PRINT(commAll, "\n========== Start step length search 2 ==========\n");
-                    SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, dataMisfitEM->getMisfitIt(workflowEM.iteration), workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM, dataMisfitEM->getMisfitTypeHistory());
+                    HOST_PRINT(commAll, "\n========== Start step length search " << equationTypeEM << " ======\n");
+                    SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, dataMisfitEM->getMisfitIt(workflowEM.iteration), workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM, dataMisfitEM->getMisfitTypeShots());
 
-                    HOST_PRINT(commAll, "================= Update Model 2 ================\n\n");
+                    HOST_PRINT(commAll, "================= Update Model " << equationTypeEM << " ============\n\n");
                     /* Apply model update */
                     *gradientEM *= SLsearchEM.getSteplength();
                     *modelEM -= *gradientEM;
@@ -1711,18 +1713,18 @@ int main(int argc, char *argv[])
                         modelEM->applyThresholds(configEM);
 
                     if (modelEM->getParameterisation() == 2 || modelEM->getParameterisation() == 1) {
-                        HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics 2 =======\n");  
+                        HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics " << equationTypeEM << " =======\n");  
                         modelEM->calcWaveModulusFromPetrophysics();  
                         if (configEM.get<bool>("useModelThresholds"))
                             modelEM->applyThresholds(configEM); 
                     } else if (inversionTypeEM == 3) {
-                        HOST_PRINT(commAll, "\n======= calcPetrophysicsFromWaveModulus 2 =======\n");  
+                        HOST_PRINT(commAll, "\n======= calcPetrophysicsFromWaveModulus " << equationTypeEM << " =======\n");  
                         modelEM->calcPetrophysicsFromWaveModulus();
                         if (configEM.get<bool>("useModelThresholds"))
                             modelEM->applyThresholds(configEM); 
                         if (exchangeStrategy != 5 && exchangeStrategy != 6) {
                             // case 0,1,2,3,4: self-constraint of the petrophysical relationship    
-                            HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics 1 =======\n");  
+                            HOST_PRINT(commAll, "\n======= calcWaveModulusFromPetrophysics " << equationTypeEM << " =======\n");  
                             modelEM->calcWaveModulusFromPetrophysics(); 
                             if (configEM.get<bool>("useModelThresholds"))
                                 modelEM->applyThresholds(configEM); 
@@ -1753,7 +1755,7 @@ int main(int argc, char *argv[])
             /* One extra forward modelling to ensure complete and consistent output */
             /* -------------------------------------------------------------------- */
             if (inversionType != 0 && (breakLoop == false || breakLoopType == 2) && workflow.iteration == maxiterations - 1) {
-                HOST_PRINT(commAll, "\n================ Maximum number of iterations reached 1 ====================\n");
+                HOST_PRINT(commAll, "\n================ Maximum number of iterations reached " << equationType << " ================\n");
                 HOST_PRINT(commAll, "== Do one more forward modelling to calculate misfit and save seismograms ==\n\n");
             
                 if (!useStreamConfig) {                
@@ -1866,7 +1868,7 @@ int main(int argc, char *argv[])
             /* One extra forward modelling to ensure complete and consistent output */
             /* -------------------------------------------------------------------- */
             if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2) && workflowEM.iteration == maxiterations - 1) {
-                HOST_PRINT(commAll, "\n================ Maximum number of iterations reached 2 ====================\n");
+                HOST_PRINT(commAll, "\n================ Maximum number of iterations reached " << equationTypeEM << " ================\n");
                 HOST_PRINT(commAll, "== Do one more forward modelling to calculate misfit and save seismograms ==\n\n");
             
                 if (!useStreamConfigEM) {                

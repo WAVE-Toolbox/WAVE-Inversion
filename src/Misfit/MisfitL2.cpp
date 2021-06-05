@@ -24,7 +24,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
     /* Note that the misfit of different components (p,vx,vy,vz) is summed up. If p and v? is used at the same time, this could cause problems because they could have different scales.
        For different velocity components it should be ok. */
     
-    std::string misfitTypeL2 = this->getMisfitType(shotInd);
+    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
     for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
         seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
         seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
@@ -39,7 +39,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
         if (misfit != 0) count++;
     }
     
-    return misfitSum/count/this->getMisfitTypeHistory().size(); 
+    return misfitSum/count/this->getMisfitTypeShots().size(); 
 }
 
 /*! \brief Calculate the adjoint sources
@@ -61,7 +61,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition
     seismoHandlerSyn = receiversSyn.getSeismogramHandler();
     seismoHandlerObs = receiversObs.getSeismogramHandler();
     
-    std::string misfitTypeL2 = this->getMisfitType(shotInd);
+    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
     for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
         seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
         seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
@@ -101,7 +101,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
     /* Note that the misfit of different components (p,vx,vy,vz) is summed up. If p and v? is used at the same time, this could cause problems because they could have different scales.
        For different velocity components it should be ok. */
     
-    std::string misfitTypeL2 = this->getMisfitType(shotInd);
+    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
     for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
         seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
         seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
@@ -116,7 +116,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
         if (misfit != 0) count++;
     }
     
-    return misfitSum/count/this->getMisfitTypeHistory().size(); 
+    return misfitSum/count/this->getMisfitTypeShots().size(); 
 }
 
 /*! \brief Calculate the adjoint sourcesEM
@@ -138,7 +138,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition
     seismoHandlerSyn = receiversSyn.getSeismogramHandler();
     seismoHandlerObs = receiversObs.getSeismogramHandler();
     
-    std::string misfitTypeL2 = this->getMisfitType(shotInd);
+    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
     for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
         seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
         seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));

@@ -5,23 +5,34 @@
  \param type misfitType 
  */
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::init(std::string type, scai::IndexType numshots)
+void KITGPI::Misfit::Misfit<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots)
 {    
-    misfitTypeHistory.clear();
+    misfitTypeShots.clear();
     // transform to lower cases
-    std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-    if (type.length() == 2) {
-        for (int i = 0; i < numshots; i++)
-        {
-            misfitTypeHistory.push_back(type);
+    std::string misfitType = config.get<std::string>("misfitType");
+    std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
+    if (misfitType.length() == 2 && config.getAndCatch("useRandomSource", 0) == 0) {
+        for (int shotInd = 0; shotInd < numshots; shotInd++) {
+            misfitTypeShots.push_back(misfitType);
         }
-    } else if (type.compare("l278") == 0) {
+    } else if (misfitType.compare("l278") == 0) {
         scai::IndexType randMisfitTypeInd;
-        std::vector<std::string> randMisfitTypes{"l2","l7","l8"};
+        scai::IndexType numshotsPerIt = numshots;
+        scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
+        std::vector<std::string> uniqueMisfitTypes{"l2","l7","l8"};
         std::srand((int)time(0));
-        for (int i = 0; i < numshots; i++) {
-            randMisfitTypeInd = std::rand() % randMisfitTypes.size();
-            misfitTypeHistory.push_back(randMisfitTypes[randMisfitTypeInd]);
+        if (config.getAndCatch("useRandomSource", 0) != 0) {
+            numshotsPerIt = config.get<scai::IndexType>("NumShotDomains"); 
+        }
+        scai::IndexType maxcount = maxiterations * numshotsPerIt / uniqueMisfitTypes.size() * 1.2;
+        for (int shotInd = 0; shotInd < numshotsPerIt; shotInd++) {         
+            randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
+            if (misfitTypeHistory[randMisfitTypeInd] >= maxcount) {
+                shotInd--;
+            } else {
+                misfitTypeShots.push_back(uniqueMisfitTypes[randMisfitTypeInd]);
+                misfitTypeHistory[randMisfitTypeInd]++;
+            }
         }
     }
 }
@@ -31,9 +42,9 @@ void KITGPI::Misfit::Misfit<ValueType>::init(std::string type, scai::IndexType n
  \param type misfitType 
  */
 template <typename ValueType>
-std::string KITGPI::Misfit::Misfit<ValueType>::getMisfitType(scai::IndexType shotInd)
+std::string KITGPI::Misfit::Misfit<ValueType>::getMisfitTypeShot(scai::IndexType shotInd)
 {    
-    return misfitTypeHistory.at(shotInd);
+    return misfitTypeShots.at(shotInd);
 }
 
 /*! \brief get misfit history
@@ -41,9 +52,9 @@ std::string KITGPI::Misfit::Misfit<ValueType>::getMisfitType(scai::IndexType sho
  \param type misfitType 
  */
 template <typename ValueType>
-std::vector<std::string>  KITGPI::Misfit::Misfit<ValueType>::getMisfitTypeHistory()
+std::vector<std::string>  KITGPI::Misfit::Misfit<ValueType>::getMisfitTypeShots()
 {    
-    return misfitTypeHistory;
+    return misfitTypeShots;
 }
 
 /*! \brief set misfit history vector
@@ -51,27 +62,28 @@ std::vector<std::string>  KITGPI::Misfit::Misfit<ValueType>::getMisfitTypeHistor
  \param type misfitType 
  */
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::setMisfitTypeHistory(std::vector<std::string> setMisfitTypeHistory)
+void KITGPI::Misfit::Misfit<ValueType>::setMisfitTypeShots(std::vector<std::string> setMisfitTypeShots)
 {    
-    misfitTypeHistory = setMisfitTypeHistory;
+    misfitTypeShots = setMisfitTypeShots;
 }
 
 /*! \brief Write to misfitType-file
 *
 \param comm Communicator
-\param misfitTypeFilename Name of misfitType-file
-\param uniqueShotNos unique Shot numbers
-\param uniqueShotNosRand unique Shot numbers randomly
+\param logFilename Name of log-file
 \param stage inversion stage
 \param iteration inversion iteration
 \param misfitType misfitType
 */
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::writeMisfitTypeToFile(scai::dmemo::CommunicatorPtr comm, std::string misfitTypeFilename, std::vector<scai::IndexType> uniqueShotNos, std::vector<scai::IndexType> uniqueShotNosRand, scai::IndexType stage, scai::IndexType iteration, std::string misfitType)
+void KITGPI::Misfit::Misfit<ValueType>::writeMisfitTypeToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration, std::string misfitType)
 {      
     int myRank = comm->getRank();  
     if (misfitType.length() > 2 && myRank == MASTERGPI) {
         std::ofstream outputFile; 
+        std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4);
+        misfitTypeFilename += ".misfitType";
+        misfitTypeFilename += logFilename.substr(logFilename.length()-4, 4);
         if (stage == 1 && iteration == 1) {
             outputFile.open(misfitTypeFilename);
             outputFile << "# MisfitType records during inversion\n"; 
@@ -82,15 +94,11 @@ void KITGPI::Misfit::Misfit<ValueType>::writeMisfitTypeToFile(scai::dmemo::Commu
             outputFile << std::scientific;
         }
         outputFile << std::setw(5) << stage << std::setw(10) << iteration;
-        scai::IndexType shotIndTrue = 0;
-        scai::IndexType shotNumber;
-        for (unsigned i = 0; i < uniqueShotNosRand.size(); i++) { 
-            shotNumber = uniqueShotNosRand[i];
-            Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNos, shotNumber);
+        for (unsigned i = 0; i < misfitTypeShots.size(); i++) { 
             if (i == 0) {
-                outputFile << std::setw(9) << this->getMisfitType(shotIndTrue);
+                outputFile << std::setw(9) << misfitTypeShots[i];
             } else {
-                outputFile << std::setw(4) << this->getMisfitType(shotIndTrue);
+                outputFile << std::setw(4) << misfitTypeShots[i];
             }
         }
         outputFile << "\n";
