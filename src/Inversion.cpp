@@ -1022,9 +1022,13 @@ int main(int argc, char *argv[])
                         }
                     }
                     
-                    if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {
+                    if (config.get<IndexType>("useSeismogramTaper") > 1) {
                         seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-                        seismogramTaper2D.read(config.get<std::string>("seismogramTaperMisfitName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+                        if (config.get<IndexType>("useSeismogramTaper") == 4) {
+                            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
+                        } else {
+                            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+                        }
                         seismogramTaper2D.apply(receiversTrue.getSeismogramHandler()); 
                         seismogramTaper2D.apply(receiversStart.getSeismogramHandler()); 
                     }
@@ -1445,9 +1449,13 @@ int main(int argc, char *argv[])
                         }
                     }
                     
-                    if (configEM.get<IndexType>("useSeismogramTaper") == 2 || configEM.get<IndexType>("useSeismogramTaper") == 3) {
+                    if (configEM.get<IndexType>("useSeismogramTaper") > 1) {
                         seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
-                        seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperMisfitName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+                        if (configEM.get<IndexType>("useSeismogramTaper") == 4) {
+                            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + "misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
+                        } else {
+                            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+                        }
                         seismogramTaper2DEM.apply(receiversTrueEM.getSeismogramHandler()); 
                         seismogramTaper2DEM.apply(receiversStartEM.getSeismogramHandler()); 
                     }

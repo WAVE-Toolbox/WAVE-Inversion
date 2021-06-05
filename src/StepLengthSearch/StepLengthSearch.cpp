@@ -535,7 +535,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.calcTimeDampingTaper(workflow.getTimeDampingFactor(), config.get<ValueType>("DT"));  
         if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {
             seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-            seismogramTaper2D.read(config.get<std::string>("seismogramTaperMisfitName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
             seismogramTaper2D.apply(receiversTrue.getSeismogramHandler());  
         }
         seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
@@ -730,7 +730,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1DEM.calcTimeDampingTaper(workflowEM.getTimeDampingFactor(), configEM.get<ValueType>("DT"));  
         if (configEM.get<IndexType>("useSeismogramTaper") == 2 || configEM.get<IndexType>("useSeismogramTaper") == 3) {
             seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
-            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperMisfitName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
             seismogramTaper2DEM.apply(receiversTrueEM.getSeismogramHandler());  
         }
         seismogramTaper1DEM.apply(receiversTrueEM.getSeismogramHandler());

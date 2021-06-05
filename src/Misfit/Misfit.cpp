@@ -81,9 +81,7 @@ void KITGPI::Misfit::Misfit<ValueType>::writeMisfitTypeToFile(scai::dmemo::Commu
     int myRank = comm->getRank();  
     if (misfitType.length() > 2 && myRank == MASTERGPI) {
         std::ofstream outputFile; 
-        std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4);
-        misfitTypeFilename += ".misfitType";
-        misfitTypeFilename += logFilename.substr(logFilename.length()-4, 4);
+        std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4) + ".misfitType" + logFilename.substr(logFilename.length()-4, 4);
         if (stage == 1 && iteration == 1) {
             outputFile.open(misfitTypeFilename);
             outputFile << "# MisfitType records during inversion\n"; 

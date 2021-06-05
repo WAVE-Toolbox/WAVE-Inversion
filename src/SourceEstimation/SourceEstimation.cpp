@@ -13,10 +13,15 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
 {
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
-    if (config.get<IndexType>("useSeismogramTaper") == 1 || config.get<IndexType>("useSeismogramTaper") == 3)
-        init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"), config.get<std::string>("seismogramTaperSTFName"));
-    else
+    if (config.get<IndexType>("useSeismogramTaper") != 0 && config.get<IndexType>("useSeismogramTaper") != 2) {
+        if (config.get<IndexType>("useSeismogramTaper") == 4) {        
+            init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"), config.get<std::string>("seismogramTaperName") + ".SrcEst");
+        } else {     
+            init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"), config.get<std::string>("seismogramTaperName"));
+        }
+    } else {
         init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"));
+    }
 
     if (config.get<bool>("useSourceSignalTaper")) {
         sourceSignalTaper.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
