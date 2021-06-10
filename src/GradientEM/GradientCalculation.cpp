@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include "GradientCalculation.hpp"
 
 using scai::IndexType;
@@ -42,7 +41,7 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
  \param dataMisfitEM Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSourcesEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientEM, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecordEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Taper::Taper2D<ValueType> &wavefieldTaper2DEM)
+void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSourcesEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientEM, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecordEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Taper::Taper2D<ValueType> &wavefieldTaper2DEM, KITGPI::Preconditioning::EnergyPreconditioning<ValueType> &energyPrecondEM)
 {
     IndexType tStepEnd = static_cast<IndexType>((configEM.get<ValueType>("T") / configEM.get<ValueType>("DT")) + 0.5);
 
@@ -68,8 +67,7 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     wavefieldsEM->resetWavefields();
     ZeroLagXcorr->resetXcorr(workflowEM);
 
-    IndexType dtinversionEM = configEM.get<IndexType>("DTInversion");
-    
+    IndexType dtinversionEM = configEM.get<IndexType>("DTInversion");    
     ValueType DTinv = 1 / configEM.get<ValueType>("DT");
     
     /* --------------------------------------- */
@@ -79,8 +77,6 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
 //     std::cout << "Shot " << shotInd + 1 << ": Start adjoint solverEM\n" << std::endl;
     for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {
         
-        *wavefieldsTempEM = *wavefieldsEM;
-        
         solverEM.run(receiversEM, adjointSourcesEM, modelEM, *wavefieldsEM, derivativesEM, tStep);
 
         /* --------------------------------------- */
@@ -88,6 +84,7 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         /* --------------------------------------- */
         if (tStep % dtinversionEM == 0) {
             *wavefieldsTempEM = wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)]);
+            energyPrecondEM.intSquaredWavefields(*wavefieldsTempEM, *wavefieldsEM, configEM.get<ValueType>("DT"));
             //calculate temporal derivative of wavefield
             *wavefieldsTempEM -= wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(tStep / dtinversionEM - 0.5)]);
             *wavefieldsTempEM *= DTinv;      

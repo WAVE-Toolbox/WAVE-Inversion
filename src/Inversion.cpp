@@ -799,11 +799,11 @@ int main(int argc, char *argv[])
     /* Gradient preconditioning                */
     /* --------------------------------------- */
     Preconditioning::EnergyPreconditioning<ValueType> energyPrecond;
-    if (inversionType != 0 && config.get<bool>("useEnergyPreconditioning")) {
+    if (inversionType != 0) {
         energyPrecond.init(dist, config, isSeismic);
     }
     Preconditioning::EnergyPreconditioning<ValueType> energyPrecondEM;
-    if (inversionTypeEM != 0 && configEM.get<bool>("useEnergyPreconditioning")) {
+    if (inversionTypeEM != 0) {
         energyPrecondEM.init(distEM, configEM, isSeismicEM);
     }
     
@@ -961,8 +961,7 @@ int main(int argc, char *argv[])
                     }
 
                     /* Reset approximated Hessian per shot */
-                    if (config.get<bool>("useEnergyPreconditioning"))
-                        energyPrecond.resetApproxHessian();
+                    energyPrecond.resetApproxHessian();
 
                     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
                     Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
@@ -1054,9 +1053,6 @@ int main(int argc, char *argv[])
                                 // save wavefields in std::vector
                                 *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2D.applyWavefieldAverage(wavefields);
                             }
-                            if (config.get<bool>("useEnergyPreconditioning")) {
-                                energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
-                            }
                         }
                     } else {
                         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
@@ -1065,9 +1061,6 @@ int main(int argc, char *argv[])
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
                                 *wavefieldrecord[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2D.applyWavefieldAverage(wavefields);
-                            }
-                            if (config.get<bool>("useEnergyPreconditioning")) {
-                                energyPrecond.intSquaredWavefields(*wavefields, config.get<ValueType>("DT"));
                             }
                         }
                     }
@@ -1102,15 +1095,13 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Backward\n");
                     if (!useStreamConfig) {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, energyPrecond);
                     } else {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, energyPrecond);
                     }
 
                     /* Apply energy preconditioning per shot */
-                    if (config.get<bool>("useEnergyPreconditioning")) {
-                        energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
-                    }
+                    energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
                     
                     if (config.get<IndexType>("useReceiversPerShot") != 0)
                         ReceiverTaper.apply(*gradientPerShot);
@@ -1389,8 +1380,7 @@ int main(int argc, char *argv[])
                     }
 
                     /* Reset approximated Hessian per shot */
-                    if (configEM.get<bool>("useEnergyPreconditioning"))
-                        energyPrecondEM.resetApproxHessian();
+                    energyPrecondEM.resetApproxHessian();
 
                     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
                     Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEM, shotNumber);
@@ -1482,9 +1472,6 @@ int main(int argc, char *argv[])
                                 // save wavefieldsEM in std::vector
                                 *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
                             }
-                            if (configEM.get<bool>("useEnergyPreconditioning")) {
-                                energyPrecondEM.intSquaredWavefields(*wavefieldsEM, configEM.get<ValueType>("DT"));
-                            }
                         }
                     } else {
                         for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
@@ -1493,9 +1480,6 @@ int main(int argc, char *argv[])
                             if (tStep % dtinversion == 0) {
                                 // save wavefieldsEM in std::vector
                                 *wavefieldrecordEM[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
-                            }
-                            if (configEM.get<bool>("useEnergyPreconditioning")) {
-                                energyPrecondEM.intSquaredWavefields(*wavefieldsEM, configEM.get<ValueType>("DT"));
                             }
                         }
                     }
@@ -1530,15 +1514,13 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Backward\n");
                     if (!useStreamConfigEM) {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, energyPrecondEM);
                     } else {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, energyPrecondEM);
                     }
 
                     /* Apply energy preconditioning per shot */
-                    if (configEM.get<bool>("useEnergyPreconditioning")) {
-                        energyPrecondEM.apply(*gradientPerShotEM, shotNumber, configEM.get<IndexType>("FileFormat"));
-                    }
+                    energyPrecondEM.apply(*gradientPerShotEM, shotNumber, configEM.get<IndexType>("FileFormat"));
                     
                     if (configEM.get<IndexType>("useReceiversPerShot") != 0)
                         ReceiverTaperEM.apply(*gradientPerShotEM);

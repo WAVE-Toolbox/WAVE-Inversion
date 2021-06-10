@@ -2,9 +2,9 @@ close all; clear all;
 addpath('../configuration');
 addpath('../common');
 
-modelName = 'sunken_dh10cm';
+modelName = 'Krauthausen_B38_31';
 observationType = 'Crosshole';
-equationType = 'SH';
+equationType = 'ViscoEMEM';
 NoiseType = 'Noise';
 modelType = 'Inv';
 HPCType = 'HPC';
@@ -21,12 +21,14 @@ configTrue=conf(configTrueFilename);
 
 imagesave = 0;
 copy_inv = 0;
-parameter='vs';   % model parameter
-stage=3;
-iteration=1;
+parameter='epsilonEMr';   % model parameter
+stage=5;
+iteration=5;
 shotnr=0;
 gradientType=1; % 1=gradient,2=crossGradient,3=crossGradientDerivative
 gradientPerShot=0; % 1 = gradientPerShot, other = gradientSum;
+showSourceReceiver=0;
+showTrueModelContour = 1;
 
 DIR_PATH_NEW = 'data/';
 invertParameterType = 'PorositySaturation50';
@@ -49,7 +51,7 @@ else
     clim=[-valueMax valueMax];
 end
 plotGradient_TQ(clim,parameter,stage,shotnr,iteration,geometry...
-    ,config,configTrue,imagesave,gradientPerShot,gradientType);
+    ,config,configTrue,imagesave,gradientPerShot,gradientType,showSourceReceiver,showTrueModelContour);
 % cope the file to a defined directory
 if copy_inv == 1
     % get the filename

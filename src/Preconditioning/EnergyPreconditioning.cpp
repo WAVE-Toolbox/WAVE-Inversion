@@ -21,6 +21,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
         wavefieldEZ.setSameValue(dist, 0);       
     }
     
+    useEnergyPreconditioning = config.get<scai::IndexType>("useEnergyPreconditioning");  
     saveApproxHessian = config.get<bool>("saveApproxHessian");  
     approxHessianName = config.get<std::string>("approxHessianName");  
     epsilonHessian = config.get<ValueType>("epsilonHessian");
@@ -38,28 +39,49 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
  \param DT temporal sampling interval
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldBack, ValueType DT)
 {
             
     if(equationType.compare("sh") != 0){
         wavefieldVX = wavefield.getRefVX();
         wavefieldVX *= wavefieldVX;
         wavefieldVX *= DT;
-        approxHessian += wavefieldVX;        
+        approxHessian += wavefieldVX;  
+        if (useEnergyPreconditioning == 2) {
+            wavefieldVX = wavefieldBack.getRefVX();
+            wavefieldVX *= wavefield.getRefVX().maxNorm() / wavefieldVX.maxNorm();
+            wavefieldVX *= wavefieldVX;
+            wavefieldVX *= DT;
+            approxHessian += wavefieldVX; 
+        }      
     }
         
     if(equationType.compare("sh") != 0){
         wavefieldVY = wavefield.getRefVY();
         wavefieldVY *= wavefieldVY;
         wavefieldVY *= DT;
-        approxHessian += wavefieldVY;        
+        approxHessian += wavefieldVY;   
+        if (useEnergyPreconditioning == 2) {
+            wavefieldVY = wavefieldBack.getRefVY();
+            wavefieldVY *= wavefield.getRefVY().maxNorm() / wavefieldVY.maxNorm();
+            wavefieldVY *= wavefieldVY;
+            wavefieldVY *= DT;
+            approxHessian += wavefieldVY;
+        }             
     }
     
     if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0){
         wavefieldVZ = wavefield.getRefVZ();
         wavefieldVZ *= wavefieldVZ;
         wavefieldVZ *= DT;
-        approxHessian += wavefieldVZ;        
+        approxHessian += wavefieldVZ;  
+        if (useEnergyPreconditioning == 2) {
+            wavefieldVZ = wavefieldBack.getRefVZ();
+            wavefieldVZ *= wavefield.getRefVZ().maxNorm() / wavefieldVZ.maxNorm();
+            wavefieldVZ *= wavefieldVZ;
+            wavefieldVZ *= DT;
+            approxHessian += wavefieldVZ; 
+        }                   
     }    
 }
 
@@ -78,7 +100,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
     approxHessian += epsilonHessian*approxHessian.maxNorm(); 
     approxHessian *= 1 / approxHessian.maxNorm(); 
     
-    if(saveApproxHessian==1){
+    if(saveApproxHessian){
         IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);        
     }
         
@@ -94,28 +116,49 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
  \param DT temporal sampling interval
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefield, ValueType DT)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefield, KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefieldBack, ValueType DT)
 {
             
     if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
         wavefieldEX = wavefield.getRefEX();
         wavefieldEX *= wavefieldEX;
         wavefieldEX *= DT;
-        approxHessian += wavefieldEX;        
+        approxHessian += wavefieldEX;  
+        if (useEnergyPreconditioning == 2) {
+            wavefieldEX = wavefieldBack.getRefEX();
+            wavefieldEX *= wavefield.getRefEX().maxNorm() / wavefieldEX.maxNorm();
+            wavefieldEX *= wavefieldEX;
+            wavefieldEX *= DT;
+            approxHessian += wavefieldEX; 
+        }
     }
         
     if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
         wavefieldEY = wavefield.getRefEY();
         wavefieldEY *= wavefieldEY;
         wavefieldEY *= DT;
-        approxHessian += wavefieldEY;        
+        approxHessian += wavefieldEY;
+        if (useEnergyPreconditioning == 2) {
+            wavefieldEY = wavefieldBack.getRefEY();
+            wavefieldEY *= wavefield.getRefEY().maxNorm() / wavefieldEY.maxNorm();
+            wavefieldEY *= wavefieldEY;
+            wavefieldEY *= DT;
+            approxHessian += wavefieldEY;
+        }        
     }
     
     if(dimension.compare("3d") == 0 || equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
         wavefieldEZ = wavefield.getRefEZ();
         wavefieldEZ *= wavefieldEZ;
         wavefieldEZ *= DT;
-        approxHessian += wavefieldEZ;        
+        approxHessian += wavefieldEZ;    
+        if (useEnergyPreconditioning == 2) {
+            wavefieldEZ = wavefieldBack.getRefEZ();
+            wavefieldEZ *= wavefield.getRefEZ().maxNorm() / wavefieldEZ.maxNorm();
+            wavefieldEZ *= wavefieldEZ;
+            wavefieldEZ *= DT;
+            approxHessian += wavefieldEZ; 
+        }            
     }    
 }
 
@@ -134,11 +177,11 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
     approxHessian += epsilonHessian*approxHessian.maxNorm(); 
     approxHessian *= 1 / approxHessian.maxNorm(); 
     
-    if(saveApproxHessian==1){
+    if(saveApproxHessian){
         KITGPI::IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);}
         
     approxHessian = 1 / approxHessian;
-    gradientPerShotEM *= approxHessian;    // overload operator /= in gradientEM-class    
+    gradientPerShotEM *= approxHessian;    // overload operator /= in gradient-class    
     
 }
 
