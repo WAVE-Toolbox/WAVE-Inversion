@@ -1,7 +1,0 @@
-# Workflow file for WAVE-Inversion, each line contains one workflow stage with the specified parameters	
-#	invertForSigmaEM	invertForEpsilonEM	 invertForTauSigmaEM    invertForTauEpsilonEM	invertForPorosity	invertForSaturation	 relativeMisfitChange    filterOrder    lowerCornerFreq(Hz)    upperCornerFreq(Hz)	timeDampingFactor
-         1	                    1	                  0                    0	                    0	                  0		             0.01	            4                 5e06                      15e06				0
-         1	                    1	                  0                    0	                    0	                  0		             0.01	            4                 5e06                      25e06				0
-         1	                    1	                  0                    0	                    0	                  0		             0.01	            4                 5e06                      35e06				0
-         1	                    1	                  0                    0	                    0	                  0		             0.01	            4                 5e06                      50e06				0
-         1	                    1	                  0                    0	                    0	                  0		             0.01	            4                 5e06                      80e06				0
