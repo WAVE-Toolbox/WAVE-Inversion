@@ -1,5 +1,180 @@
 #include "MisfitL2.hpp"
 
+/*! \brief init function
+ *
+ \param config Configuration handle 
+ \param misfitTypeHistory a history vector to record the used times for each misfitType 
+ \param numshots number of shots 
+ */
+template <typename ValueType>
+void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots)
+{    
+    // transform to lower cases
+    misfitType = config.get<std::string>("misfitType");
+    std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
+    scai::IndexType misfitTypeLength = misfitType.length() - 2;
+    std::string temp1 = misfitType.substr(1, misfitType.length());
+    scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT 
+    scai::lama::DenseVector<ValueType> temp(numshots, 0, ctx);  
+    misfitTypeShots = temp;
+    if (misfitTypeLength > 1) {
+        scai::lama::DenseVector<ValueType> misfitPerIt(numshots, 0, ctx);
+        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {  
+            misfitStorageL2.push_back(misfitPerIt); 
+        }
+        std::vector<scai::IndexType> temp{2, 7, 8};
+        uniqueMisfitTypes = temp;
+    } else {
+        scai::IndexType misfitTypeNo = atoi(temp1.c_str());
+        misfitTypeShots = misfitTypeNo;
+    }
+    if (misfitType.compare("l2781") == 0) {
+        scai::IndexType randMisfitTypeInd;
+        scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
+        std::srand((int)time(0));
+        scai::IndexType maxcount = maxiterations * numshots / uniqueMisfitTypes.size() * 1.2;
+        for (int shotInd = 0; shotInd < numshots; shotInd++) {         
+            randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
+            if (misfitTypeHistory.at(randMisfitTypeInd) >= maxcount) {
+                shotInd--;
+            } else {
+                misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(randMisfitTypeInd));
+                misfitTypeHistory.at(randMisfitTypeInd)++;
+            }
+        }
+    }
+}
+
+/*! \brief Append to misfitType-file
+*
+\param comm Communicator
+\param logFilename Name of log-file
+\param stage inversion stage
+\param iteration inversion iteration
+*/
+template <typename ValueType>
+void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitTypeShotsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration)
+{      
+    int myRank = comm->getRank();  
+    if (misfitType.length() > 2 && myRank == MASTERGPI) {
+        std::ofstream outputFile; 
+        std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4) + ".misfitType" + logFilename.substr(logFilename.length()-4, 4);
+        if (stage == 1 && iteration == 1) {
+            outputFile.open(misfitTypeFilename);
+            outputFile << "# MisfitType records during inversion\n"; 
+            outputFile << "# misfit type = " << misfitType << "\n"; 
+            outputFile << "# Stage | Iteration | misfitTypes\n"; 
+        } else {                    
+            outputFile.open(misfitTypeFilename, std::ios_base::app);
+            outputFile << std::scientific;
+        }
+        outputFile << std::setw(5) << stage << std::setw(10) << iteration;
+        for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+            if (shotInd == 0) {
+                outputFile << std::setw(9) << (int) misfitTypeShots.getValue(shotInd);
+            } else {
+                outputFile << std::setw(4) << (int) misfitTypeShots.getValue(shotInd);
+            }
+        }
+        outputFile << "\n";
+        outputFile.close();
+    }
+}
+
+/*! \brief Append to misfits-file
+*
+\param comm Communicator
+\param logFilename Name of log-file
+\param stage inversion stage
+\param iteration inversion iteration
+*/
+template <typename ValueType>
+void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration)
+{      
+    scai::IndexType misfitTypeLength = misfitType.length() - 2;
+    int myRank = comm->getRank();  
+    if (misfitTypeLength > 1 && myRank == MASTERGPI) {
+        std::ofstream outputFile; 
+        std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-3) + misfitType + logFilename.substr(logFilename.length()-4, 4);
+        if (stage == 1 && iteration == 1) {
+            outputFile.open(misfitTypeFilename);
+            outputFile << "# Misfit records during inversion\n"; 
+            outputFile << "# misfit type = " << misfitType << "\n"; 
+            outputFile << "# Stage | Iteration"; 
+            for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) { 
+                outputFile << " | " << std::setw(7) << uniqueMisfitTypes.at(iMisfitType) << std::setw(7);
+            }
+            outputFile << "\n"; 
+        } else {                    
+            outputFile.open(misfitTypeFilename, std::ios_base::app);
+            outputFile << std::scientific;
+        }
+        outputFile << std::setw(5) << stage << std::setw(10) << iteration;
+        
+        scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
+        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) { 
+            scai::lama::DenseVector<ValueType> misfitPerIt = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType);
+            if (iMisfitType == 0) {
+                outputFile << std::setw(18) << misfitPerIt.sum();
+            } else {
+                outputFile << std::setw(14) << misfitPerIt.sum();
+            }
+        }
+        outputFile << "\n";
+        outputFile.close(); 
+    }
+}
+
+/*! \brief Append to misfits-file
+*
+\param comm Communicator
+\param logFilename Name of log-file
+\param stage inversion stage
+\param iteration inversion iteration
+*/
+template <typename ValueType>
+void KITGPI::Misfit::MisfitL2<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
+{      
+    scai::IndexType misfitTypeLength = misfitType.length() - 2;
+    if (misfitTypeLength > 1) {
+        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) { 
+            scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
+            if (commInterShot->getRank() == MASTERGPI) {
+                std::cout << "\n misfitPerIt sumShotDomain = ";
+                for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+                    std::cout << misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd) << "\t";
+                } 
+                std::cout << std::endl;
+            }
+            commInterShot->sumArray(misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getLocalValues());   
+            if (commInterShot->getRank() == MASTERGPI) {
+                std::cout << "\n misfitPerIt sumShotDomain sumArray = ";
+                for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+                    std::cout << misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd) << "\t";
+                }      
+                std::cout << std::endl;
+            }
+        }
+        if (misfitType.compare("l2782") == 0) {
+            if (commInterShot->getRank() == MASTERGPI) {
+                std::cout << "\n misfitTypeShots sumShotDomain = ";
+                for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+                    std::cout << misfitTypeShots.getValue(shotInd) << "\t";
+                } 
+                std::cout << std::endl;
+            }
+            commInterShot->sumArray(misfitTypeShots.getLocalValues()); 
+//             misfitTypeShots /= misfitTypeShots.size();
+            if (commInterShot->getRank() == MASTERGPI) {
+                std::cout << "\n misfitTypeShots sumShotDomain sumArry = ";
+                for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+                    std::cout << misfitTypeShots.getValue(shotInd) << "\t";
+                } 
+                std::cout << std::endl;
+            }
+        }
+    }
+}
 /*! \brief Return the L2-norm of seismograms stored in the given receiver objects (note: the misfit is summed over all components, i.e. vx,vy,vz,p)
  *
  *
@@ -8,38 +183,8 @@
  */
 template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd)
-{            
-    KITGPI::Acquisition::Seismogram<ValueType> seismogramSyn;
-    KITGPI::Acquisition::Seismogram<ValueType> seismogramObs;
-    KITGPI::Acquisition::SeismogramHandler<ValueType> seismoHandlerSyn;
-    KITGPI::Acquisition::SeismogramHandler<ValueType> seismoHandlerObs;
-    
-    ValueType misfit = 0;
-    ValueType misfitSum = 0;
-    scai::IndexType count = 0;
-
-    seismoHandlerSyn = receiversSyn.getSeismogramHandler();
-    seismoHandlerObs = receiversObs.getSeismogramHandler();
-              
-    /* Note that the misfit of different components (p,vx,vy,vz) is summed up. If p and v? is used at the same time, this could cause problems because they could have different scales.
-       For different velocity components it should be ok. */
-    
-    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
-    for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-        seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
-        seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
-        if (misfitTypeL2.compare("l2") == 0) {
-            misfit = this->calcL2(seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l7") == 0) {
-            misfit = this->calcL2Normalized(seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l8") == 0) {
-            misfit = this->calcL2Envelope(seismogramSyn, seismogramObs);
-        } 
-        misfitSum += misfit;
-        if (misfit != 0) count++;
-    }
-    
-    return misfitSum/count/this->getMisfitTypeShots().size(); 
+{        
+    return 0; 
 }
 
 /*! \brief Calculate the adjoint sources
@@ -51,29 +196,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
  */
 template <typename ValueType>
 void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd)
-{
-    KITGPI::Acquisition::Seismogram<ValueType> seismogramSyn;
-    KITGPI::Acquisition::Seismogram<ValueType> seismogramObs;
-    KITGPI::Acquisition::Seismogram<ValueType> seismogramAdj;
-    KITGPI::Acquisition::SeismogramHandler<ValueType> seismoHandlerSyn;
-    KITGPI::Acquisition::SeismogramHandler<ValueType> seismoHandlerObs;
-    
-    seismoHandlerSyn = receiversSyn.getSeismogramHandler();
-    seismoHandlerObs = receiversObs.getSeismogramHandler();
-    
-    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
-    for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-        seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
-        seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
-        if (misfitTypeL2.compare("l2") == 0) {
-            this->calcAdjointSeismogramL2(seismogramAdj, seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l7") == 0) {
-            this->calcAdjointSeismogramL2Normalized(seismogramAdj, seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l8") == 0) {
-            this->calcAdjointSeismogramL2Envelope(seismogramAdj, seismogramSyn, seismogramObs);
-        } 
-        adjointSources.getSeismogramHandler().getSeismogram(seismogramAdj.getTraceType()) = seismogramAdj;
-    }       
+{      
 }
 
 /*! \brief Return the L2-norm of seismograms stored in the given receiver objects (note: the misfit is summed over all components, i.e. vx,vy,vz,p)
@@ -84,8 +207,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition
  */
 template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd)
-{    
-        
+{            
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyn;
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObs;
     KITGPI::Acquisition::SeismogramHandlerEM<ValueType> seismoHandlerSyn;
@@ -101,28 +223,66 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
     /* Note that the misfit of different components (p,vx,vy,vz) is summed up. If p and v? is used at the same time, this could cause problems because they could have different scales.
        For different velocity components it should be ok. */
     
-    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
-    for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-        seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-        seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-        if (misfitTypeL2.compare("l2") == 0) {
-            misfit = this->calcL2(seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l7") == 0) {
-            misfit = this->calcL2Normalized(seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l8") == 0) {
-            misfit = this->calcL2Envelope(seismogramSyn, seismogramObs);
-        } 
-        misfitSum += misfit;
-        if (misfit != 0) count++;
+    scai::IndexType misfitStorageL2Size = 0;
+    scai::IndexType misfitTypeShotL2 = misfitTypeShots.getValue(shotInd);
+    scai::IndexType misfitTypeLength = misfitType.length() - 2;
+    if (misfitTypeLength == 0)
+        misfitTypeLength += 1;
+    for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {  
+        if (misfitTypeLength > 1) 
+           misfitTypeShotL2 = uniqueMisfitTypes.at(iMisfitType);
+            
+        for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
+            seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
+            seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
+            if (misfitTypeShotL2 == 2) {
+                misfit = this->calcL2(seismogramSyn, seismogramObs);
+            } else if (misfitTypeShotL2 == 7) {
+                misfit = this->calcL2Normalized(seismogramSyn, seismogramObs);
+            } else if (misfitTypeShotL2 == 8) {
+                misfit = this->calcL2Envelope(seismogramSyn, seismogramObs);
+            } 
+            misfitSum += misfit;
+            if (misfit != 0) count++;
+        }  
+        
+        if (misfitTypeLength > 1) {
+            misfitStorageL2Size = misfitStorageL2.size();
+            misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size());
+        }
+        if (iMisfitType < misfitTypeLength - 1) {
+            misfitSum = 0;
+            count = 0;
+        }
+    }
+    if (misfitType.compare("l2782") == 0) {
+        scai::IndexType misfitRatioMaxInd = 0;
+        if (misfitStorageL2Size > misfitTypeLength) { // iteration > 0
+            std::vector<ValueType> misfitRatio(misfitTypeLength, 0);  
+            for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {           
+                misfitRatio.at(iMisfitType) = (misfitStorageL2.at(misfitStorageL2Size - 2 * misfitTypeLength + iMisfitType).getValue(shotInd) - misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd)) / misfitStorageL2.at(misfitStorageL2Size - 2 * misfitTypeLength + iMisfitType).getValue(shotInd);
+            }
+            auto misfitRatioMax = std::max_element(std::begin(misfitRatio), std::end(misfitRatio));
+            misfitRatioMaxInd = std::distance(std::begin(misfitRatio), misfitRatioMax);
+        }
+        misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(misfitRatioMaxInd));
+        misfitSum = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + misfitRatioMaxInd).getValue(shotInd)*count*misfitTypeShots.size();
+    } else if (misfitType.compare("l2781") == 0) {
+        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {   
+            if (uniqueMisfitTypes.at(iMisfitType) == misfitTypeShots.getValue(shotInd)) {
+                misfitSum = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd)*count*misfitTypeShots.size();
+                break;
+            }
+        }
     }
     
-    return misfitSum/count/this->getMisfitTypeShots().size(); 
+    return misfitSum/count/misfitTypeShots.size(); 
 }
 
-/*! \brief Calculate the adjoint sourcesEM
+/*! \brief Calculate the adjoint sources
  *
  *
- \param adjointSourcesEM Receiver object which stores the adjoint sourcesEM (in- and output)
+ \param adjointSourcesEM Receiver object which stores the adjoint sources (in- and output)
  \param receiversSyn Receiver object which stores the synthetic data 
  \param receiversObs Receiver object which stores the observed data 
  */
@@ -138,19 +298,19 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition
     seismoHandlerSyn = receiversSyn.getSeismogramHandler();
     seismoHandlerObs = receiversObs.getSeismogramHandler();
     
-    std::string misfitTypeL2 = this->getMisfitTypeShot(shotInd);
+    scai::IndexType misfitTypeShotL2 = misfitTypeShots.getValue(shotInd);
     for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
         seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
         seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-        if (misfitTypeL2.compare("l2") == 0) {
+        if (misfitTypeShotL2 == 2) {
             this->calcAdjointSeismogramL2(seismogramAdj, seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l7") == 0) {
+        } else if (misfitTypeShotL2 == 7) {
             this->calcAdjointSeismogramL2Normalized(seismogramAdj, seismogramSyn, seismogramObs);
-        } else if (misfitTypeL2.compare("l8") == 0) {
+        } else if (misfitTypeShotL2 == 8) {
             this->calcAdjointSeismogramL2Envelope(seismogramAdj, seismogramSyn, seismogramObs);
         } 
         adjointSourcesEM.getSeismogramHandler().getSeismogram(seismogramAdj.getTraceType()) = seismogramAdj;
-    }       
+    }      
 }
 
 /*! \brief Return the L2-norm of seismograms 

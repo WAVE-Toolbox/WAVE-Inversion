@@ -873,8 +873,8 @@ int main(int argc, char *argv[])
         std::vector<scai::IndexType> uniqueShotNosRandEM(numShotDomainsEM, 0);
         std::vector<scai::IndexType> shotHistory(numshots, 0);
         std::vector<scai::IndexType> shotHistoryEM(numshotsEM, 0);
-        std::vector<scai::IndexType> misfitTypeHistory(misfitType.length()-1, 0);
-        std::vector<scai::IndexType> misfitTypeHistoryEM(misfitTypeEM.length()-1, 0);
+        std::vector<scai::IndexType> misfitTypeHistory(misfitType.length() - 2, 0);
+        std::vector<scai::IndexType> misfitTypeHistoryEM(misfitTypeEM.length() - 2, 0);
         IndexType shotNumber;
         IndexType shotIndTrue = 0;            
         for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
@@ -916,9 +916,6 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
                 dataMisfit->init(config, misfitTypeHistory, numshots); // in case of that random misfit function is used
-                if (misfitType.length() > 2) {
-                    dataMisfit->writeMisfitTypeToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1, misfitType);
-                }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
@@ -1141,6 +1138,10 @@ int main(int argc, char *argv[])
 
                 dataMisfit->addToStorage(misfitPerIt);
                 misfitPerIt = 0;
+                if (misfitType.length() > 2) {
+                    dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
+                    dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
+                }
 
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration));
 
@@ -1343,9 +1344,6 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
                 dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM); // in case of that random misfit function is used
-                if (misfitTypeEM.length() > 2) {
-                    dataMisfitEM->writeMisfitTypeToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, misfitTypeEM);
-                }
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
@@ -1515,7 +1513,7 @@ int main(int argc, char *argv[])
                                     
                     receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
 
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Calculate misfit and adjoint sourcesEM\n");
+                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Calculate misfit and adjoint sources\n");
 
                     /* Normalize observed and synthetic data */
                     if (configEM.get<bool>("normalizeTraces")){
@@ -1526,7 +1524,7 @@ int main(int argc, char *argv[])
                     /* Calculate misfit of one shot */
                     misfitPerItEM.setValue(shotIndTrue, dataMisfitEM->calc(receiversEM, receiversTrueEM, shotIndTrue));
 
-                    /* Calculate adjoint sourcesEM */
+                    /* Calculate adjoint sources */
                     dataMisfitEM->calcAdjointSources(adjointSourcesEM, receiversEM, receiversTrueEM, shotIndTrue);
 
                     /* Calculate gradient */
@@ -1560,6 +1558,7 @@ int main(int argc, char *argv[])
 
                 } //end of loop over shots
 
+                dataMisfitEM->sumShotDomain(commInterShot);   
                 gradientEM->sumShotDomain(commInterShot);                
                 commInterShot->sumArray(misfitPerItEM.getLocalValues());
 
@@ -1568,6 +1567,10 @@ int main(int argc, char *argv[])
 
                 dataMisfitEM->addToStorage(misfitPerItEM);
                 misfitPerItEM = 0;
+                if (misfitTypeEM.length() > 2) {
+                    dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
+                    dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
+                }
 
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration));
 

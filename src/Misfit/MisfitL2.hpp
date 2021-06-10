@@ -23,8 +23,13 @@ namespace KITGPI
 
         public:
             /* Default constructor and destructor */
-            MisfitL2(){};
+            MisfitL2(){misfitType = "l2";}; // set default misfitType for step length search.
             ~MisfitL2(){};
+            
+            void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots);
+            void appendMisfitTypeShotsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration);
+            void appendMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration);
+            void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
                    
             ValueType calc(KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd);
             ValueType calc(KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd);            
@@ -46,10 +51,12 @@ namespace KITGPI
             void calcAdjointSeismogramL2Envelope(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);            
             void calcAdjointSeismogramL2Envelope(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);
                               
-        private:
-            
-            using Misfit<ValueType>::misfitStorage;   
-        };
-        
+        private:            
+            using Misfit<ValueType>::misfitStorage;  
+            using Misfit<ValueType>::misfitStorageL2;   
+            using Misfit<ValueType>::misfitType;     
+            using Misfit<ValueType>::misfitTypeShots; 
+            using Misfit<ValueType>::uniqueMisfitTypes;
+        };        
     }
 }

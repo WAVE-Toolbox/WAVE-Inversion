@@ -39,11 +39,12 @@ namespace KITGPI
             void addToStorage(scai::lama::DenseVector<ValueType> vector);
             void clearStorage();            
             
-            void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots);
-            std::string getMisfitTypeShot(scai::IndexType shotInd);
-            std::vector<std::string> getMisfitTypeShots();
-            void setMisfitTypeShots(std::vector<std::string> setMisfitTypeShots);
-            void writeMisfitTypeToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration, std::string misfitType);
+            virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots) = 0;
+            virtual void appendMisfitTypeShotsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
+            virtual void appendMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
+            virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
+            scai::lama::DenseVector<ValueType> getMisfitTypeShots();
+            void setMisfitTypeShots(scai::lama::DenseVector<ValueType> setMisfitTypeShots);
             
             //! \brief Misfit pointer
             typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
@@ -54,8 +55,11 @@ namespace KITGPI
             Misfit(){};
             ~Misfit(){};
             
-            std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;
-            std::vector<std::string> misfitTypeShots; 
+            std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;            
+            std::vector<scai::lama::DenseVector<ValueType>> misfitStorageL2;
+            scai::lama::DenseVector<ValueType> misfitTypeShots; 
+            std::vector<scai::IndexType> uniqueMisfitTypes;
+            std::string misfitType;
             scai::lama::DenseVector<ValueType> modelDerivativeX; //!< Vector storing model derivative in x direction.
             scai::lama::DenseVector<ValueType> modelDerivativeY; //!< Vector storing model derivative in y direction.
             

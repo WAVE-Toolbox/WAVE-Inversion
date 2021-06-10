@@ -1,107 +1,22 @@
 #include "Misfit.hpp"
 
-/*! \brief Set misfit
+/*! \brief get misfitType of all shots
  *
- \param type misfitType 
  */
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots)
-{    
-    misfitTypeShots.clear();
-    // transform to lower cases
-    std::string misfitType = config.get<std::string>("misfitType");
-    std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
-    if (misfitType.length() == 2 && config.getAndCatch("useRandomSource", 0) == 0) {
-        for (int shotInd = 0; shotInd < numshots; shotInd++) {
-            misfitTypeShots.push_back(misfitType);
-        }
-    } else if (misfitType.compare("l278") == 0) {
-        scai::IndexType randMisfitTypeInd;
-        scai::IndexType numshotsPerIt = numshots;
-        scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
-        std::vector<std::string> uniqueMisfitTypes{"l2","l7","l8"};
-        std::srand((int)time(0));
-        if (config.getAndCatch("useRandomSource", 0) != 0) {
-            numshotsPerIt = config.get<scai::IndexType>("NumShotDomains"); 
-        }
-        scai::IndexType maxcount = maxiterations * numshotsPerIt / uniqueMisfitTypes.size() * 1.2;
-        for (int shotInd = 0; shotInd < numshotsPerIt; shotInd++) {         
-            randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
-            if (misfitTypeHistory[randMisfitTypeInd] >= maxcount) {
-                shotInd--;
-            } else {
-                misfitTypeShots.push_back(uniqueMisfitTypes[randMisfitTypeInd]);
-                misfitTypeHistory[randMisfitTypeInd]++;
-            }
-        }
-    }
-}
-
-/*! \brief get misfit
- *
- \param type misfitType 
- */
-template <typename ValueType>
-std::string KITGPI::Misfit::Misfit<ValueType>::getMisfitTypeShot(scai::IndexType shotInd)
-{    
-    return misfitTypeShots.at(shotInd);
-}
-
-/*! \brief get misfit history
- *
- \param type misfitType 
- */
-template <typename ValueType>
-std::vector<std::string>  KITGPI::Misfit::Misfit<ValueType>::getMisfitTypeShots()
+scai::lama::DenseVector<ValueType> KITGPI::Misfit::Misfit<ValueType>::getMisfitTypeShots()
 {    
     return misfitTypeShots;
 }
 
-/*! \brief set misfit history vector
+/*! \brief set misfitType of all shots
  *
- \param type misfitType 
+ \param setMisfitTypeShots misfitType 
  */
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::setMisfitTypeShots(std::vector<std::string> setMisfitTypeShots)
+void KITGPI::Misfit::Misfit<ValueType>::setMisfitTypeShots(scai::lama::DenseVector<ValueType> setMisfitTypeShots)
 {    
     misfitTypeShots = setMisfitTypeShots;
-}
-
-/*! \brief Write to misfitType-file
-*
-\param comm Communicator
-\param logFilename Name of log-file
-\param stage inversion stage
-\param iteration inversion iteration
-\param misfitType misfitType
-*/
-template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::writeMisfitTypeToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration, std::string misfitType)
-{      
-    int myRank = comm->getRank();  
-    if (misfitType.length() > 2 && myRank == MASTERGPI) {
-        std::ofstream outputFile; 
-        std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4) + ".misfitType" + logFilename.substr(logFilename.length()-4, 4);
-        if (stage == 1 && iteration == 1) {
-            outputFile.open(misfitTypeFilename);
-            outputFile << "# MisfitType records during inversion\n"; 
-            outputFile << "# random misfit type = " << misfitType << "\n"; 
-            outputFile << "# Stage | Iteration | misfitTypes\n"; 
-        } else {                    
-            outputFile.open(misfitTypeFilename, std::ios_base::app);
-            outputFile << std::scientific;
-        }
-        outputFile << std::setw(5) << stage << std::setw(10) << iteration;
-        for (unsigned i = 0; i < misfitTypeShots.size(); i++) { 
-            if (i == 0) {
-                outputFile << std::setw(9) << misfitTypeShots[i];
-            } else {
-                outputFile << std::setw(4) << misfitTypeShots[i];
-            }
-        }
-        outputFile << "\n";
-        outputFile.close();
-    }
 }
 
 /*! \brief Return the misfit summed over all shots. 
