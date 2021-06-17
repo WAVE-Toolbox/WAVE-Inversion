@@ -53,7 +53,8 @@ namespace KITGPI
                               
         private:            
             using Misfit<ValueType>::misfitStorage;  
-            using Misfit<ValueType>::misfitStorageL2;   
+            using Misfit<ValueType>::misfitStorageL2;  
+            using Misfit<ValueType>::misfitSum0Ratio;   
             using Misfit<ValueType>::misfitType;     
             using Misfit<ValueType>::misfitTypeShots; 
             using Misfit<ValueType>::uniqueMisfitTypes;

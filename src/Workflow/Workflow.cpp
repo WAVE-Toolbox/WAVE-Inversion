@@ -136,6 +136,27 @@ bool KITGPI::Workflow::Workflow<ValueType>::getInvertForSaturation() const
     return invertForSaturation;
 }
 
+/*! \brief Return the vector of the inverted parameters
+ */
+template <typename ValueType>
+std::vector<bool> KITGPI::Workflow::Workflow<ValueType>::getInvertParameters() const
+{
+    std::vector<bool> invertParameters{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation};
+    return invertParameters;
+}
+
+/*! \brief Set the vector of the inverted parameters
+ */
+template <typename ValueType>
+void KITGPI::Workflow::Workflow<ValueType>::setInvertParameters(std::vector<bool> setInvertParameters)
+{
+    invertForVp = setInvertParameters[0];
+    invertForVs = setInvertParameters[1];
+    invertForDensity = setInvertParameters[2];
+    invertForPorosity = setInvertParameters[3];
+    invertForSaturation = setInvertParameters[4];
+}
+
 /*! \brief Return copy of relativeMisfitChange
  */
 template <typename ValueType>

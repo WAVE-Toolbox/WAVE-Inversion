@@ -41,7 +41,7 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
  \param dataMisfitEM Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSourcesEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientEM, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecordEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Taper::Taper2D<ValueType> &wavefieldTaper2DEM, KITGPI::Preconditioning::EnergyPreconditioning<ValueType> &energyPrecondEM)
+void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solverEM, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivativesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSourcesEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientEM, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecordEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Taper::Taper2D<ValueType> &wavefieldTaper2DEM)
 {
     IndexType tStepEnd = static_cast<IndexType>((configEM.get<ValueType>("T") / configEM.get<ValueType>("DT")) + 0.5);
 
@@ -64,6 +64,8 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     /*                Backward Modelling                      */
     /* ------------------------------------------------------ */
 
+    bool isSeismicEM = Common::checkEquationType<ValueType>(equationTypeEM);
+    energyPrecond.init(distEM, configEM, isSeismicEM);
     wavefieldsEM->resetWavefields();
     ZeroLagXcorr->resetXcorr(workflowEM);
 
@@ -84,7 +86,7 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         /* --------------------------------------- */
         if (tStep % dtinversionEM == 0) {
             *wavefieldsTempEM = wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)]);
-            energyPrecondEM.intSquaredWavefields(*wavefieldsTempEM, *wavefieldsEM, configEM.get<ValueType>("DT"));
+            energyPrecond.intSquaredWavefields(*wavefieldsTempEM, *wavefieldsEM, configEM.get<ValueType>("DT"));
             //calculate temporal derivative of wavefield
             *wavefieldsTempEM -= wavefieldTaper2DEM.applyWavefieldRecover(wavefieldrecordEM[floor(tStep / dtinversionEM - 0.5)]);
             *wavefieldsTempEM *= DTinv;      
@@ -108,6 +110,14 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     gradientEM.estimateParameter(*ZeroLagXcorr, modelEM, configEM.get<ValueType>("DT"), workflowEM);
     SourceTaper.init(distEM, ctx, sourcesEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("sourceTaperRadius"));
     SourceTaper.apply(gradientEM);
+    /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
+    ReceiverTaper.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
+    ReceiverTaper.apply(gradientEM);
+
+    /* Apply energy preconditioning per shot */
+    energyPrecond.apply(gradientEM, shotNumber, configEM.get<IndexType>("FileFormat"));
+    gradientEM.applyMedianFilter(configEM);  
+    gradientEM.normalize();
 
     if (configEM.get<IndexType>("writeGradientPerShot"))
         gradientEM.write(configEM.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber), configEM.get<IndexType>("FileFormat"), workflowEM);

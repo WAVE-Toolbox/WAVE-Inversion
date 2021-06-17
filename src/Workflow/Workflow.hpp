@@ -40,6 +40,8 @@ namespace KITGPI
             bool getInvertForDensity() const;
             bool getInvertForPorosity() const;
             bool getInvertForSaturation() const;
+            std::vector<bool> getInvertParameters() const;
+            void setInvertParameters(std::vector<bool> setInvertParameters);
             ValueType getRelativeMisfitChange() const;
             scai::IndexType getFilterOrder() const;
             ValueType getLowerCornerFreq() const;

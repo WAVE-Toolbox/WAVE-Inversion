@@ -24,6 +24,13 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
         }
         std::vector<scai::IndexType> temp{2, 7, 8};
         uniqueMisfitTypes = temp;
+        scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
+        if (misfitStorageL2Size == misfitTypeLength) {
+            scai::lama::DenseVector<ValueType> temp(numshots, 1, ctx);
+            for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {  
+                misfitSum0Ratio.push_back(temp); 
+            }
+        }
     } else {
         scai::IndexType misfitTypeNo = atoi(temp1.c_str());
         misfitTypeShots = misfitTypeNo;
@@ -199,7 +206,10 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
         
         if (misfitTypeLength > 1) {
             misfitStorageL2Size = misfitStorageL2.size();
-            misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size());
+            if (misfitStorageL2Size == misfitTypeLength && iMisfitType > 0) {
+                misfitSum0Ratio.at(iMisfitType).setValue(shotInd, misfitStorageL2.at(0).getValue(shotInd) / (misfitSum/count/misfitTypeShots.size()));
+            }
+            misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size()*misfitSum0Ratio.at(iMisfitType).getValue(shotInd));
         }
         if (iMisfitType < misfitTypeLength - 1) {
             misfitSum = 0;
@@ -313,7 +323,10 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
         
         if (misfitTypeLength > 1) {
             misfitStorageL2Size = misfitStorageL2.size();
-            misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size());
+            if (misfitStorageL2Size == misfitTypeLength && iMisfitType > 0) {
+                misfitSum0Ratio.at(iMisfitType).setValue(shotInd, misfitStorageL2.at(0).getValue(shotInd) / (misfitSum/count/misfitTypeShots.size()));
+            }
+            misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size()*misfitSum0Ratio.at(iMisfitType).getValue(shotInd));
         }
         if (iMisfitType < misfitTypeLength - 1) {
             misfitSum = 0;

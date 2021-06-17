@@ -56,7 +56,8 @@ namespace KITGPI
             ~Misfit(){};
             
             std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;            
-            std::vector<scai::lama::DenseVector<ValueType>> misfitStorageL2;
+            std::vector<scai::lama::DenseVector<ValueType>> misfitStorageL2;          
+            std::vector<scai::lama::DenseVector<ValueType>> misfitSum0Ratio;
             scai::lama::DenseVector<ValueType> misfitTypeShots; 
             std::vector<scai::IndexType> uniqueMisfitTypes;
             std::string misfitType;

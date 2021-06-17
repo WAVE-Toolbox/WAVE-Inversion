@@ -152,6 +152,9 @@ namespace KITGPI
             SparseFormat getShrinkMatrix(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D const cutCoordinate);
             
             scai::lama::SparseVector<ValueType> getEraseVector(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D const cutCoordinate, scai::IndexType boundaryWidth);
+            
+            void setInvertParameterSingle(std::vector<bool> setInvertParameterSingle);
+            std::vector<bool> getInvertParameterSingle();
 
             /* Operator overloading */
             /*lhs Base rhs Base */
@@ -192,6 +195,7 @@ namespace KITGPI
             void writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, scai::IndexType fileFormat) const;
 
             bool normalizeGradient;
+            KITGPI::Workflow::WorkflowEM<ValueType> workflowInner;
 
           private:
             void allocateParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM);

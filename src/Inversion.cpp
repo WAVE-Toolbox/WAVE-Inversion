@@ -649,9 +649,9 @@ int main(int argc, char *argv[])
     StepLengthSearch<ValueType> SLsearch;
     StepLengthSearch<ValueType> SLsearchEM;
     if (inversionType != 0)
-        SLsearch.initLogFile(commAll, logFilename, misfitType);
+        SLsearch.initLogFile(commAll, logFilename, misfitType, config.getAndCatch("steplengthType", 2), workflow.getInvertParameters().size());
     if (inversionTypeEM != 0)
-        SLsearchEM.initLogFile(commAll, logFilenameEM, misfitTypeEM);
+        SLsearchEM.initLogFile(commAll, logFilenameEM, misfitTypeEM, configEM.getAndCatch("steplengthType", 2), workflowEM.getInvertParameters().size());
 
     /* --------------------------------------- */
     /* Source estimation                       */
@@ -745,17 +745,13 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Gradient taper                          */
     /* --------------------------------------- */
-    Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
     Taper::Taper1D<ValueType> gradientTaper1D;
     Taper::Taper2D<ValueType> wavefieldTaper2D;
-    Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaperEM;
     Taper::Taper1D<ValueType> gradientTaper1DEM; 
     Taper::Taper2D<ValueType> wavefieldTaper2DEM;
     Taper::Taper2D<ValueType> modelTaper2DJoint;
     
     if (inversionType != 0) {
-        if (config.get<IndexType>("useReceiversPerShot") == 0)
-            ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
         if (config.get<bool>("useGradientTaper")) {
             if (!useStreamConfig) {
                 gradientTaper1D.init(dist, ctx, 1);
@@ -769,8 +765,6 @@ int main(int argc, char *argv[])
         wavefieldTaper2D.calcInversionAverageMatrix(modelCoordinates, modelCoordinatesInversion);  
     }
     if (inversionTypeEM != 0) {
-        if (configEM.get<IndexType>("useReceiversPerShot") == 0)
-            ReceiverTaperEM.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
         if (configEM.get<bool>("useGradientTaper")) {
             if (!useStreamConfigEM) {   
                 gradientTaper1DEM.init(distEM, ctx, 1);
@@ -793,18 +787,6 @@ int main(int argc, char *argv[])
             modelTaper2DJoint.calcSeismictoEMMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM);
             modelTaper2DJoint.calcEMtoSeismicMatrix(modelCoordinatesBig, configBig, modelCoordinatesBigEM, configBigEM); 
         }
-    }
-    
-    /* --------------------------------------- */
-    /* Gradient preconditioning                */
-    /* --------------------------------------- */
-    Preconditioning::EnergyPreconditioning<ValueType> energyPrecond;
-    if (inversionType != 0) {
-        energyPrecond.init(dist, config, isSeismic);
-    }
-    Preconditioning::EnergyPreconditioning<ValueType> energyPrecondEM;
-    if (inversionTypeEM != 0) {
-        energyPrecondEM.init(distEM, configEM, isSeismicEM);
     }
     
     /* --------------------------------------- */
@@ -940,15 +922,11 @@ int main(int argc, char *argv[])
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
                         receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
-
-                        ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
                     } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
-
-                        ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
@@ -959,9 +937,6 @@ int main(int argc, char *argv[])
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
                         receiversStart.getSeismogramHandler().filter(freqFilter);
                     }
-
-                    /* Reset approximated Hessian per shot */
-                    energyPrecond.resetApproxHessian();
 
                     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
                     Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
@@ -1031,6 +1006,12 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
                     seismogramTaper1D.apply(receiversStart.getSeismogramHandler());
                     
+                    /* Normalize observed and synthetic data */
+                    if (config.get<bool>("normalizeTraces")){
+                        receiversStart.getSeismogramHandler().normalize();
+                        receiversTrue.getSeismogramHandler().normalize();
+                    }
+                    
                     if (workflow.iteration == 0){
                         receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                         receiversStart.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
@@ -1075,16 +1056,15 @@ int main(int argc, char *argv[])
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
                     }
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
+                    
+                    /* Normalize synthetic data */
+                    if (config.get<bool>("normalizeTraces")){
+                        receivers.getSeismogramHandler().normalize();
+                    }
                                     
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
-
-                    /* Normalize observed and synthetic data */
-                    if (config.get<bool>("normalizeTraces")){
-                        receivers.getSeismogramHandler().normalize();
-                        receiversTrue.getSeismogramHandler().normalize();
-                    }
                     
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotIndTrue, dataMisfit->calc(receivers, receiversTrue, shotIndTrue));
@@ -1095,19 +1075,11 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Backward\n");
                     if (!useStreamConfig) {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, energyPrecond);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D);
                     } else {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, energyPrecond);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D);
                     }
-
-                    /* Apply energy preconditioning per shot */
-                    energyPrecond.apply(*gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
                     
-                    if (config.get<IndexType>("useReceiversPerShot") != 0)
-                        ReceiverTaper.apply(*gradientPerShot);
-
-                    gradientPerShot->normalize();
-
                     if (!useStreamConfig) {
                         *gradient += *gradientPerShot;
                     } else {
@@ -1138,11 +1110,7 @@ int main(int argc, char *argv[])
 
                 /* Check abort criteria */
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
-            
-                /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-                if (config.get<IndexType>("useReceiversPerShot") == 0)
-                    ReceiverTaper.apply(*gradient);
-                
+                            
                 if (config.get<bool>("useGradientTaper"))
                     gradientTaper1D.apply(*gradient);
 
@@ -1359,15 +1327,11 @@ int main(int argc, char *argv[])
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
-
-                        ReceiverTaperEM.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
                     } else if (configEM.get<IndexType>("useReceiversPerShot") == 2) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
-
-                        ReceiverTaperEM.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
@@ -1378,9 +1342,6 @@ int main(int argc, char *argv[])
                         receiversTrueEM.getSeismogramHandler().filter(freqFilterEM);
                         receiversStartEM.getSeismogramHandler().filter(freqFilterEM);
                     }
-
-                    /* Reset approximated Hessian per shot */
-                    energyPrecondEM.resetApproxHessian();
 
                     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
                     Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEM, shotNumber);
@@ -1450,6 +1411,12 @@ int main(int argc, char *argv[])
                     seismogramTaper1DEM.apply(receiversTrueEM.getSeismogramHandler());
                     seismogramTaper1DEM.apply(receiversStartEM.getSeismogramHandler());
                     
+                    /* Normalize observed and synthetic data */
+                    if (configEM.get<bool>("normalizeTraces")){
+                        receiversStartEM.getSeismogramHandler().normalize();
+                        receiversTrueEM.getSeismogramHandler().normalize();
+                    }
+                    
                     if (workflowEM.iteration == 0){
                         receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                         receiversStartEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
@@ -1502,7 +1469,6 @@ int main(int argc, char *argv[])
                     /* Normalize observed and synthetic data */
                     if (configEM.get<bool>("normalizeTraces")){
                         receiversEM.getSeismogramHandler().normalize();
-                        receiversTrueEM.getSeismogramHandler().normalize();
                     }
                     
                     /* Calculate misfit of one shot */
@@ -1514,19 +1480,11 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Backward\n");
                     if (!useStreamConfigEM) {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, energyPrecondEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM);
                     } else {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, energyPrecondEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM);
                     }
-
-                    /* Apply energy preconditioning per shot */
-                    energyPrecondEM.apply(*gradientPerShotEM, shotNumber, configEM.get<IndexType>("FileFormat"));
                     
-                    if (configEM.get<IndexType>("useReceiversPerShot") != 0)
-                        ReceiverTaperEM.apply(*gradientPerShotEM);
-
-                    gradientPerShotEM->normalize();
-
                     if (!useStreamConfigEM) {
                         *gradientEM += *gradientPerShotEM;
                     } else {
@@ -1559,10 +1517,6 @@ int main(int argc, char *argv[])
                 /* Check abort criteria */
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration) << "\n");
             
-                /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
-                if (configEM.get<IndexType>("useReceiversPerShot") == 0)
-                    ReceiverTaperEM.apply(*gradientEM);
-
                 if (configEM.get<bool>("useGradientTaper"))
                     gradientTaper1DEM.apply(*gradientEM);
                 
@@ -1695,12 +1649,31 @@ int main(int argc, char *argv[])
                 if (breakLoopEM == false || breakLoopType == 2) {
                     HOST_PRINT(commAll, "\n================================================");
                     HOST_PRINT(commAll, "\n========== Start step length search " << equationTypeEM << " ======\n");
-                    SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, dataMisfitEM->getMisfitIt(workflowEM.iteration), workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM, dataMisfitEM->getMisfitTypeShots());
+                    if (configEM.getAndCatch("steplengthType", 2) == 1) {
+                        std::vector<bool> invertParametersEM = workflowEM.getInvertParameters();
+                        SLsearchEM.init();
+                        for (unsigned i=0; i<invertParametersEM.size(); i++) {
+                            if (invertParametersEM[i]) {
+                                std::vector<bool> invertParametersTempEM(invertParametersEM.size(), false);
+                                invertParametersTempEM[i] = invertParametersEM[i];
+                                gradientEM->setInvertParameterSingle(invertParametersTempEM);
+                                SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, dataMisfitEM->getMisfitIt(workflowEM.iteration), workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM, dataMisfitEM->getMisfitTypeShots());
 
-                    HOST_PRINT(commAll, "================= Update Model " << equationTypeEM << " ============\n\n");
-                    /* Apply model update */
-                    *gradientEM *= SLsearchEM.getSteplength();
-                    *modelEM -= *gradientEM;
+                                *gradientEM *= SLsearchEM.getSteplength();
+                            }
+                        }
+                        HOST_PRINT(commAll, "================= Update Model " << equationTypeEM << " ============\n\n");
+                        /* Apply model update */
+                        gradientEM->setInvertParameterSingle(invertParametersEM);
+                        *modelEM -= *gradientEM;
+                    } else if (configEM.getAndCatch("steplengthType", 2) == 2) {
+                        SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, dataMisfitEM->getMisfitIt(workflowEM.iteration), workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM, dataMisfitEM->getMisfitTypeShots());
+
+                        HOST_PRINT(commAll, "================= Update Model " << equationTypeEM << " ============\n\n");
+                        /* Apply model update */
+                        *gradientEM *= SLsearchEM.getSteplength();
+                        *modelEM -= *gradientEM;
+                    }
                     
                     if (configEM.get<bool>("useModelThresholds"))
                         modelEM->applyThresholds(configEM);
@@ -1828,15 +1801,15 @@ int main(int argc, char *argv[])
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
                     }
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
-                        
-                    receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
-                
+                    
                     /* Normalize observed and synthetic data */
                     if (config.get<bool>("normalizeTraces")){
                         receivers.getSeismogramHandler().normalize();
                         receiversTrue.getSeismogramHandler().normalize();
                     }
-
+                        
+                    receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                
                     /* Calculate misfit of one shot */
                     misfitPerIt.setValue(shotIndTrue, dataMisfit->calc(receivers, receiversTrue, shotIndTrue));
 
@@ -1942,14 +1915,14 @@ int main(int argc, char *argv[])
                     }
                     seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());
                         
-                    receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
-                
                     /* Normalize observed and synthetic data */
                     if (configEM.get<bool>("normalizeTraces")){
                         receiversEM.getSeismogramHandler().normalize();
                         receiversTrueEM.getSeismogramHandler().normalize();
                     }
 
+                    receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
+                
                     /* Calculate misfit of one shot */
                     misfitPerItEM.setValue(shotIndTrue, dataMisfitEM->calc(receiversEM, receiversTrueEM, shotIndTrue));
 

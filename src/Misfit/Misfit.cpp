@@ -71,6 +71,7 @@ template <typename ValueType>
 void KITGPI::Misfit::Misfit<ValueType>::clearStorage()
 {
     this->misfitStorage.clear();
+    this->misfitStorageL2.clear();
 }
 
 /*! \brief Set number of Relaxation Mechanisms

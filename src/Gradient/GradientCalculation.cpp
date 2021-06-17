@@ -41,7 +41,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Taper::Taper2D<ValueType> wavefieldTaper2D, KITGPI::Preconditioning::EnergyPreconditioning<ValueType> &energyPrecond)
+void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::Gradient<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Taper::Taper2D<ValueType> wavefieldTaper2D)
 {
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
@@ -60,10 +60,12 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
 
- /* ------------------------------------------------------ */
+    /* ------------------------------------------------------ */
     /*                Backward Modelling                      */
     /* ------------------------------------------------------ */
 
+    bool isSeismic = Common::checkEquationType<ValueType>(equationType);
+    energyPrecond.init(dist, config, isSeismic);
     wavefields->resetWavefields();
     ZeroLagXcorr->resetXcorr(workflow);
 
@@ -108,7 +110,15 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);
     SourceTaper.init(dist, ctx, sources, config, modelCoordinates, config.get<IndexType>("sourceTaperRadius"));
     SourceTaper.apply(gradient);
+    /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
+    ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
+    ReceiverTaper.apply(gradient);
 
+    /* Apply energy preconditioning per shot */
+    energyPrecond.apply(gradient, shotNumber, config.get<IndexType>("FileFormat"));
+    gradient.applyMedianFilter(config);  
+    gradient.normalize();
+                
     if (config.get<IndexType>("writeGradientPerShot"))
         gradient.write(config.get<std::string>("GradientFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), config.get<IndexType>("FileFormat"), workflow);
 }

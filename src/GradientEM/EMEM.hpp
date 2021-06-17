@@ -104,6 +104,7 @@ namespace KITGPI
             using GradientEM<ValueType>::dielectricPermittivityEM;
             using GradientEM<ValueType>::porosity;
             using GradientEM<ValueType>::saturation;
+            using GradientEM<ValueType>::workflowInner;
                         
             /* Not requiered parameters */
             using GradientEM<ValueType>::tauConductivityEM;

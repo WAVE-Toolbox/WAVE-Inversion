@@ -106,6 +106,7 @@ namespace KITGPI
             using GradientEM<ValueType>::numRelaxationMechanisms;
             using GradientEM<ValueType>::porosity;
             using GradientEM<ValueType>::saturation;
+            using GradientEM<ValueType>::workflowInner;
                         
             /* Not requiered parameters */
         };

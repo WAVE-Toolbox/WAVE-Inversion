@@ -100,7 +100,7 @@ namespace KITGPI
             element *result;
             result = (element *)malloc(NY * NX * sizeof(element));
 
-            medianfilter(signal_2D, result, NX, NY, spatialFDorder+3, 0);
+            medianfilter(signal_2D, result, NX, NY, spatialFDorder*2+1, 0);
             
             for (int i = 0; i < NY * NX; i++) {
                 vecter2D.setValue(i, *(result + i));

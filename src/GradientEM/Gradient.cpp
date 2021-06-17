@@ -166,6 +166,20 @@ scai::lama::SparseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::get
     return eraseVector;
 }
 
+/*! \brief initialize an inner workflow */
+template <typename ValueType>
+void KITGPI::Gradient::GradientEM<ValueType>::setInvertParameterSingle(std::vector<bool> setInvertParameterSingle)
+{
+    workflowInner.setInvertParameters(setInvertParameterSingle);
+}
+    
+/*! \brief get an inner workflow */
+template <typename ValueType>
+std::vector<bool> KITGPI::Gradient::GradientEM<ValueType>::getInvertParameterSingle()
+{
+    return workflowInner.getInvertParameters();
+}
+
 /*! \brief apply parameterisation of modelEM parameters */
 template <typename ValueType>
 void KITGPI::Gradient::GradientEM<ValueType>::applyParameterisation(ValueType &modelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
