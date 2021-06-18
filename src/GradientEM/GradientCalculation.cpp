@@ -113,6 +113,8 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
     ReceiverTaper.init(distEM, ctx, receiversEM, configEM, modelCoordinatesEM, configEM.get<IndexType>("receiverTaperRadius"));
     ReceiverTaper.apply(gradientEM);
+    sourceReceiverTaper.init(distEM, ctx, sourcesEM, receiversEM, configEM, modelCoordinatesEM);
+    sourceReceiverTaper.apply(gradientEM);
 
     /* Apply energy preconditioning per shot */
     energyPrecond.apply(gradientEM, shotNumber, configEM.get<IndexType>("FileFormat"));

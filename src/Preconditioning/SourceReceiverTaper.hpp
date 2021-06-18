@@ -40,6 +40,9 @@ namespace KITGPI
             
             void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM);
             void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometryEM<ValueType> const &Acquisition, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::IndexType radius);
+            
+            void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &sources, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &receivers, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
+            void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometryEM<ValueType> const &sources, KITGPI::Acquisition::AcquisitionGeometryEM<ValueType> const &receivers, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
 
         private:
             scai::lama::SparseVector<ValueType> taper;

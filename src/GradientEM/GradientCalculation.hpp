@@ -53,6 +53,7 @@ namespace KITGPI
 
         KITGPI::Preconditioning::SourceReceiverTaper<ValueType> SourceTaper;
         KITGPI::Preconditioning::SourceReceiverTaper<ValueType> ReceiverTaper;
+        KITGPI::Preconditioning::SourceReceiverTaper<ValueType> sourceReceiverTaper;
         KITGPI::Preconditioning::EnergyPreconditioning<ValueType> energyPrecond;
     };
 }
