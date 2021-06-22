@@ -130,6 +130,7 @@ namespace KITGPI
             using Gradient<ValueType>::velocityP;
             using Gradient<ValueType>::porosity;
             using Gradient<ValueType>::saturation;
+            using Gradient<ValueType>::workflowInner;
 
             /* Not requiered parameters */
             using Gradient<ValueType>::velocityS;

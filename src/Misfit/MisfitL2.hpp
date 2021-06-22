@@ -23,7 +23,7 @@ namespace KITGPI
 
         public:
             /* Default constructor and destructor */
-            MisfitL2(){misfitType = "l2";}; // set default misfitType for step length search.
+            MisfitL2(){}; // set default misfitType for step length search.
             ~MisfitL2(){};
             
             void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots);
@@ -56,8 +56,10 @@ namespace KITGPI
             using Misfit<ValueType>::misfitStorageL2;  
             using Misfit<ValueType>::misfitSum0Ratio;   
             using Misfit<ValueType>::misfitType;     
+            using Misfit<ValueType>::saveMultiMisfits;     
             using Misfit<ValueType>::misfitTypeShots; 
             using Misfit<ValueType>::uniqueMisfitTypes;
+            scai::IndexType numMisfitTypes = 3;
         };        
     }
 }

@@ -12,42 +12,48 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
     // transform to lower cases
     misfitType = config.get<std::string>("misfitType");
     std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
-    scai::IndexType misfitTypeLength = misfitType.length() - 2;
-    std::string temp1 = misfitType.substr(1, misfitType.length());
+    saveMultiMisfits = config.getAndCatch("saveMultiMisfits", false);
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT 
-    scai::lama::DenseVector<ValueType> temp(numshots, 0, ctx);  
-    misfitTypeShots = temp;
-    if (misfitTypeLength > 1) {
+    scai::lama::DenseVector<ValueType> temp1(numshots, 0, ctx);  
+    misfitTypeShots = temp1; // initialize misfitTypeShots to 0 because sumArray will be applied on it when misfitType=l2782
+    if (saveMultiMisfits || misfitType.length() > 2) {
         scai::lama::DenseVector<ValueType> misfitPerIt(numshots, 0, ctx);
-        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {  
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
             misfitStorageL2.push_back(misfitPerIt); 
         }
-        std::vector<scai::IndexType> temp{2, 7, 8};
-        uniqueMisfitTypes = temp;
+        std::vector<scai::IndexType> temp2{2, 7, 8};
+        uniqueMisfitTypes = temp2;
         scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
-        if (misfitStorageL2Size == misfitTypeLength) {
-            scai::lama::DenseVector<ValueType> temp(numshots, 1, ctx);
-            for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {  
-                misfitSum0Ratio.push_back(temp); 
+        if (misfitStorageL2Size == numMisfitTypes) {
+            scai::lama::DenseVector<ValueType> temp3(numshots, 1, ctx);
+            for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+                misfitSum0Ratio.push_back(temp3); 
+            }
+        }
+        if (misfitType.compare("l2781") == 0) {
+            scai::IndexType randMisfitTypeInd;
+            scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
+            std::srand((int)time(0));
+            scai::IndexType maxcount = maxiterations * numshots / uniqueMisfitTypes.size() * 1.2;
+            for (int shotInd = 0; shotInd < numshots; shotInd++) {         
+                randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
+                if (misfitTypeHistory.at(randMisfitTypeInd) >= maxcount) {
+                    shotInd--;
+                } else {
+                    misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(randMisfitTypeInd));
+                    misfitTypeHistory.at(randMisfitTypeInd)++;
+                }
             }
         }
     } else {
-        scai::IndexType misfitTypeNo = atoi(temp1.c_str());
+        std::string temp = misfitType.substr(1, misfitType.length());
+        scai::IndexType misfitTypeNo = atoi(temp.c_str());
         misfitTypeShots = misfitTypeNo;
-    }
-    if (misfitType.compare("l2781") == 0) {
-        scai::IndexType randMisfitTypeInd;
-        scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
-        std::srand((int)time(0));
-        scai::IndexType maxcount = maxiterations * numshots / uniqueMisfitTypes.size() * 1.2;
-        for (int shotInd = 0; shotInd < numshots; shotInd++) {         
-            randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
-            if (misfitTypeHistory.at(randMisfitTypeInd) >= maxcount) {
-                shotInd--;
-            } else {
-                misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(randMisfitTypeInd));
-                misfitTypeHistory.at(randMisfitTypeInd)++;
-            }
+        
+        misfitSum0Ratio.clear();
+        scai::lama::DenseVector<ValueType> temp3(numshots, 1, ctx);
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+            misfitSum0Ratio.push_back(temp3); 
         }
     }
 }
@@ -63,11 +69,11 @@ template <typename ValueType>
 void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitTypeShotsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration)
 {      
     int myRank = comm->getRank();  
-    if (misfitType.length() > 2 && myRank == MASTERGPI) {
+    if (saveMultiMisfits && myRank == MASTERGPI) {
         std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::toupper);
         std::ofstream outputFile; 
         std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4) + ".misfitType" + logFilename.substr(logFilename.length()-4, 4);
-        if (stage == 1 && iteration == 1) {
+        if (stage == 1 && iteration == 0) {
             outputFile.open(misfitTypeFilename);
             outputFile << "# Misfit type records during inversion\n"; 
             outputFile << "# Misfit type = " << misfitType << "\n"; 
@@ -100,18 +106,17 @@ void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitTypeShotsToFile(scai::dmem
 template <typename ValueType>
 void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration)
 {      
-    scai::IndexType misfitTypeLength = misfitType.length() - 2;
     int myRank = comm->getRank();  
-    if (misfitTypeLength > 1 && myRank == MASTERGPI) {
+    if (saveMultiMisfits && myRank == MASTERGPI) {
         std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::toupper);
         std::ofstream outputFile; 
         std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-3) + misfitType + logFilename.substr(logFilename.length()-4, 4);
-        if (stage == 1 && iteration == 1) {
+        if (stage == 1 && iteration == 0) {
             outputFile.open(misfitTypeFilename);
             outputFile << "# Misfit value records during inversion\n"; 
             outputFile << "# Misfit type = " << misfitType << "\n"; 
             outputFile << "# Stage | Iteration"; 
-            for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) { 
+            for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) { 
                 outputFile << " | " << std::setw(7) << uniqueMisfitTypes.at(iMisfitType) << std::setw(7);
             }
             outputFile << "\n"; 
@@ -122,8 +127,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitsToFile(scai::dmemo::Commu
         outputFile << std::setw(5) << stage << std::setw(10) << iteration;
         
         scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
-        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) { 
-            scai::lama::DenseVector<ValueType> misfitPerIt = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType);
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) { 
+            scai::lama::DenseVector<ValueType> misfitPerIt = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType);
             if (iMisfitType == 0) {
                 outputFile << std::setw(18) << misfitPerIt.sum();
             } else {
@@ -146,15 +151,19 @@ void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitsToFile(scai::dmemo::Commu
 template <typename ValueType>
 void KITGPI::Misfit::MisfitL2<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
 {      
-    scai::IndexType misfitTypeLength = misfitType.length() - 2;
-    if (misfitTypeLength > 1) {
-        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) { 
+    if (saveMultiMisfits || misfitType.length() > 2) {
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) { 
             scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
-            commInterShot->sumArray(misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getLocalValues());   
+            commInterShot->sumArray(misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).getLocalValues());   
         }
         if (misfitType.compare("l2782") == 0) {
             commInterShot->sumArray(misfitTypeShots.getLocalValues()); 
         }
+//         std::cout<< "misfitTypeShots sumArray : ";
+//         for (int i = 0; i < misfitTypeShots.size(); i++) { 
+//             std::cout<< misfitTypeShots.getValue(i) << " ";
+//         }
+//         std::cout<< std::endl;
     }
 }
 /*! \brief Return the L2-norm of seismograms stored in the given receiver objects (note: the misfit is summed over all components, i.e. vx,vy,vz,p)
@@ -183,12 +192,20 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
     
     scai::IndexType misfitStorageL2Size = 0;
     scai::IndexType misfitTypeShotL2 = misfitTypeShots.getValue(shotInd);
-    scai::IndexType misfitTypeLength = misfitType.length() - 2;
-    if (misfitTypeLength == 0)
-        misfitTypeLength += 1;
-    for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {  
-        if (misfitTypeLength > 1) 
-           misfitTypeShotL2 = uniqueMisfitTypes.at(iMisfitType);
+    std::vector<scai::IndexType> temp2{2, 7, 8};
+    uniqueMisfitTypes = temp2;
+    bool errorMisfitType = false;
+    for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+        if (misfitTypeShotL2 == uniqueMisfitTypes.at(iMisfitType)) {
+            errorMisfitType = true;
+            break;
+        }        
+    }
+    SCAI_ASSERT_ERROR(errorMisfitType, "error in misfitType!");
+        
+    for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+        if (saveMultiMisfits || misfitType.length() > 2)
+            misfitTypeShotL2 = uniqueMisfitTypes.at(iMisfitType);
             
         for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
             seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
@@ -204,34 +221,46 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
             if (misfit != 0) count++;
         }  
         
-        if (misfitTypeLength > 1) {
+        if (saveMultiMisfits || misfitType.length() > 2) {
             misfitStorageL2Size = misfitStorageL2.size();
-            if (misfitStorageL2Size == misfitTypeLength && iMisfitType > 0) {
+            if (misfitStorageL2Size == numMisfitTypes && iMisfitType > 0) {
                 misfitSum0Ratio.at(iMisfitType).setValue(shotInd, misfitStorageL2.at(0).getValue(shotInd) / (misfitSum/count/misfitTypeShots.size()));
             }
-            misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size()*misfitSum0Ratio.at(iMisfitType).getValue(shotInd));
-        }
-        if (iMisfitType < misfitTypeLength - 1) {
-            misfitSum = 0;
-            count = 0;
+            misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size()*misfitSum0Ratio.at(iMisfitType).getValue(shotInd));
+            
+            if (iMisfitType < numMisfitTypes - 1) {
+                misfitSum = 0;
+                count = 0;
+            }
+        } else {      
+            break;
         }
     }
     if (misfitType.compare("l2782") == 0) {
         scai::IndexType misfitRatioMaxInd = 0;
-        if (misfitStorageL2Size > misfitTypeLength) { // iteration > 0
-            std::vector<ValueType> misfitRatio(misfitTypeLength, 0);  
-            for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {           
-                misfitRatio.at(iMisfitType) = (misfitStorageL2.at(misfitStorageL2Size - 2 * misfitTypeLength + iMisfitType).getValue(shotInd) - misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd)) / misfitStorageL2.at(misfitStorageL2Size - 2 * misfitTypeLength + iMisfitType).getValue(shotInd);
+        if (misfitStorageL2Size > numMisfitTypes) { // iteration > 0
+            std::vector<ValueType> misfitRatio(numMisfitTypes, 0);  
+            for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {           
+                misfitRatio.at(iMisfitType) = (misfitStorageL2.at(misfitStorageL2Size - 2 * numMisfitTypes + iMisfitType).getValue(shotInd) - misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).getValue(shotInd)) / misfitStorageL2.at(misfitStorageL2Size - 2 * numMisfitTypes + iMisfitType).getValue(shotInd);
             }
             auto misfitRatioMax = std::max_element(std::begin(misfitRatio), std::end(misfitRatio));
             misfitRatioMaxInd = std::distance(std::begin(misfitRatio), misfitRatioMax);
         }
         misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(misfitRatioMaxInd));
-        misfitSum = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + misfitRatioMaxInd).getValue(shotInd)*count*misfitTypeShots.size();
-    } else if (misfitType.compare("l2781") == 0) {
-        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {   
+        misfitSum = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + misfitRatioMaxInd).getValue(shotInd)*count*misfitTypeShots.size();
+    } else if (misfitType.compare("l2781") == 0 || saveMultiMisfits) {
+        // for single misfitType in main code
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {   
             if (uniqueMisfitTypes.at(iMisfitType) == misfitTypeShots.getValue(shotInd)) {
-                misfitSum = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd)*count*misfitTypeShots.size();
+                misfitSum = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).getValue(shotInd)*count*misfitTypeShots.size();
+                break;
+            }
+        }
+    } else {
+        // for single misfitType in steplength search
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {   
+            if (uniqueMisfitTypes.at(iMisfitType) == misfitTypeShots.getValue(shotInd)) {
+                misfitSum *= misfitSum0Ratio.at(iMisfitType).getValue(shotInd);
                 break;
             }
         }
@@ -300,12 +329,20 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
     
     scai::IndexType misfitStorageL2Size = 0;
     scai::IndexType misfitTypeShotL2 = misfitTypeShots.getValue(shotInd);
-    scai::IndexType misfitTypeLength = misfitType.length() - 2;
-    if (misfitTypeLength == 0)
-        misfitTypeLength += 1;
-    for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {  
-        if (misfitTypeLength > 1) 
-           misfitTypeShotL2 = uniqueMisfitTypes.at(iMisfitType);
+    std::vector<scai::IndexType> temp2{2, 7, 8};
+    uniqueMisfitTypes = temp2;
+    bool errorMisfitType = false; // in case of getting a wrong misfitType.
+    for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+        if (misfitTypeShotL2 == uniqueMisfitTypes.at(iMisfitType)) {
+            errorMisfitType = true;
+            break;
+        }        
+    }
+    SCAI_ASSERT_ERROR(errorMisfitType, "error in misfitType!");
+    
+    for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+        if (saveMultiMisfits || misfitType.length() > 2)
+            misfitTypeShotL2 = uniqueMisfitTypes.at(iMisfitType);
             
         for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
             seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
@@ -320,35 +357,48 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
             misfitSum += misfit;
             if (misfit != 0) count++;
         }  
-        
-        if (misfitTypeLength > 1) {
+     
+//         std::cout<< "misfitTypeShotL2 : "<< misfitTypeShotL2 << std::endl;
+        if (saveMultiMisfits || misfitType.length() > 2) {
             misfitStorageL2Size = misfitStorageL2.size();
-            if (misfitStorageL2Size == misfitTypeLength && iMisfitType > 0) {
+            if (misfitStorageL2Size == numMisfitTypes && iMisfitType > 0) {
                 misfitSum0Ratio.at(iMisfitType).setValue(shotInd, misfitStorageL2.at(0).getValue(shotInd) / (misfitSum/count/misfitTypeShots.size()));
             }
-            misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size()*misfitSum0Ratio.at(iMisfitType).getValue(shotInd));
-        }
-        if (iMisfitType < misfitTypeLength - 1) {
-            misfitSum = 0;
-            count = 0;
+            misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size()*misfitSum0Ratio.at(iMisfitType).getValue(shotInd));
+            
+            if (iMisfitType < numMisfitTypes - 1) {
+                misfitSum = 0;
+                count = 0;
+            }
+        } else {
+            break;
         }
     }
     if (misfitType.compare("l2782") == 0) {
         scai::IndexType misfitRatioMaxInd = 0;
-        if (misfitStorageL2Size > misfitTypeLength) { // iteration > 0
-            std::vector<ValueType> misfitRatio(misfitTypeLength, 0);  
-            for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {           
-                misfitRatio.at(iMisfitType) = (misfitStorageL2.at(misfitStorageL2Size - 2 * misfitTypeLength + iMisfitType).getValue(shotInd) - misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd)) / misfitStorageL2.at(misfitStorageL2Size - 2 * misfitTypeLength + iMisfitType).getValue(shotInd);
+        if (misfitStorageL2Size > numMisfitTypes) { // iteration > 0
+            std::vector<ValueType> misfitRatio(numMisfitTypes, 0);  
+            for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {           
+                misfitRatio.at(iMisfitType) = (misfitStorageL2.at(misfitStorageL2Size - 2 * numMisfitTypes + iMisfitType).getValue(shotInd) - misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).getValue(shotInd)) / misfitStorageL2.at(misfitStorageL2Size - 2 * numMisfitTypes + iMisfitType).getValue(shotInd);
             }
             auto misfitRatioMax = std::max_element(std::begin(misfitRatio), std::end(misfitRatio));
             misfitRatioMaxInd = std::distance(std::begin(misfitRatio), misfitRatioMax);
         }
         misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(misfitRatioMaxInd));
-        misfitSum = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + misfitRatioMaxInd).getValue(shotInd)*count*misfitTypeShots.size();
-    } else if (misfitType.compare("l2781") == 0) {
-        for (int iMisfitType = 0; iMisfitType < misfitTypeLength; iMisfitType++) {   
+        misfitSum = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + misfitRatioMaxInd).getValue(shotInd)*count*misfitTypeShots.size();
+    } else if (misfitType.compare("l2781") == 0 || saveMultiMisfits) {
+        // for single misfitType in main code
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {   
             if (uniqueMisfitTypes.at(iMisfitType) == misfitTypeShots.getValue(shotInd)) {
-                misfitSum = misfitStorageL2.at(misfitStorageL2Size - misfitTypeLength + iMisfitType).getValue(shotInd)*count*misfitTypeShots.size();
+                misfitSum = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).getValue(shotInd)*count*misfitTypeShots.size();
+                break;
+            }
+        }
+    } else {
+        // for single misfitType in steplength search
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {   
+            if (uniqueMisfitTypes.at(iMisfitType) == misfitTypeShots.getValue(shotInd)) {
+                misfitSum *= misfitSum0Ratio.at(iMisfitType).getValue(shotInd);
                 break;
             }
         }

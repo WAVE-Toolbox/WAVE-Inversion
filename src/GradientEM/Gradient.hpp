@@ -153,8 +153,8 @@ namespace KITGPI
             
             scai::lama::SparseVector<ValueType> getEraseVector(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D const cutCoordinate, scai::IndexType boundaryWidth);
             
-            void setInvertParameterSingle(std::vector<bool> setInvertParameterSingle);
-            std::vector<bool> getInvertParameterSingle();
+            void setInvertParameters(std::vector<bool> setInvertParameters);
+            std::vector<bool> getInvertParameters();
 
             /* Operator overloading */
             /*lhs Base rhs Base */

@@ -19,6 +19,25 @@ void KITGPI::Misfit::Misfit<ValueType>::setMisfitTypeShots(scai::lama::DenseVect
     misfitTypeShots = setMisfitTypeShots;
 }
 
+/*! \brief get misfitSum0Ratio of all shots
+ *
+ */
+template <typename ValueType>
+std::vector<scai::lama::DenseVector<ValueType>> KITGPI::Misfit::Misfit<ValueType>::getMisfitSum0Ratio()
+{    
+    return misfitSum0Ratio;
+}
+
+/*! \brief set misfitSum0Ratio of all shots
+ *
+ \param setMisfitTypeShots misfitType 
+ */
+template <typename ValueType>
+void KITGPI::Misfit::Misfit<ValueType>::setMisfitSum0Ratio(std::vector<scai::lama::DenseVector<ValueType>> setMisfitSum0Ratio)
+{    
+    misfitSum0Ratio = setMisfitSum0Ratio;
+}
+
 /*! \brief Return the misfit summed over all shots. 
  * 
  * 

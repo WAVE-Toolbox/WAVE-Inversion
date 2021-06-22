@@ -803,23 +803,26 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::applyMedianFilter(KITGPI::Configura
     porosity_temp = this->getPorosity();
     saturation_temp = this->getSaturation();
     
-    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
-    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
-    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
-    
-    KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(tauSigmaEM_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(tauEpsilonEM_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
-    
-    this->setConductivityEM(sigmaEM_temp);    
-    this->setDielectricPermittivityEM(epsilonEM_temp);
-    this->setTauConductivityEM(tauSigmaEM_temp);    
-    this->setTauDielectricPermittivityEM(tauEpsilonEM_temp);
-    this->setPorosity(porosity_temp);    
-    this->setSaturation(saturation_temp);
+    scai::IndexType NZ = configEM.get<IndexType>("NZ");
+    if (NZ == 1) {
+        scai::IndexType NY = configEM.get<IndexType>("NY");
+        scai::IndexType NX = porosity_temp.size() / NY;
+        scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+            
+        KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(tauSigmaEM_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(tauEpsilonEM_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
+        
+        this->setConductivityEM(sigmaEM_temp);    
+        this->setDielectricPermittivityEM(epsilonEM_temp);
+        this->setTauConductivityEM(tauSigmaEM_temp);    
+        this->setTauDielectricPermittivityEM(tauEpsilonEM_temp);
+        this->setPorosity(porosity_temp);    
+        this->setSaturation(saturation_temp);
+    }
 }
 
 template class KITGPI::Gradient::ViscoEMEM<float>;

@@ -310,8 +310,8 @@ void KITGPI::Taper::Taper2D<ValueType>::calcInversionAverageMatrix(KITGPI::Acqui
 
     wavefieldAverageMatrix.fillFromAssembly(assemblyAverage);
     wavefieldRecoverMatrix.fillFromAssembly(assemblyRecover);
-    wavefieldAverageMatrix.writeToFile("model/wavefieldAverageMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + "_" + std::to_string(averageValue) + ".mtx");
-    wavefieldRecoverMatrix.writeToFile("model/wavefieldRecoverMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + ".mtx");
+//     wavefieldAverageMatrix.writeToFile("model/wavefieldAverageMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + "_" + std::to_string(averageValue) + ".mtx");
+//     wavefieldRecoverMatrix.writeToFile("model/wavefieldRecoverMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + ".mtx");
 }
 
 /*! \brief calculate an average matrix for inversion

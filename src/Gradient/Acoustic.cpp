@@ -154,8 +154,14 @@ KITGPI::Gradient::Acoustic<ValueType> operator*(ValueType lhs, KITGPI::Gradient:
 template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator*=(ValueType const &rhs)
 {
-    density *= rhs;
-    velocityP *= rhs;
+    if (workflowInner.getInvertForDensity()) 
+        density *= rhs;
+    if (workflowInner.getInvertForVp()) 
+        velocityP *= rhs;
+    if (workflowInner.getInvertForPorosity()) 
+        porosity *= rhs;
+    if (workflowInner.getInvertForSaturation()) 
+        saturation *= rhs;
 
     return *this;
 }
@@ -264,8 +270,14 @@ void KITGPI::Gradient::Acoustic<ValueType>::plusAssign(KITGPI::Gradient::Gradien
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(ValueType const &rhs)
 {
-    density *= rhs;
-    velocityP *= rhs;
+    if (workflowInner.getInvertForDensity()) 
+        density *= rhs;
+    if (workflowInner.getInvertForVp()) 
+        velocityP *= rhs;
+    if (workflowInner.getInvertForPorosity()) 
+        porosity *= rhs;
+    if (workflowInner.getInvertForSaturation()) 
+        saturation *= rhs;
 }
 
 /*! \brief function for overloading *= Operation (called in base class)
@@ -286,36 +298,43 @@ void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Vector<Value
  */
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs)
-{
+{ 
     scai::lama::DenseVector<ValueType> temp;   
     if (lhs.getParameterisation() == 1 || lhs.getParameterisation() == 2) {   
-        temp = lhs.getPorosity() - rhs.getPorosity();
-        lhs.setPorosity(temp);
-        temp = lhs.getSaturation() - rhs.getSaturation();
-        lhs.setSaturation(temp);      
-    } else if (lhs.getParameterisation() == 3) {
-        temp = lhs.getVelocityP() - rhs.getVelocityP();
-        lhs.setVelocityP(temp);
-        temp = lhs.getDensity() - rhs.getDensity();
-        lhs.setDensity(temp);
+        if (workflowInner.getInvertForPorosity()) {
+            temp = lhs.getPorosity() - rhs.getPorosity();
+            lhs.setPorosity(temp);
+        }
+        if (workflowInner.getInvertForSaturation()) {
+            temp = lhs.getSaturation() - rhs.getSaturation();
+            lhs.setSaturation(temp);     
+        }
+    } else if (lhs.getParameterisation() == 3) {  
+        if (workflowInner.getInvertForVp()) {
+            temp = lhs.getVelocityP() - rhs.getVelocityP();
+            lhs.setVelocityP(temp);
+        }  
+        if (workflowInner.getInvertForDensity()) {
+            temp = lhs.getDensity() - rhs.getDensity();
+            lhs.setDensity(temp);
+        }
     } else if (lhs.getParameterisation() == 0) {
-        scai::lama::DenseVector<ValueType> lambda;
         scai::lama::DenseVector<ValueType> rho;
-
         rho = lhs.getDensity();
-        
-        lambda = scai::lama::pow(lhs.getVelocityP(), 2);
-        lambda *= rho;
-                
-        rho -= rhs.getDensity();
-        lambda -= rhs.getVelocityP();
-        
-        lhs.setDensity(rho);
-        
-        temp = lambda / rho;
-        temp = scai::lama::sqrt(temp);
-        Common::replaceInvalid<ValueType>(temp, 0.0);
-        lhs.setVelocityP(temp);
+        if (workflowInner.getInvertForDensity()) {
+            temp = lhs.getDensity() - rhs.getDensity();
+            lhs.setDensity(temp);
+        }        
+        if (workflowInner.getInvertForVp()) {
+            scai::lama::DenseVector<ValueType> lambda;
+            lambda = scai::lama::pow(lhs.getVelocityP(), 2);
+            lambda *= rho;        
+            lambda -= rhs.getVelocityP();  
+            lambda /= rho;
+            lambda = scai::lama::sqrt(lambda);
+            Common::replaceInvalid<ValueType>(lambda, 0.0);
+            lhs.setVelocityP(lambda);
+        }
     }
 }
 

@@ -118,7 +118,16 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
 
     /* Apply energy preconditioning per shot */
     energyPrecond.apply(gradientEM, shotNumber, configEM.get<IndexType>("FileFormat"));
-    gradientEM.applyMedianFilter(configEM);  
+    gradientEM.applyMedianFilter(configEM); 
+    
+    lama::DenseVector<ValueType> mask; //mask to restore vacuum
+    mask = modelEM.getDielectricPermittivityEM();
+    mask /= modelEM.getDielectricPermittivityVacuum();  // calculate the relative dielectricPermittivityEM    
+    mask -= 1;
+    mask.unaryOp(mask, common::UnaryOp::SIGN);
+    mask.unaryOp(mask, common::UnaryOp::ABS); 
+    gradientEM *= mask;
+
     gradientEM.normalize();
 
     if (configEM.get<IndexType>("writeGradientPerShot"))

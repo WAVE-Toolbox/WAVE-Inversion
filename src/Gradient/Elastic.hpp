@@ -114,6 +114,7 @@ namespace KITGPI
             using Gradient<ValueType>::velocityS;
             using Gradient<ValueType>::porosity;
             using Gradient<ValueType>::saturation;
+            using Gradient<ValueType>::workflowInner;
 
             /* Not requiered parameters */
             using Gradient<ValueType>::tauP;

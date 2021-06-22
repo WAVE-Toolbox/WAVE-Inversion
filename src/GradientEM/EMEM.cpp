@@ -158,10 +158,14 @@ KITGPI::Gradient::EMEM<ValueType> operator*(ValueType lhs, KITGPI::Gradient::EME
 template <typename ValueType>
 KITGPI::Gradient::EMEM<ValueType> &KITGPI::Gradient::EMEM<ValueType>::operator*=(ValueType const &rhs)
 {
-    conductivityEM *= rhs;
-    dielectricPermittivityEM *= rhs;
-    porosity *= rhs;
-    saturation *= rhs;
+    if (workflowInner.getInvertForSigmaEM()) 
+        conductivityEM *= rhs;
+    if (workflowInner.getInvertForEpsilonEM()) 
+        dielectricPermittivityEM *= rhs;
+    if (workflowInner.getInvertForPorosity()) 
+        porosity *= rhs;
+    if (workflowInner.getInvertForSaturation()) 
+        saturation *= rhs;
 
     return *this;
 }
@@ -281,10 +285,14 @@ void KITGPI::Gradient::EMEM<ValueType>::plusAssign(KITGPI::Gradient::GradientEM<
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::timesAssign(ValueType const &rhs)
 {
-    conductivityEM *= rhs;
-    dielectricPermittivityEM *= rhs;
-    porosity *= rhs;
-    saturation *= rhs;
+    if (workflowInner.getInvertForSigmaEM()) 
+        conductivityEM *= rhs;
+    if (workflowInner.getInvertForEpsilonEM()) 
+        dielectricPermittivityEM *= rhs;
+    if (workflowInner.getInvertForPorosity()) 
+        porosity *= rhs;
+    if (workflowInner.getInvertForSaturation()) 
+        saturation *= rhs;
 }
 
 /*! \brief Function for overloading *= Operation (called in base class)
@@ -308,32 +316,36 @@ void KITGPI::Gradient::EMEM<ValueType>::timesAssign(scai::lama::Vector<ValueType
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Modelparameter::ModelparameterEM<ValueType> &lhs, KITGPI::Gradient::GradientEM<ValueType> const &rhs)
 {        
-    scai::lama::DenseVector<ValueType> temp;  
     if (lhs.getParameterisation() == 1 || lhs.getParameterisation() == 2) { 
-        temp = lhs.getPorosity() - rhs.getPorosity();
-        lhs.setPorosity(temp);
-        temp = lhs.getSaturation() - rhs.getSaturation();
-        lhs.setSaturation(temp);         
+        scai::lama::DenseVector<ValueType> temp;  
+        if (workflowInner.getInvertForPorosity()) {
+            temp = lhs.getPorosity() - rhs.getPorosity();
+            lhs.setPorosity(temp);
+        }
+        if (workflowInner.getInvertForSaturation()) {
+            temp = lhs.getSaturation() - rhs.getSaturation();
+            lhs.setSaturation(temp);     
+        }
     } else {
         scai::lama::DenseVector<ValueType> conductivityEMtemp;
-        scai::lama::DenseVector<ValueType> dielectricPermittivityEMtemp;   
+        scai::lama::DenseVector<ValueType> dielectricPermittivityEMtemp; 
         ValueType const DielectricPermittivityVacuum = lhs.getDielectricPermittivityVacuum();
-        ValueType const ConductivityReference = lhs.getConductivityReference();
+        ValueType const ConductivityReference = lhs.getConductivityReference();    
         
-        conductivityEMtemp = lhs.getConductivityEM();  
-        dielectricPermittivityEMtemp = lhs.getDielectricPermittivityEM();
-        
-        this->applyParameterisation(conductivityEMtemp, ConductivityReference, lhs.getParameterisation());       
-        this->applyParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, lhs.getParameterisation());  
-                 
-        conductivityEMtemp -= rhs.getConductivityEM();  
-        dielectricPermittivityEMtemp -= rhs.getDielectricPermittivityEM(); 
-        
-        this->deleteParameterisation(conductivityEMtemp, ConductivityReference, lhs.getParameterisation());       
-        this->deleteParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, lhs.getParameterisation());  
-        
-        lhs.setConductivityEM(conductivityEMtemp);
-        lhs.setDielectricPermittivityEM(dielectricPermittivityEMtemp);
+        if (workflowInner.getInvertForSigmaEM()) {
+            conductivityEMtemp = lhs.getConductivityEM();  
+            this->applyParameterisation(conductivityEMtemp, ConductivityReference, lhs.getParameterisation()); 
+            conductivityEMtemp -= rhs.getConductivityEM();    
+            this->deleteParameterisation(conductivityEMtemp, ConductivityReference, lhs.getParameterisation());  
+            lhs.setConductivityEM(conductivityEMtemp);
+        }
+        if (workflowInner.getInvertForEpsilonEM()) {
+            dielectricPermittivityEMtemp = lhs.getDielectricPermittivityEM(); 
+            this->applyParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, lhs.getParameterisation());  
+            dielectricPermittivityEMtemp -= rhs.getDielectricPermittivityEM(); 
+            this->deleteParameterisation(dielectricPermittivityEMtemp, DielectricPermittivityVacuum, lhs.getParameterisation());
+            lhs.setDielectricPermittivityEM(dielectricPermittivityEMtemp);
+        }
     }
 };
 
@@ -410,7 +422,12 @@ void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Gradient::Gra
     eraseVector *= weightingVectorBig;
     scai::lama::SparseVector<ValueType> restoreVector;
     restoreVector = 1.0 - eraseVector;
-    
+    /*
+    auto comm = distBig->getCommunicatorPtr();
+    std::cout << "comm->getRank() = " << comm->getRank() << std::endl;
+    if (comm->getRank() == 0)
+        IO::writeVector(restoreVector, "gradients/restoreVector.mtx", 1);
+    */
     scai::lama::DenseVector<ValueType> temp;
     
     temp = shrinkMatrix * gradientPerShot.getDielectricPermittivityEM(); //transform pershot into big model
@@ -630,19 +647,22 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration:
     porosity_temp = this->getPorosity();
     saturation_temp = this->getSaturation();
     
-    scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
-    scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
-    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
-    
-    KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
-    
-    this->setConductivityEM(sigmaEM_temp);    
-    this->setDielectricPermittivityEM(epsilonEM_temp);
-    this->setPorosity(porosity_temp);    
-    this->setSaturation(saturation_temp);
+    scai::IndexType NZ = configEM.get<IndexType>("NZ");
+    if (NZ == 1) {
+        scai::IndexType NY = configEM.get<IndexType>("NY");
+        scai::IndexType NX = porosity_temp.size() / NY;
+        scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
+        
+        this->setConductivityEM(sigmaEM_temp);    
+        this->setDielectricPermittivityEM(epsilonEM_temp);
+        this->setPorosity(porosity_temp);    
+        this->setSaturation(saturation_temp);
+    }
 }
 
 template class KITGPI::Gradient::EMEM<float>;

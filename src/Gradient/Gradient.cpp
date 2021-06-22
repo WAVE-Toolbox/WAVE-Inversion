@@ -166,6 +166,20 @@ scai::lama::SparseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getEr
     return eraseVector;
 }
 
+/*! \brief initialize an inner workflow */
+template <typename ValueType>
+void KITGPI::Gradient::Gradient<ValueType>::setInvertParameters(std::vector<bool> setInvertParameters)
+{
+    workflowInner.setInvertParameters(setInvertParameters);
+}
+    
+/*! \brief get an inner workflow */
+template <typename ValueType>
+std::vector<bool> KITGPI::Gradient::Gradient<ValueType>::getInvertParameters()
+{
+    return workflowInner.getInvertParameters();
+}
+
 /*! \brief calculate the derivative of density with respect to porosity
  */
 template <typename ValueType>

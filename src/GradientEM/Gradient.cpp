@@ -168,14 +168,14 @@ scai::lama::SparseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::get
 
 /*! \brief initialize an inner workflow */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::setInvertParameterSingle(std::vector<bool> setInvertParameterSingle)
+void KITGPI::Gradient::GradientEM<ValueType>::setInvertParameters(std::vector<bool> setInvertParameters)
 {
-    workflowInner.setInvertParameters(setInvertParameterSingle);
+    workflowInner.setInvertParameters(setInvertParameters);
 }
     
 /*! \brief get an inner workflow */
 template <typename ValueType>
-std::vector<bool> KITGPI::Gradient::GradientEM<ValueType>::getInvertParameterSingle()
+std::vector<bool> KITGPI::Gradient::GradientEM<ValueType>::getInvertParameters()
 {
     return workflowInner.getInvertParameters();
 }

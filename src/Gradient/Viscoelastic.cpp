@@ -164,11 +164,16 @@ KITGPI::Gradient::Viscoelastic<ValueType> operator*(ValueType lhs, KITGPI::Gradi
 template <typename ValueType>
 KITGPI::Gradient::Viscoelastic<ValueType> &KITGPI::Gradient::Viscoelastic<ValueType>::operator*=(ValueType const &rhs)
 {
-    density *= rhs;
-    velocityP *= rhs;
-    velocityS *= rhs;
-    porosity *= rhs;
-    saturation *= rhs;
+    if (workflowInner.getInvertForDensity()) 
+        density *= rhs;
+    if (workflowInner.getInvertForVp()) 
+        velocityP *= rhs;
+    if (workflowInner.getInvertForVs()) 
+        velocityS *= rhs;
+    if (workflowInner.getInvertForPorosity()) 
+        porosity *= rhs;
+    if (workflowInner.getInvertForSaturation()) 
+        saturation *= rhs;
 
     return *this;
 }
@@ -296,11 +301,16 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::plusAssign(KITGPI::Gradient::Gra
 template <typename ValueType>
 void KITGPI::Gradient::Viscoelastic<ValueType>::timesAssign(ValueType const &rhs)
 {
-    density *= rhs;
-    velocityP *= rhs;
-    velocityS *= rhs;
-    porosity *= rhs;
-    saturation *= rhs;
+    if (workflowInner.getInvertForDensity()) 
+        density *= rhs;
+    if (workflowInner.getInvertForVp()) 
+        velocityP *= rhs;
+    if (workflowInner.getInvertForVs()) 
+        velocityS *= rhs;
+    if (workflowInner.getInvertForPorosity()) 
+        porosity *= rhs;
+    if (workflowInner.getInvertForSaturation()) 
+        saturation *= rhs;
 }
 
 /*! \brief Function for overloading *= Operation (called in base class)
@@ -327,47 +337,56 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::minusAssign(KITGPI::Modelparamet
 {    
     scai::lama::DenseVector<ValueType> temp;   
     if (lhs.getParameterisation() == 1 || lhs.getParameterisation() == 2) {   
-        temp = lhs.getPorosity() - rhs.getPorosity();
-        lhs.setPorosity(temp);
-        temp = lhs.getSaturation() - rhs.getSaturation();
-        lhs.setSaturation(temp);      
-    } else if (lhs.getParameterisation() == 3) {
-        temp = lhs.getVelocityP() - rhs.getVelocityP();
-        lhs.setVelocityP(temp);
-        temp = lhs.getVelocityS() - rhs.getVelocityS();
-        lhs.setVelocityS(temp);
-        temp = lhs.getDensity() - rhs.getDensity();
-        lhs.setDensity(temp);
+        if (workflowInner.getInvertForPorosity()) {
+            temp = lhs.getPorosity() - rhs.getPorosity();
+            lhs.setPorosity(temp);
+        }
+        if (workflowInner.getInvertForSaturation()) {
+            temp = lhs.getSaturation() - rhs.getSaturation();
+            lhs.setSaturation(temp);     
+        }
+    } else if (lhs.getParameterisation() == 3) {  
+        if (workflowInner.getInvertForVp()) {
+            temp = lhs.getVelocityP() - rhs.getVelocityP();
+            lhs.setVelocityP(temp);
+        }  
+        if (workflowInner.getInvertForVs()) {
+            temp = lhs.getVelocityS() - rhs.getVelocityS();
+            lhs.setVelocityS(temp);
+        }  
+        if (workflowInner.getInvertForDensity()) {
+            temp = lhs.getDensity() - rhs.getDensity();
+            lhs.setDensity(temp);
+        }
     } else if (lhs.getParameterisation() == 0) {
-        scai::lama::DenseVector<ValueType> lambda;
-        scai::lama::DenseVector<ValueType> mu;
         scai::lama::DenseVector<ValueType> rho;
-
+        scai::lama::DenseVector<ValueType> mu;
         rho = lhs.getDensity();
-        
         mu = scai::lama::pow(lhs.getVelocityS(), 2);
         mu *= rho;
-
-        lambda = scai::lama::pow(lhs.getVelocityP(), 2);
-        lambda *= rho;
-        lambda -= 2 * mu;
-                
-        rho -= rhs.getDensity();
-        mu -= rhs.getVelocityS();
-        lambda -= rhs.getVelocityP();
-        
-        lhs.setDensity(rho);
-        
-        temp = mu / rho;
-        temp = scai::lama::sqrt(temp);
-        Common::replaceInvalid<ValueType>(temp, 0.0);
-        lhs.setVelocityS(temp);
-        
-        lambda += 2 * mu;
-        temp = lambda / rho;
-        temp = scai::lama::sqrt(temp);
-        Common::replaceInvalid<ValueType>(temp, 0.0);
-        lhs.setVelocityP(temp);
+        if (workflowInner.getInvertForDensity()) {
+            temp = lhs.getDensity() - rhs.getDensity();
+            lhs.setDensity(temp);
+        }        
+        if (workflowInner.getInvertForVs()) {
+            temp = mu - rhs.getVelocityS();
+            temp /= rho;
+            temp = scai::lama::sqrt(temp);
+            Common::replaceInvalid<ValueType>(temp, 0.0);
+            lhs.setVelocityS(temp);
+        }
+        if (workflowInner.getInvertForVp()) {
+            scai::lama::DenseVector<ValueType> lambda;
+            lambda = scai::lama::pow(lhs.getVelocityP(), 2);
+            lambda *= rho;
+            lambda -= 2 * mu;                    
+            lambda -= rhs.getVelocityP();             
+            lambda += 2 * mu;
+            lambda /= rho;
+            lambda = scai::lama::sqrt(lambda);
+            Common::replaceInvalid<ValueType>(lambda, 0.0);
+            lhs.setVelocityP(lambda);
+        }
     }
 };
 
@@ -1137,21 +1156,24 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::applyMedianFilter(KITGPI::Config
     porosity_temp = this->getPorosity();
     saturation_temp = this->getSaturation();
     
-    scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
-    scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
-    scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
-    
-    KITGPI::Common::applyMedianFilterTo2DVector(density_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(velocityS_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(velocityP_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
-    KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
-    
-    this->setDensity(density_temp);
-    this->setVelocityS(velocityS_temp);
-    this->setVelocityP(velocityP_temp);
-    this->setPorosity(porosity_temp);    
-    this->setSaturation(saturation_temp);
+    scai::IndexType NZ = config.get<IndexType>("NZ");
+    if (NZ == 1) {
+        scai::IndexType NY = config.get<IndexType>("NY");
+        scai::IndexType NX = porosity_temp.size() / NY;
+        scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+                
+        KITGPI::Common::applyMedianFilterTo2DVector(density_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityS_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityP_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
+        
+        this->setDensity(density_temp);
+        this->setVelocityS(velocityS_temp);
+        this->setVelocityP(velocityP_temp);
+        this->setPorosity(porosity_temp);    
+        this->setSaturation(saturation_temp);
+    }
 }
 
 template class KITGPI::Gradient::Viscoelastic<float>;

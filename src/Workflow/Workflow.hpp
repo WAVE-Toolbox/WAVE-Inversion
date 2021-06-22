@@ -58,11 +58,11 @@ namespace KITGPI
 
             std::ifstream workflowFile;
             
-            bool invertForVp;
-            bool invertForVs;
-            bool invertForDensity;
-            bool invertForPorosity;
-            bool invertForSaturation;
+            bool invertForVp = true;
+            bool invertForVs = true;
+            bool invertForDensity = true;
+            bool invertForPorosity = true;
+            bool invertForSaturation = true;
             ValueType relativeMisfitChange; 
             scai::IndexType filterOrder;
             ValueType lowerCornerFreq;

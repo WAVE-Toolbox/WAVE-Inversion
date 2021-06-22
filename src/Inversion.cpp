@@ -458,6 +458,8 @@ int main(int argc, char *argv[])
     std::shared_ptr<const dmemo::BlockDistribution> shotDistEM;
     IndexType maxcount = 1;   
     IndexType maxcountEM = 1;  
+    std::vector<scai::IndexType> uniqueShotInds; 
+    std::vector<scai::IndexType> uniqueShotIndsEM;
     
     if (inversionType != 0) {
         if (useStreamConfig) {
@@ -480,11 +482,14 @@ int main(int argc, char *argv[])
         }
         if (config.getAndCatch("useRandomSource", 0) != 0) {  
             shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
+            maxcount = ceil((ValueType)maxiterations * numShotDomains / numshots * 1.2);
+            std::vector<scai::IndexType> tempShotInds(numShotDomains, 0); 
+            uniqueShotInds = tempShotInds;
         } else {
             shotDist = dmemo::blockDistribution(numshots, commInterShot);
-        }
-        if (config.getAndCatch("useRandomSource", 0) != 0) { 
-            maxcount = ceil((ValueType)maxiterations * numShotDomains / numshots * 1.2);
+            for (IndexType i = 0; i < numshots; i++) {
+                uniqueShotInds.push_back(i);
+            }
         }
         if (config.get<IndexType>("useReceiversPerShot") == 0) {
             receivers.init(config, modelCoordinates, ctx, dist);
@@ -511,12 +516,15 @@ int main(int argc, char *argv[])
         }    
         if (configEM.getAndCatch("useRandomSource", 0) != 0) {  
             shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
+            maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM * 1.2);
+            std::vector<scai::IndexType> tempShotInds(numShotDomainsEM, 0); 
+            uniqueShotIndsEM = tempShotInds;
         } else {
             shotDistEM = dmemo::blockDistribution(numshotsEM, commInterShot);
+            for (IndexType i = 0; i < numshotsEM; i++) {
+                uniqueShotIndsEM.push_back(i);
+            }
         }     
-        if (configEM.getAndCatch("useRandomSource", 0) != 0) { 
-            maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM * 1.2);
-        }    
         if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
             receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM);
         }
@@ -851,8 +859,6 @@ int main(int argc, char *argv[])
         /* --------------------------------------- */
         /*        Loop over iterations             */
         /* --------------------------------------- */ 
-        std::vector<scai::IndexType> uniqueShotNosRand(numShotDomains, 0); 
-        std::vector<scai::IndexType> uniqueShotNosRandEM(numShotDomainsEM, 0);
         std::vector<scai::IndexType> shotHistory(numshots, 0);
         std::vector<scai::IndexType> shotHistoryEM(numshotsEM, 0);
         std::vector<scai::IndexType> misfitTypeHistory(misfitType.length() - 2, 0);
@@ -892,8 +898,8 @@ int main(int argc, char *argv[])
 
                 if (config.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRand, shotHistory, uniqueShotNos, maxcount, config.getAndCatch("useRandomSource", 0));
-                    Acquisition::writeRandShotNosToFile(commAll, logFilename, uniqueShotNosRand, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
+                    Acquisition::getRandomShotInds<ValueType>(uniqueShotInds, shotHistory, numshots, maxcount, config.getAndCatch("useRandomSource", 0));
+                    Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
@@ -901,12 +907,11 @@ int main(int argc, char *argv[])
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
-                        shotNumber = uniqueShotNos[shotInd];
                         shotIndTrue = shotInd;
                     } else {
-                        shotNumber = uniqueShotNosRand[shotInd];
-                        Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNos, shotNumber);
+                        shotIndTrue = uniqueShotInds[shotInd];
                     }
+                    shotNumber = uniqueShotNos[shotIndTrue];
                     localShotInd++;
                     HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist->getLocalSize() << ": started\n");
                         
@@ -1101,12 +1106,10 @@ int main(int argc, char *argv[])
 
                 dataMisfit->addToStorage(misfitPerIt);
                 misfitPerIt = 0;
-                if (misfitType.length() > 2) {
-                    dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
-                    dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
-                }
-
+                
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration));
+                dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
+                dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
 
                 /* Check abort criteria */
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
@@ -1216,11 +1219,32 @@ int main(int argc, char *argv[])
                 if (breakLoop == false || breakLoopType == 2) {
                     HOST_PRINT(commAll, "\n================================================");
                     HOST_PRINT(commAll, "\n========== Start step length search " << equationType << " ======\n");
-                    SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, dataMisfit->getMisfitIt(workflow.iteration), workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotNosRand, dataMisfit->getMisfitTypeShots());
+                    if (config.getAndCatch("steplengthType", 2) == 1) {
+                        std::vector<bool> invertParameters = workflow.getInvertParameters();
+                        SLsearch.init();
+                        for (unsigned i=0; i<invertParameters.size(); i++) {
+                            if (invertParameters[i]) {
+                                std::vector<bool> invertParametersTemp(invertParameters.size(), false);
+                                invertParametersTemp[i] = invertParameters[i];
+                                gradient->setInvertParameters(invertParametersTemp);
+                                
+                                SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, *dataMisfit, workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotInds);
 
+                                *gradient *= SLsearch.getSteplength();
+                            }
+                        }
+                        HOST_PRINT(commAll, "================= Update Model " << equationType << " ============\n\n");
+                        /* Apply model update */
+                        gradient->setInvertParameters(invertParameters);
+                    } else if (config.getAndCatch("steplengthType", 2) == 2) {                        
+                        SLsearch.run(commAll, *solver, *derivatives, receivers, sourceSettings, receiversTrue, *model, dist, config, modelCoordinates, *gradient, steplengthInit, *dataMisfit, workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotInds);
+
+                        HOST_PRINT(commAll, "================= Update Model " << equationType << " ============\n\n");
+                        /* Apply model update */
+                        *gradient *= SLsearch.getSteplength();
+                    }
                     HOST_PRINT(commAll, "================= Update Model " << equationType << " ============\n\n");
                     /* Apply model update */
-                    *gradient *= SLsearch.getSteplength();
                     *model -= *gradient;
                     
                     if (config.get<bool>("useModelThresholds"))
@@ -1297,8 +1321,8 @@ int main(int argc, char *argv[])
 
                 if (configEM.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
-                    Acquisition::getRandShotNos<ValueType>(uniqueShotNosRandEM, shotHistoryEM, uniqueShotNosEM, maxcountEM, configEM.getAndCatch("useRandomSource", 0));
-                    Acquisition::writeRandShotNosToFile(commAll, logFilenameEM, uniqueShotNosRandEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0));
+                    Acquisition::getRandomShotInds<ValueType>(uniqueShotIndsEM, shotHistoryEM, numshotsEM, maxcountEM, configEM.getAndCatch("useRandomSource", 0));
+                    Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotIndsEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0));
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
@@ -1306,12 +1330,11 @@ int main(int argc, char *argv[])
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
-                        shotNumber = uniqueShotNosEM[shotInd];
                         shotIndTrue = shotInd;
                     } else {
-                        shotNumber = uniqueShotNosRandEM[shotInd];
-                        Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNosEM, shotNumber);
+                        shotIndTrue = uniqueShotIndsEM[shotInd];
                     }
+                    shotNumber = uniqueShotNosEM[shotIndTrue];
                     localShotInd++;
                     HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << ": started\n");
                         
@@ -1507,12 +1530,10 @@ int main(int argc, char *argv[])
 
                 dataMisfitEM->addToStorage(misfitPerItEM);
                 misfitPerItEM = 0;
-                if (misfitTypeEM.length() > 2) {
-                    dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
-                    dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
-                }
 
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration));
+                dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
+                dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
 
                 /* Check abort criteria */
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration) << "\n");
@@ -1656,24 +1677,22 @@ int main(int argc, char *argv[])
                             if (invertParametersEM[i]) {
                                 std::vector<bool> invertParametersTempEM(invertParametersEM.size(), false);
                                 invertParametersTempEM[i] = invertParametersEM[i];
-                                gradientEM->setInvertParameterSingle(invertParametersTempEM);
-                                SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, dataMisfitEM->getMisfitIt(workflowEM.iteration), workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM, dataMisfitEM->getMisfitTypeShots());
+                                gradientEM->setInvertParameters(invertParametersTempEM);
+                                
+                                SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, *dataMisfitEM, workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotIndsEM);
 
                                 *gradientEM *= SLsearchEM.getSteplength();
                             }
                         }
-                        HOST_PRINT(commAll, "================= Update Model " << equationTypeEM << " ============\n\n");
-                        /* Apply model update */
-                        gradientEM->setInvertParameterSingle(invertParametersEM);
-                        *modelEM -= *gradientEM;
+                        gradientEM->setInvertParameters(invertParametersEM);
                     } else if (configEM.getAndCatch("steplengthType", 2) == 2) {
-                        SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, dataMisfitEM->getMisfitIt(workflowEM.iteration), workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotNosRandEM, dataMisfitEM->getMisfitTypeShots());
+                        SLsearchEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourceSettingsEM, receiversTrueEM, *modelEM, distEM, configEM, modelCoordinatesEM, *gradientEM, steplengthInitEM, *dataMisfitEM, workflowEM, freqFilterEM, sourceEstEM, sourceSignalTaperEM, uniqueShotIndsEM);
 
-                        HOST_PRINT(commAll, "================= Update Model " << equationTypeEM << " ============\n\n");
-                        /* Apply model update */
                         *gradientEM *= SLsearchEM.getSteplength();
-                        *modelEM -= *gradientEM;
                     }
+                    HOST_PRINT(commAll, "================= Update Model " << equationTypeEM << " ============\n\n");
+                    /* Apply model update */
+                    *modelEM -= *gradientEM;
                     
                     if (configEM.get<bool>("useModelThresholds"))
                         modelEM->applyThresholds(configEM);
@@ -1731,12 +1750,11 @@ int main(int argc, char *argv[])
                                                 
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
-                        shotNumber = uniqueShotNos[shotInd];
                         shotIndTrue = shotInd;
                     } else {
-                        shotNumber = uniqueShotNosRand[shotInd];
-                        Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNos, shotNumber);
+                        shotIndTrue = uniqueShotInds[shotInd];
                     }
+                    shotNumber = uniqueShotNos[shotIndTrue];
 
                     if (useStreamConfig) {
                         HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshots << "\n");
@@ -1822,6 +1840,8 @@ int main(int argc, char *argv[])
                 dataMisfit->addToStorage(misfitPerIt);
 
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1));
+                dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
+                dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
 
                 if (workflow.workflowStage != workflow.maxStage - 1) {
                     HOST_PRINT(commAll, "\nChange workflow stage\n");
@@ -1844,12 +1864,11 @@ int main(int argc, char *argv[])
                                                 
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
-                        shotNumber = uniqueShotNosEM[shotInd];
                         shotIndTrue = shotInd;
                     } else {
-                        shotNumber = uniqueShotNosRandEM[shotInd];
-                        Acquisition::getuniqueShotInd(shotIndTrue, uniqueShotNosEM, shotNumber);
+                        shotIndTrue = uniqueShotIndsEM[shotInd];
                     }
+                    shotNumber = uniqueShotNosEM[shotIndTrue];
 
                     if (useStreamConfigEM) {
                         HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshotsEM << "\n");
@@ -1934,6 +1953,8 @@ int main(int argc, char *argv[])
                 dataMisfitEM->addToStorage(misfitPerItEM);
 
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration + 1, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration + 1));
+                dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
+                dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
 
                 if (workflowEM.workflowStage != workflowEM.maxStage - 1) {
                     HOST_PRINT(commAll, "\nChange workflowEM stage\n");

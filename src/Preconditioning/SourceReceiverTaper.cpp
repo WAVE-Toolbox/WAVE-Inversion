@@ -103,14 +103,12 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
                         if (valueTemp < value){
                             value=valueTemp;
                         }
-                    }
-                    else {
+                    } else {
                         value=0;
-                    }
-                    
-                assembly.push(ownedIndex, value);
+                    }                    
                 }
             }
+            assembly.push(ownedIndex, value);
         }
     }
 
@@ -191,14 +189,12 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
                         if (valueTemp < value){
                             value=valueTemp;
                         }
-                    }
-                    else {
+                    } else {
                         value=0;
-                    }
-                    
-                assembly.push(ownedIndex, value);
+                    }                    
                 }
             }
+            assembly.push(ownedIndex, value);
         }
     }
 
