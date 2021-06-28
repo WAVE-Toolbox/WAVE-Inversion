@@ -51,13 +51,7 @@ namespace KITGPI
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType conductivityEM_const, ValueType dielectricPermittivityEM_const, ValueType porosity_const, ValueType saturation_const);
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM) override;
 
-            /*! \brief Set all wavefieldsEM to zero.
-            */
-            void resetGradient()
-            {
-                this->resetParameter(conductivityEM);
-                this->resetParameter(dielectricPermittivityEM);
-            };
+            void resetGradient();
 
             void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) const override;
 
@@ -95,7 +89,7 @@ namespace KITGPI
 
             void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
             
-            void sumGradientPerShot(KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
+            void sumGradientPerShot(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
             
           private:
             using GradientEM<ValueType>::equationTypeEM;
@@ -111,6 +105,7 @@ namespace KITGPI
             using GradientEM<ValueType>::tauDielectricPermittivityEM;
             using GradientEM<ValueType>::relaxationFrequency;
             using GradientEM<ValueType>::numRelaxationMechanisms;
+            using GradientEM<ValueType>::weightingVector;
         };
     }
 }

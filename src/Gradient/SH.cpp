@@ -54,6 +54,17 @@ KITGPI::Gradient::SH<ValueType>::SH(const SH &rhs)
     saturation = rhs.saturation;
 }
 
+/*! \brief Set all parameter to zero.
+*/
+template <typename ValueType>
+void KITGPI::Gradient::SH<ValueType>::resetGradient()
+{
+    this->resetParameter(velocityS);
+    this->resetParameter(density);
+    this->resetParameter(porosity);
+    this->resetParameter(saturation);
+}
+
 /*! \brief Write model to an external file
  *
  \param filename For the second ".sWaveModulus.mtx" and for density ".density.mtx" is added.
@@ -408,56 +419,44 @@ void KITGPI::Gradient::SH<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr
 }
 
 /*! \brief If stream configuration is used, get a pershot model from the big model
+ \param model model
  \param gradientPerShot gradient per shot
  \param modelCoordinates coordinate class object of the pershot
  \param modelCoordinatesBig coordinate class object of the big model
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::SH<ValueType>::sumGradientPerShot(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
+void KITGPI::Gradient::SH<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
 {
     auto distBig = density.getDistributionPtr();
     auto dist = gradientPerShot.getDensity().getDistributionPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix;
-    scai::lama::DenseVector<ValueType> weightingVector(dist, 1.0);
-    scai::lama::DenseVector<ValueType> weightingVectorBig(distBig, 0.0);
-    IndexType numCuts = cutCoordinates.size();
-    for (IndexType index=0; index < numCuts; index++) {        
-        shrinkMatrix = this->getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(index));
-        shrinkMatrix.assignTranspose(shrinkMatrix);
-        weightingVectorBig += shrinkMatrix * weightingVector;
-    }
-    weightingVectorBig = 1.0 / weightingVectorBig; // the weighting of overlapping area
-    Common::replaceInvalid<ValueType>(weightingVectorBig, 0.0);
+    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
+    recoverMatrix.assignTranspose(recoverMatrix);
     
-    shrinkMatrix = this->getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
-    shrinkMatrix.assignTranspose(shrinkMatrix);
-    
-    scai::lama::SparseVector<ValueType> eraseVector = this->getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
-    eraseVector *= weightingVectorBig;
-    scai::lama::SparseVector<ValueType> restoreVector;
-    restoreVector = 1.0 - eraseVector;
+    scai::lama::SparseVector<ValueType> eraseVector = model.getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
+    scai::lama::SparseVector<ValueType> recoverVector;
+    recoverVector = 1.0 - eraseVector;
     
     scai::lama::DenseVector<ValueType> temp;
     
-    temp = shrinkMatrix * gradientPerShot.getVelocityS(); //transform pershot into big model
-    temp *= restoreVector;
+    temp = recoverMatrix * gradientPerShot.getVelocityS(); //transform pershot into big model
+    temp *= recoverVector;
     velocityS *= eraseVector;
     velocityS += temp; //take over the values
 
-    temp = shrinkMatrix * gradientPerShot.getDensity(); //transform pershot into big model
-    temp *= restoreVector;
+    temp = recoverMatrix * gradientPerShot.getDensity(); //transform pershot into big model
+    temp *= recoverVector;
     density *= eraseVector;
     density += temp; //take over the values
     
-    temp = shrinkMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
-    temp *= restoreVector;
+    temp = recoverMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
+    temp *= recoverVector;
     porosity *= eraseVector;
     porosity += temp; //take over the values
     
-    temp = shrinkMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
-    temp *= restoreVector;
+    temp = recoverMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
+    temp *= recoverVector;
     saturation *= eraseVector;
     saturation += temp; //take over the values
 }

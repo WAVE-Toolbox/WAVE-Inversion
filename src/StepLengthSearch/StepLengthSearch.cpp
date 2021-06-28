@@ -813,10 +813,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
 
         /* Normalize observed and synthetic data */
-        if (config.get<bool>("normalizeTraces")) {
-            receivers.getSeismogramHandler().normalize();
-            receiversTrue.getSeismogramHandler().normalize();
-        }
+        receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
+        receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
 
         misfitTest.setValue(shotIndTrue, dataMisfit.calc(receivers, receiversTrue, shotIndTrue));
         
@@ -1047,10 +1045,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
 
         /* Normalize observed and synthetic data */
-        if (config.get<bool>("normalizeTraces")) {
-            receivers.getSeismogramHandler().normalize();
-            receiversTrue.getSeismogramHandler().normalize();
-        }
+        receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
+        receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
 
         misfitTest.setValue(shotIndTrue, dataMisfit.calc(receivers, receiversTrue, shotIndTrue));
         

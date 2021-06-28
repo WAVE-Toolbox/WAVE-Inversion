@@ -30,30 +30,32 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
                 misfitSum0Ratio.push_back(temp3); 
             }
         }
-        if (misfitType.compare("l2781") == 0) {
-            scai::IndexType randMisfitTypeInd;
-            scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
-            std::srand((int)time(0));
-            scai::IndexType maxcount = maxiterations * numshots / uniqueMisfitTypes.size() * 1.2;
-            for (int shotInd = 0; shotInd < numshots; shotInd++) {         
-                randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
-                if (misfitTypeHistory.at(randMisfitTypeInd) >= maxcount) {
-                    shotInd--;
-                } else {
-                    misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(randMisfitTypeInd));
-                    misfitTypeHistory.at(randMisfitTypeInd)++;
-                }
-            }
-        }
-    } else {
+    } 
+    if (misfitType.length() == 2) {
         std::string temp = misfitType.substr(1, misfitType.length());
         scai::IndexType misfitTypeNo = atoi(temp.c_str());
         misfitTypeShots = misfitTypeNo;
-        
-        misfitSum0Ratio.clear();
-        scai::lama::DenseVector<ValueType> temp3(numshots, 1, ctx);
-        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
-            misfitSum0Ratio.push_back(temp3); 
+        if (!saveMultiMisfits) {
+            misfitSum0Ratio.clear();
+            scai::lama::DenseVector<ValueType> temp3(numshots, 1, ctx);
+            for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+                misfitSum0Ratio.push_back(temp3); 
+            }
+        }
+    }
+    if (misfitType.compare("l2781") == 0) {
+        scai::IndexType randMisfitTypeInd;
+        scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
+        std::srand((int)time(0));
+        scai::IndexType maxcount = maxiterations * numshots / uniqueMisfitTypes.size() * 1.2;
+        for (int shotInd = 0; shotInd < numshots; shotInd++) {         
+            randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
+            if (misfitTypeHistory.at(randMisfitTypeInd) >= maxcount) {
+                shotInd--;
+            } else {
+                misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(randMisfitTypeInd));
+                misfitTypeHistory.at(randMisfitTypeInd)++;
+            }
         }
     }
 }
@@ -196,12 +198,12 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
     uniqueMisfitTypes = temp2;
     bool errorMisfitType = false;
     for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
-        if (misfitTypeShotL2 == uniqueMisfitTypes.at(iMisfitType)) {
+        if (misfitTypeShotL2 == 0 || misfitTypeShotL2 == uniqueMisfitTypes.at(iMisfitType)) {
             errorMisfitType = true;
             break;
         }        
     }
-    SCAI_ASSERT_ERROR(errorMisfitType, "error in misfitType!");
+    SCAI_ASSERT_ERROR(errorMisfitType, "misfitType = L" + std::to_string(misfitTypeShotL2));
         
     for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
         if (saveMultiMisfits || misfitType.length() > 2)
@@ -333,12 +335,12 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
     uniqueMisfitTypes = temp2;
     bool errorMisfitType = false; // in case of getting a wrong misfitType.
     for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
-        if (misfitTypeShotL2 == uniqueMisfitTypes.at(iMisfitType)) {
+        if (misfitTypeShotL2 == 0 || misfitTypeShotL2 == uniqueMisfitTypes.at(iMisfitType)) {
             errorMisfitType = true;
             break;
         }        
     }
-    SCAI_ASSERT_ERROR(errorMisfitType, "error in misfitType!");
+    SCAI_ASSERT_ERROR(errorMisfitType, "misfitType = L" + std::to_string(misfitTypeShotL2));
     
     for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
         if (saveMultiMisfits || misfitType.length() > 2)
@@ -545,8 +547,8 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Normalized(KITGPI::Acquisit
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramSyntemp.normalizeTraceL2();
-        seismogramObstemp.normalizeTraceL2();
+        seismogramSyntemp.normalizeTrace(2);
+        seismogramObstemp.normalizeTrace(2);
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -572,20 +574,29 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+  /*      // Groos 2013 and IFOS2D
         seismogramAdj = seismogramSyn;
         seismogramAdj *= seismogramObs;
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
         scai::lama::DenseVector<ValueType> tempL2NormObs = seismogramObstemp.getTraceL2norm();
-        scai::lama::DenseVector<ValueType> tempSumSynObs = seismogramAdj.getTraceSum();
+        scai::lama::DenseVector<ValueType> tempSynMultObs = seismogramAdj.getTraceMean();
         tempL2NormSyn = 1 / tempL2NormSyn;
         tempL2NormObs = 1 / tempL2NormObs;     
         tempL2NormObs *= tempL2NormSyn;
         tempL2NormObs *= tempL2NormSyn;
-        tempL2NormObs *= tempSumSynObs;
-        seismogramSyntemp.normalizeTraceL2();
-        seismogramObstemp.normalizeTraceL2();
+        tempL2NormObs *= tempSynMultObs;
+        seismogramSyntemp.normalizeTrace(2);
+        seismogramObstemp.normalizeTrace(2);
         seismogramSyntemp.getData().scaleRows(tempL2NormObs);
-        seismogramObstemp.getData().scaleRows(tempL2NormSyn);      
+        seismogramObstemp.getData().scaleRows(tempL2NormSyn);  */  
+        // Choi 2012
+        scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
+        seismogramSyntemp.normalizeTrace(2);
+        seismogramObstemp.normalizeTrace(2);
+        seismogramAdj = seismogramSyntemp;
+        seismogramAdj *= seismogramObstemp;
+        scai::lama::DenseVector<ValueType> tempSynMultObs = seismogramAdj.getTraceMean();
+        seismogramSyntemp.getData().scaleRows(tempSynMultObs);       
     }
     seismogramAdj = seismogramSyntemp - seismogramObstemp;
     
@@ -609,8 +620,8 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Normalized(KITGPI::Acquisit
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramSyntemp.normalizeTraceL2();
-        seismogramObstemp.normalizeTraceL2();
+        seismogramSyntemp.normalizeTrace(2);
+        seismogramObstemp.normalizeTrace(2);
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -635,20 +646,29 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+  /*      // Groos 2013 and IFOS2D
         seismogramAdj = seismogramSyn;
         seismogramAdj *= seismogramObs;
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
         scai::lama::DenseVector<ValueType> tempL2NormObs = seismogramObstemp.getTraceL2norm();
-        scai::lama::DenseVector<ValueType> tempSumSynObs = seismogramAdj.getTraceSum();
+        scai::lama::DenseVector<ValueType> tempSynMultObs = seismogramAdj.getTraceMean();
         tempL2NormSyn = 1 / tempL2NormSyn;
         tempL2NormObs = 1 / tempL2NormObs;     
         tempL2NormObs *= tempL2NormSyn;
         tempL2NormObs *= tempL2NormSyn;
-        tempL2NormObs *= tempSumSynObs;
-        seismogramSyntemp.normalizeTraceL2();
-        seismogramObstemp.normalizeTraceL2();
+        tempL2NormObs *= tempSynMultObs;
+        seismogramSyntemp.normalizeTrace(2);
+        seismogramObstemp.normalizeTrace(2);
         seismogramSyntemp.getData().scaleRows(tempL2NormObs);
-        seismogramObstemp.getData().scaleRows(tempL2NormSyn);      
+        seismogramObstemp.getData().scaleRows(tempL2NormSyn);  */  
+        // Choi 2012
+        scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
+        seismogramSyntemp.normalizeTrace(2);
+        seismogramObstemp.normalizeTrace(2);
+        seismogramAdj = seismogramSyntemp;
+        seismogramAdj *= seismogramObstemp;
+        scai::lama::DenseVector<ValueType> tempSynMultObs = seismogramAdj.getTraceMean();
+        seismogramSyntemp.getData().scaleRows(tempSynMultObs);  
     }
     seismogramAdj = seismogramSyntemp - seismogramObstemp;       
     

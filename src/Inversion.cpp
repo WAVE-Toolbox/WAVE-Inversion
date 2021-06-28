@@ -713,8 +713,7 @@ int main(int argc, char *argv[])
             
     if (inversionType != 0) {
         if (!useStreamConfig) {
-            gradient->init(ctx, dist);
-            gradientPerShot->init(ctx, dist);       
+            gradient->init(ctx, dist);      
             stabilizingFunctionalGradient->init(ctx, dist);
             crossGradientDerivative->init(ctx, dist);  
         } else {
@@ -722,6 +721,7 @@ int main(int argc, char *argv[])
             stabilizingFunctionalGradient->init(ctx, distBig);
             crossGradientDerivative->init(ctx, distBig);
         }
+        gradientPerShot->init(ctx, dist); 
         gradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));
         gradientPerShot->setNormalizeGradient(config.get<bool>("normalizeGradient"));  
         stabilizingFunctionalGradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));
@@ -729,8 +729,7 @@ int main(int argc, char *argv[])
     }
     if (inversionTypeEM != 0) {
         if (!useStreamConfigEM) {
-            gradientEM->init(ctx, distEM);
-            gradientPerShotEM->init(ctx, distEM);      
+            gradientEM->init(ctx, distEM);   
             stabilizingFunctionalGradientEM->init(ctx, distEM); 
             crossGradientDerivativeEM->init(ctx, distEM);  
         } else {
@@ -738,6 +737,7 @@ int main(int argc, char *argv[])
             stabilizingFunctionalGradientEM->init(ctx, distBigEM);
             crossGradientDerivativeEM->init(ctx, distBigEM);
         }
+        gradientPerShotEM->init(ctx, distEM);   
         gradientEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));
         gradientPerShotEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));  
         stabilizingFunctionalGradientEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient")); 
@@ -882,7 +882,9 @@ int main(int argc, char *argv[])
                 if (!useStreamConfig) { 
                     model->prepareForModelling(modelCoordinates, ctx, dist, commShot);  
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
-                }                 
+                } else {
+                    gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds);
+                }
                 
                 if (workflow.iteration == 0 && commInterShot->getRank() == 0) {
                     /* only shot Domain 0 writes output */
@@ -976,10 +978,8 @@ int main(int argc, char *argv[])
                             solver->resetCPML();
                             
                             /* Normalize observed and synthetic data */
-                            if (config.get<bool>("normalizeTraces")){
-                                receivers.getSeismogramHandler().normalize();
-                                receiversTrue.getSeismogramHandler().normalize();
-                            }
+                            receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
+                            receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
 
                             if (config.get<bool>("maxOffsetSrcEst"))
                                 sourceEst.calcOffsetMutes(sources, receivers, config.get<ValueType>("maxOffsetSrcEst"),modelCoordinates);
@@ -1012,10 +1012,8 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receiversStart.getSeismogramHandler());
                     
                     /* Normalize observed and synthetic data */
-                    if (config.get<bool>("normalizeTraces")){
-                        receiversStart.getSeismogramHandler().normalize();
-                        receiversTrue.getSeismogramHandler().normalize();
-                    }
+                    receiversStart.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
+                    receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                     
                     if (workflow.iteration == 0){
                         receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
@@ -1063,9 +1061,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
                     
                     /* Normalize synthetic data */
-                    if (config.get<bool>("normalizeTraces")){
-                        receivers.getSeismogramHandler().normalize();
-                    }
+                    receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                                     
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
 
@@ -1076,7 +1072,7 @@ int main(int argc, char *argv[])
 
                     /* Calculate adjoint sources */
                     dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue, shotIndTrue);
-
+                    
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Backward\n");
                     if (!useStreamConfig) {
@@ -1088,7 +1084,7 @@ int main(int argc, char *argv[])
                     if (!useStreamConfig) {
                         *gradient += *gradientPerShot;
                     } else {
-                        gradient->sumGradientPerShot(*gradientPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, shotIndTrue, config.get<IndexType>("BoundaryWidth"));
+                        gradient->sumGradientPerShot(*model, *gradientPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, shotIndTrue, config.get<IndexType>("BoundaryWidth"));
                     }
                     
                     solver->resetCPML();
@@ -1100,6 +1096,8 @@ int main(int argc, char *argv[])
 
                 gradient->sumShotDomain(commInterShot);                
                 commInterShot->sumArray(misfitPerIt.getLocalValues());
+                if (useStreamConfig)
+                    *gradient *= gradient->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationType << " =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
@@ -1198,10 +1196,7 @@ int main(int argc, char *argv[])
                 /* Check abort criteria for two inversions */
                 /* --------------------------------------- */              
                 HOST_PRINT(commAll, "\n========== Check abort criteria " << equationType << " ==========\n"); 
-                
-                if (config.getAndCatch("useRandomSource", 0) == 0 && misfitType.length() == 2) { 
-                    breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
-                }
+                breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
                 if (breakLoop == true) {                 
                     if (inversionType == 3 && exchangeStrategy != 0 && exchangeStrategy != 4 && exchangeStrategy != 6) {   
@@ -1301,11 +1296,13 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\n=================== " << equationTypeEM << " =======================\n\n");
                 start_t = common::Walltime::get();
                 
-                /* Update modelEM for fd simulation (averaging, getVelocityEM ...) */
                 if (!useStreamConfigEM) { 
+                    /* Update modelEM for fd simulation (averaging, getVelocityEM ...) */
                     modelEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot);  
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
-                }                 
+                } else {
+                    gradientEM->calcWeightingVector(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, uniqueShotIndsEM);
+                }
                 
                 if (workflowEM.iteration == 0 && commInterShot->getRank() == 0) {
                     /* only shot Domain 0 writes output */
@@ -1399,10 +1396,8 @@ int main(int argc, char *argv[])
                             solverEM->resetCPML();
                             
                             /* Normalize observed and synthetic data */
-                            if (configEM.get<bool>("normalizeTraces")){
-                                receiversEM.getSeismogramHandler().normalize();
-                                receiversTrueEM.getSeismogramHandler().normalize();
-                            }
+                            receiversEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
+                            receiversTrueEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
 
                             if (configEM.get<bool>("maxOffsetSrcEst"))
                                 sourceEstEM.calcOffsetMutes(sourcesEM, receiversEM, configEM.get<ValueType>("maxOffsetSrcEst"),modelCoordinatesEM);
@@ -1435,10 +1430,8 @@ int main(int argc, char *argv[])
                     seismogramTaper1DEM.apply(receiversStartEM.getSeismogramHandler());
                     
                     /* Normalize observed and synthetic data */
-                    if (configEM.get<bool>("normalizeTraces")){
-                        receiversStartEM.getSeismogramHandler().normalize();
-                        receiversTrueEM.getSeismogramHandler().normalize();
-                    }
+                    receiversStartEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
+                    receiversTrueEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
                     
                     if (workflowEM.iteration == 0){
                         receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
@@ -1490,9 +1483,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Calculate misfit and adjoint sources\n");
 
                     /* Normalize observed and synthetic data */
-                    if (configEM.get<bool>("normalizeTraces")){
-                        receiversEM.getSeismogramHandler().normalize();
-                    }
+                    receiversEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
                     
                     /* Calculate misfit of one shot */
                     misfitPerItEM.setValue(shotIndTrue, dataMisfitEM->calc(receiversEM, receiversTrueEM, shotIndTrue));
@@ -1500,6 +1491,8 @@ int main(int argc, char *argv[])
                     /* Calculate adjoint sources */
                     dataMisfitEM->calcAdjointSources(adjointSourcesEM, receiversEM, receiversTrueEM, shotIndTrue);
 
+                    adjointSourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), "adjointSources.shot_" + std::to_string(shotNumber), modelCoordinatesEM);
+                    
                     /* Calculate gradient */
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Backward\n");
                     if (!useStreamConfigEM) {
@@ -1511,7 +1504,7 @@ int main(int argc, char *argv[])
                     if (!useStreamConfigEM) {
                         *gradientEM += *gradientPerShotEM;
                     } else {
-                        gradientEM->sumGradientPerShot(*gradientPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, shotIndTrue, configEM.get<IndexType>("BoundaryWidth"));
+                        gradientEM->sumGradientPerShot(*modelEM, *gradientPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, shotIndTrue, configEM.get<IndexType>("BoundaryWidth"));
                     }
                     
                     solverEM->resetCPML();
@@ -1524,6 +1517,8 @@ int main(int argc, char *argv[])
                 dataMisfitEM->sumShotDomain(commInterShot);   
                 gradientEM->sumShotDomain(commInterShot);                
                 commInterShot->sumArray(misfitPerItEM.getLocalValues());
+                if (useStreamConfigEM)
+                    *gradientEM *= gradientEM->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationTypeEM << " =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
@@ -1620,11 +1615,8 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */
                 /* Check abort criteria for two inversions */
                 /* --------------------------------------- */   
-                HOST_PRINT(commAll, "\n========== Check abort criteria " << equationTypeEM << " ==========\n");  
-                       
-                if (configEM.getAndCatch("useRandomSource", 0) == 0 && misfitTypeEM.length() == 2) {     
-                    breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
-                }
+                HOST_PRINT(commAll, "\n========== Check abort criteria " << equationTypeEM << " ==========\n"); 
+                breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
                 if (breakLoopEM == true) {   
                     if (inversionTypeEM == 3 && exchangeStrategy != 0 && exchangeStrategy != 4 && exchangeStrategy != 6) {
@@ -1821,10 +1813,8 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
                     
                     /* Normalize observed and synthetic data */
-                    if (config.get<bool>("normalizeTraces")){
-                        receivers.getSeismogramHandler().normalize();
-                        receiversTrue.getSeismogramHandler().normalize();
-                    }
+                    receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
+                    receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                         
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                 
@@ -1935,10 +1925,8 @@ int main(int argc, char *argv[])
                     seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());
                         
                     /* Normalize observed and synthetic data */
-                    if (configEM.get<bool>("normalizeTraces")){
-                        receiversEM.getSeismogramHandler().normalize();
-                        receiversTrueEM.getSeismogramHandler().normalize();
-                    }
+                    receiversEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
+                    receiversTrueEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
 
                     receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                 

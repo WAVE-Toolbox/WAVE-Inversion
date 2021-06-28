@@ -51,15 +51,16 @@ namespace KITGPI
             void calcAdjointSeismogramL2Envelope(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);            
             void calcAdjointSeismogramL2Envelope(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);
                               
+            using Misfit<ValueType>::misfitType;     
+            using Misfit<ValueType>::saveMultiMisfits; 
+            
         private:            
             using Misfit<ValueType>::misfitStorage;  
             using Misfit<ValueType>::misfitStorageL2;  
-            using Misfit<ValueType>::misfitSum0Ratio;   
-            using Misfit<ValueType>::misfitType;     
-            using Misfit<ValueType>::saveMultiMisfits;     
+            using Misfit<ValueType>::misfitSum0Ratio;     
             using Misfit<ValueType>::misfitTypeShots; 
             using Misfit<ValueType>::uniqueMisfitTypes;
-            scai::IndexType numMisfitTypes = 3;
+            using Misfit<ValueType>::numMisfitTypes;
         };        
     }
 }

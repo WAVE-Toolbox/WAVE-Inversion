@@ -96,76 +96,50 @@ void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama:
 {
     vector.setContextPtr(ctx);
     vector.allocate(dist);
-};
+}
 
-/*! \brief Get matrix that multiplies with model matrices to get a pershot
- \param dist Distribution of the pershot
- \param distBig Distribution of the big model
+/*! \brief If stream configuration is used, calculate a weighting vector to balance gradient per shot
+ \param modelPerShot model per shot
  \param modelCoordinates coordinate class object of the pershot
  \param modelCoordinatesBig coordinate class object of the big model
- \param cutCoordinate coordinate where to cut the pershot
+ \param cutCoordinate cut coordinate 
+ \param uniqueShotInds unique shot indexes 
  */
 template <typename ValueType>
-scai::lama::CSRSparseMatrix<ValueType> KITGPI::Gradient::Gradient<ValueType>::getShrinkMatrix(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D const cutCoordinate)
+void KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds)
 {
-    SparseFormat shrinkMatrix; //!< Shrink Multiplication matrix
+    auto dist = modelPerShot.getDensity().getDistributionPtr();
+    auto distBig = density.getDistributionPtr();
+    scai::hmemo::ContextPtr ctx = density.getContextPtr();
+
+    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix;
+    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix;
     shrinkMatrix.allocate(dist, distBig);
-      
-    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
-    dist->getOwnedIndexes(ownedIndexes);
-    lama::MatrixAssembly<ValueType> assembly;
-    IndexType indexBig = 0;
- 
-    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) { // loop over all indices
-        Acquisition::coordinate3D coordinate = modelCoordinates.index2coordinate(ownedIndex); // get submodel coordinate from singleIndex
-        coordinate.x += cutCoordinate.x; // offset depends on shot number
-        coordinate.y += cutCoordinate.y;
-        coordinate.z += cutCoordinate.z;
-        indexBig = modelCoordinatesBig.coordinate2index(coordinate);
-        assembly.push(ownedIndex, indexBig, 1.0);
+    recoverMatrix.allocate(distBig, dist);
+    shrinkMatrix.setContextPtr(ctx);
+    recoverMatrix.setContextPtr(ctx);
+    scai::lama::DenseVector<ValueType> weightingVectorPerShot(dist, 1.0);
+    scai::lama::DenseVector<ValueType> weightingVectorTemp(distBig, 0.0);
+    IndexType numshots = uniqueShotInds.size();
+    for (IndexType shotInd = 0; shotInd < numshots; shotInd++) {        
+        shrinkMatrix = modelPerShot.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(uniqueShotInds[shotInd]));
+        recoverMatrix.assignTranspose(shrinkMatrix);
+        weightingVectorTemp += recoverMatrix * weightingVectorPerShot;
     }
-    shrinkMatrix.fillFromAssembly(assembly);
-    return shrinkMatrix;
-}
-
-/*! \brief Get erase-matrix that erases the old values in the big model
- \param dist Distribution of the pershot
- \param distBig Distribution of the big model
- \param modelCoordinates coordinate class object of the pershot
- \param modelCoordinatesBig coordinate class object of the big model
- \param cutCoordinate coordinate where to cut the pershot
- */
-template <typename ValueType>
-scai::lama::SparseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getEraseVector(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distBig, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D const cutCoordinate, scai::IndexType boundaryWidth)
-{
-    scai::lama::SparseVector<ValueType> eraseVector(distBig, 1.0); //!< Shrink Multiplication matrix
-      
-    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
-    dist->getOwnedIndexes(ownedIndexes);
-    lama::VectorAssembly<ValueType> assembly;
-    IndexType indexBig = 0;
- 
-    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) { // loop over all indices
-        Acquisition::coordinate3D coordinate = modelCoordinates.index2coordinate(ownedIndex); // get submodel coordinate from singleIndex
-        coordinate.x += cutCoordinate.x; // offset depends on shot number
-        coordinate.y += cutCoordinate.y;
-        coordinate.z += cutCoordinate.z;
-        indexBig = modelCoordinatesBig.coordinate2index(coordinate);
-        assembly.push(indexBig, 0.0);
-    }
-    eraseVector.fillFromAssembly(assembly);
+    weightingVector.allocate(distBig);
+    weightingVector = 1.0 / weightingVectorTemp; // the weighting of overlapping area
+    Common::replaceInvalid<ValueType>(weightingVector, 0.0);
     
-    // damp the boundary boarders
-    for (IndexType y = 0; y < modelCoordinatesBig.getNY(); y++) {
-        for (IndexType i = 0; i < boundaryWidth; i++) {
-            ValueType tmp = (ValueType)1.0 - (i + 1) / (ValueType)boundaryWidth;
-            eraseVector[modelCoordinatesBig.coordinate2index(cutCoordinate.x+i, y, 0)] = tmp;
-            eraseVector[modelCoordinatesBig.coordinate2index(cutCoordinate.x+modelCoordinates.getNX()-1-i, y, 0)] = tmp;
-        }
-    }
-    return eraseVector;
+    IO::writeVector(weightingVector, "gradients/weightingVector", 1);
 }
 
+/*! \brief get weightingVector */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getWeightingVector()
+{
+    return weightingVector;
+}
+   
 /*! \brief initialize an inner workflow */
 template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::setInvertParameters(std::vector<bool> setInvertParameters)

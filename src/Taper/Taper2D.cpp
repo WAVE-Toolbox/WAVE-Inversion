@@ -402,7 +402,7 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
         }
         modelTransformMatrixToEM.fillFromAssembly(assembly);
     }
-    modelTransformMatrixToEM.writeToFile("model/modelTransformMatrixToEM_" + std::to_string(modelCoordinates.getNX()) + "_" + std::to_string(modelCoordinates.getNY()) + "_" + std::to_string(modelCoordinates.getNZ()) + ".mtx");
+//     modelTransformMatrixToEM.writeToFile("model/modelTransformMatrixToEM_" + std::to_string(modelCoordinates.getNX()) + "_" + std::to_string(modelCoordinates.getNY()) + "_" + std::to_string(modelCoordinates.getNZ()) + ".mtx");
 }
 
 /*! \brief calculate an average matrix for inversion
@@ -493,7 +493,7 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
         SeismictoEMMatrix.fillFromAssembly(assembly);
         modelTransformMatrixToSeismic = transpose(SeismictoEMMatrix);
     }
-    modelTransformMatrixToSeismic.writeToFile("model/modelTransformMatrixToSeismic_" + std::to_string(modelCoordinatesEM.getNX()) + "_" + std::to_string(modelCoordinatesEM.getNY()) + "_" + std::to_string(modelCoordinatesEM.getNZ()) + ".mtx");
+//     modelTransformMatrixToSeismic.writeToFile("model/modelTransformMatrixToSeismic_" + std::to_string(modelCoordinatesEM.getNX()) + "_" + std::to_string(modelCoordinatesEM.getNY()) + "_" + std::to_string(modelCoordinatesEM.getNZ()) + ".mtx");
 }
 
 /*! \brief exchange porosity and saturation from EM to seismic

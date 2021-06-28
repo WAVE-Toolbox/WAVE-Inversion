@@ -38,6 +38,34 @@ void KITGPI::Misfit::Misfit<ValueType>::setMisfitSum0Ratio(std::vector<scai::lam
     misfitSum0Ratio = setMisfitSum0Ratio;
 }
 
+/*! \brief Return the misfit residual vector over all common shots at iteration1 and iteration2. 
+ \param iteration1 previous iteration
+ \param iteration2 current iteration
+ */
+template <typename ValueType>
+ValueType KITGPI::Misfit::Misfit<ValueType>::getMisfitResidualMax(int iteration1, int iteration2)
+{
+    ValueType misfitResidualMax = 0;    
+    SCAI_ASSERT_ERROR(iteration1 < iteration2, "iteration1 >= iteration2");
+    for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
+        scai::lama::DenseVector<ValueType> misfitPerIt1 = misfitStorageL2.at(iteration1 * numMisfitTypes + iMisfitType);
+        scai::lama::DenseVector<ValueType> misfitPerIt2 = misfitStorageL2.at(iteration2 * numMisfitTypes + iMisfitType);
+        scai::IndexType numshots = misfitPerIt1.size();
+        ValueType misfit1 = 0;
+        ValueType misfit2 = 0;
+        for (int shotInd = 0; shotInd < numshots; shotInd++) {  
+            if (misfitPerIt1.getValue(shotInd) != 0 && misfitPerIt2.getValue(shotInd) != 0) {
+                misfit1 += misfitPerIt1.getValue(shotInd);
+                misfit2 += misfitPerIt2.getValue(shotInd);
+            }
+        }
+        SCAI_ASSERT_ERROR(misfit1 != 0, "misfit1 == 0 in the " + std::to_string(iMisfitType) + " misfitType");
+        if (misfitResidualMax < (misfit1 - misfit2) / misfit1)
+            misfitResidualMax = (misfit1 - misfit2) / misfit1;
+    }
+    return misfitResidualMax;
+}
+
 /*! \brief Return the misfit summed over all shots. 
  * 
  * 

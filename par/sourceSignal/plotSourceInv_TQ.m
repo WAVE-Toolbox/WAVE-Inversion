@@ -21,7 +21,7 @@ configTrue=conf(configTrueFilename);
 
 % Output file
 % switch for saving snapshots to picture file 1=yes (jpg) 2= yes (png) other=no
-imagesave=0;
+imagesave=2;
 writefiles=1;
 stage=5;
 showLegend = 0;
@@ -29,16 +29,15 @@ showResidual = 0;
 showmax=30;
 legendType = 2; % 1 = parameter symblicName; 2 = inversionTypeName
 % 3 = parameter symblicName + inversionTypeName
-showTitle=1; showXlabel=1; showYlabel=1;
+showTitle=0; showXlabel=1; showYlabel=1;
 
 normalize=1;
-inversionType = [-1 config.getValue('inversionType')];
-parameterisation = [0 config.getValue('parameterisation')];
-exchangeStrategy = [0 config.getValue('exchangeStrategy')];
+inversionType = [0 1];
+parameterisation = [0 0];
+exchangeStrategy = [0 0];
 orientation = 'vertical';
 wiggleType='vararea';
-writeSource=configTrue.getValue('writeSource');
-%writeSource=0;
+writeSource=0;
 source = readSourcesfromConfig(configTrue);
 DT=config.getValue('seismoDT');
 fileFormat=config.getValue('SeismogramFormat');
@@ -92,11 +91,12 @@ if writefiles~=0
     end
 end
 %% plot
-imageScale=2;
+imageScale=1.2;
 symblicName='';
 legendNameAll = getLegendName(legendType,equationType,...
     inversionType,parameterisation,exchangeStrategy,symblicName);
 lineSettingAll = getLinesettingInv(equationType,inversionType,parameterisation,exchangeStrategy); 
+lineSettingAll{2}.Color='k';
 titleName = '';
 [titleLabelSettingAll] = getTitleLabelSettingAll(showTitle,showXlabel,showYlabel...
     ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType);
@@ -109,7 +109,6 @@ residualScale=1;
     syntheticDatanameAll,imagesave,orientation,lineSettingAll,legendNameAll,offset,...
     titleLabelSettingAll,showLegend,showResidual,normalize,wiggleType...
     ,imageScale,fileFormat,residualScale);
-% ylim([0 max(T)*2/3]);
 
 addpath('../configuration');
 addpath('../common');

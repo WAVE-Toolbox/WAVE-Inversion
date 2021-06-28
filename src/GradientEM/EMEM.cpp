@@ -56,6 +56,17 @@ KITGPI::Gradient::EMEM<ValueType>::EMEM(const EMEM &rhs)
     saturation = rhs.saturation;
 }
 
+/*! \brief Set all parameter to zero.
+*/
+template <typename ValueType>
+void KITGPI::Gradient::EMEM<ValueType>::resetGradient()
+{
+    this->resetParameter(conductivityEM);
+    this->resetParameter(dielectricPermittivityEM);
+    this->resetParameter(porosity);
+    this->resetParameter(saturation);
+}
+
 /*! \brief Write modelEM to an external file
  *
  \param filename For the conductivityEM ".sigmaEM.mtx" and for dielectricPermittivityEM ".epsilonEMr.mtx" is added.
@@ -392,53 +403,46 @@ void KITGPI::Gradient::EMEM<ValueType>::sumShotDomain(scai::dmemo::CommunicatorP
 }
 
 /*! \brief If stream configuration is used, set a gradient per shot into the big gradient
+ \param model model
  \param gradientPerShot gradient per shot
  \param modelCoordinates coordinate class object of the pershot
  \param modelCoordinatesBig coordinate class object of the big model
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
+void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
 {
     auto distBig = dielectricPermittivityEM.getDistributionPtr();
     auto dist = gradientPerShot.getDielectricPermittivityEM().getDistributionPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix;
-    scai::lama::DenseVector<ValueType> weightingVector(dist, 1.0);
-    scai::lama::DenseVector<ValueType> weightingVectorBig(distBig, 0.0);
-    IndexType numCuts = cutCoordinates.size();
-    for (IndexType index=0; index < numCuts; index++) {        
-        shrinkMatrix = this->getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(index));
-        shrinkMatrix.assignTranspose(shrinkMatrix);
-        weightingVectorBig += shrinkMatrix * weightingVector;
-    }
-    weightingVectorBig = 1.0 / weightingVectorBig; // the weighting of overlapping area
-    Common::replaceInvalid<ValueType>(weightingVectorBig, 0.0);
+    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = modelEM.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
+    recoverMatrix.assignTranspose(recoverMatrix);
     
-    shrinkMatrix = this->getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
-    shrinkMatrix.assignTranspose(shrinkMatrix);
+    scai::lama::SparseVector<ValueType> eraseVector = modelEM.getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
+    scai::lama::SparseVector<ValueType> recoverVector;
+    recoverVector = 1.0 - eraseVector;
     
-    scai::lama::SparseVector<ValueType> eraseVector = this->getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
-    eraseVector *= weightingVectorBig;
-    scai::lama::SparseVector<ValueType> restoreVector;
-    restoreVector = 1.0 - eraseVector;
-    /*
-    auto comm = distBig->getCommunicatorPtr();
-    std::cout << "comm->getRank() = " << comm->getRank() << std::endl;
-    if (comm->getRank() == 0)
-        IO::writeVector(restoreVector, "gradients/restoreVector.mtx", 1);
-    */
     scai::lama::DenseVector<ValueType> temp;
     
-    temp = shrinkMatrix * gradientPerShot.getDielectricPermittivityEM(); //transform pershot into big model
-    temp *= restoreVector;
+    temp = recoverMatrix * gradientPerShot.getDielectricPermittivityEM(); //transform pershot into big model
+    temp *= recoverVector;
     dielectricPermittivityEM *= eraseVector;
     dielectricPermittivityEM += temp; //take over the values
   
-    temp = shrinkMatrix * gradientPerShot.getConductivityEM(); //transform pershot into big model
-    temp *= restoreVector;
+    temp = recoverMatrix * gradientPerShot.getConductivityEM(); //transform pershot into big model
+    temp *= recoverVector;
     conductivityEM *= eraseVector;
     conductivityEM += temp; //take over the values
+    
+    temp = recoverMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
+    temp *= recoverVector;
+    porosity *= eraseVector;
+    porosity += temp; //take over the values
+    
+    temp = recoverMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
+    temp *= recoverVector;
+    saturation *= eraseVector;
+    saturation += temp; //take over the values
 }
 
 /*! \brief Function for scaling the gradients with the modelEM parameter 
@@ -453,46 +457,48 @@ void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparam
     ValueType maxValue;      
     
     IndexType scaleGradient = configEM.get<IndexType>("scaleGradient");
-    if (workflowEM.getInvertForSigmaEM() && conductivityEM.maxNorm() != 0) {  
-        if (scaleGradient == 1) {
-            maxValue = modelEM.getConductivityEM().maxNorm();
-        } else if (scaleGradient == 2) {
-            maxValue = configEM.get<ValueType>("upperSigmaEMTh") - configEM.get<ValueType>("lowerSigmaEMTh");
+    if (scaleGradient != 0) {
+        if (workflowEM.getInvertForSigmaEM() && conductivityEM.maxNorm() != 0) {  
+            if (scaleGradient == 1) {
+                maxValue = modelEM.getConductivityEM().maxNorm();
+            } else if (scaleGradient == 2) {
+                maxValue = configEM.get<ValueType>("upperSigmaEMTh") - configEM.get<ValueType>("lowerSigmaEMTh");
+            }
+            this->applyParameterisation(maxValue, ConductivityReference, modelEM.getParameterisation());
+            conductivityEM *= 1 / conductivityEM.maxNorm() * maxValue;
+        }  
+        
+        if (workflowEM.getInvertForEpsilonEM() && dielectricPermittivityEM.maxNorm() != 0) {
+            if (scaleGradient == 1) {
+                maxValue = modelEM.getDielectricPermittivityEM().maxNorm();
+            } else if (scaleGradient == 2) {
+                maxValue = (configEM.get<ValueType>("upperEpsilonEMrTh") - configEM.get<ValueType>("lowerEpsilonEMrTh")) * DielectricPermittivityVacuum;
+            }      
+            this->applyParameterisation(maxValue, DielectricPermittivityVacuum, modelEM.getParameterisation()); 
+            dielectricPermittivityEM *= 1 / dielectricPermittivityEM.maxNorm() * maxValue;
         }
-        this->applyParameterisation(maxValue, ConductivityReference, modelEM.getParameterisation());
-        conductivityEM *= 1 / conductivityEM.maxNorm() * maxValue;
-    }  
+        
+        if (workflowEM.getInvertForPorosity() && porosity.maxNorm() != 0) {
+            if (modelEM.getParameterisation() == 1 || modelEM.getParameterisation() == 2) {
+                if (scaleGradient == 1) {
+                    maxValue = modelEM.getPorosity().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = configEM.get<ValueType>("upperPorosityTh") - configEM.get<ValueType>("lowerPorosityTh");
+                }
+            }        
+            porosity *= 1 / porosity.maxNorm() * maxValue;
+        }    
     
-    if (workflowEM.getInvertForEpsilonEM() && dielectricPermittivityEM.maxNorm() != 0) {
-        if (scaleGradient == 1) {
-            maxValue = modelEM.getDielectricPermittivityEM().maxNorm();
-        } else if (scaleGradient == 2) {
-            maxValue = (configEM.get<ValueType>("upperEpsilonEMrTh") - configEM.get<ValueType>("lowerEpsilonEMrTh")) * DielectricPermittivityVacuum;
-        }      
-        this->applyParameterisation(maxValue, DielectricPermittivityVacuum, modelEM.getParameterisation()); 
-        dielectricPermittivityEM *= 1 / dielectricPermittivityEM.maxNorm() * maxValue;
-    }
-    
-    if (workflowEM.getInvertForPorosity() && porosity.maxNorm() != 0) {
-        if (modelEM.getParameterisation() == 1 || modelEM.getParameterisation() == 2) {
-            if (scaleGradient == 1) {
-                maxValue = modelEM.getPorosity().maxNorm();
-            } else if (scaleGradient == 2) {
-                maxValue = configEM.get<ValueType>("upperPorosityTh") - configEM.get<ValueType>("lowerPorosityTh");
-            }
-        }        
-        porosity *= 1 / porosity.maxNorm() * maxValue;
-    }    
-    
-    if (workflowEM.getInvertForSaturation() && saturation.maxNorm() != 0) { 
-        if (modelEM.getParameterisation() == 1 || modelEM.getParameterisation() == 2) {
-            if (scaleGradient == 1) {
-                maxValue = modelEM.getSaturation().maxNorm();
-            } else if (scaleGradient == 2) {
-                maxValue = configEM.get<ValueType>("upperSaturationTh") - configEM.get<ValueType>("lowerSaturationTh");
-            }
-        }              
-        saturation *= 1 / saturation.maxNorm() * maxValue;        
+        if (workflowEM.getInvertForSaturation() && saturation.maxNorm() != 0) { 
+            if (modelEM.getParameterisation() == 1 || modelEM.getParameterisation() == 2) {
+                if (scaleGradient == 1) {
+                    maxValue = modelEM.getSaturation().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = configEM.get<ValueType>("upperSaturationTh") - configEM.get<ValueType>("lowerSaturationTh");
+                }
+            }              
+            saturation *= 1 / saturation.maxNorm() * maxValue;        
+        }
     }
 }
 

@@ -52,16 +52,7 @@ namespace KITGPI
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const, ValueType porosity_const, ValueType saturation_const);
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
-            /*! \brief Set all wavefieldsEM to zero.
-            */
-            void resetGradient()
-            {
-                this->resetParameter(velocityP);
-                this->resetParameter(velocityS);
-                this->resetParameter(density);
-                this->resetParameter(porosity);
-                this->resetParameter(saturation);
-            };
+            void resetGradient();
 
             void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const override;
 
@@ -102,7 +93,7 @@ namespace KITGPI
 
             void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
             
-            void sumGradientPerShot(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
+            void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
 
           private:
             using Gradient<ValueType>::equationType;
@@ -119,6 +110,7 @@ namespace KITGPI
             using Gradient<ValueType>::tauS;
             using Gradient<ValueType>::relaxationFrequency;
             using Gradient<ValueType>::numRelaxationMechanisms;
+            using Gradient<ValueType>::weightingVector;
         };
     }
 }

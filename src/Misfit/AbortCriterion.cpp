@@ -12,18 +12,26 @@
 template <typename ValueType>
 bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm, KITGPI::Misfit::Misfit<ValueType> &misfit, KITGPI::Configuration::Configuration config, ValueType &steplengthInit, KITGPI::Workflow::Workflow<ValueType> &workflow, bool const breakLoopEM, scai::IndexType const breakLoopType)
 {
-    bool breakLoop = false;
+    bool breakLoop = false;   
+    if ( workflow.iteration > 1 ) { 
+        ValueType misfitResidual = 0;     
+        
+        if (misfit.saveMultiMisfits || misfit.misfitType.length() > 2) {
+            misfitResidual = misfit.getMisfitResidualMax(workflow.iteration - 2, workflow.iteration);
+        } else {
+            misfitResidual = ( misfit.getMisfitSum(workflow.iteration - 2) - misfit.getMisfitSum(workflow.iteration) )/misfit.getMisfitSum(workflow.iteration - 2);
+        }
     
-    if ( workflow.iteration > 1 ) {        
-        if ( std::abs( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration-2) )/(misfit.getMisfitSum(workflow.iteration - 2)) < workflow.getRelativeMisfitChange()) {
+        if ( std::abs( misfitResidual) < workflow.getRelativeMisfitChange()) {
             breakLoop = true;  
             HOST_PRINT(comm, "\nAbort criterion 1 fulfilled \n");
-            HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflow.getRelativeMisfitChange() << "\n");
+            HOST_PRINT(comm, "|Misfit(it-2)-Misfit(it)| / Misfit(it-2) < " << workflow.getRelativeMisfitChange() << "\n");
         }
-        if ( workflow.iteration > iterationStep-1 && ( misfit.getMisfitSum(workflow.iteration) - misfit.getMisfitSum(workflow.iteration - iterationStep) )/(misfit.getMisfitSum(workflow.iteration - iterationStep)) > iterationStep * workflow.getRelativeMisfitChange()) {
+        misfitResidual = -misfitResidual;
+        if ( misfitResidual > 2 * workflow.getRelativeMisfitChange()) {
             breakLoop = true;  
             HOST_PRINT(comm, "\nAbort criterion 2 fulfilled \n");
-            HOST_PRINT(comm, "(Misfit(it)-Misfit(it-" << iterationStep << ")) / Misfit(it-"<< iterationStep << ") > " << iterationStep * workflow.getRelativeMisfitChange() << "\n");
+            HOST_PRINT(comm, "(Misfit(it)-Misfit(it-2)) / Misfit(it-2) > " << 2 * workflow.getRelativeMisfitChange() << "\n");
         }        
         if (breakLoopType == 1 && breakLoopEM == true) {
             breakLoop = true;
@@ -49,19 +57,27 @@ bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm,
  */
 template <typename ValueType>
 bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm, KITGPI::Misfit::Misfit<ValueType> &misfit, KITGPI::Configuration::Configuration configEM, ValueType &steplengthInitEM, Workflow::WorkflowEM<ValueType> &workflowEM, bool const breakLoop, scai::IndexType const breakLoopType)
-{
-    bool breakLoopEM = false;
-    
-    if ( workflowEM.iteration > 1 ) {        
-        if ( std::abs( misfit.getMisfitSum(workflowEM.iteration) - misfit.getMisfitSum(workflowEM.iteration-2) )/(misfit.getMisfitSum(workflowEM.iteration - 2)) < workflowEM.getRelativeMisfitChange()) {
+{       
+    bool breakLoopEM = false;     
+    if ( workflowEM.iteration > 1 ) {   
+        ValueType misfitResidual = 0;
+        
+        if (misfit.saveMultiMisfits || misfit.misfitType.length() > 2) {
+            misfitResidual = misfit.getMisfitResidualMax(workflowEM.iteration - 2, workflowEM.iteration);
+        } else {
+            misfitResidual = ( misfit.getMisfitSum(workflowEM.iteration - 2) - misfit.getMisfitSum(workflowEM.iteration) )/misfit.getMisfitSum(workflowEM.iteration - 2);
+        }
+        
+        if ( std::abs( misfitResidual ) < workflowEM.getRelativeMisfitChange()) {
             breakLoopEM = true;  
             HOST_PRINT(comm, "\nAbort criterion 1 fulfilled \n");
-            HOST_PRINT(comm, "|Misfit(it)-Misfit(it-2)| / Misfit(it-2) < " << workflowEM.getRelativeMisfitChange() << "\n");
+            HOST_PRINT(comm, "|Misfit(it-2)-Misfit(it)| / Misfit(it-2) < " << workflowEM.getRelativeMisfitChange() << "\n");
         }
-        if ( workflowEM.iteration > iterationStep-1 && ( misfit.getMisfitSum(workflowEM.iteration) - misfit.getMisfitSum(workflowEM.iteration - iterationStep) )/(misfit.getMisfitSum(workflowEM.iteration - iterationStep)) > iterationStep * workflowEM.getRelativeMisfitChange()) {
+        misfitResidual = -misfitResidual;
+        if ( misfitResidual > 2 * workflowEM.getRelativeMisfitChange()) {
             breakLoopEM = true;  
             HOST_PRINT(comm, "\nAbort criterion 2 fulfilled \n");
-            HOST_PRINT(comm, "(Misfit(it)-Misfit(it-" << iterationStep << ")) / Misfit(it-"<< iterationStep << ") > " << iterationStep * workflowEM.getRelativeMisfitChange() << "\n");
+            HOST_PRINT(comm, "(Misfit(it)-Misfit(it-2)) / Misfit(it-2) > " << 2 * workflowEM.getRelativeMisfitChange() << "\n");
         }        
         if (breakLoopType == 1 && breakLoop == true) {
             breakLoopEM = true;

@@ -47,9 +47,12 @@ namespace KITGPI
             void setMisfitTypeShots(scai::lama::DenseVector<ValueType> setMisfitTypeShots);
             std::vector<scai::lama::DenseVector<ValueType>> getMisfitSum0Ratio();
             void setMisfitSum0Ratio(std::vector<scai::lama::DenseVector<ValueType>> setMisfitSum0Ratio);
+            ValueType getMisfitResidualMax(int iteration1, int iteration2);
             
             //! \brief Misfit pointer
             typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
+            std::string misfitType = "l2";
+            bool saveMultiMisfits = false;
                                     
         protected:
             
@@ -62,8 +65,7 @@ namespace KITGPI
             std::vector<scai::lama::DenseVector<ValueType>> misfitSum0Ratio;
             scai::lama::DenseVector<ValueType> misfitTypeShots; 
             std::vector<scai::IndexType> uniqueMisfitTypes;
-            std::string misfitType = "l2";
-            bool saveMultiMisfits = false;
+            scai::IndexType numMisfitTypes = 3;
             scai::lama::DenseVector<ValueType> modelDerivativeX; //!< Vector storing model derivative in x direction.
             scai::lama::DenseVector<ValueType> modelDerivativeY; //!< Vector storing model derivative in y direction.
             
