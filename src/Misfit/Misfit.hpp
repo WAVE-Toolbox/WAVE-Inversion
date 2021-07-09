@@ -65,7 +65,7 @@ namespace KITGPI
             std::vector<scai::lama::DenseVector<ValueType>> misfitSum0Ratio;
             scai::lama::DenseVector<ValueType> misfitTypeShots; 
             std::vector<scai::IndexType> uniqueMisfitTypes;
-            scai::IndexType numMisfitTypes = 3;
+            scai::IndexType numMisfitTypes = 4;
             scai::lama::DenseVector<ValueType> modelDerivativeX; //!< Vector storing model derivative in x direction.
             scai::lama::DenseVector<ValueType> modelDerivativeY; //!< Vector storing model derivative in y direction.
             

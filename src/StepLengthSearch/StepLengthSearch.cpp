@@ -813,6 +813,16 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
 
         /* Normalize observed and synthetic data */
+        if (config.get<IndexType>("normalizeTraces") == 3 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 6) {
+            // to read inverseAGC matrix.
+            receiversTrue.getSeismogramHandler().read(5, config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), 1); 
+            ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
+            if (workflow.getUpperCornerFreq() != 0.0) {
+                frequencyAGC = (workflow.getLowerCornerFreq() + workflow.getUpperCornerFreq()) / 2;
+            }
+            receivers.getSeismogramHandler().setFrequencyAGC(frequencyAGC);         
+            receivers.getSeismogramHandler().calcInverseAGC();      
+        }
         receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
         receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
 
@@ -1045,6 +1055,16 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
 
         /* Normalize observed and synthetic data */
+        if (config.get<IndexType>("normalizeTraces") == 3 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 6) {
+            // to read inverseAGC matrix.
+            receiversTrue.getSeismogramHandler().read(5, config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), 1); 
+            ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
+            if (workflow.getUpperCornerFreq() != 0.0) {
+                frequencyAGC = (workflow.getLowerCornerFreq() + workflow.getUpperCornerFreq()) / 2;
+            }
+            receivers.getSeismogramHandler().setFrequencyAGC(frequencyAGC);      
+            receivers.getSeismogramHandler().calcInverseAGC();      
+        }
         receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
         receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
 

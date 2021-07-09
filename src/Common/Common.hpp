@@ -41,7 +41,7 @@ namespace KITGPI
 {
     //! \brief Common namespace
     namespace Common
-    {        
+    {    
         /*! \brief Calculate the distance from one index coordinate o a set of index coordinates
         \param result Distance vector from each receiver index to the source index
         \param sourceIndex Index coordinate of the source
@@ -51,7 +51,7 @@ namespace KITGPI
         \param NZ Number of grid points in z-direction
         */
         template<typename ValueType>
-        void calcOffsets(scai::lama::DenseVector<ValueType> &result, scai::IndexType sourceIndex, scai::lama::DenseVector<scai::IndexType> const &receiverIndices, scai::IndexType NX, scai::IndexType NY, scai::IndexType /*NZ*/, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates) 
+        void calcOffsets(scai::lama::DenseVector<ValueType> &result, scai::IndexType sourceIndex, scai::lama::DenseVector<scai::IndexType> const &receiverIndices, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates) 
         {
             Acquisition::coordinate3D sourceCoords = modelCoordinates.index2coordinate(sourceIndex);
             
@@ -59,6 +59,8 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> recY;
             scai::lama::DenseVector<ValueType> recZ;
             scai::lama::DenseVector<ValueType> RecCoordinates;
+            scai::IndexType NX = modelCoordinates.getNX();
+            scai::IndexType NY = modelCoordinates.getNY();
             
             RecCoordinates = scai::lama::cast<ValueType>(receiverIndices);
 
@@ -80,9 +82,9 @@ namespace KITGPI
             
             recX += recY;
             recX += recZ;
-            result.unaryOp(recX, scai::common::UnaryOp::SQRT);
-            
-        }
+            result.unaryOp(recX, scai::common::UnaryOp::SQRT);   
+            result *= modelCoordinates.getDH();
+        } 
         
         /*! \brief Apply a 2D median filter to model/gradient parameter to filter out the extreme values
         \param vecter2D model/gradient parameter vector

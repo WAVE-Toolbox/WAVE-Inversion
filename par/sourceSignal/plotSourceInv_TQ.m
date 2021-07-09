@@ -21,7 +21,7 @@ configTrue=conf(configTrueFilename);
 
 % Output file
 % switch for saving snapshots to picture file 1=yes (jpg) 2= yes (png) other=no
-imagesave=2;
+imagesave=0;
 writefiles=1;
 stage=5;
 showLegend = 0;

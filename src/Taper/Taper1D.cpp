@@ -83,7 +83,6 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, Index
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperUp(lama::DenseVector<ValueType> &result, IndexType iStart, IndexType iEnd)
 {
-
     // first part of taper
     lama::DenseVector<ValueType> firstPart(iStart, 0.0);
     lama::DenseVector<ValueType> tmpResult;

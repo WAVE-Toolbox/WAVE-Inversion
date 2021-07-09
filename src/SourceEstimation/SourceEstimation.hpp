@@ -48,11 +48,11 @@ namespace KITGPI
 
         void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
-        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType maxOffsets, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
+        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
         
-        void estimateSourceSignal(KITGPI::Acquisition::ReceiversEM<ValueType> &receiversEM, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversTrueEM, IndexType shotInd, IndexType shotNr);
-        void applyFilter(KITGPI::Acquisition::SourcesEM<ValueType> &sourcesEM, scai::IndexType shotInd) const;
-        void calcOffsetMutes(KITGPI::Acquisition::SourcesEM<ValueType> const &sourcesEM, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversEM, ValueType maxOffsets, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM);
+        void estimateSourceSignal(KITGPI::Acquisition::ReceiversEM<ValueType> &receivers, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversTrueEM, IndexType shotInd, IndexType shotNr);
+        void applyFilter(KITGPI::Acquisition::SourcesEM<ValueType> &sources, scai::IndexType shotInd) const;
+        void calcOffsetMutes(KITGPI::Acquisition::SourcesEM<ValueType> const &sources, KITGPI::Acquisition::ReceiversEM<ValueType> const &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
 
       private:
         ValueType waterLevel;
