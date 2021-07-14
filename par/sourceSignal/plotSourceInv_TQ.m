@@ -23,7 +23,8 @@ configTrue=conf(configTrueFilename);
 % switch for saving snapshots to picture file 1=yes (jpg) 2= yes (png) other=no
 imagesave=0;
 writefiles=1;
-stage=5;
+stage=1;
+useDamping=0; T0damp=30e-9; T1damp=100e-9; 
 showLegend = 0;
 showResidual = 0;
 showmax=30;
@@ -48,7 +49,7 @@ else
 end
 [Nshot n]=size(source);
 seismogram=[];seismogramTrue=[];
-T0damp=10e-9; T1damp=30e-9; dampFactor=1e-2/DT;
+dampFactor=1e-2/DT;
 for ishot=1:Nshot
     shotnr=source(ishot,1);
     SOURCE_TYPE=source(ishot,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
@@ -61,8 +62,10 @@ for ishot=1:Nshot
     sourceInv=readSeismogram(filenameInv,fileFormat);
     T=1*DT:DT:size(sourceInv,2)*DT;
     timeDamping=ones(size(sourceInv));
-    timeDamping(T<T0damp)=timeDamping(T<T0damp).*exp(dampFactor*(T(T<T0damp)-T0damp));
-    timeDamping(T>T1damp)=timeDamping(T>T1damp).*exp(-dampFactor*(T(T>T1damp)-T1damp));
+    if useDamping==1
+        timeDamping(T<T0damp)=timeDamping(T<T0damp).*exp(dampFactor*(T(T<T0damp)-T0damp));
+        timeDamping(T>T1damp)=timeDamping(T>T1damp).*exp(-dampFactor*(T(T>T1damp)-T1damp));
+    end
     sourceInv=sourceInv.*timeDamping;
     writeSourceFilename=configTrue.getString('writeSourceFilename');
     if writeSource~=0        

@@ -1100,7 +1100,7 @@ int main(int argc, char *argv[])
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
 
-                    if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+                    if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
                     }
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
@@ -1479,7 +1479,7 @@ int main(int argc, char *argv[])
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1) {
                         seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
                         if (configEM.get<IndexType>("useSeismogramTaper") == 4) {
-                            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + "misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
+                            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
                         } else {
                             seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
                         }
@@ -1570,7 +1570,7 @@ int main(int argc, char *argv[])
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output modelEM as model_crash.FILE_EXTENSION!");
                     }
 
-                    if (configEM.get<IndexType>("useSeismogramTaper") == 2 || configEM.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+                    if (configEM.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
                     }
                     seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());
@@ -1890,7 +1890,13 @@ int main(int argc, char *argv[])
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }
 
-                    if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+                    if (config.get<IndexType>("useSeismogramTaper") > 1) {             
+                        seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
+                        if (config.get<IndexType>("useSeismogramTaper") == 4) {
+                            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
+                        } else {
+                            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+                        }                                      
                         seismogramTaper2D.apply(receiversTrue.getSeismogramHandler()); 
                     }
                     seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
@@ -1913,7 +1919,7 @@ int main(int argc, char *argv[])
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
 
-                    if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+                    if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
                     }
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
@@ -2013,7 +2019,13 @@ int main(int argc, char *argv[])
                             sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
                     }
 
-                    if (configEM.get<IndexType>("useSeismogramTaper") == 2 || configEM.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+                    if (configEM.get<IndexType>("useSeismogramTaper") > 1) {     
+                        seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
+                        if (configEM.get<IndexType>("useSeismogramTaper") == 4) {
+                            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
+                        } else {
+                            seismogramTaper2DEM.read(configEM.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+                        }                                              
                         seismogramTaper2DEM.apply(receiversTrueEM.getSeismogramHandler()); 
                     }
                     seismogramTaper1DEM.apply(receiversTrueEM.getSeismogramHandler());
@@ -2036,7 +2048,7 @@ int main(int argc, char *argv[])
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
 
-                    if (configEM.get<IndexType>("useSeismogramTaper") == 2 || configEM.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+                    if (configEM.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
                     }
                     seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());

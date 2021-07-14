@@ -194,5 +194,19 @@ void KITGPI::Misfit::Misfit<ValueType>::setModelDerivativeY(scai::lama::Vector<V
     modelDerivativeY = setModelDerivativeY;
 }
 
+/*! \brief Overloading = Operation
+ *
+ \param rhs Misfit which is copied.
+ */
+template <typename ValueType>
+KITGPI::Misfit::Misfit<ValueType> &KITGPI::Misfit::Misfit<ValueType>::operator=(KITGPI::Misfit::Misfit<ValueType> const &rhs)
+{
+    misfitTypeShots = rhs.misfitTypeShots;
+    misfitSum0Ratio = rhs.misfitSum0Ratio;
+    uniqueMisfitTypes = rhs.uniqueMisfitTypes;
+    
+    return *this;
+}
+
 template class KITGPI::Misfit::Misfit<double>;
 template class KITGPI::Misfit::Misfit<float>;

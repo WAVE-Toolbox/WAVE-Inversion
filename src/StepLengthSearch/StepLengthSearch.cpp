@@ -74,8 +74,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     wavefields->init(ctx, dist);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
-    dataMisfit->setMisfitTypeShots(currentMisfit.getMisfitTypeShots());
-    dataMisfit->setMisfitSum0Ratio(currentMisfit.getMisfitSum0Ratio());
+    *dataMisfit = currentMisfit;
 
     ValueType misfitTestSum;
 
@@ -169,8 +168,7 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     wavefields->init(ctx, dist);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
-    dataMisfit->setMisfitTypeShots(currentMisfit.getMisfitTypeShots());
-    dataMisfit->setMisfitSum0Ratio(currentMisfit.getMisfitSum0Ratio());
+    *dataMisfit = currentMisfit;
 
     ValueType misfitTestSum;
     ValueType steplength;
@@ -368,8 +366,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     wavefields->init(ctx, dist);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
-    dataMisfit->setMisfitTypeShots(currentMisfit.getMisfitTypeShots());
-    dataMisfit->setMisfitSum0Ratio(currentMisfit.getMisfitSum0Ratio());
+    *dataMisfit = currentMisfit;
 
     ValueType misfitTestSum;
 
@@ -462,8 +459,7 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     wavefields->init(ctx, dist);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
-    dataMisfit->setMisfitTypeShots(currentMisfit.getMisfitTypeShots());
-    dataMisfit->setMisfitSum0Ratio(currentMisfit.getMisfitSum0Ratio());
+    *dataMisfit = currentMisfit;
 
     ValueType misfitTestSum;
     ValueType steplength;
@@ -778,9 +774,13 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         Taper::Taper1D<ValueType> seismogramTaper1D;
         seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
         seismogramTaper1D.calcTimeDampingTaper(workflow.getTimeDampingFactor(), config.get<ValueType>("DT"));  
-        if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {
+        if (config.get<IndexType>("useSeismogramTaper") > 1) {
             seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            if (config.get<IndexType>("useSeismogramTaper") == 4) {
+                seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
+            } else {
+                seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+            }
             seismogramTaper2D.apply(receiversTrue.getSeismogramHandler());  
         }
         seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
@@ -807,7 +807,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
 
-        if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+        if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
             seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
         }
         seismogramTaper1D.apply(receivers.getSeismogramHandler());
@@ -1020,9 +1020,13 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         Taper::Taper1D<ValueType> seismogramTaper1D;
         seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
         seismogramTaper1D.calcTimeDampingTaper(workflow.getTimeDampingFactor(), config.get<ValueType>("DT"));  
-        if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {
+        if (config.get<IndexType>("useSeismogramTaper") > 1) {
             seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-            seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");                       
+            if (config.get<IndexType>("useSeismogramTaper") == 4) {
+                seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
+            } else {
+                seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
+            }
             seismogramTaper2D.apply(receiversTrue.getSeismogramHandler());  
         }
         seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
@@ -1049,7 +1053,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
 
-        if (config.get<IndexType>("useSeismogramTaper") == 2 || config.get<IndexType>("useSeismogramTaper") == 3) {                                                   
+        if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
             seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
         }
         seismogramTaper1D.apply(receivers.getSeismogramHandler());

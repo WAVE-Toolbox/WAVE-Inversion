@@ -41,6 +41,11 @@ namespace KITGPI
             void calcAdjointSeismogramL2(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);            
             void calcAdjointSeismogramL2(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);            
             
+            ValueType calcL2EnvelopeWeighted(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);
+            ValueType calcL2EnvelopeWeighted(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);            
+            void calcAdjointSeismogramL2EnvelopeWeighted(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);            
+            void calcAdjointSeismogramL2EnvelopeWeighted(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);
+            
             ValueType calcL2AGC(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);
             ValueType calcL2AGC(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);            
             void calcAdjointSeismogramL2AGC(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);            
@@ -55,8 +60,14 @@ namespace KITGPI
             ValueType calcL2Envelope(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);            
             void calcAdjointSeismogramL2Envelope(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);            
             void calcAdjointSeismogramL2Envelope(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);
+                        
+            ValueType calcL2InstantaneousPhase(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);
+            ValueType calcL2InstantaneousPhase(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);            
+            void calcAdjointSeismogramL2InstantaneousPhase(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs);            
+            void calcAdjointSeismogramL2InstantaneousPhase(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs);
                               
-            using Misfit<ValueType>::misfitType;     
+            using Misfit<ValueType>::misfitType;   
+            using Misfit<ValueType>::multiMisfitType;     
             using Misfit<ValueType>::saveMultiMisfits; 
             
         private:            
