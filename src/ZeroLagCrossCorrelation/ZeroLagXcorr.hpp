@@ -56,7 +56,7 @@ namespace KITGPI
             //! \brief Initialization
             virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
-            virtual void write(std::string type, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
           protected:
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);

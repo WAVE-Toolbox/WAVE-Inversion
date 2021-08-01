@@ -142,16 +142,16 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getWei
    
 /*! \brief initialize an inner workflow */
 template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::setInvertParameters(std::vector<bool> setInvertParameters)
+void KITGPI::Gradient::Gradient<ValueType>::setInvertForParameters(std::vector<bool> setInvertForParameters)
 {
-    workflowInner.setInvertParameters(setInvertParameters);
+    workflowInner.setInvertForParameters(setInvertForParameters);
 }
     
 /*! \brief get an inner workflow */
 template <typename ValueType>
-std::vector<bool> KITGPI::Gradient::Gradient<ValueType>::getInvertParameters()
+std::vector<bool> KITGPI::Gradient::Gradient<ValueType>::getInvertForParameters()
 {
-    return workflowInner.getInvertParameters();
+    return workflowInner.getInvertForParameters();
 }
 
 /*! \brief calculate the derivative of density with respect to porosity

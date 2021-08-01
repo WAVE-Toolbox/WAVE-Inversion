@@ -104,9 +104,9 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     }
     if (std::isnan(steplengthOptimum))
         steplengthOptimum = steplengthMin;
-    std::vector<bool> invertParameters = scaledGradient.getInvertParameters();
-    for (unsigned i=0; i<invertParameters.size(); i++) {
-        if (invertParameters[i]) {
+    std::vector<bool> invertForParameters = scaledGradient.getInvertForParameters();
+    for (unsigned i=0; i<invertForParameters.size(); i++) {
+        if (invertForParameters[i]) {
             steplengthLine.setValue(i, steplengthOptimum);
             misfitLine.setValue(i, misfitTestSum);
             
@@ -286,6 +286,9 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     if (steplengthOptimum > steplengthMax) {
         steplengthOptimum = steplengthMax;
         HOST_PRINT(commAll, "\nVariable steplengthMax used to update the model");
+    } else if (steplengthOptimum < steplengthMin) {
+        steplengthOptimum = steplengthMin;
+        HOST_PRINT(commAll, "\nVariable steplengthMin used to update the model");
     }
 
     if (std::isnan(steplengthOptimum))
@@ -396,9 +399,9 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     }
     if (std::isnan(steplengthOptimum))
         steplengthOptimum = steplengthMin;
-    std::vector<bool> invertParameters = scaledGradient.getInvertParameters();
-    for (unsigned i=0; i<invertParameters.size(); i++) {
-        if (invertParameters[i]) {
+    std::vector<bool> invertForParameters = scaledGradient.getInvertForParameters();
+    for (unsigned i=0; i<invertForParameters.size(); i++) {
+        if (invertForParameters[i]) {
             steplengthLine.setValue(i, steplengthOptimum);
             misfitLine.setValue(i, misfitTestSum);
             
@@ -577,6 +580,9 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     if (steplengthOptimum > steplengthMax) {
         steplengthOptimum = steplengthMax;
         HOST_PRINT(commAll, "\nVariable steplengthMax used to update the model");
+    } else if (steplengthOptimum < steplengthMin) {
+        steplengthOptimum = steplengthMin;
+        HOST_PRINT(commAll, "\nVariable steplengthMin used to update the model");
     }
 
     if (std::isnan(steplengthOptimum))
@@ -694,8 +700,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));
     *testgradient = scaledGradient;
     if (steplengthType == 1) {
-        std::vector<bool> invertParameters = scaledGradient.getInvertParameters();
-        testgradient->setInvertParameters(invertParameters);
+        std::vector<bool> invertForParameters = scaledGradient.getInvertForParameters();
+        testgradient->setInvertForParameters(invertForParameters);
     }
 
     /* Update model */
@@ -940,8 +946,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     typename KITGPI::Gradient::GradientEM<ValueType>::GradientPtr testgradient(KITGPI::Gradient::FactoryEM<ValueType>::Create(equationType));
     *testgradient = scaledGradient;
     if (steplengthType == 1) {
-        std::vector<bool> invertParameters = scaledGradient.getInvertParameters();
-        testgradient->setInvertParameters(invertParameters);
+        std::vector<bool> invertForParameters = scaledGradient.getInvertForParameters();
+        testgradient->setInvertForParameters(invertForParameters);
     }
 
     /* Update model */

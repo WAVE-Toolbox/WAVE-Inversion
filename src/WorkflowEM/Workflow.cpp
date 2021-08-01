@@ -144,26 +144,35 @@ bool KITGPI::Workflow::WorkflowEM<ValueType>::getInvertForSaturation() const
     return invertForSaturation;
 }
 
+/*! \brief Return copy of invertForReflectivity
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::WorkflowEM<ValueType>::getInvertForReflectivity() const
+{
+    return invertForReflectivity;
+}
+
 /*! \brief Return the vector of the inverted parameters
  */
 template <typename ValueType>
-std::vector<bool> KITGPI::Workflow::WorkflowEM<ValueType>::getInvertParameters() const
+std::vector<bool> KITGPI::Workflow::WorkflowEM<ValueType>::getInvertForParameters() const
 {
-    std::vector<bool> invertParameters{invertForSigmaEM, invertForEpsilonEM, invertForTauSigmaEM, invertForTauEpsilonEM, invertForPorosity, invertForSaturation};
-    return invertParameters;
+    std::vector<bool> invertForParameters{invertForSigmaEM, invertForEpsilonEM, invertForTauSigmaEM, invertForTauEpsilonEM, invertForPorosity, invertForSaturation, invertForReflectivity};
+    return invertForParameters;
 }
 
 /*! \brief Set the vector of the inverted parameters
  */
 template <typename ValueType>
-void KITGPI::Workflow::WorkflowEM<ValueType>::setInvertParameters(std::vector<bool> setInvertParameters)
+void KITGPI::Workflow::WorkflowEM<ValueType>::setInvertForParameters(std::vector<bool> setInvertForParameters)
 {
-    invertForSigmaEM = setInvertParameters[0];
-    invertForEpsilonEM = setInvertParameters[1];
-    invertForTauSigmaEM = setInvertParameters[2];
-    invertForTauEpsilonEM = setInvertParameters[3];
-    invertForPorosity = setInvertParameters[4];
-    invertForSaturation = setInvertParameters[5];
+    invertForSigmaEM = setInvertForParameters[0];
+    invertForEpsilonEM = setInvertForParameters[1];
+    invertForTauSigmaEM = setInvertForParameters[2];
+    invertForTauEpsilonEM = setInvertForParameters[3];
+    invertForPorosity = setInvertForParameters[4];
+    invertForSaturation = setInvertForParameters[5];
+    invertForReflectivity = setInvertForParameters[6];
 }
 
 /*! \brief Return copy of relativeMisfitChange

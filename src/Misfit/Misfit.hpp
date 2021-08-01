@@ -4,6 +4,7 @@
 #include <vector>
 #include <Acquisition/Receivers.hpp>
 #include <AcquisitionEM/Receivers.hpp>
+#include <Common/Hilbert.hpp>
 
 namespace KITGPI
 {

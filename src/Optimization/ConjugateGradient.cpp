@@ -28,8 +28,10 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::init(scai::dmemo::Distr
     
     lastGradientPorosity.setSameValue(dist, 0);
     lastGradientSaturation.setSameValue(dist, 0);
+    lastGradientReflectivity.setSameValue(dist, 0);
     lastConjugateGradientPorosity.setSameValue(dist, 0);
     lastConjugateGradientSaturation.setSameValue(dist, 0);
+    lastConjugateGradientReflectivity.setSameValue(dist, 0);
     
     lastGradientSigmaEM.setSameValue(dist, 0);
     lastGradientEpsilonEM.setSameValue(dist, 0);
@@ -75,7 +77,12 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
         if(workflow.getInvertForSaturation()){
             lastGradientSaturation = gradient.getSaturation();
             lastConjugateGradientSaturation = gradient.getSaturation();
-        }         
+        }  
+        
+    /*    if(workflow.getInvertForReflectivity()){
+            lastGradientReflectivity = gradient.getReflectivity();
+            lastConjugateGradientReflectivity = gradient.getReflectivity();
+        }   */      
     } else {    
         if(workflow.getInvertForVp()){
             scai::lama::DenseVector<ValueType> gradientVp; 
@@ -141,6 +148,19 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             
             gradient.setSaturation(conjugateGradientSaturation);
         } 
+        
+//         if(workflow.getInvertForReflectivity()){
+//             scai::lama::DenseVector<ValueType> gradientReflectivity;
+//             gradientReflectivity = gradient.getReflectivity();
+//             scai::lama::DenseVector<ValueType> conjugateGradientReflectivity;
+//             
+//             this->calcConjugateGradient(conjugateGradientReflectivity, gradientReflectivity, lastConjugateGradientReflectivity, lastGradientReflectivity);
+//             
+//             lastConjugateGradientReflectivity = conjugateGradientReflectivity;
+//             lastGradientReflectivity = gradientReflectivity;
+//             
+//             gradient.setReflectivity(conjugateGradientReflectivity);
+//         } 
     }
     
     gradient.scale(model, workflow, config);   
@@ -158,23 +178,23 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
     /* Should an automatic direction reset be implemented? -> beta = max{beta^PR, 0} */    
     if(workflowEM.iteration==0){        
         if(workflowEM.getInvertForSigmaEM()){
-            lastGradientSigmaEM = gradientEM.getConductivityEM();
-            lastConjugateGradientSigmaEM = gradientEM.getConductivityEM();
+            lastGradientSigmaEM = gradientEM.getElectricConductivity();
+            lastConjugateGradientSigmaEM = gradientEM.getElectricConductivity();
         }
         
         if(workflowEM.getInvertForEpsilonEM()){
-            lastGradientEpsilonEM = gradientEM.getDielectricPermittivityEM();
-            lastConjugateGradientEpsilonEM = gradientEM.getDielectricPermittivityEM();
+            lastGradientEpsilonEM = gradientEM.getDielectricPermittivity();
+            lastConjugateGradientEpsilonEM = gradientEM.getDielectricPermittivity();
         }
         
         if(workflowEM.getInvertForTauSigmaEM()){
-            lastGradientTauSigmaEM = gradientEM.getTauConductivityEM();
-            lastConjugateGradientTauSigmaEM = gradientEM.getTauConductivityEM();
+            lastGradientTauSigmaEM = gradientEM.getTauElectricConductivity();
+            lastConjugateGradientTauSigmaEM = gradientEM.getTauElectricConductivity();
         }
         
         if(workflowEM.getInvertForTauEpsilonEM()){
-            lastGradientTauEpsilonEM = gradientEM.getTauDielectricPermittivityEM();
-            lastConjugateGradientTauEpsilonEM = gradientEM.getTauDielectricPermittivityEM();
+            lastGradientTauEpsilonEM = gradientEM.getTauDielectricPermittivity();
+            lastConjugateGradientTauEpsilonEM = gradientEM.getTauDielectricPermittivity();
         }
     
         if(workflowEM.getInvertForPorosity()){
@@ -186,10 +206,15 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             lastGradientSaturation = gradientEM.getSaturation();
             lastConjugateGradientSaturation = gradientEM.getSaturation();
         } 
+        
+        if(workflowEM.getInvertForReflectivity()){
+            lastGradientReflectivity = gradientEM.getReflectivity();
+            lastConjugateGradientReflectivity = gradientEM.getReflectivity();
+        } 
     } else {    
         if(workflowEM.getInvertForSigmaEM()){
             scai::lama::DenseVector<ValueType> gradientSigmaEM; 
-            gradientSigmaEM = gradientEM.getConductivityEM();
+            gradientSigmaEM = gradientEM.getElectricConductivity();
             scai::lama::DenseVector<ValueType> conjugateGradientSigmaEM;
             
             this->calcConjugateGradient(conjugateGradientSigmaEM, gradientSigmaEM, lastConjugateGradientSigmaEM, lastGradientSigmaEM);
@@ -197,12 +222,12 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             lastConjugateGradientSigmaEM = conjugateGradientSigmaEM;
             lastGradientSigmaEM = gradientSigmaEM;
             
-            gradientEM.setConductivityEM(conjugateGradientSigmaEM);
+            gradientEM.setElectricConductivity(conjugateGradientSigmaEM);
         }
         
         if(workflowEM.getInvertForEpsilonEM()){
             scai::lama::DenseVector<ValueType> gradientEpsilonEM;
-            gradientEpsilonEM = gradientEM.getDielectricPermittivityEM();
+            gradientEpsilonEM = gradientEM.getDielectricPermittivity();
             scai::lama::DenseVector<ValueType> conjugateGradientEpsilonEM;
             
             this->calcConjugateGradient(conjugateGradientEpsilonEM, gradientEpsilonEM, lastConjugateGradientEpsilonEM, lastGradientEpsilonEM);
@@ -210,33 +235,33 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             lastConjugateGradientEpsilonEM = conjugateGradientEpsilonEM;
             lastGradientEpsilonEM = gradientEpsilonEM;
             
-            gradientEM.setDielectricPermittivityEM(conjugateGradientEpsilonEM);
+            gradientEM.setDielectricPermittivity(conjugateGradientEpsilonEM);
         }
         
         if(workflowEM.getInvertForTauSigmaEM()){
-            scai::lama::DenseVector<ValueType> gradientTauConductivityEM;
-            gradientTauConductivityEM = gradientEM.getTauConductivityEM();
-            scai::lama::DenseVector<ValueType> conjugateGradientTauConductivityEM;
+            scai::lama::DenseVector<ValueType> gradientTauElectricConductivity;
+            gradientTauElectricConductivity = gradientEM.getTauElectricConductivity();
+            scai::lama::DenseVector<ValueType> conjugateGradientTauElectricConductivity;
             
-            this->calcConjugateGradient(conjugateGradientTauConductivityEM, gradientTauConductivityEM, lastConjugateGradientTauSigmaEM, lastGradientTauSigmaEM);
+            this->calcConjugateGradient(conjugateGradientTauElectricConductivity, gradientTauElectricConductivity, lastConjugateGradientTauSigmaEM, lastGradientTauSigmaEM);
             
-            lastConjugateGradientTauSigmaEM = conjugateGradientTauConductivityEM;
-            lastGradientTauSigmaEM = gradientTauConductivityEM;
+            lastConjugateGradientTauSigmaEM = conjugateGradientTauElectricConductivity;
+            lastGradientTauSigmaEM = gradientTauElectricConductivity;
             
-            gradientEM.setTauConductivityEM(conjugateGradientTauConductivityEM);
+            gradientEM.setTauElectricConductivity(conjugateGradientTauElectricConductivity);
         }
         
         if(workflowEM.getInvertForTauEpsilonEM()){
-            scai::lama::DenseVector<ValueType> gradientTauDielectricPermittivityEM;
-            gradientTauDielectricPermittivityEM = gradientEM.getTauDielectricPermittivityEM();
-            scai::lama::DenseVector<ValueType> conjugateGradientTauDielectricPermittivityEM;
+            scai::lama::DenseVector<ValueType> gradientTauDielectricPermittivity;
+            gradientTauDielectricPermittivity = gradientEM.getTauDielectricPermittivity();
+            scai::lama::DenseVector<ValueType> conjugateGradientTauDielectricPermittivity;
             
-            this->calcConjugateGradient(conjugateGradientTauDielectricPermittivityEM, gradientTauDielectricPermittivityEM, lastConjugateGradientTauEpsilonEM, lastGradientTauEpsilonEM);
+            this->calcConjugateGradient(conjugateGradientTauDielectricPermittivity, gradientTauDielectricPermittivity, lastConjugateGradientTauEpsilonEM, lastGradientTauEpsilonEM);
             
-            lastConjugateGradientTauEpsilonEM = conjugateGradientTauDielectricPermittivityEM;
-            lastGradientTauEpsilonEM = gradientTauDielectricPermittivityEM;
+            lastConjugateGradientTauEpsilonEM = conjugateGradientTauDielectricPermittivity;
+            lastGradientTauEpsilonEM = gradientTauDielectricPermittivity;
             
-            gradientEM.setTauDielectricPermittivityEM(conjugateGradientTauDielectricPermittivityEM);
+            gradientEM.setTauDielectricPermittivity(conjugateGradientTauDielectricPermittivity);
         }   
         
         if(workflowEM.getInvertForPorosity()){
@@ -263,6 +288,19 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             lastGradientSaturation = gradientSaturation;
             
             gradientEM.setSaturation(conjugateGradientSaturation);
+        } 
+        
+        if(workflowEM.getInvertForReflectivity()){
+            scai::lama::DenseVector<ValueType> gradientReflectivity;
+            gradientReflectivity = gradientEM.getReflectivity();
+            scai::lama::DenseVector<ValueType> conjugateGradientReflectivity;
+            
+            this->calcConjugateGradient(conjugateGradientReflectivity, gradientReflectivity, lastConjugateGradientReflectivity, lastGradientReflectivity);
+            
+            lastConjugateGradientReflectivity = conjugateGradientReflectivity;
+            lastGradientReflectivity = gradientReflectivity;
+            
+            gradientEM.setReflectivity(conjugateGradientReflectivity);
         } 
     }
     

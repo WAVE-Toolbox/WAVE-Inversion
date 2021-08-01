@@ -41,8 +41,9 @@ namespace KITGPI
             bool getInvertForTauEpsilonEM() const;
             bool getInvertForPorosity() const;
             bool getInvertForSaturation() const;
-            std::vector<bool> getInvertParameters() const;
-            void setInvertParameters(std::vector<bool> setInvertParameters);
+            bool getInvertForReflectivity() const;
+            std::vector<bool> getInvertForParameters() const;
+            void setInvertForParameters(std::vector<bool> setInvertForParameters);
             ValueType getRelativeMisfitChange() const;
             scai::IndexType getFilterOrder() const;
             ValueType getLowerCornerFreq() const;
@@ -65,6 +66,7 @@ namespace KITGPI
             bool invertForTauEpsilonEM = true;
             bool invertForPorosity = true;
             bool invertForSaturation = true;
+            bool invertForReflectivity = true;
             ValueType relativeMisfitChange; 
             scai::IndexType filterOrder;
             ValueType lowerCornerFreq;

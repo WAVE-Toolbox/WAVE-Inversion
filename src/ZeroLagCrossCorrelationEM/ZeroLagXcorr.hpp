@@ -10,6 +10,9 @@
 #include <scai/hmemo/HArray.hpp>
 
 #include "../WorkflowEM/Workflow.hpp"
+#include "../Common/Common.hpp"
+#include "../Taper/Taper2D.hpp"
+#include <Common/Hilbert.hpp>
 
 namespace KITGPI
 {
@@ -36,11 +39,11 @@ namespace KITGPI
             //! \brief Declare ZeroLagXcorr pointer
             typedef std::shared_ptr<ZeroLagXcorrEM<ValueType>> ZeroLagXcorrPtr;
 
-            //! Reset cross correlated wavefieldsEM
-            virtual void resetXcorr(KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) = 0;
+            //! Reset cross correlated wavefields
+            virtual void resetXcorr(KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) = 0;
 
-            virtual void update(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) = 0;
-            virtual void updateHessianVectorProduct(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, Wavefields::WavefieldsEM<ValueType> &forwardWavefield2ndOrder, Wavefields::WavefieldsEM<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) = 0;
+            virtual void update(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, scai::IndexType gradientType, scai::IndexType decomposeType) = 0;
+            virtual void updateHessianVectorProduct(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, Wavefields::WavefieldsEM<ValueType> &forwardWavefield2ndOrder, Wavefields::WavefieldsEM<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) = 0;
 
             virtual int getNumDimension() const = 0;
             virtual std::string getEquationType() const = 0;
@@ -54,17 +57,17 @@ namespace KITGPI
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
 
             //! \brief Initialization
-            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) = 0;
+            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) = 0;
 
-            virtual void write(std::string type, scai::IndexType t, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) = 0;
+            virtual void write(std::string filename, scai::IndexType t, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) = 0;
 
           protected:
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);
-            void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM);
+            void initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
             void writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, scai::IndexType t);
 
             int numDimension;
-            std::string equationTypeEM; 
+            std::string equationType; 
 
             scai::lama::DenseVector<ValueType> xcorrSigmaEM; //!< correlated Wavefields for the sigma gradientEM
             scai::lama::DenseVector<ValueType> xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradientEM

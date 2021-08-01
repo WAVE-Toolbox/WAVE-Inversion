@@ -2,9 +2,25 @@
 
 using namespace scai;
 
+/*! \brief Constructor which will set context, allocate and set the wavefields to zero.
+ *
+ * Initialisation of 2D viscoelastic wavefields
+ *
+ \param ctx Context
+ \param dist Distribution
+ */
+template <typename ValueType>
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::ZeroLagXcorr2Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    equationType="viscoelastic"; 
+    numDimension=2;
+    init(ctx, dist, workflow);
+}
+
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrRho, ctx, dist);
 
@@ -26,43 +42,17 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::g
     return (xcorrRho.getContextPtr());
 }
 
-/*! \brief Constructor which will set context, allocate and set the wavefields to zero.
- *
- * Initialisation of 2D viscoelastic wavefields
- *
- \param ctx Context
- \param dist Distribution
- */
-template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::ZeroLagXcorr2Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    equationType="viscoelastic"; 
-    numDimension=2;
-    init(ctx, dist, workflow);
-}
-
 /*! \brief override Methode tor write Wavefield Snapshot to file
  *
  *
- \param type Type of the Seismogram
+ \param filename file name
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
-    this->writeWavefield(xcorrRho, "xcorrRho", type, t);
+    this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
     COMMON_THROWEXCEPTION("write correlated viscoelastic wavefields is not implemented yet.")
-}
-
-/*! \brief Wrapper Function to Write Snapshot of the Wavefield
- *
- *
- \param t Current Timestep
- */
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    write(type, t, workflow);
 }
 
 /*! \brief Set all wavefields to zero.

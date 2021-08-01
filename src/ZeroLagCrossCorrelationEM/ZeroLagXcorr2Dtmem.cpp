@@ -2,32 +2,33 @@
 
 using namespace scai;
 
-/*! \brief Constructor which will set context, allocate and set the wavefieldsEM to zero.
+/*! \brief Constructor which will set context, allocate and set the wavefields to zero.
  *
- * Initialisation of 2D tmem wavefieldsEM
+ * Initialisation of 2D tmem wavefields
  *
  \param ctx Context
- \param distEM Distribution
+ \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::ZeroLagXcorr2Dtmem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::ZeroLagXcorr2Dtmem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
-    equationTypeEM="tmem"; 
+    equationType="tmem"; 
     numDimension=2;
-    init(ctx, distEM, workflowEM);
+    init(ctx, dist, workflow);
 }
 
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation())
-        this->initWavefield(xcorrSigmaEM, ctx, distEM);
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation())
-        this->initWavefield(xcorrEpsilonEM, ctx, distEM);
+    type = equationType+std::to_string(numDimension)+"D";
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+        this->initWavefield(xcorrSigmaEM, ctx, dist);
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+        this->initWavefield(xcorrEpsilonEM, ctx, dist);
 }
 
-/*! \brief Returns hmemo::ContextPtr from this wavefieldsEM
+/*! \brief Returns hmemo::ContextPtr from this wavefields
  */
 template <typename ValueType>
 scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::getContextPtr()
@@ -35,39 +36,29 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::get
     return (xcorrEpsilonEM.getContextPtr());
 }
 
-
 /*! \brief override Methode tor write Wavefield Snapshot to file
  *
  *
- \param type Type of the Seismogram
+ \param filename file name
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation())
-        this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", type, t);
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation())
-        this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", type, t);
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+        this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename + type, t);
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+        this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename + type, t);
 }
 
-/*! \brief Wrapper Function to Write Snapshot of the Wavefield
- * \param t Current Timestep
+/*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
-    write(type, t, workflowEM);
-}
-
-/*! \brief Set all wavefieldsEM to zero.
- */
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
-{
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrSigmaEM);
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrEpsilonEM);
 }
 
@@ -80,32 +71,72 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Wor
 & \nabla f_1(\sigma_e) = \int_0^T ( E_{1z} E_z  ) dt\\
 \end{align*}
 \end{equation}
- *
- *  Note that the forwardWavefieldDerivative is actually the derivative of the  forwardWavefield (see variable wavefieldrecordEM in IFOS.cpp).
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, scai::IndexType gradientType, scai::IndexType decomposeType)
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp;    
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation()) {
-        temp = adjointWavefield.getRefEZ();
-        temp *= forwardWavefield.getRefEZ();
-        xcorrSigmaEM += temp;
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+        if (gradientType == 0 || decomposeType == 0) {   
+            // Born kernel or FWI kernel
+            temp = adjointWavefield.getRefEZ();
+            temp *= forwardWavefield.getRefEZ();
+            xcorrSigmaEM += temp;           
+        } else if (gradientType == 1 && decomposeType == 1) {    
+            // migration kernel using up/down-going wavefields
+            temp = adjointWavefield.getRefEZup();
+            temp *= forwardWavefield.getRefEZdown();
+            xcorrSigmaEM += temp;           
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefield.getRefEZup();
+            xcorrSigmaEM += temp;      
+        } else if (gradientType == 2 && decomposeType == 1) {    
+            // tomographic kernel using up/down-going wavefields
+            temp = adjointWavefield.getRefEZup();
+            temp *= forwardWavefield.getRefEZup();
+            xcorrSigmaEM += temp;           
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefield.getRefEZdown();
+            xcorrSigmaEM += temp;           
+        }
     }
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation()) {
-        temp = adjointWavefield.getRefEZ();
-        temp *= forwardWavefieldDerivative.getRefEZ();
-        xcorrEpsilonEM += temp;
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+        if (gradientType == 0 || decomposeType == 0) {   
+            // Born kernel or FWI kernel
+            temp = adjointWavefield.getRefEZ();
+            temp *= forwardWavefieldDerivative.getRefEZ();
+            xcorrEpsilonEM += temp;
+        } else if (gradientType == 1 && decomposeType == 1) {    
+            // migration kernel using up/down-going wavefields
+            lama::DenseVector<ValueType> temp2;    
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefieldDerivative.getRefEZdown();
+            xcorrEpsilonEM += temp;           
+            temp2 = adjointWavefield.getRefEZup();
+            temp2 *= forwardWavefieldDerivative.getRefEZup();
+//             temp2 *= temp.maxNorm() / temp2.maxNorm();
+            xcorrEpsilonEM += temp2;      
+        } else if (gradientType == 2 && decomposeType == 1) {    
+            // tomographic kernel using up/down-going wavefields
+            lama::DenseVector<ValueType> temp2;    
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefieldDerivative.getRefEZup();
+            xcorrEpsilonEM += temp;           
+            temp2 = adjointWavefield.getRefEZup();
+            temp2 *= forwardWavefieldDerivative.getRefEZdown();
+//             temp2 *= temp.maxNorm() / temp2.maxNorm();
+            xcorrEpsilonEM += temp2;      
+        }
     }
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::updateHessianVectorProduct(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, Wavefields::WavefieldsEM<ValueType> &forwardWavefield2ndOrder, Wavefields::WavefieldsEM<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::updateHessianVectorProduct(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, Wavefields::WavefieldsEM<ValueType> &forwardWavefield2ndOrder, Wavefields::WavefieldsEM<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp;
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation()) {
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         temp = forwardWavefield2ndOrder.getRefEZ();
         temp *= adjointWavefield.getRefEZ();
         xcorrSigmaEM += temp;
@@ -113,7 +144,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::updateHessianVectorPro
         temp *= forwardWavefield.getRefEZ();
         xcorrSigmaEM += temp;
     }
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation()) {
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         temp = forwardWavefield2ndOrder.getRefEZ();
         temp *= adjointWavefieldDerivative.getRefEZ();
         xcorrEpsilonEM += temp;
@@ -131,12 +162,12 @@ int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::getNumDimension() const
     return (numDimension);
 }
 
-/*! \brief Get equationTypeEM (tmem)
+/*! \brief Get equationType (tmem)
  */
 template <typename ValueType>
 std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::getEquationType() const
 {
-    return (equationTypeEM);
+    return (equationType);
 }
 
 //! \brief Getter routine for xcorrRSigmaEM

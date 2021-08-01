@@ -49,8 +49,7 @@ namespace KITGPI
 
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void write(std::string type, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
-            void writeSnapshot(scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
           private:
               
@@ -64,7 +63,8 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrMuA;
             using ZeroLagXcorr<ValueType>::xcorrMuB;
             using ZeroLagXcorr<ValueType>::xcorrMuC;
-            std::string type = "Acoustic2D";
+            
+            std::string type;
         };
     }
 }

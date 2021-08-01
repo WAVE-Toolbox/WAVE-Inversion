@@ -43,8 +43,10 @@ namespace KITGPI
             
             scai::lama::DenseVector<ValueType> lastGradientPorosity;
             scai::lama::DenseVector<ValueType> lastGradientSaturation;
+            scai::lama::DenseVector<ValueType> lastGradientReflectivity;
             scai::lama::DenseVector<ValueType> lastConjugateGradientPorosity;
             scai::lama::DenseVector<ValueType> lastConjugateGradientSaturation;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientReflectivity;
             
             /* Use KITGPI::Gradient::GradientEM<ValueType> lastGradient and KITGPI::Gradient::GradientEM<ValueType> lastConjugateGradient instead! */
             scai::lama::DenseVector<ValueType> lastGradientSigmaEM;

@@ -48,7 +48,7 @@ namespace KITGPI
 
             //! Copy Constructor.
             EMEM(const EMEM &rhs);
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType conductivityEM_const, ValueType dielectricPermittivityEM_const, ValueType porosity_const, ValueType saturation_const);
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType electricConductivity_const, ValueType dielectricPermittivity_const, ValueType porosity_const, ValueType saturation_const);
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM) override;
 
             void resetGradient();
@@ -58,8 +58,8 @@ namespace KITGPI
             std::string getEquationType() const;
 
             /* Getter methods for not requiered parameters */
-            scai::lama::Vector<ValueType> const &getTauConductivityEM() override;
-            scai::lama::Vector<ValueType> const &getTauDielectricPermittivityEM() override;
+            scai::lama::Vector<ValueType> const &getTauElectricConductivity() override;
+            scai::lama::Vector<ValueType> const &getTauDielectricPermittivity() override;
             scai::IndexType getNumRelaxationMechanisms() const override;
             ValueType getRelaxationFrequency() const override;
 
@@ -94,15 +94,16 @@ namespace KITGPI
           private:
             using GradientEM<ValueType>::equationTypeEM;
 
-            using GradientEM<ValueType>::conductivityEM;
-            using GradientEM<ValueType>::dielectricPermittivityEM;
+            using GradientEM<ValueType>::electricConductivity;
+            using GradientEM<ValueType>::dielectricPermittivity;
             using GradientEM<ValueType>::porosity;
             using GradientEM<ValueType>::saturation;
+            using GradientEM<ValueType>::reflectivity;
             using GradientEM<ValueType>::workflowInner;
                         
             /* Not requiered parameters */
-            using GradientEM<ValueType>::tauConductivityEM;
-            using GradientEM<ValueType>::tauDielectricPermittivityEM;
+            using GradientEM<ValueType>::tauElectricConductivity;
+            using GradientEM<ValueType>::tauDielectricPermittivity;
             using GradientEM<ValueType>::relaxationFrequency;
             using GradientEM<ValueType>::numRelaxationMechanisms;
             using GradientEM<ValueType>::weightingVector;

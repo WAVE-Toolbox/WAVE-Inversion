@@ -22,6 +22,7 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::ZeroLagXcorr3Dacoustic(
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrRho, ctx, dist);
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
@@ -39,28 +40,16 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>:
 /*! \brief override Methode tor write Wavefield Snapshot to file
  *
  *
- \param type Type of the Seismogram
+ \param filename file name
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrRho, "xcorrRho", type, t);
+        this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrLambda, "xcorrLambda", type, t);
-}
-
-
-/*! \brief Wrapper Function to Write Snapshot of the Wavefield
- *
- *
- \param t Current Timestep
- */
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    write(type, t, workflow);
+        this->writeWavefield(xcorrLambda, "xcorrLambda", filename + type, t);
 }
 
 /*! \brief Set all wavefields to zero.

@@ -17,17 +17,17 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::resetWavefield(scai::lama:
  *
  \param vector Vector to be set
  \param ctx Context pointer
- \param distEM Distribution
+ \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::initWavefield(scai::lama::DenseVector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     // NOTE_TB: why is this an own method,
 
-    vector = lama::zero<lama::DenseVector<ValueType>>(distEM, ctx);
+    vector = lama::zero<lama::DenseVector<ValueType>>(dist, ctx);
 
     // vector.setContextPtr(ctx);
-    // vector.allocate(distEM);
+    // vector.allocate(dist);
     // resetWavefield(vector);
 }
 
@@ -38,10 +38,10 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::initWavefield(scai::lama::
  \param t Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string type, IndexType t)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string filename, IndexType t)
 {
-    std::string fileName = "wavefieldsEM/wavefield" + type + "." + vectorName + "." + std::to_string(static_cast<long long>(t)) + ".mtx";
-    std::cout << "snapshot for Timestep " << t << "has been written to: " << fileName;
+    std::string fileName = filename + "." + vectorName + "." + std::to_string(static_cast<long long>(t)) + ".mtx";
+    std::cout << "snapshot for Timestep " << t << " has been written to: " << fileName << std::endl;
 
     vector.writeToFile(fileName);
 }

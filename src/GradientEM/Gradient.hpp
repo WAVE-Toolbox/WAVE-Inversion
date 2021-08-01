@@ -79,9 +79,9 @@ namespace KITGPI
             void applyParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation);
             void deleteParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation);
             void gradientParameterisation(scai::lama::DenseVector<ValueType> &vecGradientParameter, scai::lama::DenseVector<ValueType> vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation);
-            scai::lama::DenseVector<ValueType> getConductivityDePorosity(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM);
+            scai::lama::DenseVector<ValueType> getElectricConductivityDePorosity(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM);
             scai::lama::DenseVector<ValueType> getDielectricPermittiviyDePorosity(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM);
-            scai::lama::DenseVector<ValueType> getConductivityDeSaturation(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM);
+            scai::lama::DenseVector<ValueType> getElectricConductivityDeSaturation(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM);
             scai::lama::DenseVector<ValueType> getDielectricPermittiviyDeSaturation(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM);
             
             scai::lama::DenseVector<ValueType> calcStabilizingFunctionalGradientPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, KITGPI::Configuration::Configuration configEM, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM);
@@ -91,15 +91,15 @@ namespace KITGPI
 
             virtual std::string getEquationType() const = 0;
 
-            virtual scai::lama::Vector<ValueType> const &getConductivityEM();
-            virtual scai::lama::Vector<ValueType> const &getConductivityEM() const;
-            virtual scai::lama::Vector<ValueType> const &getDielectricPermittivityEM();
-            virtual scai::lama::Vector<ValueType> const &getDielectricPermittivityEM() const;
+            virtual scai::lama::Vector<ValueType> const &getElectricConductivity();
+            virtual scai::lama::Vector<ValueType> const &getElectricConductivity() const;
+            virtual scai::lama::Vector<ValueType> const &getDielectricPermittivity();
+            virtual scai::lama::Vector<ValueType> const &getDielectricPermittivity() const;
             
-            virtual scai::lama::Vector<ValueType> const &getTauConductivityEM();
-            virtual scai::lama::Vector<ValueType> const &getTauConductivityEM() const;
-            virtual scai::lama::Vector<ValueType> const &getTauDielectricPermittivityEM();
-            virtual scai::lama::Vector<ValueType> const &getTauDielectricPermittivityEM() const;
+            virtual scai::lama::Vector<ValueType> const &getTauElectricConductivity();
+            virtual scai::lama::Vector<ValueType> const &getTauElectricConductivity() const;
+            virtual scai::lama::Vector<ValueType> const &getTauDielectricPermittivity();
+            virtual scai::lama::Vector<ValueType> const &getTauDielectricPermittivity() const;
             virtual scai::IndexType getNumRelaxationMechanisms() const;
             virtual ValueType getRelaxationFrequency() const;
             
@@ -107,19 +107,22 @@ namespace KITGPI
             virtual scai::lama::Vector<ValueType> const &getPorosity() const;
             virtual scai::lama::Vector<ValueType> const &getSaturation();
             virtual scai::lama::Vector<ValueType> const &getSaturation() const;
+            virtual scai::lama::Vector<ValueType> const &getReflectivity();
+            virtual scai::lama::Vector<ValueType> const &getReflectivity() const;
 
             bool getNormalizeGradient() const;
 
-            virtual void setConductivityEM(scai::lama::Vector<ValueType> const &setConductivityEM);
-            virtual void setDielectricPermittivityEM(scai::lama::Vector<ValueType> const &setDielectricPermittivityEM); 
+            virtual void setElectricConductivity(scai::lama::Vector<ValueType> const &setElectricConductivity);
+            virtual void setDielectricPermittivity(scai::lama::Vector<ValueType> const &setDielectricPermittivity); 
             
-            virtual void setTauConductivityEM(scai::lama::Vector<ValueType> const &setTauConductivityEM);
-            virtual void setTauDielectricPermittivityEM(scai::lama::Vector<ValueType> const &setTauDielectricPermittivityEM);
+            virtual void setTauElectricConductivity(scai::lama::Vector<ValueType> const &setTauElectricConductivity);
+            virtual void setTauDielectricPermittivity(scai::lama::Vector<ValueType> const &setTauDielectricPermittivity);
             virtual void setNumRelaxationMechanisms(scai::IndexType const setNumRelaxationMechanisms);
             virtual void setRelaxationFrequency(ValueType const setRelaxationFrequency);
 
             virtual void setPorosity(scai::lama::Vector<ValueType> const &setPorosity);
             virtual void setSaturation(scai::lama::Vector<ValueType> const &setSaturation); 
+            virtual void setReflectivity(scai::lama::Vector<ValueType> const &setReflectivity); 
 
             void setNormalizeGradient(bool const &normGrad);
 
@@ -139,8 +142,8 @@ namespace KITGPI
             void calcWeightingVector(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds);
             scai::lama::DenseVector<ValueType> getWeightingVector();
             
-            void setInvertParameters(std::vector<bool> setInvertParameters);
-            std::vector<bool> getInvertParameters();
+            void setInvertForParameters(std::vector<bool> setInvertForParameters);
+            std::vector<bool> getInvertForParameters();
 
             /* Operator overloading */
             /*lhs Base rhs Base */
@@ -164,16 +167,17 @@ namespace KITGPI
 
             std::string equationTypeEM;
 
-            scai::lama::DenseVector<ValueType> conductivityEM; //!< Vector storing conductivityEM.
-            scai::lama::DenseVector<ValueType> dielectricPermittivityEM; //!< Vector storing dielectricPermittivityEM.
+            scai::lama::DenseVector<ValueType> electricConductivity; //!< Vector storing electricConductivity.
+            scai::lama::DenseVector<ValueType> dielectricPermittivity; //!< Vector storing dielectricPermittivity.
             
-            scai::lama::DenseVector<ValueType> tauConductivityEM; //!< Vector storing tauConductivityEM for visco-emem modelling.
-            scai::lama::DenseVector<ValueType> tauDielectricPermittivityEM; //!< Vector storing TauDielectricPermittivityEM for visco-emem modelling.
+            scai::lama::DenseVector<ValueType> tauElectricConductivity; //!< Vector storing tauElectricConductivity for visco-emem modelling.
+            scai::lama::DenseVector<ValueType> tauDielectricPermittivity; //!< Vector storing TauDielectricPermittivity for visco-emem modelling.
             scai::IndexType numRelaxationMechanisms; //!< Number of relaxation mechanisms
             ValueType relaxationFrequency;           //!< Relaxation Frequency
             
             scai::lama::DenseVector<ValueType> porosity; //!< Vector storing porosity.
             scai::lama::DenseVector<ValueType> saturation; //!< Vector storing saturation
+            scai::lama::DenseVector<ValueType> reflectivity; //!< Vector storing reflectivity.
             
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType value);
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, std::string filename, scai::IndexType fileFormat);

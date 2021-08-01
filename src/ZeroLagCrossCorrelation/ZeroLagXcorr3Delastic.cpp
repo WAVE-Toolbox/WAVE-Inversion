@@ -28,6 +28,7 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::ZeroLagXcorr3Delastic(sc
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrRho, ctx, dist);
 
@@ -44,25 +45,14 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::C
 /*! \brief override Methode tor write Wavefield Snapshot to file
  *
  *
- \param type Type of the Seismogram
+ \param filename file name
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
-    this->writeWavefield(xcorrRho, "xcorrRho", type, t);
+    this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
     COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.");
-}
-
-/*! \brief Wrapper Function to Write Snapshot of the Wavefield
- *
- *
- \param t Current Timestep
- */
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    write(type, t, workflow);
 }
 
 /*! \brief Set all wavefields to zero.

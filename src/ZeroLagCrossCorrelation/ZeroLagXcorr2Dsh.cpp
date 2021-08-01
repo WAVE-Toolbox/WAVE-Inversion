@@ -20,6 +20,7 @@ KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::ZeroLagXcorr2Dsh(scai::hmemo:
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrRho, ctx, dist);
     if (workflow.getInvertForVs() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
@@ -37,27 +38,16 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getCo
 /*! \brief override Methode tor write Wavefield Snapshot to file
  *
  *
- \param type Type of the Seismogram
+ \param filename file name
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::write(std::string type, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrRho, "xcorrRho", type, t);
+        this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
     if (workflow.getInvertForVs() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrMuC, "xcorrMuC", type, t);
-}
-
-/*! \brief Wrapper Function to Write Snapshot of the Wavefield
- *
- *
- \param t Current Timestep
- */
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::writeSnapshot(IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    write(type, t, workflow);
+        this->writeWavefield(xcorrMuC, "xcorrMuC", filename + type, t);
 }
 
 /*! \brief Set all wavefields to zero.

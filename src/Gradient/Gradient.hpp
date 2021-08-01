@@ -137,8 +137,8 @@ namespace KITGPI
             void calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds);
             scai::lama::DenseVector<ValueType> getWeightingVector();
 
-            void setInvertParameters(std::vector<bool> setInvertParameters);
-            std::vector<bool> getInvertParameters();
+            void setInvertForParameters(std::vector<bool> setInvertForParameters);
+            std::vector<bool> getInvertForParameters();
             
             /* Operator overloading */
             /*lhs Base rhs Base */

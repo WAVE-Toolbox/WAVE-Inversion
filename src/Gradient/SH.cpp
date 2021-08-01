@@ -513,7 +513,7 @@ void KITGPI::Gradient::SH<ValueType>::scale(KITGPI::Modelparameter::Modelparamet
             if (scaleGradient == 1) {
                 maxValue = model.getPorosity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = config.get<ValueType>("upperPorosityTh") - config.get<ValueType>("lowerPorosityTh");
+                maxValue = config.getAndCatch("upperPorosityTh", 1.0) - config.getAndCatch("lowerPorosityTh", 0.0);
             }
         }        
         porosity *= 1 / porosity.maxNorm() * maxValue;
@@ -524,7 +524,7 @@ void KITGPI::Gradient::SH<ValueType>::scale(KITGPI::Modelparameter::Modelparamet
             if (scaleGradient == 1) {
                 maxValue = model.getSaturation().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = config.get<ValueType>("upperSaturationTh") - config.get<ValueType>("lowerSaturationTh");
+                maxValue = config.getAndCatch("upperSaturationTh", 1.0) - config.getAndCatch("lowerSaturationTh", 0.0);
             }
         }              
         saturation *= 1 / saturation.maxNorm() * maxValue;        

@@ -139,22 +139,22 @@ bool KITGPI::Workflow::Workflow<ValueType>::getInvertForSaturation() const
 /*! \brief Return the vector of the inverted parameters
  */
 template <typename ValueType>
-std::vector<bool> KITGPI::Workflow::Workflow<ValueType>::getInvertParameters() const
+std::vector<bool> KITGPI::Workflow::Workflow<ValueType>::getInvertForParameters() const
 {
-    std::vector<bool> invertParameters{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation};
-    return invertParameters;
+    std::vector<bool> invertForParameters{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation};
+    return invertForParameters;
 }
 
 /*! \brief Set the vector of the inverted parameters
  */
 template <typename ValueType>
-void KITGPI::Workflow::Workflow<ValueType>::setInvertParameters(std::vector<bool> setInvertParameters)
+void KITGPI::Workflow::Workflow<ValueType>::setInvertForParameters(std::vector<bool> setInvertForParameters)
 {
-    invertForVp = setInvertParameters[0];
-    invertForVs = setInvertParameters[1];
-    invertForDensity = setInvertParameters[2];
-    invertForPorosity = setInvertParameters[3];
-    invertForSaturation = setInvertParameters[4];
+    invertForVp = setInvertForParameters[0];
+    invertForVs = setInvertForParameters[1];
+    invertForDensity = setInvertForParameters[2];
+    invertForPorosity = setInvertForParameters[3];
+    invertForSaturation = setInvertForParameters[4];
 }
 
 /*! \brief Return copy of relativeMisfitChange

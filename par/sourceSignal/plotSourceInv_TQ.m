@@ -21,9 +21,9 @@ configTrue=conf(configTrueFilename);
 
 % Output file
 % switch for saving snapshots to picture file 1=yes (jpg) 2= yes (png) other=no
-imagesave=0;
+imagesave=2;
 writefiles=1;
-stage=1;
+stage=5;
 useDamping=0; T0damp=30e-9; T1damp=100e-9; 
 showLegend = 0;
 showResidual = 0;

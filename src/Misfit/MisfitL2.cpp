@@ -514,6 +514,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2(KITGPI::Acquisition::Seism
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
     if (seismogramSyn.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -536,7 +537,9 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquis
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
     if (seismogramSyn.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn - seismogramObs; 
+        seismogramAdj = seismogramSyn;
+//         seismogramAdj *= seismogramObs.getData().maxNorm() / seismogramSyn.getData().maxNorm();
+        seismogramAdj -= seismogramObs; 
         
         if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
             seismogramAdj *= -1;        
@@ -559,6 +562,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2(KITGPI::Acquisition::Seism
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
     if (seismogramSyn.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
@@ -581,7 +585,9 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquis
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
     if (seismogramSyn.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn - seismogramObs; 
+        seismogramAdj = seismogramSyn;
+//         seismogramAdj *= seismogramObs.getData().maxNorm() / seismogramSyn.getData().maxNorm();
+        seismogramAdj -= seismogramObs; 
         
         if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
             seismogramAdj *= -1;        
@@ -629,7 +635,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn;
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
+        seismogramAdj = seismogramSyntemp;
         scai::lama::DenseMatrix<ValueType> tempDataSyn;
         scai::lama::DenseMatrix<ValueType> tempDataSynEnvelope = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> tempDataSynRatio;
@@ -655,11 +662,15 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
         
         tempDataSynEnvelope.binaryOp(tempDataSynEnvelope, scai::common::BinaryOp::MULT, tempDataSynEnvelope);
         tempDataSyn = seismogramAdj.getData();
-        Common::calcHilbert(tempDataSyn);
+        Hilbert::HilbertFFT<ValueType> hilbertHandler;
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        hilbertHandler.setCoefficientLength(hLength);
+        hilbertHandler.calcHilbertCoefficient();
+        hilbertHandler.hilbert(tempDataSyn);
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::DIVIDE, tempDataSynEnvelope);
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, seismogramAdj.getData());
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, tempDataSynRatio);
-        Common::calcHilbert(tempDataSyn);
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;  
     }
     seismogramAdj = seismogramSyntemp - seismogramObstemp;
@@ -710,7 +721,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn;
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
+        seismogramAdj = seismogramSyntemp;
         scai::lama::DenseMatrix<ValueType> tempDataSyn;
         scai::lama::DenseMatrix<ValueType> tempDataSynEnvelope = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> tempDataSynRatio;
@@ -736,11 +748,15 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
         
         tempDataSynEnvelope.binaryOp(tempDataSynEnvelope, scai::common::BinaryOp::MULT, tempDataSynEnvelope);
         tempDataSyn = seismogramAdj.getData();
-        Common::calcHilbert(tempDataSyn);
+        Hilbert::HilbertFFT<ValueType> hilbertHandler;
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        hilbertHandler.setCoefficientLength(hLength);
+        hilbertHandler.calcHilbertCoefficient();
+        hilbertHandler.hilbert(tempDataSyn);
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::DIVIDE, tempDataSynEnvelope);
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, seismogramAdj.getData());
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, tempDataSynRatio);
-        Common::calcHilbert(tempDataSyn);
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;   
         
 //         seismogramAdj.getData() = tempDataSynRatio;    // test
@@ -793,6 +809,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2AGC(KITGPI::Acq
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;    
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         seismogramAdj = seismogramSyntemp;
         seismogramAdj *= seismogramObstemp;
         scai::lama::DenseMatrix<ValueType> sumSynMultObs = seismogramAdj.getAGCSum();
@@ -852,6 +869,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2AGC(KITGPI::Acq
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;    
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         seismogramAdj = seismogramSyntemp;
         seismogramAdj *= seismogramObstemp;
         scai::lama::DenseMatrix<ValueType> sumSynMultObs = seismogramAdj.getAGCSum();
@@ -929,6 +947,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
         seismogramSyntemp.getData().scaleRows(tempL2NormObs);
         seismogramObstemp.getData().scaleRows(tempL2NormSyn);  */  
         // Choi 2012
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
         tempL2NormSyn = 1 / tempL2NormSyn;
         seismogramSyntemp.normalizeTrace(2);
@@ -1004,6 +1023,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
         seismogramSyntemp.getData().scaleRows(tempL2NormObs);
         seismogramObstemp.getData().scaleRows(tempL2NormSyn);  */  
         // Choi 2012
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
         tempL2NormSyn = 1 / tempL2NormSyn;
         seismogramSyntemp.normalizeTrace(2);
@@ -1037,6 +1057,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Envelope(KITGPI::Acquisitio
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         Common::calcEnvelope(seismogramSyntemp.getData());
         Common::calcEnvelope(seismogramObstemp.getData());
         seismogramSyntemp -= seismogramObstemp;
@@ -1064,7 +1085,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn;
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
+        seismogramAdj = seismogramSyntemp;
         scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> tempDataObs = seismogramObstemp.getData();
         scai::lama::DenseVector<ValueType> dataTrace; 
@@ -1085,9 +1107,13 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
         seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, tempDataObs);
         
         tempDataSyn = seismogramAdj.getData();
-        Common::calcHilbert(tempDataSyn);
+        Hilbert::HilbertFFT<ValueType> hilbertHandler;
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        hilbertHandler.setCoefficientLength(hLength);
+        hilbertHandler.calcHilbertCoefficient();
+        hilbertHandler.hilbert(tempDataSyn);
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, tempDataObs);
-        Common::calcHilbert(tempDataSyn);
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;  
     }
     seismogramAdj = seismogramSyntemp - seismogramObstemp;
@@ -1112,6 +1138,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Envelope(KITGPI::Acquisitio
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         Common::calcEnvelope(seismogramSyntemp.getData());
         Common::calcEnvelope(seismogramObstemp.getData());
         seismogramSyntemp -= seismogramObstemp;
@@ -1138,7 +1165,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn;
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
+        seismogramAdj = seismogramSyntemp;
         scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> tempDataObs = seismogramObstemp.getData();
         scai::lama::DenseVector<ValueType> dataTrace; 
@@ -1158,10 +1186,14 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
         tempDataObs.binaryOp(tempDataObs, scai::common::BinaryOp::DIVIDE, tempDataSyn);
         seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, tempDataObs);
         
-        tempDataSyn = seismogramAdj.getData();
-        Common::calcHilbert(tempDataSyn);
+        tempDataSyn = seismogramAdj.getData();    
+        Hilbert::HilbertFFT<ValueType> hilbertHandler;
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        hilbertHandler.setCoefficientLength(hLength);
+        hilbertHandler.calcHilbertCoefficient();
+        hilbertHandler.hilbert(tempDataSyn);
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, tempDataObs);
-        Common::calcHilbert(tempDataSyn);
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;  
     }
     seismogramAdj = seismogramSyntemp - seismogramObstemp;      
@@ -1186,6 +1218,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2InstantaneousPhase(KITGPI::
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         Common::calcInstantaneousPhaseResidual(seismogramSyntemp.getData(), seismogramObstemp.getData(), seismogramSyntemp.getData());
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -1211,7 +1244,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn;
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
+        seismogramAdj = seismogramSyntemp;
         scai::lama::DenseMatrix<ValueType> envelopeSyn = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> instantaneousPhaseSyn = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> instantaneousPhaseObs = seismogramObstemp.getData();
@@ -1231,17 +1265,21 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
         Common::calcInstantaneousPhaseResidual(instantaneousPhaseObs, instantaneousPhaseObs, instantaneousPhaseSyn);
         instantaneousPhaseObs.binaryOp(instantaneousPhaseObs, scai::common::BinaryOp::DIVIDE, envelopeSyn);
         
-        scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();        
-        Common::calcHilbert(tempDataSyn);
+        scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();     
+        Hilbert::HilbertFFT<ValueType> hilbertHandler;
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        hilbertHandler.setCoefficientLength(hLength);
+        hilbertHandler.calcHilbertCoefficient();
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramSyntemp.getData().binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, instantaneousPhaseObs);
         
         tempDataSyn = seismogramAdj.getData();
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, instantaneousPhaseObs);
-        Common::calcHilbert(tempDataSyn);
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;  
     }
     seismogramAdj = seismogramSyntemp + seismogramObstemp;
-    seismogramAdj *= -1;   
+//     seismogramAdj *= -1;   
     
     if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
         seismogramAdj *= -1;        
@@ -1263,6 +1301,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2InstantaneousPhase(KITGPI::
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         Common::calcInstantaneousPhaseResidual(seismogramSyntemp.getData(), seismogramObstemp.getData(), seismogramSyntemp.getData());
 //         scai::IndexType phaseType = 1;
 //         Common::calcInstantaneousPhase(seismogramSyntemp.getData(), phaseType);
@@ -1291,7 +1330,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn;
+        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
+        seismogramAdj = seismogramSyntemp;
         scai::lama::DenseMatrix<ValueType> envelopeSyn = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> instantaneousPhaseSyn = seismogramSyntemp.getData();
         scai::lama::DenseMatrix<ValueType> instantaneousPhaseObs = seismogramObstemp.getData();
@@ -1316,17 +1356,21 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
         
         instantaneousPhaseObs.binaryOp(instantaneousPhaseObs, scai::common::BinaryOp::DIVIDE, envelopeSyn);
         
-        scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();        
-        Common::calcHilbert(tempDataSyn);
+        scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();    
+        Hilbert::HilbertFFT<ValueType> hilbertHandler;
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        hilbertHandler.setCoefficientLength(hLength);
+        hilbertHandler.calcHilbertCoefficient();
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramSyntemp.getData().binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, instantaneousPhaseObs);
         
         tempDataSyn = seismogramAdj.getData();
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, instantaneousPhaseObs);
-        Common::calcHilbert(tempDataSyn);
+        hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;  
     }
     seismogramAdj = seismogramSyntemp + seismogramObstemp;
-    seismogramAdj *= -1;   
+//     seismogramAdj *= -1;   
     
     if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
         seismogramAdj *= -1;        

@@ -48,7 +48,7 @@ namespace KITGPI
 
             //! Copy Constructor.
             ViscoEMEM(const ViscoEMEM &rhs);
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType conductivityEM_const, ValueType dielectricPermittivityEM_const, ValueType tauConductivityEM_const, ValueType tauDielectricPermittivityEM_const, ValueType porosity_const, ValueType saturation_const);
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType electricConductivity_const, ValueType dielectricPermittivity_const, ValueType tauElectricConductivity_const, ValueType tauDielectricPermittivity_const, ValueType porosity_const, ValueType saturation_const);
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM) override;
 
             void resetGradient();
@@ -90,10 +90,10 @@ namespace KITGPI
           private:
             using GradientEM<ValueType>::equationTypeEM;
 
-            using GradientEM<ValueType>::conductivityEM;
-            using GradientEM<ValueType>::dielectricPermittivityEM;
-            using GradientEM<ValueType>::tauConductivityEM;
-            using GradientEM<ValueType>::tauDielectricPermittivityEM;
+            using GradientEM<ValueType>::electricConductivity;
+            using GradientEM<ValueType>::dielectricPermittivity;
+            using GradientEM<ValueType>::tauElectricConductivity;
+            using GradientEM<ValueType>::tauDielectricPermittivity;
             using GradientEM<ValueType>::relaxationFrequency;
             using GradientEM<ValueType>::numRelaxationMechanisms;
             using GradientEM<ValueType>::porosity;

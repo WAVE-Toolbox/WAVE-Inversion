@@ -20,7 +20,7 @@ void KITGPI::Taper::Taper2D<ValueType>::init(dmemo::DistributionPtr rowDist, dme
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms)
 {
-    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
         if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
             init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
@@ -34,7 +34,7 @@ void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHand
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> const seismograms)
 {
-    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
         if (seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
             lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent)).getData();
             init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
@@ -48,7 +48,7 @@ void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHand
  \param ctx Context
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::initModelTransform(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distEM, scai::hmemo::ContextPtr ctx)
+void KITGPI::Taper::Taper2D<ValueType>::initModelTransform(dmemo::DistributionPtr dist, dmemo::DistributionPtr distEM, hmemo::ContextPtr ctx)
 {
     modelTransformMatrixToSeismic.allocate(dist, distEM);
     modelTransformMatrixToSeismic.setContextPtr(ctx);
@@ -60,43 +60,13 @@ void KITGPI::Taper::Taper2D<ValueType>::initModelTransform(scai::dmemo::Distribu
     modelParameterTransformEM.setContextPtr(ctx);
 }
 
-/*! \brief Initialize taper
- \param rowDist Row distribution
- \param colDist Column distribution
- \param ctx Context
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::initWavefieldTransform(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool isSeismic)
-{
-    wavefieldAverageMatrix = scai::lama::zero<SparseFormat>(distInversion, dist);
-    wavefieldAverageMatrix.setContextPtr(ctx);
-    wavefieldRecoverMatrix = scai::lama::zero<SparseFormat>(dist, distInversion);
-    wavefieldRecoverMatrix.setContextPtr(ctx);
-    
-    std::string dimension = config.get<std::string>("dimension");
-    std::string equationType = config.get<std::string>("equationType");
-    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
-    if (isSeismic) {
-        wavefieldAverage = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-        wavefieldRecover = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-        wavefieldAverage->init(ctx, distInversion);
-        wavefieldRecover->init(ctx, dist);
-    } else {
-        wavefieldAverageEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
-        wavefieldRecoverEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
-        wavefieldAverageEM->init(ctx, distInversion);
-        wavefieldRecoverEM->init(ctx, dist);        
-    }
-}
-
 /*! \brief Wrapper to support SeismogramHandler
  \param seismograms SeismogramHandler object
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
 {
-    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
         if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
             apply(thisSeismogram);
@@ -110,7 +80,7 @@ void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHan
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> &seismograms) const
 {
-    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
+    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
         if (seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
             Acquisition::SeismogramEM<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
             apply(thisSeismogram);
@@ -151,7 +121,7 @@ void KITGPI::Taper::Taper2D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
  \param gradientParameter gradient parameter
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyGradientTransformToEM(scai::lama::Vector<ValueType> const &gradientParameter)
+lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyGradientTransformToEM(lama::Vector<ValueType> const &gradientParameter)
 {
     modelParameterTransformEM = modelTransformMatrixToEM * gradientParameter;
         
@@ -162,9 +132,9 @@ scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyGra
  \param modelParameter model parameter
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyModelTransformToEM(scai::lama::Vector<ValueType> const &modelParameter, scai::lama::Vector<ValueType> const &modelParameterEM)
+lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyModelTransformToEM(lama::Vector<ValueType> const &modelParameter, lama::Vector<ValueType> const &modelParameterEM)
 {
-    scai::lama::DenseVector<ValueType> modelParameterResidualEM;
+    lama::DenseVector<ValueType> modelParameterResidualEM;
     
     modelParameterTransform = modelTransformMatrixToSeismic * modelParameterEM;
     modelParameterResidualEM = modelTransformMatrixToEM * modelParameterTransform;
@@ -180,7 +150,7 @@ scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyMod
  \param modelParameter model parameter
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyGradientTransformToSeismic(scai::lama::Vector<ValueType> const &gradientParameterEM)
+lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyGradientTransformToSeismic(lama::Vector<ValueType> const &gradientParameterEM)
 {
     modelParameterTransform = modelTransformMatrixToSeismic * gradientParameterEM;
     
@@ -191,9 +161,9 @@ scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyGra
  \param modelParameter model parameter
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyModelTransformToSeismic(scai::lama::Vector<ValueType> const &modelParameter, scai::lama::Vector<ValueType> const &modelParameterEM)
+lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyModelTransformToSeismic(lama::Vector<ValueType> const &modelParameter, lama::Vector<ValueType> const &modelParameterEM)
 {
-    scai::lama::DenseVector<ValueType> modelParameterResidual;
+    lama::DenseVector<ValueType> modelParameterResidual;
     
     modelParameterTransformEM = modelTransformMatrixToEM * modelParameter;
     modelParameterResidual = modelTransformMatrixToSeismic * modelParameterTransformEM;
@@ -205,118 +175,25 @@ scai::lama::Vector<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::applyMod
     return modelParameterTransform;
 }
 
-/*! \brief Apply model transform to a wavefield
- \param modelParameter model parameter
- */
-template <typename ValueType>
-KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldAverage(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr)
-{
-    wavefieldAverage->applyWavefieldTransform(wavefieldAverageMatrix, *wavefieldPtr);
-    return *wavefieldAverage;
-}
-
-/*! \brief Apply model recover to a wavefield
- \param modelParameter model parameter
- */
-template <typename ValueType>
-KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldRecover(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr)
-{
-    wavefieldRecover->applyWavefieldTransform(wavefieldRecoverMatrix, *wavefieldPtr);
-    return *wavefieldRecover;
-}
-
-/*! \brief Apply model transform to a wavefield
- \param modelParameter model parameter
- */
-template <typename ValueType>
-KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldAverage(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
-{
-    wavefieldAverageEM->applyWavefieldTransform(wavefieldAverageMatrix, *wavefieldPtrEM);
-    return *wavefieldAverageEM;
-}
-
-/*! \brief Apply model recover to a wavefield
- \param modelParameter model parameter
- */
-template <typename ValueType>
-KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldRecover(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
-{
-    wavefieldRecoverEM->applyWavefieldTransform(wavefieldRecoverMatrix, *wavefieldPtrEM);
-    return *wavefieldRecoverEM;
-}
-
 /*! \brief Read a taper from file
  * \param filename taper filename
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::read(std::string filename)
 {
-    scai::dmemo::DistributionPtr distTraces(data.getRowDistributionPtr());
-    scai::dmemo::DistributionPtr distSamples(data.getColDistributionPtr());
+    dmemo::DistributionPtr distTraces(data.getRowDistributionPtr());
+    dmemo::DistributionPtr distSamples(data.getColDistributionPtr());
 
     data.readFromFile(filename);
 
     data.redistribute(distTraces, distSamples);
 }
 
-/*! \brief calculate an average matrix for inversion
- * \param modelCoordinates coordinates of the original model
- * \param modelCoordinatesInversion coordinates of the averaged model
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::calcInversionAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion)
-{
-    // this function is only valid for grid partitioning with useVariableGrid=0
-    ValueType averageValue;
-    scai::IndexType NX = modelCoordinates.getNX();
-    scai::IndexType NY = modelCoordinates.getNY();
-    scai::IndexType NZ = modelCoordinates.getNZ();
-    ValueType DHInversion = ceil(NX/modelCoordinatesInversion.getNX());
-    KITGPI::Acquisition::coordinate3D coordinate;
-    KITGPI::Acquisition::coordinate3D coordinateInversion;
-    
-    if (NZ>1) {
-        averageValue=1/(pow(DHInversion,3));
-    } else {
-        averageValue=1/(pow(DHInversion,2));
-    }
-    
-    scai::dmemo::DistributionPtr distInversion(wavefieldAverageMatrix.getRowDistributionPtr());
-    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
-    distInversion->getOwnedIndexes(ownedIndexes);
-
-    lama::MatrixAssembly<ValueType> assemblyAverage;
-    lama::MatrixAssembly<ValueType> assemblyRecover;
-    IndexType columnIndex;
-
-    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
-        coordinateInversion = modelCoordinatesInversion.index2coordinate(ownedIndex);
-        coordinate.x = coordinateInversion.x*DHInversion;
-        coordinate.y = coordinateInversion.y*DHInversion;
-        coordinate.z = coordinateInversion.z*DHInversion;
-
-        for (IndexType iXorder = 0; iXorder < DHInversion; iXorder++) {            
-            for (IndexType iYorder = 0; iYorder < DHInversion; iYorder++) {            
-                for (IndexType iZorder = 0; iZorder < DHInversion; iZorder++) {
-                    if ((coordinate.x+iXorder < NX) && (coordinate.y+iYorder < NY) && (coordinate.z+iZorder < NZ)) {
-                        columnIndex=modelCoordinates.coordinate2index(coordinate.x+iXorder, coordinate.y+iYorder, coordinate.z+iZorder);
-                        assemblyAverage.push(ownedIndex, columnIndex, averageValue);
-                        assemblyRecover.push(columnIndex, ownedIndex, 1);
-                    }
-                }
-            }
-        }
-    }
-
-    wavefieldAverageMatrix.fillFromAssembly(assemblyAverage);
-    wavefieldRecoverMatrix.fillFromAssembly(assemblyRecover);
-//     wavefieldAverageMatrix.writeToFile("model/wavefieldAverageMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + "_" + std::to_string(averageValue) + ".mtx");
-//     wavefieldRecoverMatrix.writeToFile("model/wavefieldRecoverMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + ".mtx");
-}
-
-/*! \brief calculate an average matrix for inversion
- * \param modelCoordinates coordinates of the original model
- * \param modelCoordinatesInversion coordinates of the averaged model
+/*! \brief calculate a matrix to transform Seismic model to EM model
+ * \param modelCoordinates coordinates of the seismic model
+ * \param config Configuration seismic
+ * \param modelCoordinatesEM coordinates of the EM model
+ * \param configEM Configuration EM
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesEM, KITGPI::Configuration::Configuration configEM)
@@ -348,8 +225,8 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
     }
     supplementaryWidth = std::floor((supplementaryOrder-1)/2);
     
-    scai::dmemo::DistributionPtr distEM(modelTransformMatrixToEM.getRowDistributionPtr());
-    scai::dmemo::DistributionPtr dist(modelTransformMatrixToEM.getColDistributionPtr());
+    dmemo::DistributionPtr distEM(modelTransformMatrixToEM.getRowDistributionPtr());
+    dmemo::DistributionPtr dist(modelTransformMatrixToEM.getColDistributionPtr());
     hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
     IndexType rowIndex;
     lama::MatrixAssembly<ValueType> assembly;
@@ -405,9 +282,11 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
 //     modelTransformMatrixToEM.writeToFile("model/modelTransformMatrixToEM_" + std::to_string(modelCoordinates.getNX()) + "_" + std::to_string(modelCoordinates.getNY()) + "_" + std::to_string(modelCoordinates.getNZ()) + ".mtx");
 }
 
-/*! \brief calculate an average matrix for inversion
- * \param modelCoordinates coordinates of the original model
- * \param modelCoordinatesInversion coordinates of the averaged model
+/*! \brief calculate a matrix to transform EM model to Seismic model
+ * \param modelCoordinates coordinates of the seismic model
+ * \param config Configuration seismic
+ * \param modelCoordinatesEM coordinates of the EM model
+ * \param configEM Configuration EM
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesEM, KITGPI::Configuration::Configuration configEM)
@@ -439,8 +318,8 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
     }
     supplementaryWidth = std::floor((supplementaryOrder-1)/2);
     
-    scai::dmemo::DistributionPtr dist(modelTransformMatrixToSeismic.getRowDistributionPtr());
-    scai::dmemo::DistributionPtr distEM(modelTransformMatrixToSeismic.getColDistributionPtr());
+    dmemo::DistributionPtr dist(modelTransformMatrixToSeismic.getRowDistributionPtr());
+    dmemo::DistributionPtr distEM(modelTransformMatrixToSeismic.getColDistributionPtr());
     hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
     IndexType rowIndex;
     lama::MatrixAssembly<ValueType> assembly;
@@ -503,8 +382,8 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
  */
 template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config)
 {
-    scai::lama::DenseVector<ValueType> porosityEMtemp;
-    scai::lama::DenseVector<ValueType> saturationEMtemp;
+    lama::DenseVector<ValueType> porosityEMtemp;
+    lama::DenseVector<ValueType> saturationEMtemp;
     
     IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");  
             
@@ -534,8 +413,8 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
  */
 template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Configuration::Configuration configEM)
 {
-    scai::lama::DenseVector<ValueType> porositytemp;
-    scai::lama::DenseVector<ValueType> saturationtemp;
+    lama::DenseVector<ValueType> porositytemp;
+    lama::DenseVector<ValueType> saturationtemp;
         
     IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");  
     
@@ -556,6 +435,132 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
     modelEM.calcWaveModulusFromPetrophysics();   
     if (configEM.get<bool>("useModelThresholds"))
         modelEM.applyThresholds(configEM); 
+}
+
+/*! \brief Initialize wavefield transform matrix
+ \param config Configuration
+ \param distInversion distribution inversion
+ \param dist distribution
+ \param ctx Context
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper2D<ValueType>::initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, dmemo::DistributionPtr distInversion, dmemo::DistributionPtr dist, hmemo::ContextPtr ctx, bool isSeismic)
+{
+    wavefieldAverageMatrix = lama::zero<SparseFormat>(distInversion, dist);
+    wavefieldAverageMatrix.setContextPtr(ctx);
+    wavefieldRecoverMatrix = lama::zero<SparseFormat>(dist, distInversion);
+    wavefieldRecoverMatrix.setContextPtr(ctx);
+    
+    std::string dimension = config.get<std::string>("dimension");
+    std::string equationType = config.get<std::string>("equationType");
+    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
+    if (isSeismic) {
+        wavefieldsInversion = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+        wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+        wavefieldsInversion->init(ctx, distInversion);
+        wavefields->init(ctx, dist);
+    } else {
+        wavefieldsInversionEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+        wavefieldsEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+        wavefieldsInversionEM->init(ctx, distInversion);
+        wavefieldsEM->init(ctx, dist);        
+    }
+}
+
+/*! \brief calculate a matrix for averaging inversion
+ * \param modelCoordinates coordinates of the original model
+ * \param modelCoordinatesInversion coordinates of the averaged model
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper2D<ValueType>::calcWavefieldAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion)
+{
+    // this function is only valid for grid partitioning with useVariableGrid=0
+    ValueType averageValue;
+    IndexType NX = modelCoordinates.getNX();
+    IndexType NY = modelCoordinates.getNY();
+    IndexType NZ = modelCoordinates.getNZ();
+    ValueType DHInversion = ceil(NX/modelCoordinatesInversion.getNX());
+    KITGPI::Acquisition::coordinate3D coordinate;
+    KITGPI::Acquisition::coordinate3D coordinateInversion;
+    
+    if (NZ>1) {
+        averageValue=1/(pow(DHInversion,3));
+    } else {
+        averageValue=1/(pow(DHInversion,2));
+    }
+    
+    dmemo::DistributionPtr distInversion(wavefieldAverageMatrix.getRowDistributionPtr());
+    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
+    distInversion->getOwnedIndexes(ownedIndexes);
+
+    lama::MatrixAssembly<ValueType> assemblyAverage;
+    lama::MatrixAssembly<ValueType> assemblyRecover;
+    IndexType columnIndex;
+
+    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
+        coordinateInversion = modelCoordinatesInversion.index2coordinate(ownedIndex);
+        coordinate.x = coordinateInversion.x*DHInversion;
+        coordinate.y = coordinateInversion.y*DHInversion;
+        coordinate.z = coordinateInversion.z*DHInversion;
+
+        for (IndexType iXorder = 0; iXorder < DHInversion; iXorder++) {            
+            for (IndexType iYorder = 0; iYorder < DHInversion; iYorder++) {            
+                for (IndexType iZorder = 0; iZorder < DHInversion; iZorder++) {
+                    if ((coordinate.x+iXorder < NX) && (coordinate.y+iYorder < NY) && (coordinate.z+iZorder < NZ)) {
+                        columnIndex=modelCoordinates.coordinate2index(coordinate.x+iXorder, coordinate.y+iYorder, coordinate.z+iZorder);
+                        assemblyAverage.push(ownedIndex, columnIndex, averageValue);
+                        assemblyRecover.push(columnIndex, ownedIndex, 1);
+                    }
+                }
+            }
+        }
+    }
+
+    wavefieldAverageMatrix.fillFromAssembly(assemblyAverage);
+    wavefieldRecoverMatrix.fillFromAssembly(assemblyRecover);
+//     wavefieldAverageMatrix.writeToFile("model/wavefieldAverageMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + "_" + std::to_string(averageValue) + ".mtx");
+//     wavefieldRecoverMatrix.writeToFile("model/wavefieldRecoverMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + ".mtx");
+}
+
+/*! \brief Apply model recover to a wavefield
+ \param modelParameter model parameter
+ */
+template <typename ValueType>
+KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldRecover(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr)
+{
+    wavefields->applyTransform(wavefieldRecoverMatrix, *wavefieldPtr);
+    return *wavefields;
+}
+
+/*! \brief Apply model transform to a wavefield
+ \param modelParameter model parameter
+ */
+template <typename ValueType>
+KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldAverage(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr)
+{
+    wavefieldsInversion->applyTransform(wavefieldAverageMatrix, *wavefieldPtr);
+    return *wavefieldsInversion;
+}
+
+/*! \brief Apply model recover to a wavefield
+ \param modelParameter model parameter
+ */
+template <typename ValueType>
+KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldRecover(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
+{
+    wavefieldsEM->applyTransform(wavefieldRecoverMatrix, *wavefieldPtrEM);
+    return *wavefieldsEM;
+}
+
+/*! \brief Apply model transform to a wavefield
+ \param modelParameter model parameter
+ */
+template <typename ValueType>
+KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldAverage(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
+{
+    wavefieldsInversionEM->applyTransform(wavefieldAverageMatrix, *wavefieldPtrEM);
+    return *wavefieldsInversionEM;
 }
 
 template class KITGPI::Taper::Taper2D<double>;

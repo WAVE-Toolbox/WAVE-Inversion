@@ -23,7 +23,7 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
         init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"));
     }
     
-    if (config.get<bool>("minOffsetSrcEst") || config.get<bool>("maxOffsetSrcEst"))
+    if (config.getAndCatch("minOffsetSrcEst", 0.0) || config.get<bool>("maxOffsetSrcEst"))
         useOffsetMutes = true;
 
     if (config.get<bool>("useSourceSignalTaper")) {
