@@ -85,18 +85,18 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wav
             xcorrSigmaEM += temp;           
         } else if (gradientType == 1 && decomposeType == 1) {    
             // migration kernel using up/down-going wavefields
-            temp = adjointWavefield.getRefEZup();
+            temp = adjointWavefield.getRefEZdown();
             temp *= forwardWavefield.getRefEZdown();
             xcorrSigmaEM += temp;           
-            temp = adjointWavefield.getRefEZdown();
+            temp = adjointWavefield.getRefEZup();
             temp *= forwardWavefield.getRefEZup();
             xcorrSigmaEM += temp;      
         } else if (gradientType == 2 && decomposeType == 1) {    
             // tomographic kernel using up/down-going wavefields
-            temp = adjointWavefield.getRefEZup();
+            temp = adjointWavefield.getRefEZdown();
             temp *= forwardWavefield.getRefEZup();
             xcorrSigmaEM += temp;           
-            temp = adjointWavefield.getRefEZdown();
+            temp = adjointWavefield.getRefEZup();
             temp *= forwardWavefield.getRefEZdown();
             xcorrSigmaEM += temp;           
         }

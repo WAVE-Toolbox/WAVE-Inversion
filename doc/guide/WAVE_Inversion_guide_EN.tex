@@ -268,6 +268,7 @@ When it comes to ground penetrating radar (GPR), FWI was introduced to crosshole
 For iterative calculations of synthetic seismograms or radargrams with limited computer resources fast and accurate modeling methods are needed. The FWI program WAVE-Inversion (C++) is using the finite difference simulation software WAVE-Simulation (insert link). It is also possible to use the WAVE-Inversion library with different simulation software.\\
 In the following sections, by taking 3D elastic wave equation as an example, we give a short description of the derivation of the gradients of the objective function and how the program is used and executed. In the current version of WAVE-Inversion, FWI of viscoelastic is possible with the passive parameters $\tau^p$ and $\tau^s$, which actually use the same gradient derived from elastic wave equation. The others such as the acoustic, EM and visco-EM wave equations are shown in the appendix \ref{sec:Acoustic_wave_equation}-\ref{sec:Visco_EM_wave_equation}.
 We recommend you to read the theory of seismic FWI from IFOS2D and IFOS3D first for better understanding of the adjoint method we used. 
+
 % -----------------------------------------------------------------------------------------------
 \cleardoublepage
 \part{Theory of Full-Waveform Inversion}
@@ -299,10 +300,10 @@ We explicitly write it in 3D case:
 \end{align}
 Sum equation \ref{eqn:elastic_wave_stress_xx} + \ref{eqn:elastic_wave_stress_yy} + \ref{eqn:elastic_wave_stress_zz}:
 \begin{equation}
-\begin{align}
+\begin{aligned}
  \pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t} =& \left(3\lambda+2\mu\right)\left(\pdv{v_x}{x}+\pdv{v_y}{y}+ \pdv{v_z}{z}\right) + 3 \pdv{p_0}{t}\\ 
  p_0 =& \frac{1}{3} \left( \sigma_{xx0}+\sigma_{yy0}+\sigma_{zz0} \right)
-\end{align}
+\end{aligned}
 \end{equation}
 where $p_0$ is a point source.\\
 Then equation \ref{eqn:elastic_wave_stress_xx} to \ref{eqn:elastic_wave_stress_zz} can be rewritten:
@@ -438,10 +439,10 @@ Boundaries $T \to 0$ to $0 \to T$
 \end{equation}
 Therefore we obtain a self-adjoint equation:
 \begin{equation}
-\begin{align*}
+\begin{aligned}
 \label{eqn:AdjointEquation1}
 & M^{-1} \partial_{\tau} \mathbf{u}_{1} - Q \mathbf{u}_{1} =  - R^{*}(R\mathbf{u} - \mathbf{d}^{obs})
-\end{align*}
+\end{aligned}
 \end{equation}
 The 1$st$ order adjoint wavefields:
 \begin{equation}
@@ -925,8 +926,8 @@ For faultless function of WAVE-Inversion all tests should execute without failur
 \addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
 \addcontentsline{toc}{chapter}{List of Tables}
 \cleardoublepage
-% \bibliography{@CMAKE_SOURCE_DIR@/../doc/guide/WAVE_guide}
-\bibliography{WAVE_Inversion_guide}
+\bibliography{@CMAKE_SOURCE_DIR@/../doc/guide/WAVE_Inversion_guide.bib}
+% \bibliography{WAVE_Inversion_guide}
 \bibliographystyle{apalike}
 
 \appendix
@@ -989,16 +990,16 @@ Gradient in details:
 \section{EM wave equation}
 \par Maxwell equations including constitutive relations is shown as two rotation equations: \\
 \begin{equation}
-\begin{align*}
+\begin{aligned}
 \label{eqn:MaxwellEquation}
 &-\mu_{m} \pdv{ \mathbf{H}}{t} - \sigma_{m}\mathbf{H} - \nabla \times \mathbf{E} =  \mathbf{J_{m}} \\
 &\varepsilon\pdv{ \mathbf{E}}{t} + \sigma_{e}\mathbf{E} -\nabla \times \mathbf{H} =  - \mathbf{J_{e}}
-\end{align*}
+\end{aligned}
 \end{equation}
 where $\sigma_{e}$, $\sigma_{m}$, $\varepsilon$ and $\mu_{m}$ are the electric conductivity, magnetic conductivity, dielectric permittivity and magnetic permeability. $\mathbf{J_{e}}$ and $\mathbf{J_{m}}$ are the electric and magnetic current sources. $\mathbf{H}$ and $\mathbf{E}$ are the magnetic intensity field tensor and electric intensity field tensor in Maxwell equations which explain the physical mechanism of electromagnetic (EM) wave propagation.\\
 \par 3D EM Wave Equation in anisotropic media:
 \begin{equation}
-\begin{align*}
+\begin{aligned}
 \label{eqn:MaxwellEquation1}
 &-\mu_{mx} \pdv{H_{x}}{t} - \sigma_{mx} H_{x} - (\pdv{E_z}{y} - \pdv{E_y}{z}) = J_{mx}\\
 &-\mu_{my} \pdv{H_{y}}{t} - \sigma_{my} H_{y} - (\pdv{E_x}{z} - \pdv{E_z}{x}) = J_{my}\\
@@ -1006,18 +1007,18 @@ where $\sigma_{e}$, $\sigma_{m}$, $\varepsilon$ and $\mu_{m}$ are the electric c
 &\varepsilon_{x} \pdv{E_{x}}{t} + \sigma_{ex} E_{x} - (\pdv{H_z}{y} - \pdv{H_y}{z}) = -J_{ex}\\
 &\varepsilon_{y} \pdv{E_{y}}{t} + \sigma_{ey} E_{y} - (\pdv{H_x}{z} - \pdv{H_z}{x}) = -J_{ey}\\
 &\varepsilon_{z} \pdv{E_{z}}{t} + \sigma_{ez} E_{z} - (\pdv{H_y}{x} - \pdv{H_x}{y}) = -J_{ez}
-\end{align*}
+\end{aligned}
 \end{equation}
 \par We rewrite the Eq.\ref{eqn:MaxwellEquation1} as:
 \begin{equation}
-\begin{align*}
+\begin{aligned}
 \label{eqn:MaxwellEquationMatrix}
 &M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q\mathbf{u} = \mathbf{b} \\
 &\mathbf{u} = (\mathbf{H}, \mathbf{E})^T, \mathbf{b} = (\mathbf{J_{m}}, -\mathbf{J_{e}})^T \\
-\end{align*}
+\end{aligned}
 \end{equation}
 \begin{equation}
-\begin{align}
+\begin{aligned}
 \begin{split}
 & M_1 =
  \begin{pmatrix}
@@ -1073,7 +1074,7 @@ where $\sigma_{e}$, $\sigma_{m}$, $\varepsilon$ and $\mu_{m}$ are the electric c
  \end{pmatrix} ,
  D_i^{*} = D_i^T = -D_i\\
 \end{split}
-\end{align}
+\end{aligned}
 \end{equation}
 $^{*}$ is the transpose conjugate operation. $\partial_{1} = \partial_{x}$, $\partial_{2} = \partial_{y}$, $\partial_{3} = \partial_{z}$.\\
 
@@ -1151,11 +1152,11 @@ which is derived from the initial, final condition and boundary condition \ref{e
 \end{equation}
 \par Therefore we obtain a self-adjoint equation:
 \begin{equation}
-\begin{align*}
+\begin{aligned}
 \label{eqn:AdjointEquation1}
 & M_1 \partial_{\tau} \mathbf{u}_{1} + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1} =  - R^{*}(R\mathbf{u} - \mathbf{d}^{obs})  \\
 & \mathbf{u}_{1} = ( \mathbf{H}_{1}, \mathbf{E}_{1}) = (H_{1x}, H_{1y}, H_{1z}, E_{1x}, E_{1y}, E_{1z})^T  \\ 
-\end{align*}
+\end{aligned}
 \end{equation}
 \par Here the postive wavefield residual $R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) $ is used as the sources for back propagation. \\
 \par The 1st order adjoint equation is:
@@ -1174,10 +1175,10 @@ which is derived from the initial, final condition and boundary condition \ref{e
 \par The gradient of the objective function $\Phi_1(\mathbf{m})$ with respect to electric parameters are shown as:
 \begin{equation}
 \label{eqn:GradientAdjoint1}
-\begin{align*}
+\begin{aligned}
 & \nabla \Phi_1(\varepsilon) = \int_0^T ( E_{1x} \pdv{E_x}{t} + E_{1y} \pdv{E_y}{t} + E_{1z} \pdv{E_z}{t} ) dt\\
 & \nabla \Phi_1(\sigma_e) = \int_0^T ( E_{1x} E_x + E_{1y} E_y + E_{1z} E_z  ) dt\\
-\end{align*}
+\end{aligned}
 \end{equation}
 
 \chapter{Visco-EM wave}

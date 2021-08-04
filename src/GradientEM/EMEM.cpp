@@ -596,7 +596,7 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
         this->initParameterisation(electricConductivity, ctx, distEM, 0.0);
     }
     
-    if (workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation()) {
+    if (workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation() || workflowEM.getInvertForReflectivity()) {
         dielectricPermittivity = gradEpsilonEM;
         
         temp = modelEM.getDielectricPermittivity();
@@ -645,7 +645,7 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
     }  
     
     if (workflowEM.getInvertForReflectivity()) {
-        reflectivity = dielectricPermittivity;
+        reflectivity = -dielectricPermittivity;
     } else {
         this->initParameterisation(reflectivity, ctx, distEM, 0.0);
     }  

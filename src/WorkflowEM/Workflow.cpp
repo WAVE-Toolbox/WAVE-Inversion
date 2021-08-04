@@ -89,6 +89,7 @@ void KITGPI::Workflow::WorkflowEM<ValueType>::printParameters(scai::dmemo::Commu
     HOST_PRINT(comm, "invertForTauEpsilonEM = " << invertForTauEpsilonEM << "\n");
     HOST_PRINT(comm, "invertForPorosity = " << invertForPorosity << "\n");
     HOST_PRINT(comm, "invertForSaturation = " << invertForSaturation << "\n");
+    HOST_PRINT(comm, "invertForReflectivity = " << invertForReflectivity << "\n");
     HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
     HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
     HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");

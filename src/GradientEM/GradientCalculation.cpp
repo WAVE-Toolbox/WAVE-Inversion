@@ -71,11 +71,10 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     energyPrecond.init(dist, config, isSeismic);
     wavefields->resetWavefields();
     ZeroLagXcorr->resetXcorr(workflow);
-    gradient.resetGradient();
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
     IndexType decomposeType = config.getAndCatch("decomposeType", 0); 
     IndexType snapTypeTemp = 0;
-    IndexType numSwitch = 1; 
+    IndexType numSwitch = 3; 
     if (gradientType == 3) {
         if ((workflow.iteration / numSwitch) % 2 == 0) {
             gradientType = 1;
@@ -117,18 +116,18 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         
         solver.run(receivers, adjointSources, model, *wavefields, derivatives, tStep);
 
-        if (gradientType == 2 || decomposeType != 0) { 
+        if ((gradientType == 2 && decomposeType == 0) || decomposeType != 0) { 
             //calculate temporal derivative of wavefield
             *wavefieldsTemp -= *wavefields;
-            *wavefieldsTemp *= DTinv; // wavefieldsTemp will be gathered by adjointSourcesReflect
-            if (gradientType == 2) 
+            *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by adjointSourcesReflect
+            if (gradientType == 2 && decomposeType == 0) 
                 SourceReceiverReflect->gatherSeismogram(tStep);
             if (decomposeType != 0) 
                 wavefields->decompose(decomposeType, *wavefieldsTemp, derivatives);
             /* --------------------------------------- */
             /*             Convolution                 */
             /* --------------------------------------- */
-            if (decomposeType == 0 && tStep % dtinversion == 0) {
+            if (gradientType == 2 && decomposeType == 0 && tStep % dtinversion == 0) {
                 // save wavefields in std::vector
                 *wavefieldrecordAdjointReflect[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2D.applyWavefieldAverage(wavefields);
                 *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecordReflect[floor(tStep / dtinversion + 0.5)]);
@@ -140,12 +139,17 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
             
                 /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
                 ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecordReflect[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow, gradientType, decomposeType);
+                
+                if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                    ZeroLagXcorr->write(config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect.", tStep, workflow);
+                    wavefields->write(config.getAndCatch("snapType", 0), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
+                }
             }
         }
-        /* --------------------------------------- */
-        /*             Convolution                 */
-        /* --------------------------------------- */
-        if (tStep % dtinversion == 0) {
+        if (((gradientType != 2 && decomposeType == 0) || decomposeType != 0) && tStep % dtinversion == 0) {
+            /* --------------------------------------- */
+            /*             Convolution                 */
+            /* --------------------------------------- */
             *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]);
             energyPrecond.intSquaredWavefields(*wavefieldsTemp, *wavefields, config.get<ValueType>("DT"));
             //calculate temporal derivative of wavefield
@@ -156,9 +160,9 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
             /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
             ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow, gradientType, decomposeType);
             
-            if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.getAndCatch("tFirstSnapshot", ValueType(0)), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.getAndCatch("tlastSnapshot", ValueType(0)), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.getAndCatch("tFirstSnapshot", ValueType(0)), config.get<ValueType>("DT"))) % Common::time2index(config.getAndCatch("tincSnapshot", ValueType(0)), config.get<ValueType>("DT")) == 0) {
+            if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                 ZeroLagXcorr->write(config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".", tStep, workflow);
-                wavefields->write(config.get<IndexType>("snapType"), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
+                wavefields->write(config.getAndCatch("snapType", 0), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
                 wavefields->write(snapTypeTemp, config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
             }
         }
@@ -206,7 +210,6 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         energyPrecond.init(dist, config, isSeismic);
         wavefields->resetWavefields();
         ZeroLagXcorr->resetXcorr(workflow);
-        gradient.resetGradient();
         for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {
             
             solver.run(receivers, adjointSourcesReflect, model, *wavefields, derivatives, tStep);
@@ -224,9 +227,11 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
             
                 /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
                 ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow, gradientType, decomposeType);
-            }
-            if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.getAndCatch("tFirstSnapshot", ValueType(0)), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.getAndCatch("tlastSnapshot", ValueType(0)), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.getAndCatch("tFirstSnapshot", ValueType(0)), config.get<ValueType>("DT"))) % Common::time2index(config.getAndCatch("tincSnapshot", ValueType(0)), config.get<ValueType>("DT")) == 0) {
-                wavefields->write(config.get<IndexType>("snapType"), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
+                
+                if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                    ZeroLagXcorr->write(config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect.", tStep, workflow);
+                    wavefields->write(config.getAndCatch("snapType", 0), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
+                }
             }
         }       
         /* ---------------------------------- */
@@ -234,6 +239,7 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         /* ---------------------------------- */    
         gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);
         SourceTaper.apply(gradient);
+        ReceiverTaper.apply(gradient);
         sourceReceiverTaper.apply(gradient);
 
         /* Apply energy preconditioning per shot */

@@ -83,14 +83,14 @@ int main(int argc, char *argv[])
     verbose = config.get<bool>("verbose");
     
     // Initialization of inversion
-    IndexType inversionType = config.get<IndexType>("inversionType");
+    IndexType inversionType = config.getAndCatch("inversionType", 1);
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
     bool isSeismic = Common::checkEquationType<ValueType>(equationType);
     
-    IndexType inversionTypeEM = configEM.get<IndexType>("inversionType");
+    IndexType inversionTypeEM = configEM.getAndCatch("inversionType", 1);
     std::string dimensionEM = configEM.get<std::string>("dimension");
     std::string equationTypeEM = configEM.get<std::string>("equationType"); 
     std::transform(dimensionEM.begin(), dimensionEM.end(), dimensionEM.begin(), ::tolower);   
@@ -487,6 +487,7 @@ int main(int argc, char *argv[])
     
         Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
         numshots = uniqueShotNos.size();
+        SCAI_ASSERT_ERROR(numshots >= numShotDomains, "numshots < numShotDomains");
         if (useStreamConfig) {
             numCuts = cutCoordinates.size();
             SCAI_ASSERT_ERROR(numshots == numCuts, "numshots != numCuts"); // check whether mdel pershot has been applied sucessfully.
@@ -521,6 +522,7 @@ int main(int argc, char *argv[])
     
         Acquisition::calcuniqueShotNo(uniqueShotNosEM, sourceSettingsEM);
         numshotsEM = uniqueShotNosEM.size();
+        SCAI_ASSERT_ERROR(numshotsEM >= numShotDomainsEM, "numshotsEM < numShotDomainsEM");
         if (useStreamConfigEM) {
             numCutsEM = cutCoordinatesEM.size();
             SCAI_ASSERT_ERROR(numshotsEM == numCutsEM, "numshotsEM != numCutsEM"); // check whether mdel pershot has been applied sucessfully.
@@ -866,12 +868,6 @@ int main(int argc, char *argv[])
             breakLoopEM = false;
             workflowEM.workflowStage = workflow.workflowStage;
             workflowEM.printParameters(commAll);
-            
-            std::vector<bool> invertForParametersEM = workflowEM.getInvertForParameters();
-            if (gradientTypeEM == 0) { // the last element of invertForParametersEM is invertForReflectivity
-                invertForParametersEM[invertForParametersEM.size()-1] = false;
-            }
-            gradientEM->setInvertForParameters(invertForParametersEM);
 
             gradientCalculationEM.allocate(configEM, distEM, ctx, workflowEM);
             seismogramTaper1DEM.calcTimeDampingTaper(workflowEM.getTimeDampingFactor(), configEM.get<ValueType>("DT"));
@@ -1397,7 +1393,7 @@ int main(int argc, char *argv[])
                 crossGradientDerivativeEM->resetGradient();
                 misfitPerItEM = 0;
 
-                IndexType numSwitch = 1;  
+                IndexType numSwitch = 3;  
                 IndexType gradientTypePerShotEM = 0;  
                 if (gradientTypeEM == 3) {
                     if ((workflowEM.iteration / numSwitch) % 2 == 0) {
@@ -1405,12 +1401,19 @@ int main(int argc, char *argv[])
                     } else {
                         gradientTypePerShotEM = 2;
                     }            
-                    if (workflow.iteration % (numSwitch * 2) == 0) {
+                    if (decomposeTypeEM == 0 && workflow.iteration % (numSwitch * 2) == 0) {
                         modelEM->resetReflectivity();
                     }
                 } else {
                     gradientTypePerShotEM = gradientTypeEM;
                 }
+            
+                std::vector<bool> invertForParametersEM = workflowEM.getInvertForParameters();
+                if (gradientTypePerShotEM == 1 && decomposeTypeEM == 0) { // the last element of invertForParametersEM is invertForReflectivity
+                    invertForParametersEM[invertForParametersEM.size()-1] = true;
+                }
+                gradientEM->setInvertForParameters(invertForParametersEM);
+                workflowEM.setInvertForParameters(invertForParametersEM);
     
                 if (configEM.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
@@ -1598,7 +1601,7 @@ int main(int argc, char *argv[])
                             if (gradientTypePerShotEM == 2 || decomposeTypeEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsReflectEM -= *wavefieldsEM;
-                                *wavefieldsReflectEM *= DTinv; // wavefieldsReflectEM will be gathered by adjointSourcesReflectEM
+                                *wavefieldsReflectEM *= -DTinv; // wavefieldsReflectEM will be gathered by adjointSourcesReflectEM
                                 if (gradientTypePerShotEM == 2) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
                                 if (decomposeTypeEM != 0) 
@@ -1607,10 +1610,9 @@ int main(int argc, char *argv[])
                             if (tStep % dtinversionEM == 0) {
                                 // save wavefieldsEM in std::vector
                                 *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
-                            }
-                            
-                            if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.getAndCatch("tlastSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.getAndCatch("tincSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) == 0) {
-                                wavefieldsEM->write(configEM.get<IndexType>("snapType"), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source.", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
+                            }                            
+                            if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                                wavefieldsEM->write(configEM.getAndCatch("snapType", 0), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source.", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
                                 wavefieldsEM->write(snapTypeTempEM, configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source.", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
                             }
                         }
@@ -1628,8 +1630,8 @@ int main(int argc, char *argv[])
                                     // save wavefieldsEM in std::vector
                                     *wavefieldrecordReflectEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
                                 }
-                                if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.getAndCatch("tlastSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.getAndCatch("tincSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) == 0) {
-                                    wavefieldsEM->write(configEM.get<IndexType>("snapType"), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect.", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
+                                if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                                    wavefieldsEM->write(configEM.getAndCatch("snapType", 0), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect.", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
                                 }
                             }
                         }
@@ -1639,19 +1641,22 @@ int main(int argc, char *argv[])
 
                             solverEM->run(receiversEM, sourcesEM, *modelPerShotEM, *wavefieldsEM, *derivativesEM, tStep);
                             
-                            if (tStep % dtinversionEM == 0) {
-                                // save wavefieldsEM in std::vector
-                                *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
-                            }
                             if (gradientTypePerShotEM == 2 || decomposeTypeEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsReflectEM -= *wavefieldsEM;
-                                *wavefieldsReflectEM *= DTinv; // wavefieldsReflectEM will be gathered by adjointSourcesReflectEM
-                                if (gradientTypePerShotEM == 2)
+                                *wavefieldsReflectEM *= -DTinv; // wavefieldsReflectEM will be gathered by adjointSourcesReflectEM
+                                if (gradientTypePerShotEM == 2) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
+                                if (decomposeTypeEM != 0) 
+                                    wavefieldsEM->decompose(decomposeTypeEM, *wavefieldsReflectEM, *derivativesEM);
                             }
-                            if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.getAndCatch("tlastSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.getAndCatch("tincSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) == 0) {
-                                wavefieldsEM->write(configEM.get<IndexType>("snapType"), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".source.", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
+                            if (tStep % dtinversionEM == 0) {
+                                // save wavefieldsEM in std::vector
+                                *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
+                            }                            
+                            if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                                wavefieldsEM->write(configEM.getAndCatch("snapType", 0), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".source.", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
+                                wavefieldsEM->write(snapTypeTempEM, configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source.", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
                             }
                         }
                         if (gradientTypePerShotEM == 2 && decomposeTypeEM == 0) { 
@@ -1668,8 +1673,8 @@ int main(int argc, char *argv[])
                                     // save wavefieldsEM in std::vector
                                     *wavefieldrecordReflectEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
                                 }
-                                if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.getAndCatch("tlastSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.getAndCatch("tFirstSnapshot", ValueType(0)), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.getAndCatch("tincSnapshot", ValueType(0)), configEM.get<ValueType>("DT")) == 0) {
-                                    wavefieldsEM->write(configEM.get<IndexType>("snapType"), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
+                                if (workflowEM.workflowStage == 0 && workflowEM.iteration < 3 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                                    wavefieldsEM->write(configEM.getAndCatch("snapType", 0), configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
                                 }
                             }
                         }
@@ -1881,7 +1886,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n================================================");
                     HOST_PRINT(commAll, "\n========== Start step length search " << equationTypeEM << " ======\n");
                     if (configEM.getAndCatch("steplengthType", 2) == 1) {
-                        std::vector<bool> invertForParametersEM = workflowEM.getInvertForParameters();
+                        invertForParametersEM = workflowEM.getInvertForParameters();
                         SLsearchEM.init();
                         for (unsigned i=0; i<invertForParametersEM.size(); i++) {
                             if (invertForParametersEM[i]) {
