@@ -1401,11 +1401,14 @@ int main(int argc, char *argv[])
                     } else {
                         gradientTypePerShotEM = 2;
                     }            
-                    if (decomposeTypeEM == 0 && workflow.iteration % (numSwitch * 2) == 0) {
-                        modelEM->resetReflectivity();
-                    }
+//                     if (decomposeTypeEM == 0 && workflow.iteration % (numSwitch * 2) == 0) {
+//                         modelEM->resetReflectivity();
+//                     }
                 } else {
                     gradientTypePerShotEM = gradientTypeEM;
+                }
+                if (gradientTypePerShotEM == 2) {
+                    modelEM->calcReflectivity(modelCoordinatesEM, *derivativesEM, configEM.get<ValueType>("DT"));
                 }
             
                 std::vector<bool> invertForParametersEM = workflowEM.getInvertForParameters();

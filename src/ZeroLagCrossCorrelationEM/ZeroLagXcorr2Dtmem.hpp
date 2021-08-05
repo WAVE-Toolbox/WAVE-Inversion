@@ -57,10 +57,14 @@ namespace KITGPI
             /* required wavefields */
             using ZeroLagXcorrEM<ValueType>::xcorrSigmaEM;
             using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEM;
+            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMstep;
+            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMstep;
             
             /* non required wavefields */
             using ZeroLagXcorrEM<ValueType>::xcorrRSigmaEM;
             using ZeroLagXcorrEM<ValueType>::xcorrREpsilonEM;
+            using ZeroLagXcorrEM<ValueType>::xcorrRSigmaEMstep;
+            using ZeroLagXcorrEM<ValueType>::xcorrREpsilonEMstep;
             
             std::string type;
         };

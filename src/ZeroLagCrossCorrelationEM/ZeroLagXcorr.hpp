@@ -73,6 +73,10 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradientEM
             scai::lama::DenseVector<ValueType> xcorrRSigmaEM; //!< correlated Wavefields for the rSigma gradientEM
             scai::lama::DenseVector<ValueType> xcorrREpsilonEM;    //!< correlated Wavefields for the rEpsilonEM gradientEM
+            scai::lama::DenseVector<ValueType> xcorrSigmaEMstep; //!< correlated Wavefields for the sigma gradientEM
+            scai::lama::DenseVector<ValueType> xcorrEpsilonEMstep; //!< correlated Wavefields for the epsilon gradientEM
+            scai::lama::DenseVector<ValueType> xcorrRSigmaEMstep; //!< correlated Wavefields for the rSigma gradientEM
+            scai::lama::DenseVector<ValueType> xcorrREpsilonEMstep;    //!< correlated Wavefields for the rEpsilonEM gradientEM
         };
     }
 }

@@ -45,10 +45,15 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::get
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename + type, t);
+        this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEMstep", filename + type, t);
+    }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+    {
         this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename + type, t);
+        this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEMstep", filename + type, t);
+    }
 }
 
 /*! \brief Set all wavefields to zero.
@@ -75,58 +80,52 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Wor
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, scai::IndexType gradientType, scai::IndexType decomposeType)
 {
-    //temporary wavefield allocated for every timestep (might be inefficient)
-    lama::DenseVector<ValueType> temp;    
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         if (gradientType == 0 || decomposeType == 0) {   
             // Born kernel or FWI kernel
-            temp = adjointWavefield.getRefEZ();
-            temp *= forwardWavefield.getRefEZ();
-            xcorrSigmaEM += temp;           
+            xcorrSigmaEMstep = adjointWavefield.getRefEZ();
+            xcorrSigmaEMstep *= forwardWavefield.getRefEZ();
+            xcorrSigmaEM += xcorrSigmaEMstep;           
         } else if (gradientType == 1 && decomposeType == 1) {    
             // migration kernel using up/down-going wavefields
-            temp = adjointWavefield.getRefEZdown();
-            temp *= forwardWavefield.getRefEZdown();
-            xcorrSigmaEM += temp;           
-            temp = adjointWavefield.getRefEZup();
-            temp *= forwardWavefield.getRefEZup();
-            xcorrSigmaEM += temp;      
+            xcorrSigmaEMstep = adjointWavefield.getRefEZdown();
+            xcorrSigmaEMstep *= forwardWavefield.getRefEZdown();
+            xcorrSigmaEM += xcorrSigmaEMstep;           
+            xcorrSigmaEMstep = adjointWavefield.getRefEZup();
+            xcorrSigmaEMstep *= forwardWavefield.getRefEZup();
+            xcorrSigmaEM += xcorrSigmaEMstep;      
         } else if (gradientType == 2 && decomposeType == 1) {    
             // tomographic kernel using up/down-going wavefields
-            temp = adjointWavefield.getRefEZdown();
-            temp *= forwardWavefield.getRefEZup();
-            xcorrSigmaEM += temp;           
-            temp = adjointWavefield.getRefEZup();
-            temp *= forwardWavefield.getRefEZdown();
-            xcorrSigmaEM += temp;           
+            xcorrSigmaEMstep = adjointWavefield.getRefEZdown();
+            xcorrSigmaEMstep *= forwardWavefield.getRefEZup();
+            xcorrSigmaEM += xcorrSigmaEMstep;           
+            xcorrSigmaEMstep = adjointWavefield.getRefEZup();
+            xcorrSigmaEMstep *= forwardWavefield.getRefEZdown();
+            xcorrSigmaEM += xcorrSigmaEMstep;           
         }
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         if (gradientType == 0 || decomposeType == 0) {   
             // Born kernel or FWI kernel
-            temp = adjointWavefield.getRefEZ();
-            temp *= forwardWavefieldDerivative.getRefEZ();
-            xcorrEpsilonEM += temp;
+            xcorrEpsilonEMstep = adjointWavefield.getRefEZ();
+            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZ();
+            xcorrEpsilonEM += xcorrEpsilonEMstep;
         } else if (gradientType == 1 && decomposeType == 1) {    
-            // migration kernel using up/down-going wavefields
-            lama::DenseVector<ValueType> temp2;    
-            temp = adjointWavefield.getRefEZdown();
-            temp *= forwardWavefieldDerivative.getRefEZdown();
-            xcorrEpsilonEM += temp;           
-            temp2 = adjointWavefield.getRefEZup();
-            temp2 *= forwardWavefieldDerivative.getRefEZup();
-//             temp2 *= temp.maxNorm() / temp2.maxNorm();
-            xcorrEpsilonEM += temp2;      
+            // migration kernel using up/down-going wavefields   
+            xcorrEpsilonEMstep = adjointWavefield.getRefEZdown();
+            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZdown();
+            xcorrEpsilonEM += xcorrEpsilonEMstep;           
+            xcorrEpsilonEMstep = adjointWavefield.getRefEZup();
+            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZup();
+            xcorrEpsilonEM += xcorrEpsilonEMstep;      
         } else if (gradientType == 2 && decomposeType == 1) {    
             // tomographic kernel using up/down-going wavefields
-            lama::DenseVector<ValueType> temp2;    
-            temp = adjointWavefield.getRefEZdown();
-            temp *= forwardWavefieldDerivative.getRefEZup();
-            xcorrEpsilonEM += temp;           
-            temp2 = adjointWavefield.getRefEZup();
-            temp2 *= forwardWavefieldDerivative.getRefEZdown();
-//             temp2 *= temp.maxNorm() / temp2.maxNorm();
-            xcorrEpsilonEM += temp2;      
+            xcorrEpsilonEMstep = adjointWavefield.getRefEZdown();
+            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZup();
+            xcorrEpsilonEM += xcorrEpsilonEMstep;           
+            xcorrEpsilonEMstep = adjointWavefield.getRefEZup();
+            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZdown();
+            xcorrEpsilonEM += xcorrEpsilonEMstep;      
         }
     }
 }
