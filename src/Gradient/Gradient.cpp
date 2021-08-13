@@ -505,6 +505,30 @@ void KITGPI::Gradient::Gradient<ValueType>::setSaturation(scai::lama::Vector<Val
     saturation = setSaturation;
 }
 
+/*! \brief Get const reference to reflectivity
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getReflectivity()
+{
+    return (reflectivity);
+}
+
+/*! \brief Get const reference to reflectivity
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::Gradient<ValueType>::getReflectivity() const
+{
+    return (reflectivity);
+}
+
+/*! \brief Set reflectivity
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Gradient<ValueType>::setReflectivity(scai::lama::Vector<ValueType> const &setReflectivity)
+{
+    reflectivity = setReflectivity;
+}
+
 /*! \brief Get parameter normalizeGradient
  */
 template <typename ValueType>

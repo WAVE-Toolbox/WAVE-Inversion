@@ -35,7 +35,7 @@ namespace KITGPI
 
             void resetXcorr(KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
 
-            void update(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, scai::IndexType gradientType, scai::IndexType decomposeType) override;
+            void update(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
             void updateHessianVectorProduct(Wavefields::WavefieldsEM<ValueType> &forwardWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &forwardWavefield, Wavefields::WavefieldsEM<ValueType> &adjointWavefieldDerivative, Wavefields::WavefieldsEM<ValueType> &adjointWavefield, Wavefields::WavefieldsEM<ValueType> &forwardWavefield2ndOrder, Wavefields::WavefieldsEM<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
             int getNumDimension() const;
             std::string getEquationType() const;
@@ -53,10 +53,20 @@ namespace KITGPI
               
             using ZeroLagXcorrEM<ValueType>::numDimension;
             using ZeroLagXcorrEM<ValueType>::equationType;
+            using ZeroLagXcorrEM<ValueType>::gradientType;
+            using ZeroLagXcorrEM<ValueType>::decomposeType;
             
             /* required wavefields */
             using ZeroLagXcorrEM<ValueType>::xcorrSigmaEM;
             using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEM;
+            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSuRu;
+            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSdRd;
+            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSuRd;
+            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSdRu;
+            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSuRu;
+            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSdRd;
+            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSuRd;
+            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSdRu;
             using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMstep;
             using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMstep;
             

@@ -12,7 +12,7 @@ template <typename ValueType>
 KITGPI::Gradient::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     equationType = "viscoelastic";
-    init(ctx, dist, 0.0, 0.0, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0);
 }
 
 /*! \brief Initialisation with zeros
@@ -23,7 +23,7 @@ KITGPI::Gradient::Viscoelastic<ValueType>::Viscoelastic(scai::hmemo::ContextPtr 
 template <typename ValueType>
 void KITGPI::Gradient::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist, 0.0, 0.0, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0, 0.0);
 }
 
 /*! \brief Initialisation that is generating a homogeneous model
@@ -36,13 +36,13 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx
  \param rho Density given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const, ValueType porosity_const, ValueType saturation_const)
+void KITGPI::Gradient::Viscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityP_const, ValueType velocityS_const, ValueType rho_const)
 {
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(velocityS, ctx, dist, velocityS_const);
     this->initParameterisation(density, ctx, dist, rho_const);
-    this->initParameterisation(porosity, ctx, dist, porosity_const);
-    this->initParameterisation(saturation, ctx, dist, saturation_const);
+    this->initParameterisation(porosity, ctx, dist, 0.0);
+    this->initParameterisation(saturation, ctx, dist, 0.0);
 }
 
 //! \brief Copy constructor
@@ -514,7 +514,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::sumGradientPerShot(KITGPI::Model
 template <typename ValueType>
 void KITGPI::Gradient::Viscoelastic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
-    ValueType maxValue = 0;      
+    ValueType maxValue = 1;      
     
     IndexType scaleGradient = config.get<IndexType>("scaleGradient");
     if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {

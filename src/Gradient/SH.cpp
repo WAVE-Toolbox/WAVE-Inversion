@@ -12,7 +12,7 @@ template <typename ValueType>
 KITGPI::Gradient::SH<ValueType>::SH(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
     equationType = "sh";
-    init(ctx, dist, 0.0, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0);
 }
 
 /*! \brief Initialisation with zeros
@@ -23,7 +23,7 @@ KITGPI::Gradient::SH<ValueType>::SH(scai::hmemo::ContextPtr ctx, scai::dmemo::Di
 template <typename ValueType>
 void KITGPI::Gradient::SH<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, dist, 0.0, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0);
 }
 
 /*! \brief Initialisation that is generating a homogeneous model
@@ -35,12 +35,12 @@ void KITGPI::Gradient::SH<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dm
  \param rho_const Density given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::SH<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityS_const, ValueType rho_const, ValueType porosity_const, ValueType saturation_const)
+void KITGPI::Gradient::SH<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityS_const, ValueType rho_const)
 {
     this->initParameterisation(velocityS, ctx, dist, velocityS_const);
     this->initParameterisation(density, ctx, dist, rho_const);
-    this->initParameterisation(porosity, ctx, dist, porosity_const);
-    this->initParameterisation(saturation, ctx, dist, saturation_const);
+    this->initParameterisation(porosity, ctx, dist, 0.0);
+    this->initParameterisation(saturation, ctx, dist, 0.0);
 }
 
 //! \brief Copy constructor
@@ -468,7 +468,7 @@ void KITGPI::Gradient::SH<ValueType>::sumGradientPerShot(KITGPI::Modelparameter:
 template <typename ValueType>
 void KITGPI::Gradient::SH<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {    
-    ValueType maxValue = 0;      
+    ValueType maxValue = 1;      
     
     IndexType scaleGradient = config.get<IndexType>("scaleGradient");    
     if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {

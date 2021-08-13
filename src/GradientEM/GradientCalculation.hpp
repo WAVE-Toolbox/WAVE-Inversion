@@ -9,13 +9,13 @@
 #include "GradientFactory.hpp"
 #include "../ZeroLagCrossCorrelationEM/ZeroLagXcorrFactory.hpp"
 #include "../Misfit/Misfit.hpp"
+#include "../Misfit/MisfitFactory.hpp"
 #include "../Preconditioning/EnergyPreconditioning.hpp"
 #include "../Preconditioning/SourceReceiverTaper.hpp"
 #include <AcquisitionEM/Receivers.hpp>
 #include <AcquisitionEM/Sources.hpp>
 #include <Configuration/Configuration.hpp>
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
-#include <ForwardSolverEM/SourceReceiverImpl/SourceReceiverImpl.hpp>
 #include <ForwardSolverEM/SourceReceiverImpl/SourceReceiverImplFactory.hpp>
 #include <ForwardSolverEM/ForwardSolver.hpp>
 #include <ModelparameterEM/ModelparameterFactory.hpp>

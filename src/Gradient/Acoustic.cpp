@@ -41,6 +41,9 @@ void KITGPI::Gradient::Acoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, sc
 {
     this->initParameterisation(velocityP, ctx, dist, velocityP_const);
     this->initParameterisation(density, ctx, dist, rho_const);
+    this->initParameterisation(porosity, ctx, dist, 0.0);
+    this->initParameterisation(saturation, ctx, dist, 0.0);
+    this->initParameterisation(reflectivity, ctx, dist, 0.0);
 }
 
 //! \brief Copy constructor
@@ -50,6 +53,9 @@ KITGPI::Gradient::Acoustic<ValueType>::Acoustic(const Acoustic &rhs)
     equationType = rhs.equationType;
     velocityP = rhs.velocityP;
     density = rhs.density;
+    porosity = rhs.porosity;
+    saturation = rhs.saturation;
+    reflectivity = rhs.reflectivity;
 }
 
 /*! \brief Set all parameter to zero.
@@ -61,6 +67,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::resetGradient()
     this->resetParameter(density);
     this->resetParameter(porosity);
     this->resetParameter(saturation);
+    this->resetParameter(reflectivity);
 }
 /*! \brief Write gradient to an external file
  *
@@ -80,6 +87,20 @@ void KITGPI::Gradient::Acoustic<ValueType>::write(std::string filename, IndexTyp
         this->writeParameterisation(density, filenamedensity, fileFormat);
     }
     
+    if (workflow.getInvertForPorosity()) { 
+        std::string filenamePorosity = filename + ".porosity";
+        this->writeParameterisation(porosity, filenamePorosity, fileFormat);
+    }
+        
+    if (workflow.getInvertForSaturation()) { 
+        std::string filenameSaturation = filename + ".saturation";
+        this->writeParameterisation(saturation, filenameSaturation, fileFormat);
+    }
+    
+    if (workflow.getInvertForReflectivity()) { 
+        std::string filenameReflectivity = filename + ".reflectivity";
+        this->writeParameterisation(reflectivity, filenameReflectivity, fileFormat);
+    }
 };
 
 /*! \brief Get equationType (acoustic)
@@ -172,6 +193,8 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
         porosity *= rhs;
     if (workflowInner.getInvertForSaturation()) 
         saturation *= rhs;
+    if (workflowInner.getInvertForReflectivity()) 
+        reflectivity *= rhs;
 
     return *this;
 }
@@ -197,6 +220,9 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 {
     density += rhs.density;
     velocityP += rhs.velocityP;
+    porosity += rhs.porosity;
+    saturation += rhs.saturation;
+    reflectivity += rhs.reflectivity;
 
     return *this;
 }
@@ -222,6 +248,9 @@ KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::op
 {
     density -= rhs.density;
     velocityP -= rhs.velocityP;
+    porosity -= rhs.porosity;
+    saturation -= rhs.saturation;
+    reflectivity -= rhs.reflectivity;
     return *this;
 }
 
@@ -233,8 +262,11 @@ template <typename ValueType>
 KITGPI::Gradient::Acoustic<ValueType> &KITGPI::Gradient::Acoustic<ValueType>::operator=(KITGPI::Gradient::Acoustic<ValueType> const &rhs)
 {
     // why does rhs.density not work (density = protected)
-    velocityP = rhs.velocityP;
     density = rhs.density;
+    velocityP = rhs.velocityP;
+    porosity = rhs.porosity;
+    saturation = rhs.saturation;
+    reflectivity = rhs.reflectivity;
     return *this;
 }
 
@@ -247,6 +279,9 @@ void KITGPI::Gradient::Acoustic<ValueType>::assign(KITGPI::Gradient::Gradient<Va
 {
     density = rhs.getDensity();
     velocityP = rhs.getVelocityP();
+    porosity = rhs.getPorosity();
+    saturation = rhs.getSaturation();
+    reflectivity = rhs.getReflectivity();
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -256,9 +291,11 @@ void KITGPI::Gradient::Acoustic<ValueType>::assign(KITGPI::Gradient::Gradient<Va
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-
     density -= rhs.getDensity();
     velocityP -= rhs.getVelocityP();
+    porosity -= rhs.getPorosity();
+    saturation -= rhs.getSaturation();
+    reflectivity -= rhs.getReflectivity();
 }
 
 /*! \brief function for overloading += Operation (called in base class)
@@ -268,9 +305,11 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Gradient::Gradie
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-
     density += rhs.getDensity();
     velocityP += rhs.getVelocityP();
+    porosity += rhs.getPorosity();
+    saturation += rhs.getSaturation();
+    reflectivity += rhs.getReflectivity();
 }
 
 /*! \brief function for overloading *= Operation (called in base class)
@@ -288,6 +327,8 @@ void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(ValueType const &rhs)
         porosity *= rhs;
     if (workflowInner.getInvertForSaturation()) 
         saturation *= rhs;
+    if (workflowInner.getInvertForReflectivity()) 
+        reflectivity *= rhs;
 }
 
 /*! \brief function for overloading *= Operation (called in base class)
@@ -299,6 +340,9 @@ void KITGPI::Gradient::Acoustic<ValueType>::timesAssign(scai::lama::Vector<Value
 {
     density *= rhs;
     velocityP *= rhs;
+    porosity *= rhs;
+    saturation *= rhs;
+    reflectivity *= rhs;
 }
 
 /*! \brief function for overloading -= Operation (called in base class)
@@ -346,6 +390,10 @@ void KITGPI::Gradient::Acoustic<ValueType>::minusAssign(KITGPI::Modelparameter::
             lhs.setVelocityP(lambda);
         }
     }
+    if (workflowInner.getInvertForReflectivity()) {
+        temp = lhs.getReflectivity() - rhs.getReflectivity();
+        lhs.setReflectivity(temp); 
+    }
 }
 
 /*! \brief Function for summing the gradients of all shot domains
@@ -382,6 +430,18 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumShotDomain(scai::dmemo::Communica
     density.redistribute(singleDist);
     commInterShot->sumArray(density.getLocalValues());
     density.redistribute(dist);
+    
+    porosity.redistribute(singleDist);
+    commInterShot->sumArray(porosity.getLocalValues());
+    porosity.redistribute(dist);
+    
+    saturation.redistribute(singleDist);
+    commInterShot->sumArray(saturation.getLocalValues());
+    saturation.redistribute(dist);
+    
+    reflectivity.redistribute(singleDist);
+    commInterShot->sumArray(reflectivity.getLocalValues());
+    reflectivity.redistribute(dist);
 }
 
 /*! \brief If stream configuration is used, get a pershot model from the big model
@@ -425,6 +485,11 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumGradientPerShot(KITGPI::Modelpara
     temp *= recoverVector;
     saturation *= eraseVector;
     saturation += temp; //take over the values
+    
+    temp = recoverMatrix * gradientPerShot.getReflectivity(); //transform pershot into big model
+    temp *= recoverVector;
+    reflectivity *= eraseVector;
+    reflectivity += temp; //take over the values
 }
 
 /*! \brief function for scaling the gradients with the model parameter
@@ -434,70 +499,81 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumGradientPerShot(KITGPI::Modelpara
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
-    ValueType maxValue = 0;      
+    ValueType maxValue = 1;      
     
     IndexType scaleGradient = config.get<IndexType>("scaleGradient");
-    if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
-        if (scaleGradient == 1) {
-            if (model.getParameterisation() == 3) {
-                maxValue = model.getVelocityP().maxNorm();
-            } else if (model.getParameterisation() == 0) {
-                scai::lama::DenseVector<ValueType> lambda;
-                scai::lama::DenseVector<ValueType> mu;
-                lambda = scai::lama::pow(model.getVelocityP(), 2);
-                lambda *= model.getDensity();
-                mu = scai::lama::pow(model.getVelocityS(), 2);
-                mu *= model.getDensity();
-                lambda -= 2 * mu;
-                maxValue = lambda.maxNorm();
+    if (scaleGradient != 0) {
+        if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
+            if (scaleGradient == 1) {
+                if (model.getParameterisation() == 3) {
+                    maxValue = model.getVelocityP().maxNorm();
+                } else if (model.getParameterisation() == 0) {
+                    scai::lama::DenseVector<ValueType> lambda;
+                    scai::lama::DenseVector<ValueType> mu;
+                    lambda = scai::lama::pow(model.getVelocityP(), 2);
+                    lambda *= model.getDensity();
+                    mu = scai::lama::pow(model.getVelocityS(), 2);
+                    mu *= model.getDensity();
+                    lambda -= 2 * mu;
+                    maxValue = lambda.maxNorm();
+                }
+            } else if (scaleGradient == 2) {
+                if (model.getParameterisation() == 3) {
+                    maxValue = config.get<ValueType>("upperVPTh") - config.get<ValueType>("lowerVPTh");
+                } else if (model.getParameterisation() == 0) {
+                    ValueType lambdaMax;
+                    ValueType lambdaMin;
+                    lambdaMax = pow(config.get<ValueType>("upperVPTh"), 2);
+                    lambdaMax *= config.get<ValueType>("upperDensityTh");
+                    lambdaMin = pow(config.get<ValueType>("lowerVPTh"), 2);
+                    lambdaMin *= config.get<ValueType>("lowerDensityTh");
+                    maxValue = lambdaMax - lambdaMin;
+                }
             }
-        } else if (scaleGradient == 2) {
-            if (model.getParameterisation() == 3) {
-                maxValue = config.get<ValueType>("upperVPTh") - config.get<ValueType>("lowerVPTh");
-            } else if (model.getParameterisation() == 0) {
-                ValueType lambdaMax;
-                ValueType lambdaMin;
-                lambdaMax = pow(config.get<ValueType>("upperVPTh"), 2);
-                lambdaMax *= config.get<ValueType>("upperDensityTh");
-                lambdaMin = pow(config.get<ValueType>("lowerVPTh"), 2);
-                lambdaMin *= config.get<ValueType>("lowerDensityTh");
-                maxValue = lambdaMax - lambdaMin;
-            }
+            velocityP *= 1 / velocityP.maxNorm() * maxValue;
         }
-        velocityP *= 1 / velocityP.maxNorm() * maxValue;
-    }
-    
-    if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
-        if (model.getParameterisation() != 1 && model.getParameterisation() != 2) {
-            if (scaleGradient == 1) {
-                maxValue = model.getDensity().maxNorm();
-            } else if (scaleGradient == 2) {
-                maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
+        
+        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
+            if (model.getParameterisation() != 1 && model.getParameterisation() != 2) {
+                if (scaleGradient == 1) {
+                    maxValue = model.getDensity().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
+                }
             }
+            density *= 1 / density.maxNorm() * maxValue;
+        }    
+        
+        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {
+            if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+                if (scaleGradient == 1) {
+                    maxValue = model.getPorosity().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = config.getAndCatch("upperPorosityTh", 1.0) - config.getAndCatch("lowerPorosityTh", 0.0);
+                }
+            }        
+            porosity *= 1 / porosity.maxNorm() * maxValue;
+        }    
+        
+        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) { 
+            if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+                if (scaleGradient == 1) {
+                    maxValue = model.getSaturation().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = config.getAndCatch("upperSaturationTh", 1.0) - config.getAndCatch("lowerSaturationTh", 0.0);
+                }
+            }              
+            saturation *= 1 / saturation.maxNorm() * maxValue;        
         }
-        density *= 1 / density.maxNorm() * maxValue;
-    }    
-    
-    if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {
-        if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+            
+        if (workflow.getInvertForReflectivity() && reflectivity.maxNorm() != 0) { 
             if (scaleGradient == 1) {
-                maxValue = model.getPorosity().maxNorm();
+                maxValue = model.getReflectivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = config.getAndCatch("upperPorosityTh", 1.0) - config.getAndCatch("lowerPorosityTh", 0.0);
-            }
-        }        
-        porosity *= 1 / porosity.maxNorm() * maxValue;
-    }    
-    
-    if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) { 
-        if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
-            if (scaleGradient == 1) {
-                maxValue = model.getSaturation().maxNorm();
-            } else if (scaleGradient == 2) {
-                maxValue = config.getAndCatch("upperSaturationTh", 1.0) - config.getAndCatch("lowerSaturationTh", 0.0);
-            }
-        }              
-        saturation *= 1 / saturation.maxNorm() * maxValue;        
+                maxValue = config.getAndCatch("upperReflectivityEMrTh", 1.0) - config.getAndCatch("lowerReflectivityEMrTh", -1.0);
+            }      
+            reflectivity *= 1 / reflectivity.maxNorm() * maxValue;      
+        }
     }
 }
 
@@ -513,6 +589,14 @@ void KITGPI::Gradient::Acoustic<ValueType>::normalize()
         gradientMax = density.maxNorm();
         if (gradientMax != 0)
             density *= 1 / gradientMax;
+        if (gradientMax != 0)
+            porosity *= 1 / gradientMax;
+        gradientMax = saturation.maxNorm();
+        if (gradientMax != 0)
+            saturation *= 1 / gradientMax;
+        gradientMax = reflectivity.maxNorm();
+        if (gradientMax != 0)
+            reflectivity *= 1 / gradientMax;
     }
 }
 
@@ -622,6 +706,13 @@ void KITGPI::Gradient::Acoustic<ValueType>::estimateParameter(KITGPI::ZeroLagXco
     } else {
         this->initParameterisation(saturation, ctx, dist, 0.0);
     }   
+    
+    if (workflow.getInvertForReflectivity()) {
+        reflectivity = correlatedWavefields.getXcorrLambda();
+        reflectivity *= -1;
+    } else {
+        this->initParameterisation(reflectivity, ctx, dist, 0.0);
+    }  
 }
 
 template <typename ValueType>
@@ -651,7 +742,36 @@ void KITGPI::Gradient::Acoustic<ValueType>::calcStabilizingFunctionalGradient(KI
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
 {
+    scai::lama::DenseVector<ValueType> density_temp;
+    scai::lama::DenseVector<ValueType> velocityP_temp;
+    scai::lama::DenseVector<ValueType> porosity_temp;
+    scai::lama::DenseVector<ValueType> saturation_temp;
+    scai::lama::DenseVector<ValueType> reflectivity_temp;
+    
+    density_temp = this->getDensity();
+    velocityP_temp = this->getVelocityP();
+    porosity_temp = this->getPorosity();
+    saturation_temp = this->getSaturation();
+    reflectivity_temp = this->getReflectivity();
 
+    scai::IndexType NZ = config.get<IndexType>("NZ");
+    if (NZ == 1) {
+        scai::IndexType NY = config.get<IndexType>("NY");
+        scai::IndexType NX = porosity_temp.size() / NY;
+        scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+            
+        KITGPI::Common::applyMedianFilterTo2DVector(density_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityP_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(reflectivity_temp, NX, NY, spatialFDorder);
+        
+        this->setDensity(density_temp);
+        this->setVelocityP(velocityP_temp);
+        this->setPorosity(porosity_temp);    
+        this->setSaturation(saturation_temp);
+        this->setReflectivity(reflectivity_temp);
+    }
 }
 
 template class KITGPI::Gradient::Acoustic<double>;

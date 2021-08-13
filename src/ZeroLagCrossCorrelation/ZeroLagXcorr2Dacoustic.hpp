@@ -55,10 +55,22 @@ namespace KITGPI
               
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType;
+            using ZeroLagXcorr<ValueType>::gradientType;
+            using ZeroLagXcorr<ValueType>::decomposeType;
             
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrRho;
             using ZeroLagXcorr<ValueType>::xcorrLambda;
+            using ZeroLagXcorr<ValueType>::xcorrRhostep;
+            using ZeroLagXcorr<ValueType>::xcorrLambdastep;
+            using ZeroLagXcorr<ValueType>::xcorrRhoSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrRhoSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrRhoSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrRhoSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrLambdaSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrLambdaSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrLambdaSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrLambdaSdRu;
             /* non required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrMuA;
             using ZeroLagXcorr<ValueType>::xcorrMuB;

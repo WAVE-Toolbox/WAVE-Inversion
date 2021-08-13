@@ -89,6 +89,7 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
     HOST_PRINT(comm, "invertForPorosity = " << invertForPorosity << "\n");
     HOST_PRINT(comm, "invertForSaturation = " << invertForSaturation << "\n");
+    HOST_PRINT(comm, "invertForReflectivity = " << invertForReflectivity << "\n");
     HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
     HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
     HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");
@@ -136,12 +137,20 @@ bool KITGPI::Workflow::Workflow<ValueType>::getInvertForSaturation() const
     return invertForSaturation;
 }
 
+/*! \brief Return copy of invertForReflectivity
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForReflectivity() const
+{
+    return invertForReflectivity;
+}
+
 /*! \brief Return the vector of the inverted parameters
  */
 template <typename ValueType>
 std::vector<bool> KITGPI::Workflow::Workflow<ValueType>::getInvertForParameters() const
 {
-    std::vector<bool> invertForParameters{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation};
+    std::vector<bool> invertForParameters{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation, invertForReflectivity};
     return invertForParameters;
 }
 
@@ -155,6 +164,7 @@ void KITGPI::Workflow::Workflow<ValueType>::setInvertForParameters(std::vector<b
     invertForDensity = setInvertForParameters[2];
     invertForPorosity = setInvertForParameters[3];
     invertForSaturation = setInvertForParameters[4];
+    invertForReflectivity = setInvertForParameters[5];
 }
 
 /*! \brief Return copy of relativeMisfitChange

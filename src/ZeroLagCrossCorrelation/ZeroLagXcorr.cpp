@@ -11,6 +11,24 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::resetWavefield(scai::lama::D
     vector = 0;
 }
 
+/*! \brief set decomposeType
+ \param setDecomposeType setDecomposeType
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::setDecomposeType(scai::IndexType setDecomposeType)
+{
+    decomposeType = setDecomposeType;
+}
+
+/*! \brief set gradientType
+ \param setGradientType setGradientType
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::setGradientType(scai::IndexType setGradientType)
+{
+    gradientType = setGradientType;
+}
+
 /*! \brief Intitialisation of a single wavefield vector.
  *
  * This method will set the context, allocate the the wavefield and set the field to zero.

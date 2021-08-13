@@ -79,10 +79,10 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             lastConjugateGradientSaturation = gradient.getSaturation();
         }  
         
-    /*    if(workflow.getInvertForReflectivity()){
+        if(workflow.getInvertForReflectivity()){
             lastGradientReflectivity = gradient.getReflectivity();
             lastConjugateGradientReflectivity = gradient.getReflectivity();
-        }   */      
+        }         
     } else {    
         if(workflow.getInvertForVp()){
             scai::lama::DenseVector<ValueType> gradientVp; 
@@ -149,18 +149,18 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
             gradient.setSaturation(conjugateGradientSaturation);
         } 
         
-//         if(workflow.getInvertForReflectivity()){
-//             scai::lama::DenseVector<ValueType> gradientReflectivity;
-//             gradientReflectivity = gradient.getReflectivity();
-//             scai::lama::DenseVector<ValueType> conjugateGradientReflectivity;
-//             
-//             this->calcConjugateGradient(conjugateGradientReflectivity, gradientReflectivity, lastConjugateGradientReflectivity, lastGradientReflectivity);
-//             
-//             lastConjugateGradientReflectivity = conjugateGradientReflectivity;
-//             lastGradientReflectivity = gradientReflectivity;
-//             
-//             gradient.setReflectivity(conjugateGradientReflectivity);
-//         } 
+        if(workflow.getInvertForReflectivity()){
+            scai::lama::DenseVector<ValueType> gradientReflectivity;
+            gradientReflectivity = gradient.getReflectivity();
+            scai::lama::DenseVector<ValueType> conjugateGradientReflectivity;
+            
+            this->calcConjugateGradient(conjugateGradientReflectivity, gradientReflectivity, lastConjugateGradientReflectivity, lastGradientReflectivity);
+            
+            lastConjugateGradientReflectivity = conjugateGradientReflectivity;
+            lastGradientReflectivity = gradientReflectivity;
+            
+            gradient.setReflectivity(conjugateGradientReflectivity);
+        } 
     }
     
     gradient.scale(model, workflow, config);   

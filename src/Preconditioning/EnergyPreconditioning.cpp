@@ -41,48 +41,49 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldBack, ValueType DT)
 {
-            
-    if(equationType.compare("sh") != 0){
-        wavefieldVX = wavefield.getRefVX();
-        wavefieldVX *= wavefieldVX;
-        wavefieldVX *= DT;
-        approxHessian += wavefieldVX;  
-        if (useEnergyPreconditioning == 2) {
-            wavefieldVX = wavefieldBack.getRefVX();
-            wavefieldVX *= wavefield.getRefVX().maxNorm() / wavefieldVX.maxNorm();
+    if (useEnergyPreconditioning != 0) {               
+        if(equationType.compare("sh") != 0){
+            wavefieldVX = wavefield.getRefVX();
             wavefieldVX *= wavefieldVX;
             wavefieldVX *= DT;
-            approxHessian += wavefieldVX; 
-        }      
-    }
-        
-    if(equationType.compare("sh") != 0){
-        wavefieldVY = wavefield.getRefVY();
-        wavefieldVY *= wavefieldVY;
-        wavefieldVY *= DT;
-        approxHessian += wavefieldVY;   
-        if (useEnergyPreconditioning == 2) {
-            wavefieldVY = wavefieldBack.getRefVY();
-            wavefieldVY *= wavefield.getRefVY().maxNorm() / wavefieldVY.maxNorm();
+            approxHessian += wavefieldVX;  
+            if (useEnergyPreconditioning == 2) {
+                wavefieldVX = wavefieldBack.getRefVX();
+                wavefieldVX *= wavefield.getRefVX().maxNorm() / wavefieldVX.maxNorm();
+                wavefieldVX *= wavefieldVX;
+                wavefieldVX *= DT;
+                approxHessian += wavefieldVX; 
+            }      
+        }
+            
+        if(equationType.compare("sh") != 0){
+            wavefieldVY = wavefield.getRefVY();
             wavefieldVY *= wavefieldVY;
             wavefieldVY *= DT;
-            approxHessian += wavefieldVY;
-        }             
-    }
-    
-    if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0){
-        wavefieldVZ = wavefield.getRefVZ();
-        wavefieldVZ *= wavefieldVZ;
-        wavefieldVZ *= DT;
-        approxHessian += wavefieldVZ;  
-        if (useEnergyPreconditioning == 2) {
-            wavefieldVZ = wavefieldBack.getRefVZ();
-            wavefieldVZ *= wavefield.getRefVZ().maxNorm() / wavefieldVZ.maxNorm();
+            approxHessian += wavefieldVY;   
+            if (useEnergyPreconditioning == 2) {
+                wavefieldVY = wavefieldBack.getRefVY();
+                wavefieldVY *= wavefield.getRefVY().maxNorm() / wavefieldVY.maxNorm();
+                wavefieldVY *= wavefieldVY;
+                wavefieldVY *= DT;
+                approxHessian += wavefieldVY;
+            }             
+        }
+        
+        if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0){
+            wavefieldVZ = wavefield.getRefVZ();
             wavefieldVZ *= wavefieldVZ;
             wavefieldVZ *= DT;
-            approxHessian += wavefieldVZ; 
-        }                   
-    }    
+            approxHessian += wavefieldVZ;  
+            if (useEnergyPreconditioning == 2) {
+                wavefieldVZ = wavefieldBack.getRefVZ();
+                wavefieldVZ *= wavefield.getRefVZ().maxNorm() / wavefieldVZ.maxNorm();
+                wavefieldVZ *= wavefieldVZ;
+                wavefieldVZ *= DT;
+                approxHessian += wavefieldVZ; 
+            }                   
+        }    
+    }
 }
 
 /*! \brief Apply the approximation of the diagonal of the inverse of the Hessian for one shot
@@ -94,19 +95,20 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat)
 {
-//     sqrt(approxHessian) missing because of |u_i| (see IFOS2D)?
-    
-    /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
-    approxHessian += epsilonHessian*approxHessian.maxNorm(); 
-    approxHessian *= 1 / approxHessian.maxNorm(); 
-    
-    if(saveApproxHessian){
-        IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);        
-    }
+    if (useEnergyPreconditioning != 0) {  
+    //     sqrt(approxHessian) missing because of |u_i| (see IFOS2D)?
         
-    approxHessian = 1 / approxHessian;
-    gradientPerShot *= approxHessian;    // overload operator /= in gradient-class    
-    
+        /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        gradientPerShot *= approxHessian;    // overload operator /= in gradient-class    
+    }
 }
 
 /*! \brief Calculate the approximation of the diagonal of the inverse of the Hessian for one shot
@@ -118,48 +120,49 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefield, KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefieldBack, ValueType DT)
 {
-            
-    if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
-        wavefieldEX = wavefield.getRefEX();
-        wavefieldEX *= wavefieldEX;
-        wavefieldEX *= DT;
-        approxHessian += wavefieldEX;  
-        if (useEnergyPreconditioning == 2) {
-            wavefieldEX = wavefieldBack.getRefEX();
-            wavefieldEX *= wavefield.getRefEX().maxNorm() / wavefieldEX.maxNorm();
+    if (useEnergyPreconditioning != 0) {            
+        if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
+            wavefieldEX = wavefield.getRefEX();
             wavefieldEX *= wavefieldEX;
             wavefieldEX *= DT;
-            approxHessian += wavefieldEX; 
+            approxHessian += wavefieldEX;  
+            if (useEnergyPreconditioning == 2) {
+                wavefieldEX = wavefieldBack.getRefEX();
+                wavefieldEX *= wavefield.getRefEX().maxNorm() / wavefieldEX.maxNorm();
+                wavefieldEX *= wavefieldEX;
+                wavefieldEX *= DT;
+                approxHessian += wavefieldEX; 
+            }
         }
-    }
-        
-    if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
-        wavefieldEY = wavefield.getRefEY();
-        wavefieldEY *= wavefieldEY;
-        wavefieldEY *= DT;
-        approxHessian += wavefieldEY;
-        if (useEnergyPreconditioning == 2) {
-            wavefieldEY = wavefieldBack.getRefEY();
-            wavefieldEY *= wavefield.getRefEY().maxNorm() / wavefieldEY.maxNorm();
+            
+        if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
+            wavefieldEY = wavefield.getRefEY();
             wavefieldEY *= wavefieldEY;
             wavefieldEY *= DT;
             approxHessian += wavefieldEY;
-        }        
-    }
-    
-    if(dimension.compare("3d") == 0 || equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
-        wavefieldEZ = wavefield.getRefEZ();
-        wavefieldEZ *= wavefieldEZ;
-        wavefieldEZ *= DT;
-        approxHessian += wavefieldEZ;    
-        if (useEnergyPreconditioning == 2) {
-            wavefieldEZ = wavefieldBack.getRefEZ();
-            wavefieldEZ *= wavefield.getRefEZ().maxNorm() / wavefieldEZ.maxNorm();
+            if (useEnergyPreconditioning == 2) {
+                wavefieldEY = wavefieldBack.getRefEY();
+                wavefieldEY *= wavefield.getRefEY().maxNorm() / wavefieldEY.maxNorm();
+                wavefieldEY *= wavefieldEY;
+                wavefieldEY *= DT;
+                approxHessian += wavefieldEY;
+            }        
+        }
+        
+        if(dimension.compare("3d") == 0 || equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
+            wavefieldEZ = wavefield.getRefEZ();
             wavefieldEZ *= wavefieldEZ;
             wavefieldEZ *= DT;
-            approxHessian += wavefieldEZ; 
-        }            
-    }    
+            approxHessian += wavefieldEZ;    
+            if (useEnergyPreconditioning == 2) {
+                wavefieldEZ = wavefieldBack.getRefEZ();
+                wavefieldEZ *= wavefield.getRefEZ().maxNorm() / wavefieldEZ.maxNorm();
+                wavefieldEZ *= wavefieldEZ;
+                wavefieldEZ *= DT;
+                approxHessian += wavefieldEZ; 
+            }            
+        } 
+    }
 }
 
 /*! \brief Apply the approximation of the diagonal of the inverse of the Hessian for one shot
@@ -171,18 +174,19 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientPerShotEM, scai::IndexType shotNumber, scai::IndexType fileFormat)
 {
-//     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
-    
-    /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
-    approxHessian += epsilonHessian*approxHessian.maxNorm(); 
-    approxHessian *= 1 / approxHessian.maxNorm(); 
-    
-    if(saveApproxHessian){
-        KITGPI::IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);}
-        
-    approxHessian = 1 / approxHessian;
-    gradientPerShotEM *= approxHessian;    // overload operator /= in gradient-class    
-    
+    if (useEnergyPreconditioning != 0) {  
+        //     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
+            
+            /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
+            approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+            approxHessian *= 1 / approxHessian.maxNorm(); 
+            
+            if(saveApproxHessian){
+                KITGPI::IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);}
+                
+            approxHessian = 1 / approxHessian;
+            gradientPerShotEM *= approxHessian;    // overload operator /= in gradient-class    
+    }
 }
 
 template <typename ValueType>

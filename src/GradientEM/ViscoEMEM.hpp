@@ -39,32 +39,32 @@ namespace KITGPI
         {
           public:
             //! Default constructor.
-            ViscoEMEM() { equationTypeEM = "viscoemem"; };
+            ViscoEMEM() { equationType = "viscoemem"; };
 
             //! Destructor, releases all allocated resources.
             ~ViscoEMEM(){};
 
-            explicit ViscoEMEM(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM);
+            explicit ViscoEMEM(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist);
 
             //! Copy Constructor.
             ViscoEMEM(const ViscoEMEM &rhs);
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType electricConductivity_const, ValueType dielectricPermittivity_const, ValueType tauElectricConductivity_const, ValueType tauDielectricPermittivity_const, ValueType porosity_const, ValueType saturation_const);
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType electricConductivity_const, ValueType dielectricPermittivity_const, ValueType tauElectricConductivity_const, ValueType tauDielectricPermittivity_const);
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
             void resetGradient();
 
-            void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) const override;
+            void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) const override;
 
             std::string getEquationType() const;
 
             /* Getter methods for not requiered parameters */
 
-            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, ValueType DT, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) override;
-            void applyMedianFilter(KITGPI::Configuration::Configuration configEM) override;
+            void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, ValueType DT, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
+            void applyMedianFilter(KITGPI::Configuration::Configuration config) override;
             
-            void calcStabilizingFunctionalGradient(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelPrioriEM, KITGPI::Configuration::Configuration configEM, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) override;
+            void calcStabilizingFunctionalGradient(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelPrioriEM, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
             
-            void scale(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Configuration::Configuration configEM) override;
+            void scale(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, KITGPI::Configuration::Configuration config) override;
             void normalize();
             
             /* Overloading Operators */
@@ -85,10 +85,10 @@ namespace KITGPI
 
             void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);        
             
-            void sumGradientPerShot(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
+            void sumGradientPerShot(KITGPI::Modelparameter::ModelparameterEM<ValueType> &model, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
             
           private:
-            using GradientEM<ValueType>::equationTypeEM;
+            using GradientEM<ValueType>::equationType;
 
             using GradientEM<ValueType>::electricConductivity;
             using GradientEM<ValueType>::dielectricPermittivity;

@@ -57,6 +57,8 @@ namespace KITGPI
             virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            void setDecomposeType(scai::IndexType setDecomposeType);
+            void setGradientType(scai::IndexType setGradientType);
 
           protected:
             void resetWavefield(scai::lama::DenseVector<ValueType> &vector);
@@ -72,6 +74,19 @@ namespace KITGPI
 
             scai::lama::DenseVector<ValueType> xcorrRho;    //!< correlated Wavefields for the rho gradient
             scai::lama::DenseVector<ValueType> xcorrLambda; //!< correlated Wavefields for the lambda gradient
+            scai::lama::DenseVector<ValueType> xcorrRhostep; 
+            scai::lama::DenseVector<ValueType> xcorrLambdastep;
+            scai::lama::DenseVector<ValueType> xcorrRhoSuRu; 
+            scai::lama::DenseVector<ValueType> xcorrRhoSdRd; 
+            scai::lama::DenseVector<ValueType> xcorrRhoSuRd;
+            scai::lama::DenseVector<ValueType> xcorrRhoSdRu; 
+            scai::lama::DenseVector<ValueType> xcorrLambdaSuRu; 
+            scai::lama::DenseVector<ValueType> xcorrLambdaSdRd;
+            scai::lama::DenseVector<ValueType> xcorrLambdaSuRd;
+            scai::lama::DenseVector<ValueType> xcorrLambdaSdRu;
+            
+            scai::IndexType decomposeType = 0;
+            scai::IndexType gradientType = 0;
         };
     }
 }

@@ -26,7 +26,10 @@ namespace KITGPI
             virtual ValueType calc(KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd) = 0; 
             
             virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;            
-            virtual void calcAdjointSources(KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSources, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;          
+            virtual void calcAdjointSources(KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSources, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;     
+            
+            void calcReflectSources(KITGPI::Acquisition::Receivers<ValueType> &sourcesReflect, scai::lama::DenseVector<ValueType> reflectivity, bool forward); 
+            void calcReflectSources(KITGPI::Acquisition::ReceiversEM<ValueType> &sourcesReflect, scai::lama::DenseVector<ValueType> reflectivity, bool forward);   
             
             scai::lama::Vector<ValueType> const &getModelDerivativeX();
             scai::lama::Vector<ValueType> const &getModelDerivativeY();

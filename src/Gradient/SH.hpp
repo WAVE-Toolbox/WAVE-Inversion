@@ -49,7 +49,7 @@ namespace KITGPI
             //! Copy Constructor.
             SH(const SH &rhs);
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityS_const, ValueType rho_const, ValueType porosity_const, ValueType saturation_const);
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType velocityS_const, ValueType rho_const);
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist) override;
 
             void resetGradient();

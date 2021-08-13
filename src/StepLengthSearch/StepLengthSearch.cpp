@@ -806,6 +806,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
                 solver.run(receivers, sources, *testmodelPerShot, wavefields, derivatives, tStep);
             }
         }
+        solver.resetCPML();
 
         // check wavefield and seismogram for NaNs or infinite values
         if ((commShot->any(!wavefields.isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
@@ -1052,6 +1053,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
                 solver.run(receivers, sources, *testmodelPerShot, wavefields, derivatives, tStep);
             }
         }
+        solver.resetCPML();
 
         // check wavefield and seismogram for NaNs or infinite values
         if ((commShot->any(!wavefields.isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break

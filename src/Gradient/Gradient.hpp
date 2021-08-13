@@ -101,6 +101,8 @@ namespace KITGPI
             virtual scai::lama::Vector<ValueType> const &getPorosity() const;
             virtual scai::lama::Vector<ValueType> const &getSaturation();
             virtual scai::lama::Vector<ValueType> const &getSaturation() const;
+            virtual scai::lama::Vector<ValueType> const &getReflectivity();
+            virtual scai::lama::Vector<ValueType> const &getReflectivity() const;
 
             virtual scai::IndexType getNumRelaxationMechanisms() const;
             virtual ValueType getRelaxationFrequency() const;
@@ -118,6 +120,7 @@ namespace KITGPI
 
             virtual void setPorosity(scai::lama::Vector<ValueType> const &setPorosity);
             virtual void setSaturation(scai::lama::Vector<ValueType> const &setSaturation);
+            virtual void setReflectivity(scai::lama::Vector<ValueType> const &setReflectivity); 
 
             void setNormalizeGradient(bool const &normGrad);
 
@@ -175,6 +178,7 @@ namespace KITGPI
 
             scai::lama::DenseVector<ValueType> porosity; //!< Vector storing porosity.
             scai::lama::DenseVector<ValueType> saturation; //!< Vector storing saturation
+            scai::lama::DenseVector<ValueType> reflectivity; //!< Vector storing reflectivity
 
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType value);
             void initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, scai::IndexType fileFormat);

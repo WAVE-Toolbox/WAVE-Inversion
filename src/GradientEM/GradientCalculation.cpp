@@ -25,7 +25,6 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
     wavefieldsTemp->init(ctx, dist);
 
     ZeroLagXcorr = KITGPI::ZeroLagXcorr::FactoryEM<ValueType>::Create(dimension, equationType);
-    ZeroLagXcorr->init(ctx, dist, workflow);
 }
 
 /*! \brief Initialitation of the boundary conditions
@@ -33,7 +32,7 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
  *
  \param solver Forward solver
  \param derivatives Derivatives matrices
- \param Receivers Receivers
+ \param receivers Receivers
  \param sources Sources 
  \param model Model for the finite-difference simulation
  \param gradient Gradient for simulations
@@ -66,14 +65,9 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     /* ------------------------------------------------------ */
     /*                Backward Modelling                      */
     /* ------------------------------------------------------ */
-
-    bool isSeismic = Common::checkEquationType<ValueType>(equationType);
-    energyPrecond.init(dist, config, isSeismic);
-    wavefields->resetWavefields();
-    ZeroLagXcorr->resetXcorr(workflow);
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
     IndexType decomposeType = config.getAndCatch("decomposeType", 0); 
-    IndexType snapTypeTemp = 0;
+    IndexType snapType = config.getAndCatch("snapType", 0);
     IndexType numSwitch = 3; 
     if (gradientType == 3) {
         if ((workflow.iteration / numSwitch) % 2 == 0) {
@@ -83,33 +77,37 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         }                
     } 
     if (decomposeType != 0) {
-        snapTypeTemp = decomposeType + 3;
+        snapType = decomposeType + 3;
     }
-    
-    std::vector<wavefieldPtr> wavefieldrecordAdjointReflect;  
-    scai::dmemo::DistributionPtr distInversion;
-    if(equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
-        distInversion = wavefieldrecord[0]->getRefEZ().getDistributionPtr();
-    } else {
-        distInversion = wavefieldrecord[0]->getRefEX().getDistributionPtr();        
-    }  
-    for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
-        if (tStep % dtinversion == 0) {
-            wavefieldPtr wavefieldsInversion = Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
-            wavefieldsInversion->init(ctx, distInversion);
-            wavefieldrecordAdjointReflect.push_back(wavefieldsInversion);
-        }
-    }
-    
-    Acquisition::ReceiversEM<ValueType> adjointSourcesReflect;            
-    if (gradientType > 1 && decomposeType == 0) { 
-        adjointSourcesReflect.initWholeSpace(config, modelCoordinates, ctx, dist);
-    }     
-    typename ForwardSolver::SourceReceiverImpl::SourceReceiverImplEM<ValueType>::SourceReceiverImplPtr SourceReceiverReflect(ForwardSolver::SourceReceiverImpl::FactoryEM<ValueType>::Create(dimension, equationType, sources, adjointSourcesReflect, *wavefieldsTemp));
+    bool isSeismic = Common::checkEquationType<ValueType>(equationType);
+    energyPrecond.init(dist, config, isSeismic);
+    wavefields->resetWavefields();
+    ZeroLagXcorr->setDecomposeType(decomposeType);
+    ZeroLagXcorr->setGradientType(gradientType);
+    ZeroLagXcorr->init(ctx, dist, workflow);
     
     /* --------------------------------------- */
     /* Adjoint Wavefield record                */
-    /* --------------------------------------- */
+    /* --------------------------------------- */    
+    std::vector<wavefieldPtr> wavefieldrecordAdjointReflect;  
+    Acquisition::ReceiversEM<ValueType> adjointSourcesReflect;                
+    if (gradientType == 2 && decomposeType == 0) { 
+        scai::dmemo::DistributionPtr distInversion;
+        if(equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
+            distInversion = wavefieldrecord[0]->getRefEZ().getDistributionPtr();
+        } else {
+            distInversion = wavefieldrecord[0]->getRefEX().getDistributionPtr();        
+        }  
+        for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+            if (tStep % dtinversion == 0) {
+                wavefieldPtr wavefieldsInversion = Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+                wavefieldsInversion->init(ctx, distInversion);
+                wavefieldrecordAdjointReflect.push_back(wavefieldsInversion);
+            }
+        }
+        adjointSourcesReflect.initWholeSpace(config, modelCoordinates, ctx, dist, receivers.getSeismogramTypes());
+    }     
+    typename ForwardSolver::SourceReceiverImpl::SourceReceiverImplEM<ValueType>::SourceReceiverImplPtr SourceReceiverReflect(ForwardSolver::SourceReceiverImpl::FactoryEM<ValueType>::Create(dimension, equationType, sources, adjointSourcesReflect, *wavefieldsTemp));
     
     for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {
         *wavefieldsTemp = *wavefields;
@@ -138,11 +136,11 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
                 *wavefieldsTemp *= dtinversion; 
             
                 /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
-                ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecordReflect[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow, gradientType, decomposeType);
+                ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecordReflect[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow);
                 
-                if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                if (workflow.workflowStage == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                     ZeroLagXcorr->write(config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect.", tStep, workflow);
-                    wavefields->write(config.getAndCatch("snapType", 0), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
+                    wavefields->write(snapType, config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
                 }
             }
         }
@@ -158,15 +156,15 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
             *wavefieldsTemp *= dtinversion; 
            
             /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
-            ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow, gradientType, decomposeType);
+            ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow);
             
-            if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+            if (workflow.workflowStage == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                 ZeroLagXcorr->write(config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".", tStep, workflow);
-                wavefields->write(config.getAndCatch("snapType", 0), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
-                wavefields->write(snapTypeTemp, config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
+                wavefields->write(snapType, config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
             }
         }
     }
+    solver.resetCPML();
 
     // check wavefield for NaNs or infinite values
     if (commShot->any(!wavefields->isFinite(dist)) && commInterShot->getRank()==0){ // if any processor returns isfinite=false, write model and break
@@ -204,9 +202,12 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     if (gradientType == 2 && decomposeType == 0) {
         typename KITGPI::Gradient::GradientEM<ValueType>::GradientPtr testgradient(KITGPI::Gradient::FactoryEM<ValueType>::Create(equationType));
         *testgradient = gradient;
+        std::string misfitType = config.get<std::string>("misfitType");
+        typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(misfitType));
         scai::lama::DenseVector<ValueType> reflectivity;
-        reflectivity = -model.getReflectivity();
-        adjointSourcesReflect.getSeismogramHandler() *= reflectivity;
+        reflectivity = model.getReflectivity();
+        bool forward = false;
+        dataMisfit->calcReflectSources(adjointSourcesReflect, reflectivity, forward);
         energyPrecond.init(dist, config, isSeismic);
         wavefields->resetWavefields();
         ZeroLagXcorr->resetXcorr(workflow);
@@ -226,14 +227,15 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
                 *wavefieldsTemp *= dtinversion; 
             
                 /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
-                ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow, gradientType, decomposeType);
+                ZeroLagXcorr->update(*wavefieldsTemp, wavefieldTaper2D.applyWavefieldRecover(wavefieldrecord[floor(tStep / dtinversion + 0.5)]), *wavefields, workflow);
                 
-                if (workflow.workflowStage == 0 && workflow.iteration < 3 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                if (workflow.workflowStage == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                     ZeroLagXcorr->write(config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect.", tStep, workflow);
                     wavefields->write(config.getAndCatch("snapType", 0), config.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect.", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
                 }
             }
-        }       
+        }
+        solver.resetCPML();      
         /* ---------------------------------- */
         /*       Calculate gradients          */
         /* ---------------------------------- */    

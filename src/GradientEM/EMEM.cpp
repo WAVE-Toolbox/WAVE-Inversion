@@ -6,51 +6,49 @@ using namespace scai;
 /*! \brief Constructor that is using the Configuration class
  *
  \param ctx Context for the Calculation
- \param distEM Distribution
+ \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::Gradient::EMEM<ValueType>::EMEM(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM)
+KITGPI::Gradient::EMEM<ValueType>::EMEM(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    equationTypeEM = "emem";
-    init(ctx, distEM, 0.0, 0.0, 0.0, 0.0);
+    equationType = "emem";
+    init(ctx, dist, 0.0, 0.0);
 }
 
 /*! \brief Initialisation with zeros
  *
  \param ctx Context for the Calculation
- \param distEM Distribution
+ \param dist Distribution
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM)
+void KITGPI::Gradient::EMEM<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
 {
-    init(ctx, distEM, 0.0, 0.0, 0.0, 0.0);
+    init(ctx, dist, 0.0, 0.0);
 }
 
-/*! \brief Initialisation that is generating a homogeneous modelEM
+/*! \brief Initialisation that is generating a homogeneous model
  *
- *  Generates a homogeneous modelEM, which will be initialized by the two given scalar values.
+ *  Generates a homogeneous model, which will be initialized by the two given scalar values.
  \param ctx Context
- \param distEM Distribution
+ \param dist Distribution
  \param electricConductivity_const electricConductivity given as Scalar
  \param dielectricPermittivity_const dielectricPermittivity given as Scalar
- \param porosity_const porosity given as Scalar
- \param saturation_const saturation given as Scalar
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr distEM, ValueType electricConductivity_const, ValueType dielectricPermittivity_const, ValueType porosity_const, ValueType saturation_const)
+void KITGPI::Gradient::EMEM<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType electricConductivity_const, ValueType dielectricPermittivity_const)
 {
-    this->initParameterisation(electricConductivity, ctx, distEM, electricConductivity_const);
-    this->initParameterisation(dielectricPermittivity, ctx, distEM, dielectricPermittivity_const);
-    this->initParameterisation(porosity, ctx, distEM, porosity_const);
-    this->initParameterisation(saturation, ctx, distEM, saturation_const);
-    this->initParameterisation(reflectivity, ctx, distEM, 0.0);
+    this->initParameterisation(electricConductivity, ctx, dist, electricConductivity_const);
+    this->initParameterisation(dielectricPermittivity, ctx, dist, dielectricPermittivity_const);
+    this->initParameterisation(porosity, ctx, dist, 0.0);
+    this->initParameterisation(saturation, ctx, dist, 0.0);
+    this->initParameterisation(reflectivity, ctx, dist, 0.0);
 }
 
 //! \brief Copy constructor
 template <typename ValueType>
 KITGPI::Gradient::EMEM<ValueType>::EMEM(const EMEM &rhs)
 {
-    equationTypeEM = rhs.equationTypeEM;
+    equationType = rhs.equationType;
     electricConductivity = rhs.electricConductivity;
     dielectricPermittivity = rhs.dielectricPermittivity;
     porosity = rhs.porosity;
@@ -70,46 +68,46 @@ void KITGPI::Gradient::EMEM<ValueType>::resetGradient()
     this->resetParameter(reflectivity);
 }
 
-/*! \brief Write modelEM to an external file
+/*! \brief Write model to an external file
  *
  \param filename For the electricConductivity ".sigmaEM.mtx" and for dielectricPermittivity ".epsilonEMr.mtx" is added.
  \param fileFormat format of output file
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM) const
+void KITGPI::Gradient::EMEM<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) const
 {
-    if (workflowEM.getInvertForSigmaEM()) {
+    if (workflow.getInvertForSigmaEM()) {
         std::string filenameElectricConductivity = filename + ".sigmaEM";
         this->writeParameterisation(electricConductivity, filenameElectricConductivity, fileFormat);
     }
     
-    if (workflowEM.getInvertForEpsilonEM()) {
+    if (workflow.getInvertForEpsilonEM()) {
         std::string filenameDielectricPermittivity = filename + ".epsilonEMr";
         this->writeParameterisation(dielectricPermittivity, filenameDielectricPermittivity, fileFormat);
     }
     
-    if (workflowEM.getInvertForPorosity()) { 
+    if (workflow.getInvertForPorosity()) { 
         std::string filenamePorosity = filename + ".porosity";
         this->writeParameterisation(porosity, filenamePorosity, fileFormat);
     }
         
-    if (workflowEM.getInvertForSaturation()) { 
+    if (workflow.getInvertForSaturation()) { 
         std::string filenameSaturation = filename + ".saturation";
         this->writeParameterisation(saturation, filenameSaturation, fileFormat);
     }
     
-    if (workflowEM.getInvertForReflectivity()) { 
+    if (workflow.getInvertForReflectivity()) { 
         std::string filenameReflectivity = filename + ".reflectivity";
         this->writeParameterisation(reflectivity, filenameReflectivity, fileFormat);
     }
 };
 
-/*! \brief Get equationTypeEM (emem)
+/*! \brief Get equationType (emem)
  */
 template <typename ValueType>
 std::string KITGPI::Gradient::EMEM<ValueType>::getEquationType() const
 {
-    return (equationTypeEM);
+    return (equationType);
 }
 
 /*! \brief Get reference to tauElectricConductivity
@@ -340,7 +338,7 @@ void KITGPI::Gradient::EMEM<ValueType>::timesAssign(scai::lama::Vector<ValueType
 
 /*! \brief Function for overloading -= Operation (called in base class)
  *
- \param lhs Abstract modelEM.
+ \param lhs Abstract model.
  \param rhs Abstract gradientEM which is assigned.
  */
 template <typename ValueType>
@@ -396,8 +394,8 @@ void KITGPI::Gradient::EMEM<ValueType>::sumShotDomain(scai::dmemo::CommunicatorP
     
     //get information from distributed vector
     auto size = electricConductivity.size();
-    auto distEM = electricConductivity.getDistributionPtr();
-    auto comm = distEM->getCommunicatorPtr();
+    auto dist = electricConductivity.getDistributionPtr();
+    auto comm = dist->getCommunicatorPtr();
     
     // create single distribution, only master process owns the complete vector (no distribution).
     
@@ -410,23 +408,23 @@ void KITGPI::Gradient::EMEM<ValueType>::sumShotDomain(scai::dmemo::CommunicatorP
     //reduce local array (size of local array is !=0 only for master process)
     commInterShot->sumArray(electricConductivity.getLocalValues());    
     //redistribute vector to former partition
-    electricConductivity.redistribute(distEM);
+    electricConductivity.redistribute(dist);
         
     dielectricPermittivity.redistribute(singleDist);
     commInterShot->sumArray(dielectricPermittivity.getLocalValues());
-    dielectricPermittivity.redistribute(distEM);
+    dielectricPermittivity.redistribute(dist);
     
     porosity.redistribute(singleDist);
     commInterShot->sumArray(porosity.getLocalValues());
-    porosity.redistribute(distEM);
+    porosity.redistribute(dist);
     
     saturation.redistribute(singleDist);
     commInterShot->sumArray(saturation.getLocalValues());
-    saturation.redistribute(distEM);
+    saturation.redistribute(dist);
     
     reflectivity.redistribute(singleDist);
     commInterShot->sumArray(reflectivity.getLocalValues());
-    reflectivity.redistribute(distEM);
+    reflectivity.redistribute(dist);
 }
 
 /*! \brief If stream configuration is used, set a gradient per shot into the big gradient
@@ -437,15 +435,15 @@ void KITGPI::Gradient::EMEM<ValueType>::sumShotDomain(scai::dmemo::CommunicatorP
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
+void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::ModelparameterEM<ValueType> &model, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
 {
     auto distBig = dielectricPermittivity.getDistributionPtr();
     auto dist = gradientPerShot.getDielectricPermittivity().getDistributionPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = modelEM.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
+    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
     recoverMatrix.assignTranspose(recoverMatrix);
     
-    scai::lama::SparseVector<ValueType> eraseVector = modelEM.getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
+    scai::lama::SparseVector<ValueType> eraseVector = model.getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
     scai::lama::SparseVector<ValueType> recoverVector;
     recoverVector = 1.0 - eraseVector;
     
@@ -477,66 +475,66 @@ void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparamete
     reflectivity += temp; //take over the values
 }
 
-/*! \brief Function for scaling the gradients with the modelEM parameter 
+/*! \brief Function for scaling the gradients with the model parameter 
  *
- \param modelEM Abstract modelEM.
+ \param model Abstract model.
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Configuration::Configuration configEM)
+void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {    
-    ValueType const DielectricPermittivityVacuum = modelEM.getDielectricPermittivityVacuum();
-    ValueType const ElectricConductivityReference = modelEM.getElectricConductivityReference();
-    ValueType maxValue;      
+    ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
+    ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
+    ValueType maxValue = 1;      
     
-    IndexType scaleGradient = configEM.get<IndexType>("scaleGradient");
+    IndexType scaleGradient = config.get<IndexType>("scaleGradient");
     if (scaleGradient != 0) {
-        if (workflowEM.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {  
+        if (workflow.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {  
             if (scaleGradient == 1) {
-                maxValue = modelEM.getElectricConductivity().maxNorm();
+                maxValue = model.getElectricConductivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = configEM.get<ValueType>("upperSigmaEMTh") - configEM.get<ValueType>("lowerSigmaEMTh");
+                maxValue = config.get<ValueType>("upperSigmaEMTh") - config.get<ValueType>("lowerSigmaEMTh");
             }
-            this->applyParameterisation(maxValue, ElectricConductivityReference, modelEM.getParameterisation());
+            this->applyParameterisation(maxValue, ElectricConductivityReference, model.getParameterisation());
             electricConductivity *= 1 / electricConductivity.maxNorm() * maxValue;
         }  
         
-        if (workflowEM.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
+        if (workflow.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
             if (scaleGradient == 1) {
-                maxValue = modelEM.getDielectricPermittivity().maxNorm();
+                maxValue = model.getDielectricPermittivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = (configEM.get<ValueType>("upperEpsilonEMrTh") - configEM.get<ValueType>("lowerEpsilonEMrTh")) * DielectricPermittivityVacuum;
+                maxValue = (config.get<ValueType>("upperEpsilonEMrTh") - config.get<ValueType>("lowerEpsilonEMrTh")) * DielectricPermittivityVacuum;
             }      
-            this->applyParameterisation(maxValue, DielectricPermittivityVacuum, modelEM.getParameterisation()); 
+            this->applyParameterisation(maxValue, DielectricPermittivityVacuum, model.getParameterisation()); 
             dielectricPermittivity *= 1 / dielectricPermittivity.maxNorm() * maxValue;
         }
         
-        if (workflowEM.getInvertForPorosity() && porosity.maxNorm() != 0) {
-            if (modelEM.getParameterisation() == 1 || modelEM.getParameterisation() == 2) {
+        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {
+            if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
                 if (scaleGradient == 1) {
-                    maxValue = modelEM.getPorosity().maxNorm();
+                    maxValue = model.getPorosity().maxNorm();
                 } else if (scaleGradient == 2) {
-                    maxValue = configEM.getAndCatch("upperPorosityTh", 1.0) - configEM.getAndCatch("lowerPorosityTh", 0.0);
+                    maxValue = config.getAndCatch("upperPorosityTh", 1.0) - config.getAndCatch("lowerPorosityTh", 0.0);
                 }
             }        
             porosity *= 1 / porosity.maxNorm() * maxValue;
         }    
     
-        if (workflowEM.getInvertForSaturation() && saturation.maxNorm() != 0) { 
-            if (modelEM.getParameterisation() == 1 || modelEM.getParameterisation() == 2) {
+        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) { 
+            if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
                 if (scaleGradient == 1) {
-                    maxValue = modelEM.getSaturation().maxNorm();
+                    maxValue = model.getSaturation().maxNorm();
                 } else if (scaleGradient == 2) {
-                    maxValue = configEM.getAndCatch("upperSaturationTh", 1.0) - configEM.getAndCatch("lowerSaturationTh", 0.0);
+                    maxValue = config.getAndCatch("upperSaturationTh", 1.0) - config.getAndCatch("lowerSaturationTh", 0.0);
                 }
             }              
             saturation *= 1 / saturation.maxNorm() * maxValue;        
         }
         
-        if (workflowEM.getInvertForReflectivity() && reflectivity.maxNorm() != 0) { 
+        if (workflow.getInvertForReflectivity() && reflectivity.maxNorm() != 0) { 
             if (scaleGradient == 1) {
-                maxValue = modelEM.getReflectivity().maxNorm();
+                maxValue = model.getReflectivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = configEM.getAndCatch("upperReflectivityEMrTh", 1.0) - configEM.getAndCatch("lowerReflectivityEMrTh", -1.0);
+                maxValue = config.getAndCatch("upperReflectivityEMrTh", 1.0) - config.getAndCatch("lowerReflectivityEMrTh", -1.0);
             }      
             reflectivity *= 1 / reflectivity.maxNorm() * maxValue;      
         }
@@ -567,16 +565,16 @@ void KITGPI::Gradient::EMEM<ValueType>::normalize()
     }
 }
 
-/*! \brief Function for calculating the emem gradients from the cross correlation and the modelEM parameter 
+/*! \brief Function for calculating the emem gradients from the cross correlation and the model parameter 
  *
- \param modelEM Abstract modelEM.
+ \param model Abstract model.
  \param correlatedWavefields Abstract xCorr.
  \param DT Temporal discretization 
- \param workflowEM 
+ \param workflow 
  *
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, ValueType DT, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, ValueType DT, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {    
     scai::lama::DenseVector<ValueType> gradEpsilonEM;
     scai::lama::DenseVector<ValueType> temp;     
@@ -584,114 +582,114 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
     gradEpsilonEM = DT * correlatedWavefields.getXcorrEpsilonEM();
     
     scai::hmemo::ContextPtr ctx = gradEpsilonEM.getContextPtr();
-    scai::dmemo::DistributionPtr distEM = gradEpsilonEM.getDistributionPtr();
+    scai::dmemo::DistributionPtr dist = gradEpsilonEM.getDistributionPtr();
     
-    if (workflowEM.getInvertForSigmaEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation()) { 
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
         electricConductivity = DT * correlatedWavefields.getXcorrSigmaEM(); 
         
-        temp = modelEM.getElectricConductivity();
-        ValueType const ElectricConductivityReference = modelEM.getElectricConductivityReference();
-        this->gradientParameterisation(electricConductivity, temp, ElectricConductivityReference, modelEM.getParameterisation());
+        temp = model.getElectricConductivity();
+        ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
+        this->gradientParameterisation(electricConductivity, temp, ElectricConductivityReference, model.getParameterisation());
     } else {
-        this->initParameterisation(electricConductivity, ctx, distEM, 0.0);
+        this->initParameterisation(electricConductivity, ctx, dist, 0.0);
     }
     
-    if (workflowEM.getInvertForEpsilonEM() || workflowEM.getInvertForPorosity() || workflowEM.getInvertForSaturation() || workflowEM.getInvertForReflectivity()) {
+    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation() || workflow.getInvertForReflectivity()) {
         dielectricPermittivity = gradEpsilonEM;
         
-        temp = modelEM.getDielectricPermittivity();
-        ValueType const DielectricPermittivityVacuum = modelEM.getDielectricPermittivityVacuum();
-        this->gradientParameterisation(dielectricPermittivity, temp, DielectricPermittivityVacuum, modelEM.getParameterisation());
+        temp = model.getDielectricPermittivity();
+        ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
+        this->gradientParameterisation(dielectricPermittivity, temp, DielectricPermittivityVacuum, model.getParameterisation());
     } else {
-        this->initParameterisation(dielectricPermittivity, ctx, distEM, 0.0);
+        this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }
         
-    if (workflowEM.getInvertForPorosity()) {
+    if (workflow.getInvertForPorosity()) {
         // porosity and water saturation        
         scai::lama::DenseVector<ValueType> conductivityDePorosity;
         scai::lama::DenseVector<ValueType> dielectricPermittiviyDePorosity;
      
         // Based on complex refractive index model (CRIM)    
-        dielectricPermittiviyDePorosity = this->getDielectricPermittiviyDePorosity(modelEM);             
+        dielectricPermittiviyDePorosity = this->getDielectricPermittiviyDePorosity(model);             
         
         porosity = dielectricPermittiviyDePorosity * dielectricPermittivity;
-        if (modelEM.getParameterisation() == 2) {
+        if (model.getParameterisation() == 2) {
             // Based on Archie equation
-            conductivityDePorosity = this->getElectricConductivityDePorosity(modelEM);    
+            conductivityDePorosity = this->getElectricConductivityDePorosity(model);    
             conductivityDePorosity *= electricConductivity;
             porosity += conductivityDePorosity; 
         } 
     } else {
-        this->initParameterisation(porosity, ctx, distEM, 0.0);
+        this->initParameterisation(porosity, ctx, dist, 0.0);
     }
     
-    if (workflowEM.getInvertForSaturation()) {
+    if (workflow.getInvertForSaturation()) {
         // porosity and water saturation        
         scai::lama::DenseVector<ValueType> conductivityDeSaturation;
         scai::lama::DenseVector<ValueType> dielectricPermittiviyDeSaturation;
                
         // Based on complex refractive index model (CRIM)            
-        dielectricPermittiviyDeSaturation = this->getDielectricPermittiviyDeSaturation(modelEM);             
+        dielectricPermittiviyDeSaturation = this->getDielectricPermittiviyDeSaturation(model);             
         
         saturation = dielectricPermittiviyDeSaturation * dielectricPermittivity;
-        if (modelEM.getParameterisation() == 2) {
+        if (model.getParameterisation() == 2) {
             // Based on Archie equation
-            conductivityDeSaturation = this->getElectricConductivityDeSaturation(modelEM); 
+            conductivityDeSaturation = this->getElectricConductivityDeSaturation(model); 
             conductivityDeSaturation *= electricConductivity;
             saturation += conductivityDeSaturation; 
         }           
     } else {
-        this->initParameterisation(saturation, ctx, distEM, 0.0);
+        this->initParameterisation(saturation, ctx, dist, 0.0);
     }  
     
-    if (workflowEM.getInvertForReflectivity()) {
+    if (workflow.getInvertForReflectivity()) {
         reflectivity = -dielectricPermittivity;
     } else {
-        this->initParameterisation(reflectivity, ctx, distEM, 0.0);
+        this->initParameterisation(reflectivity, ctx, dist, 0.0);
     }  
 }
 
 /*! \brief calculate the stabilizing functional of each model parameter */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelPrioriEM, KITGPI::Configuration::Configuration configEM, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM)
+void KITGPI::Gradient::EMEM<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelPrioriEM, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {    
     scai::lama::DenseVector<ValueType> electricConductivityPrioritemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivityPrioritemp;
-    ValueType const DielectricPermittivityVacuum = modelEM.getDielectricPermittivityVacuum();
-    ValueType const ElectricConductivityReference = modelEM.getElectricConductivityReference();
+    ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
+    ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
     
-    electricConductivity = modelEM.getElectricConductivity();  
-    dielectricPermittivity = modelEM.getDielectricPermittivity();     
+    electricConductivity = model.getElectricConductivity();  
+    dielectricPermittivity = model.getDielectricPermittivity();     
     electricConductivityPrioritemp = modelPrioriEM.getElectricConductivity();  
     dielectricPermittivityPrioritemp = modelPrioriEM.getDielectricPermittivity();
 
-    this->applyParameterisation(electricConductivity, ElectricConductivityReference, modelEM.getParameterisation());       
-    this->applyParameterisation(dielectricPermittivity, DielectricPermittivityVacuum, modelEM.getParameterisation()); 
-    this->applyParameterisation(electricConductivityPrioritemp, ElectricConductivityReference, modelEM.getParameterisation());       
-    this->applyParameterisation(dielectricPermittivityPrioritemp, DielectricPermittivityVacuum, modelEM.getParameterisation()); 
+    this->applyParameterisation(electricConductivity, ElectricConductivityReference, model.getParameterisation());       
+    this->applyParameterisation(dielectricPermittivity, DielectricPermittivityVacuum, model.getParameterisation()); 
+    this->applyParameterisation(electricConductivityPrioritemp, ElectricConductivityReference, model.getParameterisation());       
+    this->applyParameterisation(dielectricPermittivityPrioritemp, DielectricPermittivityVacuum, model.getParameterisation()); 
         
     scai::hmemo::ContextPtr ctx = dielectricPermittivity.getContextPtr();
-    scai::dmemo::DistributionPtr distEM = dielectricPermittivity.getDistributionPtr();
+    scai::dmemo::DistributionPtr dist = dielectricPermittivity.getDistributionPtr();
     
-    if (workflowEM.getInvertForEpsilonEM()) {
+    if (workflow.getInvertForEpsilonEM()) {
         dielectricPermittivityPrioritemp = dielectricPermittivity - dielectricPermittivityPrioritemp;
-        dielectricPermittivity = this->calcStabilizingFunctionalGradientPerModel(dielectricPermittivityPrioritemp, configEM, dataMisfitEM);
+        dielectricPermittivity = this->calcStabilizingFunctionalGradientPerModel(dielectricPermittivityPrioritemp, config, dataMisfitEM);
     } else {
-        this->initParameterisation(dielectricPermittivity, ctx, distEM, 0.0);
+        this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }
     
-    if (workflowEM.getInvertForSigmaEM()) { 
+    if (workflow.getInvertForSigmaEM()) { 
         electricConductivityPrioritemp = electricConductivity - electricConductivityPrioritemp;
-        electricConductivity = this->calcStabilizingFunctionalGradientPerModel(electricConductivityPrioritemp, configEM, dataMisfitEM);
+        electricConductivity = this->calcStabilizingFunctionalGradientPerModel(electricConductivityPrioritemp, config, dataMisfitEM);
     } else {
-        this->initParameterisation(electricConductivity, ctx, distEM, 0.0);
+        this->initParameterisation(electricConductivity, ctx, dist, 0.0);
     }    
 }
 
 /*! \brief Apply a median filter to filter the extrame value of the gradient
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration configEM)
+void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
 {
     scai::lama::DenseVector<ValueType> sigmaEM_temp;
     scai::lama::DenseVector<ValueType> epsilonEM_temp;
@@ -705,11 +703,11 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration:
     saturation_temp = this->getSaturation();
     reflectivity_temp = this->getReflectivity();
     
-    scai::IndexType NZ = configEM.get<IndexType>("NZ");
+    scai::IndexType NZ = config.get<IndexType>("NZ");
     if (NZ == 1) {
-        scai::IndexType NY = configEM.get<IndexType>("NY");
+        scai::IndexType NY = config.get<IndexType>("NY");
         scai::IndexType NX = porosity_temp.size() / NY;
-        scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+        scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
         
         KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialFDorder);
         KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialFDorder);
