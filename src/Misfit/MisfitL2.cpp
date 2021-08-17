@@ -336,169 +336,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition
     } 
 }
 
-/*! \brief Return the L2-norm of seismograms stored in the given receiver objects (note: the misfit is summed over all components, i.e. vx,vy,vz,p)
- *
- *
- \param receiversSyn Receiver object which stores the synthetic data 
- \param receiversObs Receiver object which stores the observed data 
- */
-template <typename ValueType>
-ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd)
-{            
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObs;
-    KITGPI::Acquisition::SeismogramHandlerEM<ValueType> seismoHandlerSyn;
-    KITGPI::Acquisition::SeismogramHandlerEM<ValueType> seismoHandlerObs;
-    
-    ValueType misfit = 0;
-    ValueType misfitSum = 0;
-    scai::IndexType count = 0;
-
-    seismoHandlerSyn = receiversSyn.getSeismogramHandler();
-    seismoHandlerObs = receiversObs.getSeismogramHandler();
-          
-    /* Note that the misfit of different components (p,vx,vy,vz) is summed up. If p and v? is used at the same time, this could cause problems because they could have different scales.
-       For different velocity components it should be ok. */
-    
-    scai::IndexType misfitStorageL2Size = 0;
-    scai::IndexType misfitTypeShotL2 = misfitTypeShots.getValue(shotInd);
-    bool errorMisfitType = false; // in case of getting a wrong misfitType.
-    numMisfitTypes = misfitSum0Ratio.size(); // it is useful in steplength search
-    for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
-        if (misfitTypeShotL2 == 0 || misfitTypeShotL2 == uniqueMisfitTypes.at(iMisfitType)) {
-            errorMisfitType = true;
-            break;
-        }        
-    }
-    SCAI_ASSERT_ERROR(errorMisfitType, "misfitType = L" + std::to_string(misfitTypeShotL2));
-    
-    for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {  
-        if (saveMultiMisfits || misfitType.length() > 2)
-            misfitTypeShotL2 = uniqueMisfitTypes.at(iMisfitType);
-            
-        for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-            seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-            seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-            switch (misfitTypeShotL2) {
-            case 5:
-                misfit = this->calcL2EnvelopeWeighted(seismogramSyn, seismogramObs);
-                break;
-            case 6:
-                misfit = this->calcL2AGC(seismogramSyn, seismogramObs);
-                break;
-            case 7:
-                misfit = this->calcL2Normalized(seismogramSyn, seismogramObs);
-                break;
-            case 8:
-                misfit = this->calcL2Envelope(seismogramSyn, seismogramObs);
-                break;
-            case 9:
-                misfit = this->calcL2InstantaneousPhase(seismogramSyn, seismogramObs);
-                break;
-            default:
-                misfit = this->calcL2(seismogramSyn, seismogramObs);
-                break;
-            } 
-            misfitSum += misfit;
-            if (misfit != 0) count++;
-        }  
-     
-//         std::cout<< "misfitTypeShotL2 : "<< misfitTypeShotL2 << std::endl;
-        if (saveMultiMisfits || misfitType.length() > 2) {
-            misfitStorageL2Size = misfitStorageL2.size();
-            if (misfitStorageL2Size == numMisfitTypes && iMisfitType > 0) {
-                misfitSum0Ratio.at(iMisfitType).setValue(shotInd, misfitStorageL2.at(0).getValue(shotInd) / (misfitSum/count/misfitTypeShots.size()));
-            }
-            misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).setValue(shotInd, misfitSum/count/misfitTypeShots.size()*misfitSum0Ratio.at(iMisfitType).getValue(shotInd));
-            
-            if (iMisfitType < numMisfitTypes - 1) {
-                misfitSum = 0;
-                count = 0;
-            }
-        } else {
-            break;
-        }
-    }
-    if (misfitType.length() > 2 && misfitType.substr(numMisfitTypes+1, 1).compare("2") == 0) {
-        scai::IndexType misfitRatioMaxInd = 0;
-        if (misfitStorageL2Size > numMisfitTypes) { // iteration > 0
-            std::vector<ValueType> misfitRatio(numMisfitTypes, 0);  
-            for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {           
-                misfitRatio.at(iMisfitType) = (misfitStorageL2.at(misfitStorageL2Size - 2 * numMisfitTypes + iMisfitType).getValue(shotInd) - misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).getValue(shotInd)) / misfitStorageL2.at(misfitStorageL2Size - 2 * numMisfitTypes + iMisfitType).getValue(shotInd);
-            }
-            auto misfitRatioMax = std::max_element(std::begin(misfitRatio), std::end(misfitRatio));
-            misfitRatioMaxInd = std::distance(std::begin(misfitRatio), misfitRatioMax);
-        }
-        misfitTypeShots.setValue(shotInd, uniqueMisfitTypes.at(misfitRatioMaxInd));
-        misfitSum = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + misfitRatioMaxInd).getValue(shotInd)*count*misfitTypeShots.size();
-    } else if ((misfitType.length() > 2 && misfitType.substr(numMisfitTypes+1, 1).compare("1") == 0) || saveMultiMisfits) {
-        // for single misfitType in main code
-        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {   
-            if (uniqueMisfitTypes.at(iMisfitType) == misfitTypeShots.getValue(shotInd)) {
-                misfitSum = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType).getValue(shotInd)*count*misfitTypeShots.size();
-                break;
-            }
-        }
-    } else {
-        // for single misfitType in steplength search
-        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) {   
-            if (uniqueMisfitTypes.at(iMisfitType) == misfitTypeShots.getValue(shotInd)) {
-                misfitSum *= misfitSum0Ratio.at(iMisfitType).getValue(shotInd);
-                break;
-            }
-        }
-    }
-    
-    return misfitSum/count/misfitTypeShots.size(); 
-}
-
-/*! \brief Calculate the adjoint sources
- *
- *
- \param adjointSources Receiver object which stores the adjoint sources (in- and output)
- \param receiversSyn Receiver object which stores the synthetic data 
- \param receiversObs Receiver object which stores the observed data 
- */
-template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSources, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversSyn, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversObs, scai::IndexType shotInd)
-{
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObs;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramAdj;
-    KITGPI::Acquisition::SeismogramHandlerEM<ValueType> seismoHandlerSyn;
-    KITGPI::Acquisition::SeismogramHandlerEM<ValueType> seismoHandlerObs;
-    
-    seismoHandlerSyn = receiversSyn.getSeismogramHandler();
-    seismoHandlerObs = receiversObs.getSeismogramHandler();
-    
-    scai::IndexType misfitTypeShotL2 = misfitTypeShots.getValue(shotInd);
-    for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-        seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-        seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-        switch (misfitTypeShotL2) {
-        case 5:
-            this->calcAdjointSeismogramL2EnvelopeWeighted(seismogramAdj, seismogramSyn, seismogramObs);
-            break;
-        case 6:
-            this->calcAdjointSeismogramL2AGC(seismogramAdj, seismogramSyn, seismogramObs);
-            break;
-        case 7:
-            this->calcAdjointSeismogramL2Normalized(seismogramAdj, seismogramSyn, seismogramObs);
-            break;
-        case 8:
-            this->calcAdjointSeismogramL2Envelope(seismogramAdj, seismogramSyn, seismogramObs);
-            break;
-        case 9:
-            this->calcAdjointSeismogramL2InstantaneousPhase(seismogramAdj, seismogramSyn, seismogramObs);
-            break;
-        default:
-            this->calcAdjointSeismogramL2(seismogramAdj, seismogramSyn, seismogramObs);
-            break;
-        }
-        adjointSources.getSeismogramHandler().getSeismogram(seismogramAdj.getTraceType()) = seismogramAdj;
-    }      
-}
-
 /*! \brief Return the L2-norm of seismograms 
  *
  *
@@ -512,54 +349,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2(KITGPI::Acquisition::Seism
 
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;    
-    if (seismogramSyn.getData().getNumRows()!=0) {
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        seismogramSyntemp -= seismogramObstemp;
-        
-        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
-    }
-    
-    return tempL2Norm; 
-}
-
-/*! \brief Calculate the adjoint seismograms
- *
- *
- \param seismogramAdj Seismogram object which stores the adjoint data  (in- and output)
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
-{
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    if (seismogramSyn.getData().getNumRows()!=0) {
-        seismogramAdj = seismogramSyn;
-//         seismogramAdj *= seismogramObs.getData().maxNorm() / seismogramSyn.getData().maxNorm();
-        seismogramAdj -= seismogramObs; 
-        
-        if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
-            seismogramAdj *= -1;        
-        }
-    }
-}
-
-/*! \brief Return the L2-norm of seismograms 
- *
- *
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{    
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
     if (seismogramSyn.getData().getNumRows()!=0) {
         // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
@@ -580,7 +369,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2(KITGPI::Acquisition::Seism
  \param seismogramObs Seismogram object which stores the observed data 
  */
 template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
+void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
@@ -589,13 +378,15 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquis
 //         seismogramAdj *= seismogramObs.getData().maxNorm() / seismogramSyn.getData().maxNorm();
         seismogramAdj -= seismogramObs; 
         
-        if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
+        bool isSeismic = seismogramSyn.getIsSeismic();
+        if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
             seismogramAdj *= -1;        
         }
     }
 }
 
 /*! \brief Return the L2-norm of seismograms 
+ *
  *
  \param seismogramSyn Seismogram object which stores the synthetic data 
  \param seismogramObs Seismogram object which stores the observed data 
@@ -607,7 +398,7 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2EnvelopeWeighted(KITGPI::Ac
 
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;    
+    ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         seismogramSyntemp.normalizeTrace(4);
         seismogramObstemp.normalizeTrace(4);
@@ -631,95 +422,9 @@ template <typename ValueType>
 void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighted(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-    // Qin 2021
+
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        seismogramAdj = seismogramSyntemp;
-        scai::lama::DenseMatrix<ValueType> tempDataSyn;
-        scai::lama::DenseMatrix<ValueType> tempDataSynEnvelope = seismogramSyntemp.getData();
-        scai::lama::DenseMatrix<ValueType> tempDataSynRatio;
-        scai::lama::DenseVector<ValueType> dataTrace; 
-        ValueType waterLevel = 1e-3;
-        Common::calcEnvelope(tempDataSynEnvelope);
-        seismogramSyntemp.normalizeTrace(4);
-        seismogramObstemp.normalizeTrace(4);
-        tempDataSynRatio.binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::SUB, seismogramObstemp.getData());
-        for (int i=0; i<tempDataSynEnvelope.getNumRows(); i++) {
-            tempDataSynEnvelope.getRow(dataTrace, i);   
-            if (dataTrace.maxNorm() != 0) {
-                dataTrace += waterLevel * dataTrace.maxNorm();
-            } else {
-                dataTrace += waterLevel * waterLevel;
-            }
-            tempDataSynEnvelope.setRow(dataTrace, i, scai::common::BinaryOp::COPY);               
-        }
-        tempDataSynRatio.binaryOp(tempDataSynRatio, scai::common::BinaryOp::DIVIDE, tempDataSynEnvelope);
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyntemp.getData());
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, tempDataSynRatio);
-        seismogramSyntemp.getData().binaryOp(tempDataSynRatio, scai::common::BinaryOp::SUB, seismogramSyntemp.getData());
-        
-        tempDataSynEnvelope.binaryOp(tempDataSynEnvelope, scai::common::BinaryOp::MULT, tempDataSynEnvelope);
-        tempDataSyn = seismogramAdj.getData();
-        Hilbert::HilbertFFT<ValueType> hilbertHandler;
-        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
-        hilbertHandler.setCoefficientLength(hLength);
-        hilbertHandler.calcHilbertCoefficient();
-        hilbertHandler.hilbert(tempDataSyn);
-        tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::DIVIDE, tempDataSynEnvelope);
-        tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, seismogramAdj.getData());
-        tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, tempDataSynRatio);
-        hilbertHandler.hilbert(tempDataSyn);
-        seismogramObstemp.getData() = tempDataSyn;  
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp;
-    
-    if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
-        seismogramAdj *= -1;        
-    }
-}
-
-/*! \brief Return the L2-norm of seismograms 
- *
- *
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2EnvelopeWeighted(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{    
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramSyntemp.normalizeTrace(4);
-        seismogramObstemp.normalizeTrace(4);
-        seismogramSyntemp -= seismogramObstemp;
-        
-        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
-    }
-    
-    return tempL2Norm;   
-}
-
-/*! \brief Calculate the adjoint seismograms
- *
- *
- \param seismogramAdj Seismogram object which stores the adjoint data  (in- and output)
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighted(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         seismogramAdj = seismogramSyntemp;
@@ -759,12 +464,12 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
         hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;   
         
-//         seismogramAdj.getData() = tempDataSynRatio;    // test
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp;  
-    
-    if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
-        seismogramAdj *= -1;        
+        seismogramAdj = seismogramSyntemp - seismogramObstemp;  
+        
+        bool isSeismic = seismogramSyn.getIsSeismic();
+        if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
+            seismogramAdj *= -1;        
+        }
     }
 }
 
@@ -787,11 +492,11 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2AGC(KITGPI::Acquisition::Se
         seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());    
         seismogramSyntemp -= seismogramObstemp;
         
-        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
+        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
         if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
-    return tempL2Norm; 
+    return tempL2Norm;    
 }
 
 /*! \brief Calculate the AGC weighted adjoint seismograms
@@ -819,72 +524,14 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2AGC(KITGPI::Acq
         seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, sumSynMultObs);       
         seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());  
         seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());     
-        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());         
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp; 
-    
-    if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
-        seismogramAdj *= -1;        
-    }
-}
-
-/*! \brief Return the AGC weighted L2-norm of seismograms 
- *
- *
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2AGC(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{    
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;    
-    if (seismogramSyn.getData().getNumRows()!=0) {
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());   
-        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());    
-        seismogramSyntemp -= seismogramObstemp;
+        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());  
         
-        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
-    }
-    
-    return tempL2Norm;    
-}
-
-/*! \brief Calculate the AGC weighted adjoint seismograms
- *
- *
- \param seismogramAdj Seismogram object which stores the adjoint data  (in- and output)
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2AGC(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;    
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        seismogramAdj = seismogramSyntemp;
-        seismogramAdj *= seismogramObstemp;
-        scai::lama::DenseMatrix<ValueType> sumSynMultObs = seismogramAdj.getAGCSum();
-        sumSynMultObs.binaryOp(sumSynMultObs, scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC()); 
-        sumSynMultObs.binaryOp(sumSynMultObs, scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC()); 
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());   
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, sumSynMultObs);       
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());  
-        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());     
-        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());        
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp; 
-        
-    if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
-        seismogramAdj *= -1;        
+        seismogramAdj = seismogramSyntemp - seismogramObstemp; 
+            
+        bool isSeismic = seismogramSyn.getIsSeismic();
+        if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
+            seismogramAdj *= -1;        
+        }
     }
 }
 
@@ -899,7 +546,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Normalized(KITGPI::Acquisit
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
-    // see Groos L. 2D full waveform inversion of shallow seismic Rayleigh waves[D]. Verlag nicht ermittelbar, 2013 for details
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
@@ -927,7 +573,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
 {
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
-    // see Groos L. 2D full waveform inversion of shallow seismic Rayleigh waves[D]. Verlag nicht ermittelbar, 2013 for details
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
@@ -957,92 +602,19 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
         scai::lama::DenseVector<ValueType> sumSynMultObs = seismogramAdj.getTraceSum();
         seismogramSyntemp.getData().scaleRows(sumSynMultObs);       
         seismogramSyntemp.getData().scaleRows(tempL2NormSyn);       
-        seismogramObstemp.getData().scaleRows(tempL2NormSyn);       
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp;
-    
-    if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
-        seismogramAdj *= -1;        
-    }
-}
-
-/*! \brief Return the L2-norm of seismograms 
- *
- *
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Normalized(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{    
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        seismogramSyntemp.normalizeTrace(2);
-        seismogramObstemp.normalizeTrace(2);
-        seismogramSyntemp -= seismogramObstemp;
+        seismogramObstemp.getData().scaleRows(tempL2NormSyn);
         
-        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
-    }
-    
-    return tempL2Norm;   
-}
-
-/*! \brief Calculate the adjoint seismograms
- *
- *
- \param seismogramAdj Seismogram object which stores the adjoint data  (in- and output)
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-  /*      // Groos 2013 and IFOS2D
-        seismogramAdj = seismogramSyn;
-        seismogramAdj *= seismogramObs;
-        scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
-        scai::lama::DenseVector<ValueType> tempL2NormObs = seismogramObstemp.getTraceL2norm();
-        scai::lama::DenseVector<ValueType> sumSynMultObs = seismogramAdj.getTraceSum();
-        tempL2NormSyn = 1 / tempL2NormSyn;
-        tempL2NormObs = 1 / tempL2NormObs;     
-        tempL2NormObs *= tempL2NormSyn;
-        tempL2NormObs *= tempL2NormSyn;
-        tempL2NormObs *= sumSynMultObs;
-        seismogramSyntemp.normalizeTrace(2);
-        seismogramObstemp.normalizeTrace(2);
-        seismogramSyntemp.getData().scaleRows(tempL2NormObs);
-        seismogramObstemp.getData().scaleRows(tempL2NormSyn);  */  
-        // Choi 2012
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
-        tempL2NormSyn = 1 / tempL2NormSyn;
-        seismogramSyntemp.normalizeTrace(2);
-        seismogramObstemp.normalizeTrace(2);
-        seismogramAdj = seismogramSyntemp;
-        seismogramAdj *= seismogramObstemp;
-        scai::lama::DenseVector<ValueType> sumSynMultObs = seismogramAdj.getTraceSum();
-        seismogramSyntemp.getData().scaleRows(sumSynMultObs);       
-        seismogramSyntemp.getData().scaleRows(tempL2NormSyn);       
-        seismogramObstemp.getData().scaleRows(tempL2NormSyn);       
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp;       
-    
-    if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
-        seismogramAdj *= -1;        
+        seismogramAdj = seismogramSyntemp - seismogramObstemp;       
+        
+        bool isSeismic = seismogramSyn.getIsSeismic();
+        if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
+            seismogramAdj *= -1;        
+        }
     }
 }
 
 /*! \brief Return the L2-norm of seismograms 
+ *
  *
  \param seismogramSyn Seismogram object which stores the synthetic data 
  \param seismogramObs Seismogram object which stores the observed data 
@@ -1052,10 +624,9 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Envelope(KITGPI::Acquisitio
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
-    // see Yuan Y O, Simons F J, Bozdağ E. Multiscale adjoint waveform tomography for surface and body waves[J]. Geophysics, 2015, 80(5): R281-R302 for details
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;    
+    ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         Common::calcEnvelope(seismogramSyntemp.getData());
@@ -1081,89 +652,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
 {
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
-    // see Yuan Y O, Simons F J, Bozdağ E. Multiscale adjoint waveform tomography for surface and body waves[J]. Geophysics, 2015, 80(5): R281-R302 for details
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        seismogramAdj = seismogramSyntemp;
-        scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();
-        scai::lama::DenseMatrix<ValueType> tempDataObs = seismogramObstemp.getData();
-        scai::lama::DenseVector<ValueType> dataTrace; 
-        ValueType waterLevel = 1e-3;
-        Common::calcEnvelope(tempDataSyn);
-        Common::calcEnvelope(tempDataObs);
-        tempDataObs.binaryOp(tempDataSyn, scai::common::BinaryOp::SUB, tempDataObs);
-        for (int i=0; i<tempDataSyn.getNumRows(); i++) {
-            tempDataSyn.getRow(dataTrace, i);   
-            if (dataTrace.maxNorm() != 0) {
-                dataTrace += waterLevel * dataTrace.maxNorm();
-            } else {
-                dataTrace += waterLevel * waterLevel;
-            }
-            tempDataSyn.setRow(dataTrace, i, scai::common::BinaryOp::COPY);               
-        }
-        tempDataObs.binaryOp(tempDataObs, scai::common::BinaryOp::DIVIDE, tempDataSyn);
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, tempDataObs);
-        
-        tempDataSyn = seismogramAdj.getData();
-        Hilbert::HilbertFFT<ValueType> hilbertHandler;
-        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
-        hilbertHandler.setCoefficientLength(hLength);
-        hilbertHandler.calcHilbertCoefficient();
-        hilbertHandler.hilbert(tempDataSyn);
-        tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, tempDataObs);
-        hilbertHandler.hilbert(tempDataSyn);
-        seismogramObstemp.getData() = tempDataSyn;  
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp;
-    
-    if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
-        seismogramAdj *= -1;        
-    }
-}
-
-/*! \brief Return the L2-norm of seismograms 
- *
- *
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Envelope(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{    
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        Common::calcEnvelope(seismogramSyntemp.getData());
-        Common::calcEnvelope(seismogramObstemp.getData());
-        seismogramSyntemp -= seismogramObstemp;
-        
-        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
-    }
-    
-    return tempL2Norm;   
-}
-
-/*! \brief Calculate the adjoint seismograms
- *
- *
- \param seismogramAdj Seismogram object which stores the adjoint data  (in- and output)
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         seismogramAdj = seismogramSyntemp;
@@ -1195,15 +685,18 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, tempDataObs);
         hilbertHandler.hilbert(tempDataSyn);
         seismogramObstemp.getData() = tempDataSyn;  
-    }
-    seismogramAdj = seismogramSyntemp - seismogramObstemp;      
-    
-    if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
-        seismogramAdj *= -1;        
+        
+        seismogramAdj = seismogramSyntemp - seismogramObstemp;      
+        
+        bool isSeismic = seismogramSyn.getIsSeismic();
+        if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
+            seismogramAdj *= -1;        
+        }
     }
 }
 
 /*! \brief Return the L2-norm of seismograms 
+ *
  *
  \param seismogramSyn Seismogram object which stores the synthetic data 
  \param seismogramObs Seismogram object which stores the observed data 
@@ -1213,92 +706,8 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2InstantaneousPhase(KITGPI::
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
-    // see Bozdağ, E., Trampert, J., & Tromp, J. (2011). Misfit functions for full waveform inversion based on instantaneous phase and envelope measurements. Geophysical Journal International, 185(2), 845-870. for details
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
-    ValueType tempL2Norm = 0;    
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        Common::calcInstantaneousPhaseResidual(seismogramSyntemp.getData(), seismogramObstemp.getData(), seismogramSyntemp.getData());
-        
-        tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
-    }
-    
-    return tempL2Norm;   
-}
-
-/*! \brief Calculate the adjoint seismograms
- *
- *
- \param seismogramAdj Seismogram object which stores the adjoint data  (in- and output)
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPhase(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
-{
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    // see Bozdağ, E., Trampert, J., & Tromp, J. (2011). Misfit functions for full waveform inversion based on instantaneous phase and envelope measurements. Geophysical Journal International, 185(2), 845-870. for details
-    KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
-    if (seismogramSyntemp.getData().getNumRows()!=0) {
-        // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        seismogramAdj = seismogramSyntemp;
-        scai::lama::DenseMatrix<ValueType> envelopeSyn = seismogramSyntemp.getData();
-        scai::lama::DenseMatrix<ValueType> instantaneousPhaseSyn = seismogramSyntemp.getData();
-        scai::lama::DenseMatrix<ValueType> instantaneousPhaseObs = seismogramObstemp.getData();
-        scai::lama::DenseVector<ValueType> dataTrace; 
-        ValueType waterLevel = 1e-3;
-        Common::calcEnvelope(envelopeSyn);
-        envelopeSyn.binaryOp(envelopeSyn, scai::common::BinaryOp::MULT, envelopeSyn);
-        for (int i=0; i<envelopeSyn.getNumRows(); i++) {
-            envelopeSyn.getRow(dataTrace, i);   
-            if (dataTrace.maxNorm() != 0) {
-                dataTrace += waterLevel * dataTrace.maxNorm();
-            } else {
-                dataTrace += waterLevel * waterLevel;
-            }
-            envelopeSyn.setRow(dataTrace, i, scai::common::BinaryOp::COPY);               
-        }
-        Common::calcInstantaneousPhaseResidual(instantaneousPhaseObs, instantaneousPhaseObs, instantaneousPhaseSyn);
-        instantaneousPhaseObs.binaryOp(instantaneousPhaseObs, scai::common::BinaryOp::DIVIDE, envelopeSyn);
-        
-        scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();     
-        Hilbert::HilbertFFT<ValueType> hilbertHandler;
-        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
-        hilbertHandler.setCoefficientLength(hLength);
-        hilbertHandler.calcHilbertCoefficient();
-        hilbertHandler.hilbert(tempDataSyn);
-        seismogramSyntemp.getData().binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, instantaneousPhaseObs);
-        
-        tempDataSyn = seismogramAdj.getData();
-        tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, instantaneousPhaseObs);
-        hilbertHandler.hilbert(tempDataSyn);
-        seismogramObstemp.getData() = tempDataSyn;  
-    }
-    seismogramAdj = seismogramSyntemp + seismogramObstemp;
-//     seismogramAdj *= -1;   
-    
-    if (seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) {
-        seismogramAdj *= -1;        
-    }
-}
-
-/*! \brief Return the L2-norm of seismograms 
- *
- *
- \param seismogramSyn Seismogram object which stores the synthetic data 
- \param seismogramObs Seismogram object which stores the observed data 
- */
-template <typename ValueType>
-ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2InstantaneousPhase(KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
-{    
-    SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
@@ -1323,12 +732,12 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2InstantaneousPhase(KITGPI::
  \param seismogramObs Seismogram object which stores the observed data 
  */
 template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPhase(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogramAdj, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramSyn, KITGPI::Acquisition::SeismogramEM<ValueType> const &seismogramObs)
+void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPhase(KITGPI::Acquisition::Seismogram<ValueType> &seismogramAdj, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramSyntemp = seismogramSyn;
-    KITGPI::Acquisition::SeismogramEM<ValueType> seismogramObstemp = seismogramObs;
+    KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
+    KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
         seismogramAdj = seismogramSyntemp;
@@ -1367,13 +776,15 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
         tempDataSyn = seismogramAdj.getData();
         tempDataSyn.binaryOp(tempDataSyn, scai::common::BinaryOp::MULT, instantaneousPhaseObs);
         hilbertHandler.hilbert(tempDataSyn);
-        seismogramObstemp.getData() = tempDataSyn;  
-    }
-    seismogramAdj = seismogramSyntemp + seismogramObstemp;
+        seismogramObstemp.getData() = tempDataSyn; 
+        
+        seismogramAdj = seismogramSyntemp + seismogramObstemp;
 //     seismogramAdj *= -1;   
     
-    if (seismogramSyn.getTraceType() != Acquisition::SeismogramTypeEM::HZ) {
-        seismogramAdj *= -1;        
+        bool isSeismic = seismogramSyn.getIsSeismic();
+        if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
+            seismogramAdj *= -1;        
+        }
     }
 }
 

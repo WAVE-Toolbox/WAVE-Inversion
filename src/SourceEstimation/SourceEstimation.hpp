@@ -6,17 +6,11 @@
 #include <Acquisition/Receivers.hpp>
 #include <Acquisition/SeismogramHandler.hpp>
 #include <Acquisition/Sources.hpp>
-#include <AcquisitionEM/Receivers.hpp>
-#include <AcquisitionEM/SeismogramHandler.hpp>
-#include <AcquisitionEM/Sources.hpp>
 #include <Configuration/Configuration.hpp>
 #include <ForwardSolver/Derivatives/DerivativesFactory.hpp>
 #include <ForwardSolver/ForwardSolver.hpp>
 #include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
-#include <ForwardSolverEM/ForwardSolver.hpp>
-#include <ModelparameterEM/ModelparameterFactory.hpp>
-#include <WavefieldsEM/WavefieldsFactory.hpp>
 
 #include <Common/Common.hpp>
 #include <scai/common/Complex.hpp>
@@ -48,15 +42,13 @@ namespace KITGPI
 
         void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
+        
         void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
         
-        void estimateSourceSignal(KITGPI::Acquisition::ReceiversEM<ValueType> &receivers, KITGPI::Acquisition::ReceiversEM<ValueType> &receiversTrueEM, IndexType shotInd, IndexType shotNr);
-        void applyFilter(KITGPI::Acquisition::SourcesEM<ValueType> &sources, scai::IndexType shotInd) const;
-        void calcOffsetMutes(KITGPI::Acquisition::SourcesEM<ValueType> const &sources, KITGPI::Acquisition::ReceiversEM<ValueType> const &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
-
       private:
         ValueType waterLevel;
         scai::IndexType nFFT; // filter length
+        bool isSeismic;
 
         scai::lama::DenseMatrix<ComplexValueType> filter;
 
@@ -67,6 +59,5 @@ namespace KITGPI
 
         void matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B, scai::IndexType iComponent);
         void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB, scai::IndexType shotNumber);
-        void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversA, KITGPI::Acquisition::ReceiversEM<ValueType> const &receiversB, scai::IndexType shotNumber);
     };
 }

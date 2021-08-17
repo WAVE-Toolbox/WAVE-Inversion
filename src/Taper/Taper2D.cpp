@@ -20,26 +20,53 @@ void KITGPI::Taper::Taper2D<ValueType>::init(dmemo::DistributionPtr rowDist, dme
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms)
 {
-    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
-        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+    bool isSeismic = seismograms.getIsSeismic();
+    for (IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
+            init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
+        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
+            lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent)).getData();
             init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
         }
     }
 }
 
-/*! \brief Initialize taper
- \param seismograms seismograms hander
+/*! \brief Wrapper to support SeismogramHandler
+ \param seismograms SeismogramHandler object
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> const seismograms)
+void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
 {
-    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
-        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
-            lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent)).getData();
-            init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
+    bool isSeismic = seismograms.getIsSeismic();
+    for (IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
+            apply(thisSeismogram);
+        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
+            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
+            apply(thisSeismogram);
         }
     }
+}
+
+/*! \brief Apply taper to a single seismogram
+ \param seismogram Seismogram
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const
+{
+    lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
+    seismogramData.binaryOp(seismogramData, common::BinaryOp::MULT, data);
+}
+
+/*! \brief Apply taper to a DenseMatrix
+ \param mat Seismogram
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper2D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat) const
+{
+    mat.binaryOp(mat, common::BinaryOp::MULT, data);
 }
 
 /*! \brief Initialize taper
@@ -58,63 +85,6 @@ void KITGPI::Taper::Taper2D<ValueType>::initModelTransform(dmemo::DistributionPt
     modelParameterTransform.setContextPtr(ctx);
     modelParameterTransformEM.allocate(distEM);
     modelParameterTransformEM.setContextPtr(ctx);
-}
-
-/*! \brief Wrapper to support SeismogramHandler
- \param seismograms SeismogramHandler object
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
-{
-    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
-        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
-            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
-            apply(thisSeismogram);
-        }
-    }
-}
-
-/*! \brief Wrapper to support SeismogramHandler
- \param seismograms SeismogramHandler object
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> &seismograms) const
-{
-    for (IndexType iComponent = 0; iComponent < 4; iComponent++) {
-        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
-            Acquisition::SeismogramEM<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
-            apply(thisSeismogram);
-        }
-    }
-}
-
-/*! \brief Apply taper to a single seismogram
- \param seismogram Seismogram
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const
-{
-    lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
-    seismogramData.binaryOp(seismogramData, common::BinaryOp::MULT, data);
-}
-
-/*! \brief Apply taper to a single seismogram
- \param seismogram Seismogram
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogram) const
-{
-    lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
-    seismogramData.binaryOp(seismogramData, common::BinaryOp::MULT, data);
-}
-
-/*! \brief Apply taper to a DenseMatrix
- \param mat Seismogram
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat) const
-{
-    mat.binaryOp(mat, common::BinaryOp::MULT, data);
 }
 
 /*! \brief Apply model transform to a parameter
@@ -379,62 +349,51 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
  * \param modelEM EM model
  * \param model Seismic model
  * \param config Seismic config
+ * \param isSeismic isSeismic is used to identify seismic and EM wave
  */
-template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config)
-{
-    lama::DenseVector<ValueType> porosityEMtemp;
-    lama::DenseVector<ValueType> saturationEMtemp;
-    
-    IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");  
-            
-    if (exchangeStrategy == 2) {
-        // case 2: exchange all of the petrophysical parameters 
-        porosityEMtemp = this->applyModelTransformToSeismic(model.getPorosity(), modelEM.getPorosity()); 
-        saturationEMtemp = this->applyModelTransformToSeismic(model.getSaturation(), modelEM.getSaturation()); 
-                
-        model.setPorosity(porosityEMtemp);
-        model.setSaturation(saturationEMtemp);           
-    } else if (exchangeStrategy != 0) {     
-        // case 1,3,4,5,6: exchange saturation to seismic model             
-        saturationEMtemp = this->applyModelTransformToSeismic(model.getSaturation(), modelEM.getSaturation()); 
-                
-        model.setSaturation(saturationEMtemp); 
-    } 
-    // case 0,1,2,3,4: self-constraint of the petrophysical relationship                     
-    model.calcWaveModulusFromPetrophysics(); 
-    if (config.get<bool>("useModelThresholds"))
-        model.applyThresholds(config); 
-}
-
-/*! \brief exchange porosity and saturation from seismic to EM
- * \param model Seismic model
- * \param modelEM EM model
- * \param configEM EM config
- */
-template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Configuration::Configuration configEM)
+template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::Modelparameter<ValueType> &modelEM, KITGPI::Configuration::Configuration config, bool isSeismic)
 {
     lama::DenseVector<ValueType> porositytemp;
     lama::DenseVector<ValueType> saturationtemp;
-        
-    IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");  
     
-    if (exchangeStrategy == 2) {
-        // case 2: exchange all of the petrophysical parameters 
-        porositytemp = this->applyModelTransformToEM(model.getPorosity(), modelEM.getPorosity()); 
-        saturationtemp = this->applyModelTransformToEM(model.getSaturation(), modelEM.getSaturation()); 
-                
-        modelEM.setPorosity(porositytemp);
-        modelEM.setSaturation(saturationtemp);           
-    } else if (exchangeStrategy != 0) {
-        // case 1,3,4,5,6: exchange porosity to EM model  
-        porositytemp = this->applyModelTransformToEM(model.getPorosity(), modelEM.getPorosity());
-                
-        modelEM.setPorosity(porositytemp);
-    } 
-    // case 0,1,2,3,4: self-constraint of the petrophysical relationship   
-    modelEM.calcWaveModulusFromPetrophysics();   
-    if (configEM.get<bool>("useModelThresholds"))
-        modelEM.applyThresholds(configEM); 
+    IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");  
+    if (isSeismic) {        
+        if (exchangeStrategy == 2) {
+            // case 2: exchange all of the petrophysical parameters 
+            porositytemp = this->applyModelTransformToEM(model.getPorosity(), modelEM.getPorosity()); 
+            saturationtemp = this->applyModelTransformToEM(model.getSaturation(), modelEM.getSaturation()); 
+                    
+            modelEM.setPorosity(porositytemp);
+            modelEM.setSaturation(saturationtemp);           
+        } else if (exchangeStrategy != 0) {
+            // case 1,3,4,5,6: exchange porosity to EM model  
+            porositytemp = this->applyModelTransformToEM(model.getPorosity(), modelEM.getPorosity());
+                    
+            modelEM.setPorosity(porositytemp);
+        }  
+        // case 0,1,2,3,4: self-constraint of the petrophysical relationship   
+        modelEM.calcWaveModulusFromPetrophysics();   
+        if (config.get<bool>("useModelThresholds"))
+            modelEM.applyThresholds(config); 
+    } else {
+        if (exchangeStrategy == 2) {
+            // case 2: exchange all of the petrophysical parameters 
+            porositytemp = this->applyModelTransformToSeismic(model.getPorosity(), modelEM.getPorosity()); 
+            saturationtemp = this->applyModelTransformToSeismic(model.getSaturation(), modelEM.getSaturation()); 
+                    
+            model.setPorosity(porositytemp);
+            model.setSaturation(saturationtemp);           
+        } else if (exchangeStrategy != 0) {     
+            // case 1,3,4,5,6: exchange saturation to seismic model             
+            saturationtemp = this->applyModelTransformToSeismic(model.getSaturation(), modelEM.getSaturation()); 
+                    
+            model.setSaturation(saturationtemp); 
+        }
+        // case 0,1,2,3,4: self-constraint of the petrophysical relationship                     
+        model.calcWaveModulusFromPetrophysics(); 
+        if (config.get<bool>("useModelThresholds"))
+            model.applyThresholds(config); 
+    }
 }
 
 /*! \brief Initialize wavefield transform matrix
@@ -444,7 +403,7 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
  \param ctx Context
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, dmemo::DistributionPtr distInversion, dmemo::DistributionPtr dist, hmemo::ContextPtr ctx, bool isSeismic)
+void KITGPI::Taper::Taper2D<ValueType>::initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, dmemo::DistributionPtr distInversion, dmemo::DistributionPtr dist, hmemo::ContextPtr ctx)
 {
     wavefieldAverageMatrix = lama::zero<SparseFormat>(distInversion, dist);
     wavefieldAverageMatrix.setContextPtr(ctx);
@@ -454,18 +413,12 @@ void KITGPI::Taper::Taper2D<ValueType>::initWavefieldAverageMatrix(KITGPI::Confi
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
-    if (isSeismic) {
-        wavefieldsInversion = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-        wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-        wavefieldsInversion->init(ctx, distInversion);
-        wavefields->init(ctx, dist);
-    } else {
-        wavefieldsInversionEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
-        wavefieldsEM = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
-        wavefieldsInversionEM->init(ctx, distInversion);
-        wavefieldsEM->init(ctx, dist);        
-    }
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
+    
+    wavefieldsInversion = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+    wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
+    wavefieldsInversion->init(ctx, distInversion);
+    wavefields->init(ctx, dist);
 }
 
 /*! \brief calculate a matrix for averaging inversion
@@ -541,26 +494,6 @@ KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::ap
 {
     wavefieldsInversion->applyTransform(wavefieldAverageMatrix, *wavefieldPtr);
     return *wavefieldsInversion;
-}
-
-/*! \brief Apply model recover to a wavefield
- \param modelParameter model parameter
- */
-template <typename ValueType>
-KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldRecover(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
-{
-    wavefieldsEM->applyTransform(wavefieldRecoverMatrix, *wavefieldPtrEM);
-    return *wavefieldsEM;
-}
-
-/*! \brief Apply model transform to a wavefield
- \param modelParameter model parameter
- */
-template <typename ValueType>
-KITGPI::Wavefields::WavefieldsEM<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldAverage(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM)
-{
-    wavefieldsInversionEM->applyTransform(wavefieldAverageMatrix, *wavefieldPtrEM);
-    return *wavefieldsInversionEM;
 }
 
 template class KITGPI::Taper::Taper2D<double>;

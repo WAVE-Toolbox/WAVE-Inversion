@@ -5,7 +5,7 @@
 #include "../Gradient/GradientFactory.hpp"
 #include "../Workflow/Workflow.hpp"
 
-#include <ModelparameterEM/ModelparameterFactory.hpp>
+#include <Modelparameter/ModelparameterFactory.hpp>
 #include "../GradientEM/GradientFactory.hpp"
 #include "../WorkflowEM/Workflow.hpp"
 #include <Configuration/Configuration.hpp>
@@ -31,7 +31,7 @@ namespace KITGPI
             
               virtual void init(scai::dmemo::DistributionPtr dist) = 0;
               virtual void apply(KITGPI::Gradient::Gradient<ValueType> &gradient, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Configuration::Configuration config) = 0;
-              virtual void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM) = 0;
+              virtual void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM) = 0;
 	    
           protected:
               

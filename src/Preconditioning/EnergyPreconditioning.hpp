@@ -7,8 +7,8 @@
 #include <Acquisition/Receivers.hpp>
 #include <Wavefields/Wavefields.hpp>
 #include "../Gradient/Gradient.hpp"
-#include <AcquisitionEM/Receivers.hpp>
-#include <WavefieldsEM/Wavefields.hpp>
+#include <Acquisition/Receivers.hpp>
+#include <Wavefields/Wavefields.hpp>
 #include "../GradientEM/Gradient.hpp"
 
 namespace KITGPI
@@ -33,13 +33,13 @@ namespace KITGPI
             EnergyPreconditioning(){};
             ~EnergyPreconditioning(){};
 
-            void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, bool isSeismic);
+            void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config);
             void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldBack, ValueType DT); //!< Integrate squared wavefields 
-            void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat);
             
-            void intSquaredWavefields(KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefield, KITGPI::Wavefields::WavefieldsEM<ValueType> &wavefieldBack, ValueType DT); //!< Integrate squared wavefieldsEM 
-            void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientPerShotEM, scai::IndexType shotNumber, scai::IndexType fileFormat);
             void resetApproxHessian();
+            
+            void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat);
+            void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientPerShotEM, scai::IndexType shotNumber, scai::IndexType fileFormat);
             
         private:
             scai::lama::DenseVector<ValueType> approxHessian;            // approximation of the diagonal of the inverse of the Hessian 
@@ -54,7 +54,8 @@ namespace KITGPI
             std::string approxHessianName;
             std::string dimension; 
             std::string equationType;
-            ValueType epsilonHessian;            
+            ValueType epsilonHessian;     
+            bool isSeismic;
         };
     }
 }

@@ -214,34 +214,22 @@ KITGPI::Misfit::Misfit<ValueType> &KITGPI::Misfit::Misfit<ValueType>::operator=(
  \param reflectivity reflectivity model.
  */
 template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::calcReflectSources(KITGPI::Acquisition::Receivers<ValueType> &sourcesReflect, scai::lama::DenseVector<ValueType> reflectivity, bool forward)
+void KITGPI::Misfit::Misfit<ValueType>::calcReflectSources(KITGPI::Acquisition::Receivers<ValueType> &sourcesReflect, scai::lama::DenseVector<ValueType> reflectivity)
 {
+    bool isSeismic = sourcesReflect.getSeismogramHandler().getIsSeismic();
     for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-        if (sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramType>(i)).getData().getNumRows()!=0) {
+        if (isSeismic && sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramType>(i)).getData().getNumRows()!=0) {
             if (static_cast<Acquisition::SeismogramType>(i) == Acquisition::SeismogramType::P || static_cast<Acquisition::SeismogramType>(i) == Acquisition::SeismogramType::VX) {
                 reflectivity *= -1;        
             }
             sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramType>(i)) *= reflectivity;
-        }
-    }     
-}
-
-/*! \brief Calculate reflection sources
- *
- \param sourcesReflect sources for reflection.
- \param reflectivity reflectivity model.
- */
-template <typename ValueType>
-void KITGPI::Misfit::Misfit<ValueType>::calcReflectSources(KITGPI::Acquisition::ReceiversEM<ValueType> &sourcesReflect, scai::lama::DenseVector<ValueType> reflectivity, bool forward)
-{
-    for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-        if (sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i)).getData().getNumRows()!=0) {
+        } else if (!isSeismic && sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i)).getData().getNumRows()!=0) {
             if (static_cast<Acquisition::SeismogramTypeEM>(i) == Acquisition::SeismogramTypeEM::HZ) {
                 reflectivity *= -1;        
             }
             sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i)) *= reflectivity;
         }
-    }         
+    }     
 }
 
 template class KITGPI::Misfit::Misfit<double>;

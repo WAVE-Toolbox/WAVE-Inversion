@@ -25,15 +25,6 @@
 #include <Modelparameter/ModelparameterFactory.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
 
-#include <AcquisitionEM/Receivers.hpp>
-#include <AcquisitionEM/Sources.hpp>
-#include <ForwardSolverEM/ForwardSolver.hpp>
-#include <ForwardSolverEM/ForwardSolverFactory.hpp>
-#include <ForwardSolverEM/SourceReceiverImpl/SourceReceiverImpl.hpp>
-#include <ForwardSolverEM/SourceReceiverImpl/SourceReceiverImplFactory.hpp>
-#include <ModelparameterEM/ModelparameterFactory.hpp>
-#include <WavefieldsEM/WavefieldsFactory.hpp>
-
 #include "Misfit/AbortCriterion.hpp"
 #include "Misfit/Misfit.hpp"
 #include "Misfit/MisfitFactory.hpp"
@@ -289,14 +280,13 @@ int main(int argc, char *argv[])
     
     typedef typename Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
     wavefieldPtr wavefields(Wavefields::Factory<ValueType>::Create(dimension, equationType));
-
-    ForwardSolver::ForwardSolverEM<ValueType>::ForwardSolverPtr solverEM(ForwardSolver::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM));
     
-    Modelparameter::ModelparameterEM<ValueType>::ModelparameterPtr modelEM(Modelparameter::FactoryEM<ValueType>::Create(equationTypeEM));
-    Modelparameter::ModelparameterEM<ValueType>::ModelparameterPtr modelPrioriEM(Modelparameter::FactoryEM<ValueType>::Create(equationTypeEM));
+    ForwardSolver::ForwardSolver<ValueType>::ForwardSolverPtr solverEM(ForwardSolver::Factory<ValueType>::Create(dimensionEM, equationTypeEM));
     
-    typedef typename Wavefields::WavefieldsEM<ValueType>::WavefieldPtr wavefieldPtrEM;
-    wavefieldPtrEM wavefieldsEM(Wavefields::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM));
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelEM(Modelparameter::Factory<ValueType>::Create(equationTypeEM));
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelPrioriEM(Modelparameter::Factory<ValueType>::Create(equationTypeEM));
+    
+    wavefieldPtr wavefieldsEM(Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM));
     
     /* --------------------------------------- */
     /* Memory estimation                       */
@@ -419,7 +409,7 @@ int main(int argc, char *argv[])
     }
 
     //Temporary Wavefield for the derivative of the forward wavefields
-    wavefieldPtrEM wavefieldsTempEM = Wavefields::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM);
+    wavefieldPtr wavefieldsTempEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
     if (inversionTypeEM != 0) {
         wavefieldsEM->init(ctx, distEM);
         if (gradientTypeEM > 1 && decomposeTypeEM == 0)
@@ -433,8 +423,8 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     std::vector<wavefieldPtr> wavefieldrecord;
     std::vector<wavefieldPtr> wavefieldrecordReflect;
-    std::vector<wavefieldPtrEM> wavefieldrecordEM;
-    std::vector<wavefieldPtrEM> wavefieldrecordReflectEM;
+    std::vector<wavefieldPtr> wavefieldrecordEM;
+    std::vector<wavefieldPtr> wavefieldrecordReflectEM;
     
     if (inversionType != 0) {
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
@@ -458,7 +448,7 @@ int main(int argc, char *argv[])
     if (inversionTypeEM != 0) {
         for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
             if (tStep % dtinversionEM == 0) {
-                wavefieldPtrEM wavefieldsInversionEM = Wavefields::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM);
+                wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
                 wavefieldsInversionEM->init(ctx, distInversionEM);
                 wavefieldrecordEM.push_back(wavefieldsInversionEM);
             }
@@ -466,7 +456,7 @@ int main(int argc, char *argv[])
         if (gradientTypeEM > 1 && decomposeTypeEM == 0) {
             for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
                 if (tStep % dtinversionEM == 0) {
-                    wavefieldPtrEM wavefieldsInversionEM = Wavefields::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM);
+                    wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
                     wavefieldsInversionEM->init(ctx, distInversionEM);
                     wavefieldrecordReflectEM.push_back(wavefieldsInversionEM);
                 }
@@ -479,8 +469,8 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Acquisition::Sources<ValueType> sources;
     Acquisition::Receivers<ValueType> receivers;
-    Acquisition::SourcesEM<ValueType> sourcesEM;   
-    Acquisition::ReceiversEM<ValueType> receiversEM;
+    Acquisition::Sources<ValueType> sourcesEM;   
+    Acquisition::Receivers<ValueType> receiversEM;
     
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings;
     std::vector<Acquisition::coordinate3D> cutCoordinates;
@@ -576,7 +566,7 @@ int main(int argc, char *argv[])
     /* Modelparameter                          */
     /* --------------------------------------- */
     Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelPerShot(Modelparameter::Factory<ValueType>::Create(equationType));
-    Modelparameter::ModelparameterEM<ValueType>::ModelparameterPtr modelPerShotEM(Modelparameter::FactoryEM<ValueType>::Create(equationTypeEM));
+    Modelparameter::Modelparameter<ValueType>::ModelparameterPtr modelPerShotEM(Modelparameter::Factory<ValueType>::Create(equationTypeEM));
          
     if (inversionType != 0) {
         // load starting model
@@ -632,9 +622,9 @@ int main(int argc, char *argv[])
     /* True data                               */
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receiversTrue;
-    Acquisition::ReceiversEM<ValueType> receiversTrueEM;
+    Acquisition::Receivers<ValueType> receiversTrueEM;
     Acquisition::Receivers<ValueType> receiversStart;
-    Acquisition::ReceiversEM<ValueType> receiversStartEM;
+    Acquisition::Receivers<ValueType> receiversStartEM;
     Taper::Taper2D<ValueType> seismogramTaper2D;
     Taper::Taper1D<ValueType> seismogramTaper1D;
     Taper::Taper2D<ValueType> seismogramTaper2DEM;
@@ -672,7 +662,7 @@ int main(int argc, char *argv[])
     /* Adjoint sources                         */
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> adjointSources;
-    Acquisition::ReceiversEM<ValueType> adjointSourcesEM;
+    Acquisition::Receivers<ValueType> adjointSourcesEM;
     if (inversionType != 0 && config.get<IndexType>("useReceiversPerShot") == 0)
         adjointSources.init(config, modelCoordinates, ctx, dist);
 
@@ -680,7 +670,7 @@ int main(int argc, char *argv[])
         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM);
     
     Acquisition::Receivers<ValueType> sourcesReflect;    
-    Acquisition::ReceiversEM<ValueType> sourcesReflectEM; 
+    Acquisition::Receivers<ValueType> sourcesReflectEM; 
     
     /* --------------------------------------- */
     /* Workflow                                */
@@ -814,7 +804,7 @@ int main(int argc, char *argv[])
                 gradientTaper1D.read(configBig.get<std::string>("gradientTaperName"), config.get<IndexType>("FileFormat"));
             }  
         }
-        wavefieldTaper2D.initWavefieldAverageMatrix(config, distInversion, dist, ctx, isSeismic); 
+        wavefieldTaper2D.initWavefieldAverageMatrix(config, distInversion, dist, ctx); 
         wavefieldTaper2D.calcWavefieldAverageMatrix(modelCoordinates, modelCoordinatesInversion); 
     }
     if (inversionTypeEM != 0) {
@@ -827,7 +817,7 @@ int main(int argc, char *argv[])
                 gradientTaper1DEM.read(configBigEM.get<std::string>("gradientTaperName"), configEM.get<IndexType>("FileFormat"));
             }
         }
-        wavefieldTaper2DEM.initWavefieldAverageMatrix(configEM, distInversionEM, distEM, ctx, isSeismicEM);
+        wavefieldTaper2DEM.initWavefieldAverageMatrix(configEM, distInversionEM, distEM, ctx);
         wavefieldTaper2DEM.calcWavefieldAverageMatrix(modelCoordinatesEM, modelCoordinatesInversionEM);
     } 
     if (inversionType != 0 && inversionTypeEM != 0) {
@@ -1180,8 +1170,7 @@ int main(int argc, char *argv[])
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = model->getReflectivity();
-                            bool forward = true;
-                            dataMisfit->calcReflectSources(sourcesReflect, reflectivity, forward);
+                            dataMisfit->calcReflectSources(sourcesReflect, reflectivity);
                             wavefields->resetWavefields(); 
                             for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                                 
@@ -1226,8 +1215,7 @@ int main(int argc, char *argv[])
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShot->getReflectivity();
-                            bool forward = true;
-                            dataMisfit->calcReflectSources(sourcesReflect, reflectivity, forward);
+                            dataMisfit->calcReflectSources(sourcesReflect, reflectivity);
                             wavefields->resetWavefields(); 
                             for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                                 
@@ -1284,9 +1272,9 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Backward\n");
                     }
                     if (!useStreamConfig) {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, wavefieldrecordReflect);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, wavefieldrecordReflect, *dataMisfit);
                     } else {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, wavefieldrecordReflect);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, wavefieldrecordReflect, *dataMisfit);
                     }
                     
                     if (!useStreamConfig) {
@@ -1410,7 +1398,7 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
                         HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
                         HOST_PRINT(commAll, "\n=================================================\n");
-                        modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM);
+                        modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic);
                     }       
                     if (breakLoopType == 0 && breakLoopEM == true) {
                         break;
@@ -1485,7 +1473,7 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
                 HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
                 HOST_PRINT(commAll, "\n=================================================\n");                
-                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM);
+                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic);
             }
             
             /* --------------------------------------- */
@@ -1723,7 +1711,7 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commAll, "================ initWholeSpace receivers ===============\n");
                         sourcesReflectEM.initWholeSpace(configEM, modelCoordinatesEM, ctx, distEM, receiversEM.getSeismogramTypes());
                     }
-                    typename ForwardSolver::SourceReceiverImpl::SourceReceiverImplEM<ValueType>::SourceReceiverImplPtr SourceReceiverReflect(ForwardSolver::SourceReceiverImpl::FactoryEM<ValueType>::Create(dimensionEM, equationTypeEM, sourcesEM, sourcesReflectEM, *wavefieldsTempEM));
+                    typename ForwardSolver::SourceReceiverImpl::SourceReceiverImpl<ValueType>::SourceReceiverImplPtr SourceReceiverReflect(ForwardSolver::SourceReceiverImpl::Factory<ValueType>::Create(dimensionEM, equationTypeEM, sourcesEM, sourcesReflectEM, *wavefieldsTempEM));
 
                     start_t_shot = common::Walltime::get();
                     
@@ -1756,8 +1744,7 @@ int main(int argc, char *argv[])
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelEM->getReflectivity();
-                            bool forward = true;
-                            dataMisfitEM->calcReflectSources(sourcesReflectEM, reflectivity, forward);
+                            dataMisfitEM->calcReflectSources(sourcesReflectEM, reflectivity);
                             wavefieldsEM->resetWavefields(); 
                             for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
                                 
@@ -1802,8 +1789,7 @@ int main(int argc, char *argv[])
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShotEM->getReflectivity();
-                            bool forward = true;
-                            dataMisfitEM->calcReflectSources(sourcesReflectEM, reflectivity, forward);
+                            dataMisfitEM->calcReflectSources(sourcesReflectEM, reflectivity);
                             wavefieldsEM->resetWavefields(); 
                             for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
                                 
@@ -1860,9 +1846,9 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Backward\n");
                     }
                     if (!useStreamConfigEM) {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM, *dataMisfitEM);
                     } else {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM, *dataMisfitEM);
                     }
                         
                     if (!useStreamConfigEM) {
@@ -1986,7 +1972,7 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
                         HOST_PRINT(commAll, "\n=============  From EM to Seismic  ==============");
                         HOST_PRINT(commAll, "\n=================================================\n");                    
-                        modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config); 
+                        modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config, isSeismicEM); 
                     }   
                     if (breakLoopType == 1) {
                         if (breakLoop == false) {
@@ -2015,7 +2001,7 @@ int main(int argc, char *argv[])
                                 HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
                                 HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
                                 HOST_PRINT(commAll, "\n=================================================\n");                        
-                                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM);
+                                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic);
                             } 
                         }
                     }
@@ -2087,7 +2073,7 @@ int main(int argc, char *argv[])
                 HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
                 HOST_PRINT(commAll, "\n=============  From EM to Seismic  ==============");
                 HOST_PRINT(commAll, "\n=================================================\n");                
-                modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config);
+                modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config, isSeismicEM);
             }
             
             /* -------------------------------------------------------------------- */
@@ -2358,7 +2344,7 @@ int main(int argc, char *argv[])
         HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
         HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
         HOST_PRINT(commAll, "\n=================================================\n");
-        modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM); 
+        modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic); 
         if (commInterShot->getRank() == 0) {
             /* only shot Domain 0 writes output */
             if (!useStreamConfigEM) {

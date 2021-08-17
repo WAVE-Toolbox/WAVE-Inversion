@@ -19,9 +19,9 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);   
 
-    wavefields = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+    wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefields->init(ctx, dist);
-    wavefieldsTemp = KITGPI::Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+    wavefieldsTemp = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefieldsTemp->init(ctx, dist);
 
     ZeroLagXcorr = KITGPI::ZeroLagXcorr::FactoryEM<ValueType>::Create(dimension, equationType);
@@ -40,7 +40,7 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
  \param dataMisfit Misfit
  */
 template <typename ValueType>
-void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolverEM<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::ReceiversEM<ValueType> &receivers, KITGPI::Acquisition::SourcesEM<ValueType> &sources, KITGPI::Acquisition::ReceiversEM<ValueType> &adjointSources, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::Gradient::GradientEM<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, KITGPI::Taper::Taper2D<ValueType> &wavefieldTaper2D, std::vector<typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr> &wavefieldrecordReflect)
+void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Gradient::GradientEM<ValueType> &gradient, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecord, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, int shotNumber, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, KITGPI::Taper::Taper2D<ValueType> &wavefieldTaper2D, std::vector<typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr> &wavefieldrecordReflect, KITGPI::Misfit::Misfit<ValueType> &dataMisfit)
 {
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     IndexType dtinversion = config.get<IndexType>("DTInversion");    
@@ -79,8 +79,8 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     if (decomposeType != 0) {
         snapType = decomposeType + 3;
     }
-    bool isSeismic = Common::checkEquationType<ValueType>(equationType);
-    energyPrecond.init(dist, config, isSeismic);
+    
+    energyPrecond.init(dist, config);
     wavefields->resetWavefields();
     ZeroLagXcorr->setDecomposeType(decomposeType);
     ZeroLagXcorr->setGradientType(gradientType);
@@ -90,7 +90,7 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     /* Adjoint Wavefield record                */
     /* --------------------------------------- */    
     std::vector<wavefieldPtr> wavefieldrecordAdjointReflect;  
-    Acquisition::ReceiversEM<ValueType> adjointSourcesReflect;                
+    Acquisition::Receivers<ValueType> adjointSourcesReflect;                
     if (gradientType == 2 && decomposeType == 0) { 
         scai::dmemo::DistributionPtr distInversion;
         if(equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
@@ -100,14 +100,14 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
         }  
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
             if (tStep % dtinversion == 0) {
-                wavefieldPtr wavefieldsInversion = Wavefields::FactoryEM<ValueType>::Create(dimension, equationType);
+                wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
                 wavefieldsInversion->init(ctx, distInversion);
                 wavefieldrecordAdjointReflect.push_back(wavefieldsInversion);
             }
         }
         adjointSourcesReflect.initWholeSpace(config, modelCoordinates, ctx, dist, receivers.getSeismogramTypes());
     }     
-    typename ForwardSolver::SourceReceiverImpl::SourceReceiverImplEM<ValueType>::SourceReceiverImplPtr SourceReceiverReflect(ForwardSolver::SourceReceiverImpl::FactoryEM<ValueType>::Create(dimension, equationType, sources, adjointSourcesReflect, *wavefieldsTemp));
+    typename ForwardSolver::SourceReceiverImpl::SourceReceiverImpl<ValueType>::SourceReceiverImplPtr SourceReceiverReflect(ForwardSolver::SourceReceiverImpl::Factory<ValueType>::Create(dimension, equationType, sources, adjointSourcesReflect, *wavefieldsTemp));
     
     for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {
         *wavefieldsTemp = *wavefields;
@@ -202,13 +202,10 @@ void KITGPI::GradientCalculationEM<ValueType>::run(scai::dmemo::CommunicatorPtr 
     if (gradientType == 2 && decomposeType == 0) {
         typename KITGPI::Gradient::GradientEM<ValueType>::GradientPtr testgradient(KITGPI::Gradient::FactoryEM<ValueType>::Create(equationType));
         *testgradient = gradient;
-        std::string misfitType = config.get<std::string>("misfitType");
-        typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(misfitType));
         scai::lama::DenseVector<ValueType> reflectivity;
         reflectivity = model.getReflectivity();
-        bool forward = false;
-        dataMisfit->calcReflectSources(adjointSourcesReflect, reflectivity, forward);
-        energyPrecond.init(dist, config, isSeismic);
+        dataMisfit.calcReflectSources(adjointSourcesReflect, reflectivity);
+        energyPrecond.init(dist, config);
         wavefields->resetWavefields();
         ZeroLagXcorr->resetXcorr(workflow);
         for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {

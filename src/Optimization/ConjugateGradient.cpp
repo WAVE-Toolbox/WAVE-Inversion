@@ -173,7 +173,7 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
  \param workflowEM To check which parameter class is inverted for
  */
 template <typename ValueType>
-void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM)
+void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM)
 {    
     /* Should an automatic direction reset be implemented? -> beta = max{beta^PR, 0} */    
     if(workflowEM.iteration==0){        

@@ -4,12 +4,9 @@
 #include <vector>     
 #include <scai/lama.hpp>
 #include <Acquisition/SeismogramHandler.hpp>
-#include <AcquisitionEM/SeismogramHandler.hpp>
 #include <Configuration/Configuration.hpp>
 #include <Modelparameter/Modelparameter.hpp>
-#include <ModelparameterEM/Modelparameter.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
-#include <WavefieldsEM/WavefieldsFactory.hpp>
 
 namespace KITGPI
 {
@@ -31,13 +28,10 @@ namespace KITGPI
 
             void init(scai::dmemo::DistributionPtr rowDist, scai::dmemo::DistributionPtr colDist, scai::hmemo::ContextPtr ctx);
             void init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms);
-            void init(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> const seismograms);
             void initModelTransform(scai::dmemo::DistributionPtr dist, scai::dmemo::DistributionPtr distEM, scai::hmemo::ContextPtr ctx);
 
             void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
-            void apply(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> &seismograms) const;
-            void apply(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogram) const;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
             
             scai::lama::Vector<ValueType> const &applyGradientTransformToEM(scai::lama::Vector<ValueType> const &gradientParameter);
@@ -49,15 +43,12 @@ namespace KITGPI
             void calcSeismictoEMMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesEM, KITGPI::Configuration::Configuration configEM);
             void calcEMtoSeismicMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesEM, KITGPI::Configuration::Configuration configEM);
 
-            void exchangePetrophysics(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config);
-            void exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelEM, KITGPI::Configuration::Configuration configEM);
+            void exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::Modelparameter<ValueType> &modelEM, KITGPI::Configuration::Configuration config, bool isSeismic);
             
-            void initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool isSeismic);
+            void initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx);
             void calcWavefieldAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion);
             KITGPI::Wavefields::Wavefields<ValueType> &applyWavefieldAverage(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr);
             KITGPI::Wavefields::Wavefields<ValueType> &applyWavefieldRecover(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr);
-            KITGPI::Wavefields::WavefieldsEM<ValueType> &applyWavefieldAverage(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM);
-            KITGPI::Wavefields::WavefieldsEM<ValueType> &applyWavefieldRecover(typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr &wavefieldPtrEM);
             
           private:
             scai::lama::DenseMatrix<ValueType> data;
@@ -72,9 +63,6 @@ namespace KITGPI
             typedef typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
             wavefieldPtr wavefieldsInversion;
             wavefieldPtr wavefields;
-            typedef typename KITGPI::Wavefields::WavefieldsEM<ValueType>::WavefieldPtr wavefieldPtrEM;
-            wavefieldPtrEM wavefieldsInversionEM;
-            wavefieldPtrEM wavefieldsEM;
         };
     }
 }

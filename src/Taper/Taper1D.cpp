@@ -111,7 +111,6 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperUp(lama::DenseVector<Valu
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperDown(lama::DenseVector<ValueType> &result, IndexType iStart, IndexType iEnd)
 {
-
     // first part of taper
     lama::DenseVector<ValueType> firstPart(iStart, 1.0);
     lama::DenseVector<ValueType> tmpResult;
@@ -138,9 +137,13 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperDown(lama::DenseVector<Va
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
 {
-    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
-        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+    bool isSeismic = seismograms.getIsSeismic();
+    for (scai::IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
+            apply(thisSeismogram);
+        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
+            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
             apply(thisSeismogram);
         }
     }
@@ -151,30 +154,6 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramHan
  */
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const
-{
-    lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
-    apply(seismogramData);
-}
-
-/*! \brief Wrapper to support SeismogramHandler
- \param seismograms SeismogramHandler object
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandlerEM<ValueType> &seismograms) const
-{
-    for (scai::IndexType iComponent = 0; iComponent < 4; iComponent++) {
-        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
-            Acquisition::SeismogramEM<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
-            apply(thisSeismogram);
-        }
-    }
-}
-
-/*! \brief Apply taper to a single seismogram
- \param seismogram Seismogram
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramEM<ValueType> &seismogram) const
 {
     lama::DenseMatrix<ValueType> &seismogramData = seismogram.getData();
     apply(seismogramData);

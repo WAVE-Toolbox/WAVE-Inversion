@@ -106,7 +106,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::allocateParameterisation(scai::lam
  \param uniqueShotInds unique shot indexes 
  */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcWeightingVector(KITGPI::Modelparameter::ModelparameterEM<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds)
+void KITGPI::Gradient::GradientEM<ValueType>::calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds)
 {
     auto dist = modelPerShot.getDielectricPermittivity().getDistributionPtr();
     auto distBig = dielectricPermittivity.getDistributionPtr();
@@ -246,7 +246,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::gradientParameterisation(scai::lam
 }
 
 /*! \brief calculate the derivative of conductivity with respect to porosity */
-template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getElectricConductivityDePorosity(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model)
+template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getElectricConductivityDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
     scai::lama::DenseVector<ValueType> conductivityDePorosity;
     scai::lama::DenseVector<ValueType> temp;  
@@ -271,7 +271,7 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
 }
 
 /*! \brief calculate the derivative of dielectricPermittiviy with respect to porosity */
-template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getDielectricPermittiviyDePorosity(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model)
+template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getDielectricPermittiviyDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
     scai::lama::DenseVector<ValueType> dielectricPermittiviyDePorosity;
     scai::lama::DenseVector<ValueType> temp; 
@@ -298,7 +298,7 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
 }
 
 /*! \brief calculate the derivative of conductivity with respect to saturation */
-template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getElectricConductivityDeSaturation(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model)
+template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getElectricConductivityDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
     scai::lama::DenseVector<ValueType> conductivityDeSaturation;
     scai::lama::DenseVector<ValueType> temp;  
@@ -323,7 +323,7 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
 }
 
 /*! \brief calculate the derivative of conductivity with respect to saturation */
-template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getDielectricPermittiviyDeSaturation(KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model)
+template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradient::GradientEM<ValueType>::getDielectricPermittiviyDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
     scai::lama::DenseVector<ValueType> dielectricPermittiviyDeSaturation;
     scai::lama::DenseVector<ValueType> temp;  
@@ -347,7 +347,7 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
+void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> electricConductivitytemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivitytemp;
@@ -425,7 +425,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
+void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> electricConductivitytemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivitytemp;
@@ -500,7 +500,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::ModelparameterEM<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
+void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> electricConductivitytemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivitytemp;
