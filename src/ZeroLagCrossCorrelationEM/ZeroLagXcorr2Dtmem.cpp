@@ -178,29 +178,6 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wav
     }
 }
 
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::updateHessianVectorProduct(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefieldDerivative, Wavefields::Wavefields<ValueType> &adjointWavefield, Wavefields::Wavefields<ValueType> &forwardWavefield2ndOrder, Wavefields::Wavefields<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    //temporary wavefield allocated for every timestep (might be inefficient)
-    lama::DenseVector<ValueType> temp;
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        temp = forwardWavefield2ndOrder.getRefEZ();
-        temp *= adjointWavefield.getRefEZ();
-        xcorrSigmaEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEZ();
-        temp *= forwardWavefield.getRefEZ();
-        xcorrSigmaEM += temp;
-    }
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        temp = forwardWavefield2ndOrder.getRefEZ();
-        temp *= adjointWavefieldDerivative.getRefEZ();
-        xcorrEpsilonEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEZ();
-        temp *= forwardWavefieldDerivative.getRefEZ();
-        xcorrEpsilonEM += temp;
-    }
-}
-
 /*! \brief Get numDimension (2)
  */
 template <typename ValueType>

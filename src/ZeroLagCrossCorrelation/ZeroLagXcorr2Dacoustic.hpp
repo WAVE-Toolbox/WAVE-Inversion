@@ -7,7 +7,7 @@
 #include <scai/dmemo/BlockDistribution.hpp>
 #include <scai/hmemo/HArray.hpp>
 
-#include "ZeroLagXcorr.hpp"
+#include "ZeroLagXcorrSeismic.hpp"
 
 namespace KITGPI
 {
@@ -19,7 +19,7 @@ namespace KITGPI
          *
          */
         template <typename ValueType>
-        class ZeroLagXcorr2Dacoustic : public ZeroLagXcorr<ValueType>
+        class ZeroLagXcorr2Dacoustic : public ZeroLagXcorrSeismic<ValueType>
         {
 
           public:

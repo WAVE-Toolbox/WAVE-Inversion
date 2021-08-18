@@ -7,7 +7,7 @@
 #include <scai/dmemo/BlockDistribution.hpp>
 #include <scai/hmemo/HArray.hpp>
 
-#include "ZeroLagXcorr.hpp"
+#include "ZeroLagXcorrEM.hpp"
 
 namespace KITGPI
 {
@@ -34,7 +34,7 @@ namespace KITGPI
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
-            void updateHessianVectorProduct(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefieldDerivative, Wavefields::Wavefields<ValueType> &adjointWavefield, Wavefields::Wavefields<ValueType> &forwardWavefield2ndOrder, Wavefields::Wavefields<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            
             int getNumDimension() const;
             std::string getEquationType() const;
             
@@ -48,14 +48,14 @@ namespace KITGPI
 
           private:
               
-            using ZeroLagXcorrEM<ValueType>::numDimension;
-            using ZeroLagXcorrEM<ValueType>::equationType;
+            using ZeroLagXcorr<ValueType>::numDimension;
+            using ZeroLagXcorr<ValueType>::equationType;
             
             /* required wavefields */
-            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEM;
-            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEM;
-            using ZeroLagXcorrEM<ValueType>::xcorrRSigmaEM;
-            using ZeroLagXcorrEM<ValueType>::xcorrREpsilonEM;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEM;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEM;
+            using ZeroLagXcorr<ValueType>::xcorrRSigmaEM;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonEM;
             
             /* non required wavefields */
             

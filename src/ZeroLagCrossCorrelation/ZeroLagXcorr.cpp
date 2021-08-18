@@ -64,40 +64,5 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::writeWavefield(scai::lama::D
     vector.writeToFile(fileName);
 }
 
-//! \brief Getter routine for VSum wavefield
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrRho() const
-{
-    return (xcorrRho);
-}
-
-//! \brief Getter routine for XcorrLambda
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrLambda() const
-{
-    return (xcorrLambda);
-}
-
-//! \brief Getter routine for xcorrMuA
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrMuA() const
-{
-    return (xcorrMuA);
-}
-
-//! \brief Getter routine for xcorrMuB
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrMuB() const
-{
-    return (xcorrMuB);
-}
-
-//! \brief Getter routine for xcorrMuC
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::getXcorrMuC() const
-{
-    return (xcorrMuC);
-}
-
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr<float>;
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr<double>;

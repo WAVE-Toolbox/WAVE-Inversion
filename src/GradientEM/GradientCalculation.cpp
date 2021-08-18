@@ -24,7 +24,7 @@ void KITGPI::GradientCalculationEM<ValueType>::allocate(KITGPI::Configuration::C
     wavefieldsTemp = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefieldsTemp->init(ctx, dist);
 
-    ZeroLagXcorr = KITGPI::ZeroLagXcorr::FactoryEM<ValueType>::Create(dimension, equationType);
+    ZeroLagXcorr = KITGPI::ZeroLagXcorr::Factory<ValueType>::Create(dimension, equationType);
 }
 
 /*! \brief Initialitation of the boundary conditions

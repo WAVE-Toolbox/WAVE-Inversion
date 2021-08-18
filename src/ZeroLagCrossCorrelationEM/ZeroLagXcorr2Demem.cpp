@@ -100,41 +100,6 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::update(Wavefields::Wav
     }
 }
 
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::updateHessianVectorProduct(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefieldDerivative, Wavefields::Wavefields<ValueType> &adjointWavefield, Wavefields::Wavefields<ValueType> &forwardWavefield2ndOrder, Wavefields::Wavefields<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    //temporary wavefield allocated for every timestep (might be inefficient)
-    lama::DenseVector<ValueType> temp;
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        temp = forwardWavefield2ndOrder.getRefEX();
-        temp *= adjointWavefield.getRefEX();
-        xcorrSigmaEM += temp;
-        temp = forwardWavefield2ndOrder.getRefEY();
-        temp *= adjointWavefield.getRefEY();
-        xcorrSigmaEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEX();
-        temp *= forwardWavefield.getRefEX();
-        xcorrSigmaEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEY();
-        temp *= forwardWavefield.getRefEY();
-        xcorrSigmaEM += temp;
-    }
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        temp = forwardWavefield2ndOrder.getRefEX();
-        temp *= adjointWavefieldDerivative.getRefEX();
-        xcorrEpsilonEM += temp;
-        temp = forwardWavefield2ndOrder.getRefEY();
-        temp *= adjointWavefieldDerivative.getRefEY();
-        xcorrEpsilonEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEX();
-        temp *= forwardWavefieldDerivative.getRefEX();
-        xcorrEpsilonEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEY();
-        temp *= forwardWavefieldDerivative.getRefEY();
-        xcorrEpsilonEM += temp;
-    }
-}
-
 /*! \brief Get numDimension (2)
  */
 template <typename ValueType>

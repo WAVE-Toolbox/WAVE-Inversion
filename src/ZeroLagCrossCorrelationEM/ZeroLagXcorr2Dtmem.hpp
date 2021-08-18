@@ -7,7 +7,7 @@
 #include <scai/dmemo/BlockDistribution.hpp>
 #include <scai/hmemo/HArray.hpp>
 
-#include "ZeroLagXcorr.hpp"
+#include "ZeroLagXcorrEM.hpp"
 
 namespace KITGPI
 {
@@ -34,7 +34,7 @@ namespace KITGPI
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
-            void updateHessianVectorProduct(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefieldDerivative, Wavefields::Wavefields<ValueType> &adjointWavefield, Wavefields::Wavefields<ValueType> &forwardWavefield2ndOrder, Wavefields::Wavefields<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            
             int getNumDimension() const;
             std::string getEquationType() const;
             
@@ -49,30 +49,30 @@ namespace KITGPI
             void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
           private:
               
-            using ZeroLagXcorrEM<ValueType>::numDimension;
-            using ZeroLagXcorrEM<ValueType>::equationType;
-            using ZeroLagXcorrEM<ValueType>::gradientType;
-            using ZeroLagXcorrEM<ValueType>::decomposeType;
+            using ZeroLagXcorr<ValueType>::numDimension;
+            using ZeroLagXcorr<ValueType>::equationType;
+            using ZeroLagXcorr<ValueType>::gradientType;
+            using ZeroLagXcorr<ValueType>::decomposeType;
             
             /* required wavefields */
-            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEM;
-            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEM;
-            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSuRu;
-            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSdRd;
-            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSuRd;
-            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMSdRu;
-            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSuRu;
-            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSdRd;
-            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSuRd;
-            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMSdRu;
-            using ZeroLagXcorrEM<ValueType>::xcorrSigmaEMstep;
-            using ZeroLagXcorrEM<ValueType>::xcorrEpsilonEMstep;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEM;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEM;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMstep;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep;
             
             /* non required wavefields */
-            using ZeroLagXcorrEM<ValueType>::xcorrRSigmaEM;
-            using ZeroLagXcorrEM<ValueType>::xcorrREpsilonEM;
-            using ZeroLagXcorrEM<ValueType>::xcorrRSigmaEMstep;
-            using ZeroLagXcorrEM<ValueType>::xcorrREpsilonEMstep;
+            using ZeroLagXcorr<ValueType>::xcorrRSigmaEM;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonEM;
+            using ZeroLagXcorr<ValueType>::xcorrRSigmaEMstep;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonEMstep;
             
             std::string type;
         };

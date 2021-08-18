@@ -39,6 +39,27 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr KITGPI::
         return ZeroLagXcorrPtr(new ZeroLagXcorr3Dviscoelastic<ValueType>);
     }
 
+    // 2D
+    if (dimension.compare("2d") == 0 && type.compare("emem") == 0) {
+        return ZeroLagXcorrPtr(new ZeroLagXcorr2Demem<ValueType>);
+    }
+    if (dimension.compare("2d") == 0 && type.compare("tmem") == 0) {
+        return ZeroLagXcorrPtr(new ZeroLagXcorr2Dtmem<ValueType>);
+    }
+    if (dimension.compare("2d") == 0 && type.compare("viscoemem") == 0) {
+        return ZeroLagXcorrPtr(new ZeroLagXcorr2Dviscoemem<ValueType>);
+    }
+    if (dimension.compare("2d") == 0 && type.compare("viscotmem") == 0) {
+        return ZeroLagXcorrPtr(new ZeroLagXcorr2Dviscotmem<ValueType>);
+    }
+    // 3D
+//     if (dimension.compare("3d") == 0 && type.compare("emem") == 0) {
+//         return ZeroLagXcorrPtr(new ZeroLagXcorr3Demem<ValueType>);
+//     }
+//     if (dimension.compare("3d") == 0 && type.compare("viscoemem") == 0) {
+//         COMMON_THROWEXCEPTION("3Dviscoemem convolution is not implemented yet.");
+//     }
+
     return ZeroLagXcorrPtr();
 }
 

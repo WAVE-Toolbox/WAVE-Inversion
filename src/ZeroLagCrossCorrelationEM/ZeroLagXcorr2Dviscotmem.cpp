@@ -116,44 +116,6 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscotmem<ValueType>::update(Wavefields
     }
 }
 
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscotmem<ValueType>::updateHessianVectorProduct(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefieldDerivative, Wavefields::Wavefields<ValueType> &adjointWavefield, Wavefields::Wavefields<ValueType> &forwardWavefield2ndOrder, Wavefields::Wavefields<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    //temporary wavefield allocated for every timestep (might be inefficient)
-    lama::DenseVector<ValueType> temp;
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        temp = forwardWavefield2ndOrder.getRefEZ();
-        temp *= adjointWavefield.getRefEZ();
-        xcorrSigmaEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEZ();
-        temp *= forwardWavefield.getRefEZ();
-        xcorrSigmaEM += temp;
-    }
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        temp = forwardWavefield2ndOrder.getRefEZ();
-        temp *= adjointWavefieldDerivative.getRefEZ();
-        xcorrEpsilonEM += temp;
-        temp = adjointWavefield2ndOrder.getRefEZ();
-        temp *= forwardWavefieldDerivative.getRefEZ();
-        xcorrEpsilonEM += temp;
-    }
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM()) {
-        temp = forwardWavefield2ndOrder.getRefRZ();
-        temp *= adjointWavefield.getRefRZ();
-        xcorrRSigmaEM += temp;
-        temp = adjointWavefield2ndOrder.getRefRZ();
-        temp *= forwardWavefield.getRefRZ();
-        xcorrRSigmaEM += temp;
-                
-        temp = forwardWavefield2ndOrder.getRefRZ();
-        temp *= adjointWavefieldDerivative.getRefRZ();
-        xcorrREpsilonEM += temp;
-        temp = adjointWavefield2ndOrder.getRefRZ();
-        temp *= forwardWavefieldDerivative.getRefRZ();
-        xcorrREpsilonEM += temp;
-    }
-}
-
 /*! \brief Get numDimension (2)
  */
 template <typename ValueType>

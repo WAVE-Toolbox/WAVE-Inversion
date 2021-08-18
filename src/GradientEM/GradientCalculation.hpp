@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "GradientFactory.hpp"
-#include "../ZeroLagCrossCorrelationEM/ZeroLagXcorrFactory.hpp"
+#include "../ZeroLagCrossCorrelation/ZeroLagXcorrFactory.hpp"
 #include "../Misfit/Misfit.hpp"
 #include "../Misfit/MisfitFactory.hpp"
 #include "../Preconditioning/EnergyPreconditioning.hpp"
@@ -45,7 +45,7 @@ namespace KITGPI
 
     private:
 
-        typedef typename KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::ZeroLagXcorrPtr ZeroLagXcorrPtr;
+        typedef typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr ZeroLagXcorrPtr;
         ZeroLagXcorrPtr ZeroLagXcorr;
 
         typedef typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;

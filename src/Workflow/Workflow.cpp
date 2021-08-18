@@ -26,10 +26,9 @@ void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configur
     maxStage = maxStage-2; // substract comment lines
     workflowFile.close();
     skipCount = 0;
-    readFromFile(config.get<std::string>("workflowFilename"));
     std::string equationType = config.get<std::string>("equationType");
-    isSeismic = Common::checkEquationType<ValueType>(equationType);
-    
+    isSeismic = Common::checkEquationType<ValueType>(equationType);    
+    readFromFile(config.get<std::string>("workflowFilename"));
 }
 
 /*! \brief Reset and adapt parameters when workflow is changed
