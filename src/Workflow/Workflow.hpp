@@ -41,6 +41,10 @@ namespace KITGPI
             bool getInvertForPorosity() const;
             bool getInvertForSaturation() const;
             bool getInvertForReflectivity() const;
+            bool getInvertForSigmaEM() const;
+            bool getInvertForEpsilonEM() const;
+            bool getInvertForTauSigmaEM() const;
+            bool getInvertForTauEpsilonEM() const;
             std::vector<bool> getInvertForParameters() const;
             void setInvertForParameters(std::vector<bool> setInvertForParameters);
             ValueType getRelativeMisfitChange() const;
@@ -54,6 +58,7 @@ namespace KITGPI
             scai::IndexType workflowStage;
             scai::IndexType iteration;
             scai::IndexType skipCount;
+            bool isSeismic;
 
         private:
 
@@ -65,12 +70,15 @@ namespace KITGPI
             bool invertForPorosity = false;
             bool invertForSaturation = false;
             bool invertForReflectivity = false;
+            bool invertForSigmaEM = false;
+            bool invertForEpsilonEM = false;
+            bool invertForTauSigmaEM = false;
+            bool invertForTauEpsilonEM = false;
             ValueType relativeMisfitChange; 
             scai::IndexType filterOrder;
             ValueType lowerCornerFreq;
             ValueType upperCornerFreq;
-            ValueType timeDampingFactor;
-            
+            ValueType timeDampingFactor;            
         };
     }
 }

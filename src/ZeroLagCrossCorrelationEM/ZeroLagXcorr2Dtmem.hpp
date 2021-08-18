@@ -9,8 +9,6 @@
 
 #include "ZeroLagXcorr.hpp"
 
-#include "../WorkflowEM/Workflow.hpp"
-
 namespace KITGPI
 {
 
@@ -31,12 +29,12 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr2Dtmem(){};
 
-            explicit ZeroLagXcorr2Dtmem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow);
+            explicit ZeroLagXcorr2Dtmem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
 
-            void resetXcorr(KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
+            void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
-            void updateHessianVectorProduct(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefieldDerivative, Wavefields::Wavefields<ValueType> &adjointWavefield, Wavefields::Wavefields<ValueType> &forwardWavefield2ndOrder, Wavefields::Wavefields<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
+            void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void updateHessianVectorProduct(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefieldDerivative, Wavefields::Wavefields<ValueType> &adjointWavefield, Wavefields::Wavefields<ValueType> &forwardWavefield2ndOrder, Wavefields::Wavefields<ValueType> &adjointWavefield2ndOrder, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             int getNumDimension() const;
             std::string getEquationType() const;
             
@@ -46,9 +44,9 @@ namespace KITGPI
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
-            void write(std::string filename, scai::IndexType t, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) override;
+            void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
           private:
               
             using ZeroLagXcorrEM<ValueType>::numDimension;

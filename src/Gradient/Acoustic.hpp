@@ -23,7 +23,6 @@
 
 #include "Gradient.hpp"
 
-#include "../Workflow/Workflow.hpp"
 #include <Modelparameter/Acoustic.hpp>
 
 namespace KITGPI

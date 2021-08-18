@@ -9,8 +9,6 @@
 
 #include "ZeroLagXcorr.hpp"
 
-#include "../Workflow/Workflow.hpp"
-
 namespace KITGPI
 {
 

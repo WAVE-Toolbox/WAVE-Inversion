@@ -144,6 +144,7 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getWei
 template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::setInvertForParameters(std::vector<bool> setInvertForParameters)
 {
+    workflowInner.isSeismic = true;
     workflowInner.setInvertForParameters(setInvertForParameters);
 }
     

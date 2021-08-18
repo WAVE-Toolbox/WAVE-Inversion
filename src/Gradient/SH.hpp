@@ -21,7 +21,6 @@
 
 #include <iostream>
 
-#include "../Workflow/Workflow.hpp"
 #include "Gradient.hpp"
 
 namespace KITGPI

@@ -41,7 +41,7 @@ void KITGPI::Optimization::SteepestDescent<ValueType>::apply(KITGPI::Gradient::G
  \param workflowEM To check which parameter class is inverted for
  */
 template <typename ValueType>
-void KITGPI::Optimization::SteepestDescent<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflowEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM)
+void KITGPI::Optimization::SteepestDescent<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM, KITGPI::Workflow::Workflow<ValueType> const &workflowEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelEM, KITGPI::Configuration::Configuration configEM)
 {    
     gradientEM.scale(modelEM, workflowEM, configEM);   
 }

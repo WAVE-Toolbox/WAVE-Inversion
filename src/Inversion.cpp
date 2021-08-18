@@ -41,7 +41,6 @@
 
 #include "GradientEM/GradientCalculation.hpp"
 #include "GradientEM/GradientFactory.hpp"
-#include "WorkflowEM/Workflow.hpp"
 
 #include <Common/HostPrint.hpp>
 
@@ -676,7 +675,7 @@ int main(int argc, char *argv[])
     /* Workflow                                */
     /* --------------------------------------- */
     Workflow::Workflow<ValueType> workflow(config);
-    Workflow::WorkflowEM<ValueType> workflowEM(configEM);
+    Workflow::Workflow<ValueType> workflowEM(configEM);
 
     /* --------------------------------------- */
     /* Abort criterion                         */

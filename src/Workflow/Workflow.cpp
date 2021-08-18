@@ -27,6 +27,8 @@ void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configur
     workflowFile.close();
     skipCount = 0;
     readFromFile(config.get<std::string>("workflowFilename"));
+    std::string equationType = config.get<std::string>("equationType");
+    isSeismic = Common::checkEquationType<ValueType>(equationType);
     
 }
 
@@ -70,7 +72,10 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
     }
         
     /* Extract variables from current workflow stage */
-    workflowFile >> invertForVp >> invertForVs >> invertForDensity >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
+    if (isSeismic)
+        workflowFile >> invertForVp >> invertForVs >> invertForDensity >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
+    else
+        workflowFile >> invertForSigmaEM >> invertForEpsilonEM >> invertForTauSigmaEM >> invertForTauEpsilonEM >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
     
     workflowFile.close();
 }
@@ -84,9 +89,16 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
 {
     HOST_PRINT(comm, "=================================================\n");
     HOST_PRINT(comm, "Workflow stage parameters: \n");
-    HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
-    HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
-    HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
+    if (isSeismic) {
+        HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
+        HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
+        HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
+    } else {
+        HOST_PRINT(comm, "invertForSigmaEM = " << invertForSigmaEM << "\n");
+        HOST_PRINT(comm, "invertForEpsilonEM = " << invertForEpsilonEM << "\n");
+        HOST_PRINT(comm, "invertForTauSigmaEM = " << invertForTauSigmaEM << "\n");
+        HOST_PRINT(comm, "invertForTauEpsilonEM = " << invertForTauEpsilonEM << "\n");
+    }
     HOST_PRINT(comm, "invertForPorosity = " << invertForPorosity << "\n");
     HOST_PRINT(comm, "invertForSaturation = " << invertForSaturation << "\n");
     HOST_PRINT(comm, "invertForReflectivity = " << invertForReflectivity << "\n");
@@ -102,6 +114,7 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
 template <typename ValueType>
 bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVp() const
 {
+    SCAI_ASSERT_ERROR(isSeismic, "!isSeismic");
     return invertForVp;
 }
 
@@ -110,6 +123,7 @@ bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVp() const
 template <typename ValueType>
 bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVs() const
 {
+    SCAI_ASSERT_ERROR(isSeismic, "!isSeismic");
     return invertForVs;
 }
 
@@ -118,6 +132,7 @@ bool KITGPI::Workflow::Workflow<ValueType>::getInvertForVs() const
 template <typename ValueType>
 bool KITGPI::Workflow::Workflow<ValueType>::getInvertForDensity() const
 {
+    SCAI_ASSERT_ERROR(isSeismic, "!isSeismic");
     return invertForDensity;
 }
 
@@ -145,12 +160,54 @@ bool KITGPI::Workflow::Workflow<ValueType>::getInvertForReflectivity() const
     return invertForReflectivity;
 }
 
+/*! \brief Return copy of invertForSigmaEM
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForSigmaEM() const
+{
+    SCAI_ASSERT_ERROR(!isSeismic, "isSeismic");
+    return invertForSigmaEM;
+}
+
+/*! \brief Return copy of invertForEpsilonEM
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForEpsilonEM() const
+{
+    SCAI_ASSERT_ERROR(!isSeismic, "isSeismic");
+    return invertForEpsilonEM;
+}
+
+/*! \brief Return copy of invertForTauSigmaEM
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForTauSigmaEM() const
+{
+    SCAI_ASSERT_ERROR(!isSeismic, "isSeismic");
+    return invertForTauSigmaEM;
+}
+
+/*! \brief Return copy of invertForTauEpsilonEM
+ */
+template <typename ValueType>
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForTauEpsilonEM() const
+{
+    return invertForTauEpsilonEM;
+}
+
 /*! \brief Return the vector of the inverted parameters
  */
 template <typename ValueType>
 std::vector<bool> KITGPI::Workflow::Workflow<ValueType>::getInvertForParameters() const
 {
-    std::vector<bool> invertForParameters{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation, invertForReflectivity};
+    std::vector<bool> invertForParameters;
+    if (isSeismic) {
+        std::vector<bool> temp{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation, invertForReflectivity};
+        invertForParameters = temp;
+    } else {
+        std::vector<bool> temp{invertForSigmaEM, invertForEpsilonEM, invertForTauSigmaEM, invertForTauEpsilonEM, invertForPorosity, invertForSaturation, invertForReflectivity};
+        invertForParameters = temp;
+    }
     return invertForParameters;
 }
 
@@ -159,12 +216,22 @@ std::vector<bool> KITGPI::Workflow::Workflow<ValueType>::getInvertForParameters(
 template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::setInvertForParameters(std::vector<bool> setInvertForParameters)
 {
-    invertForVp = setInvertForParameters[0];
-    invertForVs = setInvertForParameters[1];
-    invertForDensity = setInvertForParameters[2];
-    invertForPorosity = setInvertForParameters[3];
-    invertForSaturation = setInvertForParameters[4];
-    invertForReflectivity = setInvertForParameters[5];
+    if (isSeismic) {
+        invertForVp = setInvertForParameters[0];
+        invertForVs = setInvertForParameters[1];
+        invertForDensity = setInvertForParameters[2];
+        invertForPorosity = setInvertForParameters[3];
+        invertForSaturation = setInvertForParameters[4];
+        invertForReflectivity = setInvertForParameters[5];
+    } else {    
+        invertForSigmaEM = setInvertForParameters[0];
+        invertForEpsilonEM = setInvertForParameters[1];
+        invertForTauSigmaEM = setInvertForParameters[2];
+        invertForTauEpsilonEM = setInvertForParameters[3];
+        invertForPorosity = setInvertForParameters[4];
+        invertForSaturation = setInvertForParameters[5];
+        invertForReflectivity = setInvertForParameters[6];
+    }
 }
 
 /*! \brief Return copy of relativeMisfitChange

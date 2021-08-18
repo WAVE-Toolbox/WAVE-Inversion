@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include <scai/lama.hpp>

@@ -74,7 +74,7 @@ void KITGPI::Gradient::EMEM<ValueType>::resetGradient()
  \param fileFormat format of output file
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow) const
+void KITGPI::Gradient::EMEM<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
     if (workflow.getInvertForSigmaEM()) {
         std::string filenameElectricConductivity = filename + ".sigmaEM";
@@ -480,7 +480,7 @@ void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparamete
  \param model Abstract model.
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
+void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {    
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
@@ -574,7 +574,7 @@ void KITGPI::Gradient::EMEM<ValueType>::normalize()
  *
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
+void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    
     scai::lama::DenseVector<ValueType> gradEpsilonEM;
     scai::lama::DenseVector<ValueType> temp;     
@@ -651,7 +651,7 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
 
 /*! \brief calculate the stabilizing functional of each model parameter */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPrioriEM, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Workflow::WorkflowEM<ValueType> const &workflow)
+void KITGPI::Gradient::EMEM<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPrioriEM, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    
     scai::lama::DenseVector<ValueType> electricConductivityPrioritemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivityPrioritemp;
