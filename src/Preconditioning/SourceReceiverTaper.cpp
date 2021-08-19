@@ -20,16 +20,6 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::apply(KITGPI::Grad
     gradient *= taper;
 }
 
-/*! \brief apply taper on gradient
- *
- \param gradient gradient
- */
-template <typename ValueType>
-void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM)
-{   
-    gradientEM *= taper;
-}
-
 /*! \brief Init taper
  *
  \param dist_wavefield Distribution of the wavefields

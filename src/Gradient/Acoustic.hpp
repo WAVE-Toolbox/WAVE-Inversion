@@ -21,7 +21,7 @@
 
 #include <iostream>
 
-#include "Gradient.hpp"
+#include "GradientSeismic.hpp"
 
 #include <Modelparameter/Acoustic.hpp>
 
@@ -36,7 +36,7 @@ namespace KITGPI
          *
          */
         template <typename ValueType>
-        class Acoustic : public Gradient<ValueType>
+        class Acoustic : public GradientSeismic<ValueType>
         {
           public:
             //! Default constructor.

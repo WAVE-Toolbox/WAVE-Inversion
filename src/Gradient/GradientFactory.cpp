@@ -22,6 +22,12 @@ typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr KITGPI::Gradient::Fa
         return GradientPtr(new Viscoelastic<ValueType>);
     }
 
+    if (type.compare("emem") == 0 || type.compare("tmem") == 0) {
+        return GradientPtr(new EMEM<ValueType>);
+    }
+    if (type.compare("viscoemem") == 0 || type.compare("viscotmem") == 0) {
+        return GradientPtr(new ViscoEMEM<ValueType>);
+    }
     return GradientPtr();
 }
 

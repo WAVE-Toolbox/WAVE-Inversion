@@ -1,144 +1,7 @@
-#include "Gradient.hpp"
+#include "GradientEM.hpp"
 
 using namespace scai;
 using namespace KITGPI;
-
-/*! \brief Getter method for relaxation frequency */
-template <typename ValueType>
-ValueType KITGPI::Gradient::GradientEM<ValueType>::getRelaxationFrequency() const
-{
-    return (relaxationFrequency);
-}
-
-/*! \brief Set relaxation frequency
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::setRelaxationFrequency(ValueType const setRelaxationFrequency)
-{
-    relaxationFrequency = setRelaxationFrequency;
-}
-
-/*! \brief Getter method for number of relaxation mechanisms */
-template <typename ValueType>
-IndexType KITGPI::Gradient::GradientEM<ValueType>::getNumRelaxationMechanisms() const
-{
-    return (numRelaxationMechanisms);
-}
-
-/*! \brief Set number of Relaxation Mechanisms
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::setNumRelaxationMechanisms(IndexType const setNumRelaxationMechanisms)
-{
-    numRelaxationMechanisms = setNumRelaxationMechanisms;
-}
-
-/*! \brief Init a single parameter by a constant value
- *
- \param vector Singel parameter which will be initialized
- \param ctx Context
- \param dist Distribution
- \param value Value which will be used to initialize the single parameter to a homogenoeus parameter vector
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, ValueType value)
-{
-    allocateParameterisation(vector, ctx, dist);
-
-    vector.setScalar(value);
-}
-
-/*! \brief Init a single parameter by reading a parameter vector from an external file
- *
- *  Reads a single parameter from an external mtx file.
- \param vector Singel parameter which will be initialized
- \param ctx Context
- \param dist Distribution
- \param filename Location of external file which will be read in
- \param partitionedIn Partitioned input
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::initParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::string filename, IndexType fileFormat)
-{
-
-    allocateParameterisation(vector, ctx, dist);
-
-    readParameterisation(vector, filename, fileFormat);
-
-    vector.redistribute(dist);
-}
-
-/*! \brief Write singe parameter to an external file
- *
- *  Write a single parameter to an external file block.
- \param vector Single parameter which will be written to filename
- \param filename Name of file in which parameter will be written
- \param fileFormat format for output file
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::writeParameterisation(scai::lama::Vector<ValueType> const &vector, std::string filename, IndexType fileFormat) const
-{    
-    IO::writeVector(vector, filename, fileFormat);
-};
-
-/*! \brief Read a parameter from file
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::readParameterisation(scai::lama::Vector<ValueType> &vector, std::string filename, IndexType fileFormat)
-{    
-    IO::readVector(vector, filename, fileFormat);
-};
-
-/*! \brief Allocate a single parameter
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::allocateParameterisation(scai::lama::Vector<ValueType> &vector, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist)
-{
-    vector.setContextPtr(ctx);
-    vector.allocate(dist);
-}
-
-/*! \brief If stream configuration is used, calculate a weighting vector to balance gradient per shot
- \param modelPerShot model per shot
- \param modelCoordinates coordinate class object of the pershot
- \param modelCoordinatesBig coordinate class object of the big model
- \param cutCoordinate cut coordinate 
- \param uniqueShotInds unique shot indexes 
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds)
-{
-    auto dist = modelPerShot.getDielectricPermittivity().getDistributionPtr();
-    auto distBig = dielectricPermittivity.getDistributionPtr();
-    scai::hmemo::ContextPtr ctx = dielectricPermittivity.getContextPtr();
-
-    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix;
-    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix;
-    shrinkMatrix.allocate(dist, distBig);
-    recoverMatrix.allocate(distBig, dist);
-    shrinkMatrix.setContextPtr(ctx);
-    recoverMatrix.setContextPtr(ctx);
-    scai::lama::DenseVector<ValueType> weightingVectorPerShot(dist, 1.0);
-    scai::lama::DenseVector<ValueType> weightingVectorTemp(distBig, 0.0);
-    IndexType numshots = uniqueShotInds.size();
-    for (IndexType shotInd = 0; shotInd < numshots; shotInd++) {        
-        shrinkMatrix = modelPerShot.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(uniqueShotInds[shotInd]));
-        recoverMatrix.assignTranspose(shrinkMatrix);
-        weightingVectorTemp += recoverMatrix * weightingVectorPerShot;
-    }
-    weightingVector.allocate(distBig);
-    weightingVector = 1.0 / weightingVectorTemp; // the weighting of overlapping area
-    Common::replaceInvalid<ValueType>(weightingVector, 0.0);
-    
-    IO::writeVector(weightingVector, "gradients/weightingVectorEM", 1);
-}
-
-/*! \brief get weightingVector */
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::getWeightingVector()
-{
-    return weightingVector;
-}
     
 /*! \brief initialize an inner workflow */
 template <typename ValueType>
@@ -146,13 +9,6 @@ void KITGPI::Gradient::GradientEM<ValueType>::setInvertForParameters(std::vector
 {
     workflowInner.isSeismic = false;
     workflowInner.setInvertForParameters(setInvertForParameters);
-}
-    
-/*! \brief get an inner workflow */
-template <typename ValueType>
-std::vector<bool> KITGPI::Gradient::GradientEM<ValueType>::getInvertForParameters()
-{
-    return workflowInner.getInvertForParameters();
 }
 
 /*! \brief apply parameterisation of model parameters */
@@ -348,7 +204,7 @@ template <typename ValueType> scai::lama::DenseVector<ValueType>  KITGPI::Gradie
 }
 
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> electricConductivitytemp;
     scai::lama::DenseVector<ValueType> dielectricPermittivitytemp;
@@ -569,28 +425,6 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     }     
 }
 
-/*! \brief calculate the gradient of stabilizing functional of each model parameter */
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::calcStabilizingFunctionalGradientPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM)
-{ 
-    scai::lama::DenseVector<ValueType> regularizedGradient; 
-    scai::lama::DenseVector<ValueType> We; 
-    ValueType tempValue;
-    tempValue = config.get<ValueType>("focusingParameter");
-    tempValue *= modelResidualVec.maxNorm();
-    tempValue = pow(tempValue, 2);  
-    We = scai::lama::pow(modelResidualVec, 2);
-    We += tempValue;
-    tempValue = dataMisfitEM.calcStablizingFunctionalPerModel(modelResidualVec, config.get<ValueType>("focusingParameter"), config.get<ValueType>("stablizingFunctionalType"));
-    We = tempValue / We;
-    We = scai::lama::sqrt(We);   
-    
-    regularizedGradient = We * We; 
-    regularizedGradient *= modelResidualVec;
-    
-    return regularizedGradient;
-}
-
 /*! \brief Get const reference to electricConductivity
  *
  */
@@ -691,147 +525,213 @@ void KITGPI::Gradient::GradientEM<ValueType>::setTauDielectricPermittivity(scai:
     tauDielectricPermittivity = setTauDielectricPermittivity;
 }
 
-/*! \brief Get const reference to porosity
+
+
+/* Seismic */   
+/*! \brief calculate the derivative of density with respect to porosity
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getPorosity()
-{
-    return (porosity);
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::getDensityDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    COMMON_THROWEXCEPTION("There is no getDensityDePorosity in the GradientEM.")
+    scai::lama::DenseVector<ValueType> rho_satDePorosity; 
+    
+    return (rho_satDePorosity);
 }
 
-/*! \brief Get const reference to porosity
+/*! \brief calculate the derivative of Mu_sat with respect to porosity
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getPorosity() const
-{
-    return (porosity);
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::getMu_satDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    COMMON_THROWEXCEPTION("There is no getMu_satDePorosity in the GradientEM.")
+    scai::lama::DenseVector<ValueType> mu_satDePorosity; 
+    
+    return (mu_satDePorosity);
 }
 
-/*! \brief Set porosity
+/*! \brief calculate the derivative of K_sat with respect to porosity
  */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::setPorosity(scai::lama::Vector<ValueType> const &setPorosity)
-{
-    porosity = setPorosity;
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::getK_satDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    COMMON_THROWEXCEPTION("There is no getK_satDePorosity in the GradientEM.")
+    scai::lama::DenseVector<ValueType> K_satDePorosity; 
+    
+    return (K_satDePorosity);
 }
 
-/*! \brief Get const reference to saturation
+/*! \brief calculate the derivative of BiotCoefficient beta with respect to porosity
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getSaturation()
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::getBiotCoefficientDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
 {
-    return (saturation);
+    COMMON_THROWEXCEPTION("There is no getBiotCoefficientDePorosity in the GradientEM.")
+    scai::lama::DenseVector<ValueType> betaDePorosity;
+    
+    return (betaDePorosity);
 }
 
-/*! \brief Get const reference to saturation
+/*! \brief calculate the derivative of density with respect to saturation
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getSaturation() const
-{
-    return (saturation);
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::getDensityDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    COMMON_THROWEXCEPTION("There is no getDensityDeSaturation in the GradientEM.")
+    scai::lama::DenseVector<ValueType> densityDeSaturation;
+    
+    return (densityDeSaturation);
 }
 
-/*! \brief Set saturation
+/*! \brief calculate the derivative of K_sat with respect to saturation
  */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::setSaturation(scai::lama::Vector<ValueType> const &setSaturation)
-{
-    saturation = setSaturation;
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientEM<ValueType>::getK_satDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model)
+{   
+    COMMON_THROWEXCEPTION("There is no getK_satDeSaturation in the GradientEM.")
+    scai::lama::DenseVector<ValueType> K_satDeSaturation;
+    
+    return (K_satDeSaturation);
 }
 
-/*! \brief Get const reference to reflectivity
+/*! \brief Get const reference to density parameter
+ * 
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getReflectivity()
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getDensity()
 {
-    return (reflectivity);
+    COMMON_THROWEXCEPTION("There is no getDensity in the GradientEM.")
+    return (density);
 }
 
-/*! \brief Get const reference to reflectivity
+/*! \brief Get const reference to density parameter
  */
 template <typename ValueType>
-scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getReflectivity() const
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getDensity() const
 {
-    return (reflectivity);
+    COMMON_THROWEXCEPTION("There is no getDensity in the GradientEM.")
+    return (density);
 }
 
-/*! \brief Set reflectivity
+/*! \brief Set density  parameter
  */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::setReflectivity(scai::lama::Vector<ValueType> const &setReflectivity)
+void KITGPI::Gradient::GradientEM<ValueType>::setDensity(scai::lama::Vector<ValueType> const &setDensity)
 {
-    reflectivity = setReflectivity;
+    COMMON_THROWEXCEPTION("There is no setDensity in the GradientEM.")
+    density = setDensity;
 }
 
-/*! \brief Get parameter normalizeGradient
- */
-template <typename ValueType>
-bool KITGPI::Gradient::GradientEM<ValueType>::getNormalizeGradient() const
-{
-    return (normalizeGradient);
-}
-
-/*! \brief Set normalizeGradient parameter
- */
-template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::setNormalizeGradient(bool const &gradNorm)
-{
-    normalizeGradient = gradNorm;
-}
-
-/*! \brief Overloading = Operation
+/*! \brief Get const reference to P-wave velocity
  *
- \param rhs Gradient which is copied.
  */
 template <typename ValueType>
-KITGPI::Gradient::GradientEM<ValueType> &KITGPI::Gradient::GradientEM<ValueType>::operator=(KITGPI::Gradient::GradientEM<ValueType> const &rhs)
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getVelocityP()
 {
-    assign(rhs);
-    return *this;
+    COMMON_THROWEXCEPTION("There is no getVelocityP in the GradientEM.")
+    return (velocityP);
 }
 
-/*! \brief Overloading -= Operation
+/*! \brief Get const reference to P-wave velocity
  *
- \param rhs Gradient which is subtracted.
  */
 template <typename ValueType>
-KITGPI::Gradient::GradientEM<ValueType> &KITGPI::Gradient::GradientEM<ValueType>::operator-=(KITGPI::Gradient::GradientEM<ValueType> const &rhs)
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getVelocityP() const
 {
-    minusAssign(rhs);
-    return *this;
+    COMMON_THROWEXCEPTION("There is no getVelocityP in the GradientEM.")
+    return (velocityP);
 }
 
-/*! \brief Overloading += Operation
- *
- \param rhs Gradient which is subtracted.
+/*! \brief Set P-wave velocity  parameter
  */
 template <typename ValueType>
-KITGPI::Gradient::GradientEM<ValueType> &KITGPI::Gradient::GradientEM<ValueType>::operator+=(KITGPI::Gradient::GradientEM<ValueType> const &rhs)
+void KITGPI::Gradient::GradientEM<ValueType>::setVelocityP(scai::lama::Vector<ValueType> const &setVelocityP)
 {
-    plusAssign(rhs);
-    return *this;
+    COMMON_THROWEXCEPTION("There is no setVelocityP in the GradientEM.")
+    velocityP = setVelocityP;
 }
 
-/*! \brief Overloading *= Operation
- *
- \param rhs Gradient which is subtracted.
+/*! \brief Get const reference to S-wave velocity
+ * 
  */
 template <typename ValueType>
-KITGPI::Gradient::GradientEM<ValueType> &KITGPI::Gradient::GradientEM<ValueType>::operator*=(ValueType const &rhs)
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getVelocityS()
 {
-    timesAssign(rhs);
-    return *this;
+    COMMON_THROWEXCEPTION("There is no getVelocityS in the GradientEM.")
+    return (velocityS);
 }
 
-/*! \brief Overloading *= Operation
- *
- \param rhs Gradient which is subtracted.
+/*! \brief Get const reference to S-wave velocity
  */
 template <typename ValueType>
-KITGPI::Gradient::GradientEM<ValueType> &KITGPI::Gradient::GradientEM<ValueType>::operator*=(scai::lama::Vector<ValueType> const &rhs)
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getVelocityS() const
 {
-    timesAssign(rhs);
-    return *this;
+    COMMON_THROWEXCEPTION("There is no getVelocityS in the GradientEM.")
+    return (velocityS);
+}
+
+/*! \brief Set S-wave velocity  parameter
+ */
+template <typename ValueType>
+void KITGPI::Gradient::GradientEM<ValueType>::setVelocityS(scai::lama::Vector<ValueType> const &setVelocityS)
+{
+    COMMON_THROWEXCEPTION("There is no setVelocityS in the GradientEM.")
+    velocityS = setVelocityS;
+}
+
+/*! \brief Get const reference to tauP
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getTauP()
+{
+    COMMON_THROWEXCEPTION("There is no getTauP in the GradientEM.")
+    return (tauP);
+}
+
+/*! \brief Get const reference to tauP
+ *
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getTauP() const
+{
+    COMMON_THROWEXCEPTION("There is no getTauP in the GradientEM.")
+    return (tauP);
+}
+
+/*! \brief Set tauP parameter
+ */
+template <typename ValueType>
+void KITGPI::Gradient::GradientEM<ValueType>::setTauP(scai::lama::Vector<ValueType> const &setTauP)
+{
+    COMMON_THROWEXCEPTION("There is no setTauP in the GradientEM.")
+    tauP = setTauP;
+}
+
+/*! \brief Get const reference to tauS
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getTauS()
+{
+    COMMON_THROWEXCEPTION("There is no getTauS in the GradientEM.")
+    return (tauS);
+}
+
+/*! \brief Get const reference to tauS
+ */
+template <typename ValueType>
+scai::lama::Vector<ValueType> const &KITGPI::Gradient::GradientEM<ValueType>::getTauS() const
+{
+    COMMON_THROWEXCEPTION("There is no getTauS in the GradientEM.")
+    return (tauS);
+}
+
+/*! \brief Set tauS parameter
+ */
+template <typename ValueType>
+void KITGPI::Gradient::GradientEM<ValueType>::setTauS(scai::lama::Vector<ValueType> const &setTauS)
+{
+    COMMON_THROWEXCEPTION("There is no setTauS in the GradientEM.")
+    tauS = setTauS;
 }
 
 template class KITGPI::Gradient::GradientEM<float>;

@@ -154,30 +154,6 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
     }
 }
 
-/*! \brief Apply the approximation of the diagonal of the inverse of the Hessian for one shot
- *
- *
- \param gradientPerShotEM 
- \param shotNumber 
- */
-template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &gradientPerShotEM, scai::IndexType shotNumber, scai::IndexType fileFormat)
-{
-    if (useEnergyPreconditioning != 0) {  
-        //     sqrt(approxHessian) missing because of |u_i| (see old IFOS)??
-            
-            /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
-            approxHessian += epsilonHessian*approxHessian.maxNorm(); 
-            approxHessian *= 1 / approxHessian.maxNorm(); 
-            
-            if(saveApproxHessian){
-                KITGPI::IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);}
-                
-            approxHessian = 1 / approxHessian;
-            gradientPerShotEM *= approxHessian;    // overload operator /= in gradient-class    
-    }
-}
-
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::resetApproxHessian()
 {

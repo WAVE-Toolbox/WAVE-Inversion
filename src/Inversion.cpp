@@ -39,9 +39,6 @@
 #include "Gradient/GradientFactory.hpp"
 #include "Workflow/Workflow.hpp"
 
-#include "GradientEM/GradientCalculation.hpp"
-#include "GradientEM/GradientFactory.hpp"
-
 #include <Common/HostPrint.hpp>
 
 using namespace scai;
@@ -739,11 +736,10 @@ int main(int argc, char *argv[])
     gradientPtr stabilizingFunctionalGradient(Gradient::Factory<ValueType>::Create(equationType));
     gradientPtr crossGradientDerivative(Gradient::Factory<ValueType>::Create(equationType));
     
-    typedef typename Gradient::GradientEM<ValueType>::GradientPtr gradientPtrEM;
-    gradientPtrEM gradientEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM));
-    gradientPtrEM gradientPerShotEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM));
-    gradientPtrEM stabilizingFunctionalGradientEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM));
-    gradientPtrEM crossGradientDerivativeEM(Gradient::FactoryEM<ValueType>::Create(equationTypeEM)); 
+    gradientPtr gradientEM(Gradient::Factory<ValueType>::Create(equationTypeEM));
+    gradientPtr gradientPerShotEM(Gradient::Factory<ValueType>::Create(equationTypeEM));
+    gradientPtr stabilizingFunctionalGradientEM(Gradient::Factory<ValueType>::Create(equationTypeEM));
+    gradientPtr crossGradientDerivativeEM(Gradient::Factory<ValueType>::Create(equationTypeEM)); 
             
     if (inversionType != 0) {
         if (!useStreamConfig) {
@@ -782,7 +778,7 @@ int main(int argc, char *argv[])
     /* Gradient calculation                    */
     /* --------------------------------------- */
     GradientCalculation<ValueType> gradientCalculation;
-    GradientCalculationEM<ValueType> gradientCalculationEM;
+    GradientCalculation<ValueType> gradientCalculationEM;
 
     /* --------------------------------------- */
     /* Gradient taper                          */
@@ -1318,7 +1314,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n===========================================\n");
                     gradient->normalize();  
                     
-                    crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, workflowEM);
+                    crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM);
                     
                     crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);  
                     if (config.get<bool>("useGradientTaper")) {

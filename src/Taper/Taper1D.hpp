@@ -1,9 +1,7 @@
 #pragma once
 #include <scai/lama.hpp>
-#include <Acquisition/Seismogram.hpp>
 #include <Acquisition/SeismogramHandler.hpp>
 #include "../Gradient/Gradient.hpp"
-#include "../GradientEM/Gradient.hpp"
 
 namespace KITGPI
 {
@@ -32,7 +30,6 @@ namespace KITGPI
             void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
             void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const;
-            void apply(KITGPI::Gradient::GradientEM<ValueType> &grad) const;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
             void read(std::string filename, scai::IndexType fileFormat);
             

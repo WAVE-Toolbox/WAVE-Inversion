@@ -180,15 +180,6 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueTy
     grad *= data;
 }
 
-/*! \brief Apply taper to a Gradient
- \param grad GradientEM
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::GradientEM<ValueType> &grad) const
-{
-    grad *= data;
-}
-
 /*! \brief Read a taper from file
  */
 template <typename ValueType>

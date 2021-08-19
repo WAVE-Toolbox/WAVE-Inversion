@@ -4,12 +4,9 @@
 #include <iostream>
 
 #include <IO/IO.hpp>
-#include <Acquisition/Receivers.hpp>
-#include <Wavefields/Wavefields.hpp>
 #include "../Gradient/Gradient.hpp"
 #include <Acquisition/Receivers.hpp>
 #include <Wavefields/Wavefields.hpp>
-#include "../GradientEM/Gradient.hpp"
 
 namespace KITGPI
 {
@@ -39,7 +36,6 @@ namespace KITGPI
             void resetApproxHessian();
             
             void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat);
-            void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientPerShotEM, scai::IndexType shotNumber, scai::IndexType fileFormat);
             
         private:
             scai::lama::DenseVector<ValueType> approxHessian;            // approximation of the diagonal of the inverse of the Hessian 

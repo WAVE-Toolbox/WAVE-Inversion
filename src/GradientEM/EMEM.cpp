@@ -263,10 +263,10 @@ KITGPI::Gradient::EMEM<ValueType> &KITGPI::Gradient::EMEM<ValueType>::operator=(
 
 /*! \brief Function for overloading -= Operation (called in base class)
  *
- \param rhs Abstract gradientEM which is assigned.
+ \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::assign(KITGPI::Gradient::GradientEM<ValueType> const &rhs)
+void KITGPI::Gradient::EMEM<ValueType>::assign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
     electricConductivity = rhs.getElectricConductivity();
     dielectricPermittivity = rhs.getDielectricPermittivity();
@@ -277,10 +277,10 @@ void KITGPI::Gradient::EMEM<ValueType>::assign(KITGPI::Gradient::GradientEM<Valu
 
 /*! \brief Function for overloading -= Operation (called in base class)
  *
- \param rhs Abstract gradientEM which is subtractet.
+ \param rhs Abstract gradient which is subtractet.
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Gradient::GradientEM<ValueType> const &rhs)
+void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
     electricConductivity -= rhs.getElectricConductivity();
     dielectricPermittivity -= rhs.getDielectricPermittivity();
@@ -291,10 +291,10 @@ void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Gradient::GradientEM
 
 /*! \brief Function for overloading += Operation (called in base class)
  *
- \param rhs Abstract gradientEM which is subtractet.
+ \param rhs Abstract gradient which is subtractet.
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::plusAssign(KITGPI::Gradient::GradientEM<ValueType> const &rhs)
+void KITGPI::Gradient::EMEM<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
     electricConductivity += rhs.getElectricConductivity();
     dielectricPermittivity += rhs.getDielectricPermittivity();
@@ -305,7 +305,7 @@ void KITGPI::Gradient::EMEM<ValueType>::plusAssign(KITGPI::Gradient::GradientEM<
 
 /*! \brief Function for overloading *= Operation (called in base class)
  *
- \param rhs Abstract gradientEM which is subtracted.
+ \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::timesAssign(ValueType const &rhs)
@@ -324,7 +324,7 @@ void KITGPI::Gradient::EMEM<ValueType>::timesAssign(ValueType const &rhs)
 
 /*! \brief Function for overloading *= Operation (called in base class)
  *
- \param rhs Abstract gradientEM which is subtracted.
+ \param rhs Abstract gradient which is subtracted.
  */
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::timesAssign(scai::lama::Vector<ValueType> const &rhs)
@@ -339,10 +339,10 @@ void KITGPI::Gradient::EMEM<ValueType>::timesAssign(scai::lama::Vector<ValueType
 /*! \brief Function for overloading -= Operation (called in base class)
  *
  \param lhs Abstract model.
- \param rhs Abstract gradientEM which is assigned.
+ \param rhs Abstract gradient which is assigned.
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::GradientEM<ValueType> const &rhs)
+void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {        
     scai::lama::DenseVector<ValueType> temp;  
     if (lhs.getParameterisation() == 1 || lhs.getParameterisation() == 2) { 
@@ -435,7 +435,7 @@ void KITGPI::Gradient::EMEM<ValueType>::sumShotDomain(scai::dmemo::CommunicatorP
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
+void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
 {
     auto distBig = dielectricPermittivity.getDistributionPtr();
     auto dist = gradientPerShot.getDielectricPermittivity().getDistributionPtr();
@@ -541,7 +541,7 @@ void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparam
     }
 }
 
-/*! \brief Function for normalizing the gradientEM
+/*! \brief Function for normalizing the gradient
  */
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::normalize()

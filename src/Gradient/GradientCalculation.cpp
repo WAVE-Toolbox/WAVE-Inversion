@@ -51,14 +51,25 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     /* ------------------------------------------- */
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
+    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
+    bool isSeismic = Common::checkEquationType<ValueType>(equationType);   
     scai::dmemo::DistributionPtr dist;
-    if(equationType.compare("sh") == 0){
-        dist = wavefields->getRefVZ().getDistributionPtr();
+    scai::dmemo::CommunicatorPtr commShot;
+    if (isSeismic) {
+        if(equationType.compare("sh") == 0){
+            dist = wavefields->getRefVZ().getDistributionPtr();
+        } else {
+            dist = wavefields->getRefVX().getDistributionPtr();        
+        }
+        commShot = model.getDensity().getDistributionPtr()->getCommunicatorPtr(); // get communicator for shot domain
     } else {
-        dist = wavefields->getRefVX().getDistributionPtr();        
+        if(equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
+            dist = wavefields->getRefEZ().getDistributionPtr();
+        } else {
+            dist = wavefields->getRefEX().getDistributionPtr();        
+        }
+        commShot = model.getDielectricPermittivity().getDistributionPtr()->getCommunicatorPtr(); // get communicator for shot domain
     }
-    scai::dmemo::CommunicatorPtr commShot = model.getDensity().getDistributionPtr()->getCommunicatorPtr(); // get communicator for shot domain
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
 
@@ -93,11 +104,19 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     Acquisition::Receivers<ValueType> adjointSourcesReflect;                
     if (gradientType == 2 && decomposeType == 0) { 
         scai::dmemo::DistributionPtr distInversion;
-        if(equationType.compare("sh") == 0){
-            distInversion = wavefieldrecord[0]->getRefVZ().getDistributionPtr();
+        if (isSeismic) {
+            if(equationType.compare("sh") == 0){
+                distInversion = wavefieldrecord[0]->getRefVZ().getDistributionPtr();
+            } else {
+                distInversion = wavefieldrecord[0]->getRefVX().getDistributionPtr();        
+            }  
         } else {
-            distInversion = wavefieldrecord[0]->getRefVX().getDistributionPtr();        
-        }  
+            if(equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
+                distInversion = wavefieldrecord[0]->getRefEZ().getDistributionPtr();
+            } else {
+                distInversion = wavefieldrecord[0]->getRefEX().getDistributionPtr();        
+            }  
+        }
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
             if (tStep % dtinversion == 0) {
                 wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -189,11 +208,17 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     gradient.applyMedianFilter(config); 
     
     scai::lama::DenseVector<ValueType> mask; //mask to restore vacuum
-    if(equationType.compare("sh") == 0){
-        mask = model.getVelocityS();  
-    } else {
-        mask = model.getVelocityP();      
-    }  
+    if (isSeismic) {
+        if(equationType.compare("sh") == 0){
+            mask = model.getVelocityS();  
+        } else {
+            mask = model.getVelocityP();      
+        }  
+    } else {    
+        mask = model.getDielectricPermittivity();
+        mask /= model.getDielectricPermittivityVacuum();  // calculate the relative dielectricPermittivity    
+        mask -= 1;
+    }
     mask.unaryOp(mask, common::UnaryOp::SIGN);
     mask.unaryOp(mask, common::UnaryOp::ABS); 
     gradient *= mask;

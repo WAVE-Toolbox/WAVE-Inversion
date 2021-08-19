@@ -21,7 +21,7 @@
 
 #include <iostream>
 
-#include "Gradient.hpp"
+#include "GradientEM.hpp"
 
 namespace KITGPI
 {
@@ -75,32 +75,32 @@ namespace KITGPI
             KITGPI::Gradient::ViscoEMEM<ValueType> &operator-=(KITGPI::Gradient::ViscoEMEM<ValueType> const &rhs);
             KITGPI::Gradient::ViscoEMEM<ValueType> &operator=(KITGPI::Gradient::ViscoEMEM<ValueType> const &rhs);
 
-            void minusAssign(KITGPI::Gradient::GradientEM<ValueType> const &rhs);
-            void plusAssign(KITGPI::Gradient::GradientEM<ValueType> const &rhs);
-            void assign(KITGPI::Gradient::GradientEM<ValueType> const &rhs);
-            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::GradientEM<ValueType> const &rhs);
+            void minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void assign(KITGPI::Gradient::Gradient<ValueType> const &rhs);
+            void minusAssign(KITGPI::Modelparameter::Modelparameter<ValueType> &lhs, KITGPI::Gradient::Gradient<ValueType> const &rhs);
             void timesAssign(ValueType const &rhs);
             void timesAssign(scai::lama::Vector<ValueType> const &rhs);
 
             void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);        
             
-            void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::GradientEM<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
+            void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
             
           private:
-            using GradientEM<ValueType>::equationType;
+            using Gradient<ValueType>::equationType;
 
-            using GradientEM<ValueType>::electricConductivity;
-            using GradientEM<ValueType>::dielectricPermittivity;
-            using GradientEM<ValueType>::tauElectricConductivity;
-            using GradientEM<ValueType>::tauDielectricPermittivity;
-            using GradientEM<ValueType>::relaxationFrequency;
-            using GradientEM<ValueType>::numRelaxationMechanisms;
-            using GradientEM<ValueType>::porosity;
-            using GradientEM<ValueType>::saturation;
-            using GradientEM<ValueType>::workflowInner;
+            using Gradient<ValueType>::electricConductivity;
+            using Gradient<ValueType>::dielectricPermittivity;
+            using Gradient<ValueType>::tauElectricConductivity;
+            using Gradient<ValueType>::tauDielectricPermittivity;
+            using Gradient<ValueType>::relaxationFrequency;
+            using Gradient<ValueType>::numRelaxationMechanisms;
+            using Gradient<ValueType>::porosity;
+            using Gradient<ValueType>::saturation;
+            using Gradient<ValueType>::workflowInner;
                         
             /* Not requiered parameters */
-            using GradientEM<ValueType>::weightingVector;
+            using Gradient<ValueType>::weightingVector;
         };
     }
 }

@@ -12,7 +12,6 @@
 #include <Configuration/Configuration.hpp>
 
 #include "../Gradient/GradientFactory.hpp"
-#include "../GradientEM/GradientFactory.hpp"
 
 namespace KITGPI
 {
@@ -38,7 +37,6 @@ namespace KITGPI
             void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &sources, KITGPI::Acquisition::AcquisitionGeometry<ValueType> const &receivers, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
             
             void apply(KITGPI::Gradient::Gradient<ValueType> &gradient);
-            void apply(KITGPI::Gradient::GradientEM<ValueType> &gradientEM);
                         
         private:
             scai::lama::SparseVector<ValueType> taper;

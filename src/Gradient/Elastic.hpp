@@ -21,7 +21,7 @@
 
 #include <iostream>
 
-#include "Gradient.hpp"
+#include "GradientSeismic.hpp"
 
 namespace KITGPI
 {
@@ -34,7 +34,7 @@ namespace KITGPI
          *
          */
         template <typename ValueType>
-        class Elastic : public Gradient<ValueType>
+        class Elastic : public GradientSeismic<ValueType>
         {
           public:
             //! Default constructor.
