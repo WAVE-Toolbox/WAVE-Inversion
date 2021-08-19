@@ -345,19 +345,20 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
 //     modelTransformMatrixToSeismic.writeToFile("model/modelTransformMatrixToSeismic_" + std::to_string(modelCoordinatesEM.getNX()) + "_" + std::to_string(modelCoordinatesEM.getNY()) + "_" + std::to_string(modelCoordinatesEM.getNZ()) + ".mtx");
 }
 
-/*! \brief exchange porosity and saturation from EM to seismic
- * \param modelEM EM model
+/*! \brief exchange porosity and saturation from EM to seismic or from seismic to EM
  * \param model Seismic model
- * \param config Seismic config
- * \param isSeismic isSeismic is used to identify seismic and EM wave
+ * \param modelEM EM model
+ * \param config EM config
  */
-template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::Modelparameter<ValueType> &modelEM, KITGPI::Configuration::Configuration config, bool isSeismic)
+template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::Modelparameter<ValueType> &modelEM, KITGPI::Configuration::Configuration config)
 {
     lama::DenseVector<ValueType> porositytemp;
     lama::DenseVector<ValueType> saturationtemp;
     
+    std::string equationType = config.get<std::string>("equationType");
+    bool isSeismic = Common::checkEquationType<ValueType>(equationType); 
     IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");  
-    if (isSeismic) {        
+    if (!isSeismic) {        
         if (exchangeStrategy == 2) {
             // case 2: exchange all of the petrophysical parameters 
             porositytemp = this->applyModelTransformToEM(model.getPorosity(), modelEM.getPorosity()); 
@@ -393,6 +394,43 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
         model.calcWaveModulusFromPetrophysics(); 
         if (config.get<bool>("useModelThresholds"))
             model.applyThresholds(config); 
+    }
+}
+
+/*! \brief exchange mode parameters from one seismic/EM wave to another seismic/EM wave
+ * \param model1 Seismic/EM model
+ * \param model2 Seismic/EM model
+ * \param config1 Seismic/EM config
+ * \param config2 Seismic/EM config
+ */
+template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeModelparameters(KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Modelparameter::Modelparameter<ValueType> &model2, KITGPI::Configuration::Configuration config1, KITGPI::Configuration::Configuration config2)
+{
+    std::string equationType1 = config1.get<std::string>("equationType");
+    std::transform(equationType1.begin(), equationType1.end(), equationType1.begin(), ::tolower);  
+    bool isSeismic1 = Common::checkEquationType<ValueType>(equationType1); 
+    IndexType exchangeStrategy1 = config1.get<IndexType>("exchangeStrategy");  
+    std::string equationType2 = config2.get<std::string>("equationType");
+    std::transform(equationType2.begin(), equationType2.end(), equationType2.begin(), ::tolower);  
+    bool isSeismic2 = Common::checkEquationType<ValueType>(equationType2); 
+    IndexType exchangeStrategy2 = config2.get<IndexType>("exchangeStrategy"); 
+    SCAI_ASSERT_ERROR(isSeismic1 == isSeismic2, "isSeismic1 != isSeismic2");
+    SCAI_ASSERT_ERROR(exchangeStrategy1 == exchangeStrategy2, "exchangeStrategy1 != exchangeStrategy2");
+    SCAI_ASSERT_ERROR((exchangeStrategy1 > 1), "exchangeStrategy mush be 0, 2, 4, 6 in exchangeModelparameters()");
+    if (isSeismic1 && exchangeStrategy1 > 1) {        
+        model2.setDensity(model1.getDensity());
+        if ((equationType1.compare("sh") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("sh") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
+            model2.setVelocityS(model1.getVelocityS());
+        }
+        if ((equationType1.compare("acoustic") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("acoustic") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
+            model2.setVelocityP(model1.getVelocityP());
+        }
+    } else if (!isSeismic1 && exchangeStrategy1 > 1) {
+        model2.setElectricConductivity(model1.getElectricConductivity());
+        model2.setDielectricPermittivity(model1.getDielectricPermittivity());
+        if ((equationType1.compare("viscotmem") == 0 || equationType1.compare("viscoemem") == 0) && (equationType2.compare("viscotmem") == 0 || equationType2.compare("viscoemem") == 0)){
+            model2.setTauElectricConductivity(model1.getTauElectricConductivity());
+            model2.setTauDielectricPermittivity(model1.getTauDielectricPermittivity());
+        }
     }
 }
 

@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
     verbose = config.get<bool>("verbose");
     
     // Initialization of inversion
+    /* inversionType: 0 = no inversion, 1 = single inversion, 2 = joint structural inversion, 3 = joint petrophysical inversion, 4 = joint inversion of the seismic waves or EM waves */
     IndexType inversionType = config.getAndCatch("inversionType", 1);
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     IndexType tStepEndEM = static_cast<IndexType>((configEM.get<ValueType>("T") / configEM.get<ValueType>("DT")) + 0.5);  
 
-    /* exchangeStrategy: 0 = self-restraint, 1 = self-restraint + mutual restraint (single parameter), 2 = self-restraint + mutual restraint (all parameters), 3 = self-restraint + mutual restraint (single parameter) + staged exchange, 4 = self-restraint + mutual restraint (all parameters) + sequential exchange, 5 = mutual restraint (single parameter) + staged exchange, 6 = mutual restraint (all parameters) + sequential exchange. */
+    /* exchangeStrategy: 0 = self-restraint, 1 = self-restraint + mutual restraint (single parameter), 2 = self-restraint + mutual restraint (all parameters), 3 = self-restraint + mutual restraint + staged exchange, 4 = self-restraint + mutual restraint + sequential exchange, 5 = mutual restraint + staged exchange, 6 = mutual restraint + sequential exchange. */
     IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
     IndexType exchangeStrategyEM = configEM.get<IndexType>("exchangeStrategy");
     SCAI_ASSERT_ERROR(exchangeStrategy == exchangeStrategyEM, "exchangeStrategy != exchangeStrategyEM"); // check whether exchangeStrategy has been applied sucessfully.
@@ -119,6 +120,9 @@ int main(int argc, char *argv[])
     SCAI_ASSERT_ERROR(breakLoopType == breakLoopTypeEM, "breakLoopType != breakLoopTypeEM"); // check whether breakLoopType has been applied sucessfully.
     if (inversionType == 1 || inversionTypeEM == 1 || exchangeStrategy > 2) {
         SCAI_ASSERT_ERROR(breakLoopType == 0, "breakLoopType != 0"); // check whether breakLoopType has been applied sucessfully.
+    }
+    if (inversionType == 4 && inversionTypeEM == 4) {
+        SCAI_ASSERT_ERROR(isSeismic == isSeismicEM, "isSeismic != isSeismicEM");
     }
 
     std::string misfitType = config.get<std::string>("misfitType");
@@ -855,8 +859,10 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     for (workflow.workflowStage = 0; workflow.workflowStage < workflow.maxStage; workflow.workflowStage++) {
 
-        if (inversionType != 0) {        
-            breakLoop = false;
+        if (inversionType != 0 && breakLoop == false) {
+            if (exchangeStrategy == 4 || exchangeStrategy == 6)
+                breakLoopEM = true;
+            
             workflow.printParameters(commAll);
 
             gradientCalculation.allocate(config, dist, ctx, workflow);
@@ -870,8 +876,7 @@ int main(int argc, char *argv[])
                 freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());            
         }
         
-        if (inversionTypeEM != 0) {
-            breakLoopEM = false;
+        if (inversionTypeEM != 0 && breakLoopEM == false) {
             workflowEM.workflowStage = workflow.workflowStage;
             workflowEM.printParameters(commAll);
 
@@ -901,6 +906,8 @@ int main(int argc, char *argv[])
             /*        Start the first inversion        */
             /* --------------------------------------- */            
             if (inversionType != 0 && (breakLoop == false || breakLoopType == 2)) {
+                if (exchangeStrategy == 3 || exchangeStrategy == 5)
+                    breakLoopEM = true;
                 // Begin of one seismic model update 
                 HOST_PRINT(commAll, "\n=================================================");
                 HOST_PRINT(commAll, "\n=========== Workflow stage " << workflow.workflowStage + 1 << " of " << workflow.maxStage << " ===============");
@@ -1306,8 +1313,7 @@ int main(int argc, char *argv[])
 
                 gradient->applyMedianFilter(config);  
                 
-                if (inversionType == 2) {                        
-                    
+                if (inversionType == 2) {
                     // joint inversion with cross-gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n========= calcCrossGradient " << equationType << " =========");
@@ -1388,15 +1394,28 @@ int main(int argc, char *argv[])
                 breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
                 if (breakLoop == true) {                 
-                    if (inversionType == 3 && exchangeStrategy != 0 && exchangeStrategy != 4 && exchangeStrategy != 6) {   
-                        HOST_PRINT(commAll, "\n=================================================");
-                        HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                        HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
-                        HOST_PRINT(commAll, "\n=================================================\n");
-                        modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic);
+                    if (inversionType > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) { 
+                        if (inversionType == 3) {
+                            HOST_PRINT(commAll, "\n=================================================");
+                            HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
+                            HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                            HOST_PRINT(commAll, "\n=================================================\n");
+                            modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM); 
+                        } else if (inversionType == 4) {
+                            HOST_PRINT(commAll, "\n=================================================");
+                            HOST_PRINT(commAll, "\n================ Joint inversion ================");
+                            HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                            HOST_PRINT(commAll, "\n=================================================\n");
+                            modelTaper2DJoint.exchangeModelparameters(*model, *modelEM, config, configEM); 
+                        }            
                     }       
                     if (breakLoopType == 0 && breakLoopEM == true) {
-                        break;
+                        if (exchangeStrategy != 3 && exchangeStrategy != 5) {
+                            break;
+                        } else {
+                            breakLoopEM = false;
+                            workflow.iteration = 0;
+                        }                            
                     }           
                 } 
 
@@ -1463,12 +1482,20 @@ int main(int argc, char *argv[])
                 
             }  // End of once Seismic gradient, dataMisfit calculation and model update
 
-            if (inversionType == 3 && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflow.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
-                HOST_PRINT(commAll, "\n=================================================");
-                HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
-                HOST_PRINT(commAll, "\n=================================================\n");                
-                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic);
+            if (inversionType > 2 && (breakLoop == false || breakLoopType == 2) && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflow.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
+                if (inversionType == 3) {
+                    HOST_PRINT(commAll, "\n=================================================");
+                    HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
+                    HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                    HOST_PRINT(commAll, "\n=================================================\n");
+                    modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM); 
+                } else if (inversionType == 4) {
+                    HOST_PRINT(commAll, "\n=================================================");
+                    HOST_PRINT(commAll, "\n================ Joint inversion ================");
+                    HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                    HOST_PRINT(commAll, "\n=================================================\n");
+                    modelTaper2DJoint.exchangeModelparameters(*model, *modelEM, config, configEM); 
+                }            
             }
             
             /* --------------------------------------- */
@@ -1882,7 +1909,6 @@ int main(int argc, char *argv[])
                     gradientTaper1DEM.apply(*gradientEM);
 
                 if (inversionTypeEM == 2) {
-                    
                     // joint inversion with cross-gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n========== calcCrossGradient " << equationTypeEM << " ========");
@@ -1962,12 +1988,20 @@ int main(int argc, char *argv[])
                 breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
                 // We set a new break condition so that two inversions can change stage simutanously in joint inversion
                 if (breakLoopEM == true) {   
-                    if (inversionTypeEM == 3 && exchangeStrategy != 0 && exchangeStrategy != 4 && exchangeStrategy != 6) {
-                        HOST_PRINT(commAll, "\n=================================================");
-                        HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                        HOST_PRINT(commAll, "\n=============  From EM to Seismic  ==============");
-                        HOST_PRINT(commAll, "\n=================================================\n");                    
-                        modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config, isSeismicEM); 
+                    if (inversionTypeEM > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) {
+                        if (inversionTypeEM == 3) {
+                            HOST_PRINT(commAll, "\n=================================================");
+                            HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
+                            HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " to " << equationType << " ============");
+                            HOST_PRINT(commAll, "\n=================================================\n");
+                            modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config); 
+                        } else if (inversionTypeEM == 4) {
+                            HOST_PRINT(commAll, "\n=================================================");
+                            HOST_PRINT(commAll, "\n================ Joint inversion ================");
+                            HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " to " << equationType << " ============");
+                            HOST_PRINT(commAll, "\n=================================================\n");
+                            modelTaper2DJoint.exchangeModelparameters(*modelEM, *model, configEM, config); 
+                        } 
                     }   
                     if (breakLoopType == 1) {
                         if (breakLoop == false) {
@@ -1991,12 +2025,20 @@ int main(int argc, char *argv[])
                         if (breakLoop == true) {
                             break;
                         } else {
-                            if (inversionType == 3 && exchangeStrategy != 0 && exchangeStrategy != 4 && exchangeStrategy != 6) {
-                                HOST_PRINT(commAll, "\n=================================================");
-                                HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                                HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
-                                HOST_PRINT(commAll, "\n=================================================\n");                        
-                                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic);
+                            if (inversionType > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) {
+                                if (inversionType == 3) {
+                                    HOST_PRINT(commAll, "\n=================================================");
+                                    HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
+                                    HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                                    HOST_PRINT(commAll, "\n=================================================\n");
+                                    modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM); 
+                                } else if (inversionType == 4) {
+                                    HOST_PRINT(commAll, "\n=================================================");
+                                    HOST_PRINT(commAll, "\n================ Joint inversion ================");
+                                    HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                                    HOST_PRINT(commAll, "\n=================================================\n");
+                                    modelTaper2DJoint.exchangeModelparameters(*model, *modelEM, config, configEM); 
+                                }           
                             } 
                         }
                     }
@@ -2063,12 +2105,20 @@ int main(int argc, char *argv[])
                 
             }  // End of once EM gradient, dataMisfit calculation and model update
 
-            if (inversionTypeEM == 3 && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflowEM.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
-                HOST_PRINT(commAll, "\n=================================================");
-                HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                HOST_PRINT(commAll, "\n=============  From EM to Seismic  ==============");
-                HOST_PRINT(commAll, "\n=================================================\n");                
-                modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config, isSeismicEM);
+            if (inversionTypeEM > 2 && (breakLoopEM == false || breakLoopType == 2) && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflowEM.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
+                if (inversionTypeEM == 3) {
+                    HOST_PRINT(commAll, "\n=================================================");
+                    HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
+                    HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " to " << equationType << " ============");
+                    HOST_PRINT(commAll, "\n=================================================\n");
+                    modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config); 
+                } else if (inversionTypeEM == 4) {
+                    HOST_PRINT(commAll, "\n=================================================");
+                    HOST_PRINT(commAll, "\n================ Joint inversion ================");
+                    HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " to " << equationType << " ============");
+                    HOST_PRINT(commAll, "\n=================================================\n");
+                    modelTaper2DJoint.exchangeModelparameters(*modelEM, *model, configEM, config); 
+                }           
             }
             
             /* -------------------------------------------------------------------- */
@@ -2331,24 +2381,26 @@ int main(int argc, char *argv[])
             } // end extra EM forward modelling
 
         } // end of loop over iterations 
-        
-    } // end of loop over workflow stages 
     
-    if (inversionType == 3 && (exchangeStrategy == 4 || exchangeStrategy == 6)) {   
-        HOST_PRINT(commAll, "\n=================================================");
-        HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-        HOST_PRINT(commAll, "\n=============  From Seismic to EM  ==============");
-        HOST_PRINT(commAll, "\n=================================================\n");
-        modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, isSeismic); 
-        if (commInterShot->getRank() == 0) {
-            /* only shot Domain 0 writes output */
-            if (!useStreamConfigEM) {
-                modelEM->write(configEM.get<std::string>("ModelFilename"), configEM.get<IndexType>("FileFormat"));
-            } else {
-                modelEM->write(configBigEM.get<std::string>("ModelFilename"), configEM.get<IndexType>("FileFormat"));
-            }
-        }
-    }
+        if (inversionType > 1 && (exchangeStrategy == 4 || exchangeStrategy == 6)) { 
+            if (inversionType == 3) {
+                HOST_PRINT(commAll, "\n=================================================");
+                HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
+                HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                HOST_PRINT(commAll, "\n=================================================\n");
+                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM); 
+            } else if (inversionType == 4) {
+                HOST_PRINT(commAll, "\n=================================================");
+                HOST_PRINT(commAll, "\n================ Joint inversion ================");
+                HOST_PRINT(commAll, "\n============  From " << equationType << " to " << equationTypeEM << " ============");
+                HOST_PRINT(commAll, "\n=================================================\n");
+                modelTaper2DJoint.exchangeModelparameters(*model, *modelEM, config, configEM); 
+            }            
+            breakLoopEM = false;
+            workflow.workflowStage = 0;
+            workflow.iteration = 0; 
+        }    
+    } // end of loop over workflow stages 
     
     globalEnd_t = common::Walltime::get();
     HOST_PRINT(commAll, "\nTotal runtime of WAVE-Inversion: " << globalEnd_t - globalStart_t << " sec.\nWAVE-Inversion finished!\n\n");

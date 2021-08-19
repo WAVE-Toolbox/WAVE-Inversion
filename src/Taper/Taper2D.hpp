@@ -43,7 +43,8 @@ namespace KITGPI
             void calcSeismictoEMMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesEM, KITGPI::Configuration::Configuration configEM);
             void calcEMtoSeismicMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesEM, KITGPI::Configuration::Configuration configEM);
 
-            void exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::Modelparameter<ValueType> &modelEM, KITGPI::Configuration::Configuration config, bool isSeismic);
+            void exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::Modelparameter<ValueType> &modelEM, KITGPI::Configuration::Configuration config);
+            void exchangeModelparameters(KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Modelparameter::Modelparameter<ValueType> &model2, KITGPI::Configuration::Configuration config1, KITGPI::Configuration::Configuration config2);
             
             void initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx);
             void calcWavefieldAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion);
