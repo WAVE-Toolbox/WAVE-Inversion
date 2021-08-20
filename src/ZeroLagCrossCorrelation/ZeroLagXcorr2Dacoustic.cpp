@@ -59,27 +59,27 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
+        this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
         if (decomposeType == 0) {
-            this->writeWavefield(xcorrRhostep, "xcorrRho.step", filename + type, t);
+            this->writeWavefield(xcorrRhostep, "xcorrRho.step", filename, t);
         } else if (gradientType == 1 && decomposeType == 1) {
-            this->writeWavefield(xcorrRhoSdRu, "xcorrRho.SdRu", filename + type, t);
-            this->writeWavefield(xcorrRhoSuRd, "xcorrRho.SuRd", filename + type, t);
+            this->writeWavefield(xcorrRhoSdRu, "xcorrRho.SdRu", filename, t);
+            this->writeWavefield(xcorrRhoSuRd, "xcorrRho.SuRd", filename, t);
         } else if (gradientType == 2 && decomposeType == 1) {
-            this->writeWavefield(xcorrRhoSuRu, "xcorrRho.SuRu", filename + type, t);
-            this->writeWavefield(xcorrRhoSdRd, "xcorrRho.SdRd", filename + type, t);
+            this->writeWavefield(xcorrRhoSuRu, "xcorrRho.SuRu", filename, t);
+            this->writeWavefield(xcorrRhoSdRd, "xcorrRho.SdRd", filename, t);
         }
     }
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        this->writeWavefield(xcorrLambda, "xcorrLambda", filename + type, t);
+        this->writeWavefield(xcorrLambda, "xcorrLambda", filename, t);
         if (decomposeType == 0) {
-            this->writeWavefield(xcorrLambdastep, "xcorrLambda.step", filename + type, t);
+            this->writeWavefield(xcorrLambdastep, "xcorrLambda.step", filename, t);
         } else if (gradientType == 1 && decomposeType == 1) {
-            this->writeWavefield(xcorrLambdaSdRu, "xcorrLambda.SdRu", filename + type, t);
-            this->writeWavefield(xcorrLambdaSuRd, "xcorrLambda.SuRd", filename + type, t);
+            this->writeWavefield(xcorrLambdaSdRu, "xcorrLambda.SdRu", filename, t);
+            this->writeWavefield(xcorrLambdaSuRd, "xcorrLambda.SuRd", filename, t);
         } else if (gradientType == 2 && decomposeType == 1) {
-            this->writeWavefield(xcorrLambdaSuRu, "xcorrLambda.SuRu", filename + type, t);
-            this->writeWavefield(xcorrLambdaSdRd, "xcorrLambda.SdRd", filename + type, t);
+            this->writeWavefield(xcorrLambdaSuRu, "xcorrLambda.SuRu", filename, t);
+            this->writeWavefield(xcorrLambdaSdRd, "xcorrLambda.SdRd", filename, t);
         }
     }
 }

@@ -45,9 +45,9 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
+        this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
     if (workflow.getInvertForVs() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrMuC, "xcorrMuC", filename + type, t);
+        this->writeWavefield(xcorrMuC, "xcorrMuC", filename, t);
 }
 
 /*! \brief Set all wavefields to zero.

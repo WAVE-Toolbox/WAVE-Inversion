@@ -47,9 +47,9 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dacoustic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
+        this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrLambda, "xcorrLambda", filename + type, t);
+        this->writeWavefield(xcorrLambda, "xcorrLambda", filename, t);
 }
 
 /*! \brief Set all wavefields to zero.

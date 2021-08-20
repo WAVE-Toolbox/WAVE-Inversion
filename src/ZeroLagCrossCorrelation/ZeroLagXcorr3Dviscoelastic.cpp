@@ -51,7 +51,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::init(scai::hme
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
-    this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
+    this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
     COMMON_THROWEXCEPTION("3Dviscoelastic convolution is not implemented yet.");
 }
 

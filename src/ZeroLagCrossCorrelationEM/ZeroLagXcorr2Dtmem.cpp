@@ -60,28 +60,28 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename + type, t);
+        this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename, t);
         if (decomposeType == 0) {
-            this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename + type, t);
+            this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, t);
         } else if (gradientType == 1 && decomposeType == 1) {
-            this->writeWavefield(xcorrSigmaEMSdRu, "xcorrSigmaEM.SdRu", filename + type, t);
-            this->writeWavefield(xcorrSigmaEMSuRd, "xcorrSigmaEM.SuRd", filename + type, t);
+            this->writeWavefield(xcorrSigmaEMSdRu, "xcorrSigmaEM.SdRu", filename, t);
+            this->writeWavefield(xcorrSigmaEMSuRd, "xcorrSigmaEM.SuRd", filename, t);
         } else if (gradientType == 2 && decomposeType == 1) {
-            this->writeWavefield(xcorrSigmaEMSuRu, "xcorrSigmaEM.SuRu", filename + type, t);
-            this->writeWavefield(xcorrSigmaEMSdRd, "xcorrSigmaEM.SdRd", filename + type, t);
+            this->writeWavefield(xcorrSigmaEMSuRu, "xcorrSigmaEM.SuRu", filename, t);
+            this->writeWavefield(xcorrSigmaEMSdRd, "xcorrSigmaEM.SdRd", filename, t);
         }
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
     {
-        this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename + type, t);
+        this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename, t);
         if (decomposeType == 0) {
-            this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename + type, t);
+            this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename, t);
         } else if (gradientType == 1 && decomposeType == 1) {
-            this->writeWavefield(xcorrEpsilonEMSdRu, "xcorrEpsilonEM.SdRu", filename + type, t);
-            this->writeWavefield(xcorrEpsilonEMSuRd, "xcorrEpsilonEM.SuRd", filename + type, t);
+            this->writeWavefield(xcorrEpsilonEMSdRu, "xcorrEpsilonEM.SdRu", filename, t);
+            this->writeWavefield(xcorrEpsilonEMSuRd, "xcorrEpsilonEM.SuRd", filename, t);
         } else if (gradientType == 2 && decomposeType == 1) {
-            this->writeWavefield(xcorrEpsilonEMSuRu, "xcorrEpsilonEM.SuRu", filename + type, t);
-            this->writeWavefield(xcorrEpsilonEMSdRd, "xcorrEpsilonEM.SdRd", filename + type, t);
+            this->writeWavefield(xcorrEpsilonEMSuRu, "xcorrEpsilonEM.SuRu", filename, t);
+            this->writeWavefield(xcorrEpsilonEMSdRd, "xcorrEpsilonEM.SdRd", filename, t);
         }
     }
 }

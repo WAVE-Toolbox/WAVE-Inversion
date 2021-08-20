@@ -51,12 +51,12 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscotmem<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename + type, t);
+        this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename, t);
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
-        this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename + type, t);
+        this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename, t);
     if (workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM()) {
-        this->writeWavefield(xcorrRSigmaEM, "xcorrRSigmaEM", filename + type, t);
-        this->writeWavefield(xcorrREpsilonEM, "xcorrREpsilonEM", filename + type, t);
+        this->writeWavefield(xcorrRSigmaEM, "xcorrRSigmaEM", filename, t);
+        this->writeWavefield(xcorrREpsilonEM, "xcorrREpsilonEM", filename, t);
     }
 }
 

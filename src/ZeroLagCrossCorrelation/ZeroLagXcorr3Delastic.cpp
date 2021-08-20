@@ -51,7 +51,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::C
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
-    this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
+    this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
     COMMON_THROWEXCEPTION("3Delastic convolution is not implemented yet.");
 }
 

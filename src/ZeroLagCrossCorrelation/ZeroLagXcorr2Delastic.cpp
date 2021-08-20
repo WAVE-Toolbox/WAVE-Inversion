@@ -51,7 +51,7 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getCon
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
 {
-    this->writeWavefield(xcorrRho, "xcorrRho", filename + type, t);
+    this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
     COMMON_THROWEXCEPTION("write correlated elastic wavefields is not implemented yet.")
 }
 
