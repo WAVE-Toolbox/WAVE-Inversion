@@ -79,8 +79,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
     IndexType decomposeType = config.getAndCatch("decomposeType", 0); 
     IndexType snapType = config.getAndCatch("snapType", 0);
-    IndexType numSwitch = 3; 
-    if (gradientType == 3) {
+    if (gradientType > 2) {
+        IndexType numSwitch = gradientType - 2; 
         if ((workflow.iteration / numSwitch) % 2 == 0) {
             gradientType = 1;
         } else {

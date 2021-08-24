@@ -416,6 +416,10 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
     SCAI_ASSERT_ERROR(isSeismic1 == isSeismic2, "isSeismic1 != isSeismic2");
     SCAI_ASSERT_ERROR(exchangeStrategy1 == exchangeStrategy2, "exchangeStrategy1 != exchangeStrategy2");
     SCAI_ASSERT_ERROR((exchangeStrategy1 > 1), "exchangeStrategy mush be 0, 2, 4, 6 in exchangeModelparameters()");
+    
+    model2.setPorosity(model1.getPorosity());
+    model2.setSaturation(model1.getSaturation());
+    model2.setReflectivity(model1.getReflectivity());
     if (isSeismic1 && exchangeStrategy1 > 1) {        
         model2.setDensity(model1.getDensity());
         if ((equationType1.compare("sh") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("sh") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
@@ -424,14 +428,19 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
         if ((equationType1.compare("acoustic") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("acoustic") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
             model2.setVelocityP(model1.getVelocityP());
         }
+        if (equationType1.compare("viscoelastic") == 0 && equationType2.compare("viscoelastic") == 0){
+            model2.setTauP(model1.getTauP());
+            model2.setTauS(model1.getTauS());
+        }
     } else if (!isSeismic1 && exchangeStrategy1 > 1) {
+        model2.setMagneticPermeability(model1.getMagneticPermeability());
         model2.setElectricConductivity(model1.getElectricConductivity());
         model2.setDielectricPermittivity(model1.getDielectricPermittivity());
         if ((equationType1.compare("viscotmem") == 0 || equationType1.compare("viscoemem") == 0) && (equationType2.compare("viscotmem") == 0 || equationType2.compare("viscoemem") == 0)){
             model2.setTauElectricConductivity(model1.getTauElectricConductivity());
             model2.setTauDielectricPermittivity(model1.getTauDielectricPermittivity());
         }
-    }
+    }     
 }
 
 /*! \brief Initialize wavefield transform matrix

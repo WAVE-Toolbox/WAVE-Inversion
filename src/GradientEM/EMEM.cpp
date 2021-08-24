@@ -375,10 +375,10 @@ void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Modelparameter::Mode
             lhs.setDielectricPermittivity(dielectricPermittivitytemp);
         }
     }
-//     if (workflowInner.getInvertForReflectivity()) {
-//         temp = lhs.getReflectivity() - rhs.getReflectivity();
-//         lhs.setReflectivity(temp); 
-//     }
+    if (workflowInner.getInvertForReflectivity()) {
+        temp = lhs.getReflectivity() - rhs.getReflectivity();
+        lhs.setReflectivity(temp); 
+    }
 };
 
 /*! \brief Function for summing the gradients of all shot domains

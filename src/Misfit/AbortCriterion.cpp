@@ -14,21 +14,25 @@ bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm,
 {
     bool breakLoop = false;   
     if ( workflow.iteration > 1 ) { 
-        ValueType misfitResidual = 0;     
+        ValueType misfitResidual1 = 0;   
+        ValueType misfitResidual2 = 0;      
         
         if (misfit.saveMultiMisfits || misfit.misfitType.length() > 2) {
-            misfitResidual = misfit.getMisfitResidualMax(workflow.iteration - 2, workflow.iteration);
+            misfitResidual1 = misfit.getMisfitResidualMax(workflow.iteration - 1, workflow.iteration);
+            misfitResidual2 = misfit.getMisfitResidualMax(workflow.iteration - 2, workflow.iteration);
         } else {
-            misfitResidual = ( misfit.getMisfitSum(workflow.iteration - 2) - misfit.getMisfitSum(workflow.iteration) )/misfit.getMisfitSum(workflow.iteration - 2);
+            misfitResidual1 = ( misfit.getMisfitSum(workflow.iteration - 1) - misfit.getMisfitSum(workflow.iteration) )/misfit.getMisfitSum(workflow.iteration - 1);
+            misfitResidual2 = ( misfit.getMisfitSum(workflow.iteration - 2) - misfit.getMisfitSum(workflow.iteration) )/misfit.getMisfitSum(workflow.iteration - 2);
         }
     
-        if ( std::abs( misfitResidual) < workflow.getRelativeMisfitChange()) {
+        if ( std::abs( misfitResidual1) < workflow.getRelativeMisfitChange() && std::abs( misfitResidual2) < workflow.getRelativeMisfitChange()) {
             breakLoop = true;  
             HOST_PRINT(comm, "\nAbort criterion 1 fulfilled \n");
             HOST_PRINT(comm, "|Misfit(it-2)-Misfit(it)| / Misfit(it-2) < " << workflow.getRelativeMisfitChange() << "\n");
         }
-        misfitResidual = -misfitResidual;
-        if ( misfitResidual > 2 * workflow.getRelativeMisfitChange()) {
+        misfitResidual1 = -misfitResidual1;
+        misfitResidual2 = -misfitResidual2;
+        if ( misfitResidual1 > 2 * workflow.getRelativeMisfitChange() && misfitResidual2 > 2 * workflow.getRelativeMisfitChange()) {
             breakLoop = true;  
             HOST_PRINT(comm, "\nAbort criterion 2 fulfilled \n");
             HOST_PRINT(comm, "(Misfit(it)-Misfit(it-2)) / Misfit(it-2) > " << 2 * workflow.getRelativeMisfitChange() << "\n");
