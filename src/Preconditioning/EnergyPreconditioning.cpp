@@ -43,7 +43,7 @@ template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldBack, ValueType DT)
 {
     if (useEnergyPreconditioning != 0 && isSeismic) {               
-        if(equationType.compare("sh") != 0){
+        if(equationType.compare("sh") != 0 && equationType.compare("viscosh") != 0){
             wavefieldVX = wavefield.getRefVX();
             wavefieldVX *= wavefieldVX;
             wavefieldVX *= DT;
@@ -57,7 +57,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             }      
         }
             
-        if(equationType.compare("sh") != 0){
+        if(equationType.compare("sh") != 0 && equationType.compare("viscosh") != 0){
             wavefieldVY = wavefield.getRefVY();
             wavefieldVY *= wavefieldVY;
             wavefieldVY *= DT;
@@ -71,7 +71,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             }             
         }
         
-        if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0){
+        if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
             wavefieldVZ = wavefield.getRefVZ();
             wavefieldVZ *= wavefieldVZ;
             wavefieldVZ *= DT;

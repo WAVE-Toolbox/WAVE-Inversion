@@ -56,7 +56,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     scai::dmemo::DistributionPtr dist;
     scai::dmemo::CommunicatorPtr commShot;
     if (isSeismic) {
-        if(equationType.compare("sh") == 0){
+        if(equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
             dist = wavefields->getRefVZ().getDistributionPtr();
         } else {
             dist = wavefields->getRefVX().getDistributionPtr();        
@@ -105,7 +105,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     if (gradientType == 2 && decomposeType == 0) { 
         scai::dmemo::DistributionPtr distInversion;
         if (isSeismic) {
-            if(equationType.compare("sh") == 0){
+            if(equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
                 distInversion = wavefieldrecord[0]->getRefVZ().getDistributionPtr();
             } else {
                 distInversion = wavefieldrecord[0]->getRefVX().getDistributionPtr();        
@@ -209,7 +209,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     
     scai::lama::DenseVector<ValueType> mask; //mask to restore vacuum
     if (isSeismic) {
-        if(equationType.compare("sh") == 0){
+        if(equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
             mask = model.getVelocityS();  
         } else {
             mask = model.getVelocityP();      

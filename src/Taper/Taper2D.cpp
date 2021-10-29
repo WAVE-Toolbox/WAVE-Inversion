@@ -422,15 +422,17 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
     model2.setReflectivity(model1.getReflectivity());
     if (isSeismic1 && exchangeStrategy1 > 1) {        
         model2.setDensity(model1.getDensity());
-        if ((equationType1.compare("sh") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("sh") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
+        if ((equationType1.compare("sh") == 0 || equationType1.compare("viscosh") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("sh") == 0 || equationType2.compare("viscosh") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
             model2.setVelocityS(model1.getVelocityS());
         }
         if ((equationType1.compare("acoustic") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("acoustic") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
             model2.setVelocityP(model1.getVelocityP());
         }
+        if ((equationType1.compare("viscoelastic") == 0 || equationType1.compare("viscosh") == 0) && (equationType2.compare("viscoelastic") == 0 || equationType2.compare("viscosh") == 0)){
+            model2.setTauS(model1.getTauS());
+        }
         if (equationType1.compare("viscoelastic") == 0 && equationType2.compare("viscoelastic") == 0){
             model2.setTauP(model1.getTauP());
-            model2.setTauS(model1.getTauS());
         }
     } else if (!isSeismic1 && exchangeStrategy1 > 1) {
         model2.setMagneticPermeability(model1.getMagneticPermeability());

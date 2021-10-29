@@ -353,7 +353,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     bool isSeismic = Common::checkEquationType<ValueType>(equationType);   
     scai::dmemo::DistributionPtr dist;
     if (isSeismic) {
-        if(equationType.compare("sh") == 0){
+        if(equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
             dist = wavefields.getRefVZ().getDistributionPtr();
         } else {
             dist = wavefields.getRefVX().getDistributionPtr();      
