@@ -282,7 +282,6 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::assign(KITGPI::Gradient::Gradien
 template <typename ValueType>
 void KITGPI::Gradient::Viscoelastic<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-
     density -= rhs.getDensity();
     velocityP -= rhs.getVelocityP();
     velocityS -= rhs.getVelocityS();
@@ -297,7 +296,6 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::minusAssign(KITGPI::Gradient::Gr
 template <typename ValueType>
 void KITGPI::Gradient::Viscoelastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-
     density += rhs.getDensity();
     velocityP += rhs.getVelocityP();
     velocityS += rhs.getVelocityS();

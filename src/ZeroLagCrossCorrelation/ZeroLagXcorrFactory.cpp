@@ -12,7 +12,7 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr KITGPI::
 
     // Assert correctness of input values
     SCAI_ASSERT_ERROR(dimension.compare("2d") == 0 || dimension.compare("3d") == 0, "Unkown dimension");
-    SCAI_ASSERT_ERROR(type.compare("acoustic") == 0 || type.compare("elastic") == 0 || type.compare("viscoelastic") == 0 || type.compare("sh") == 0 || type.compare("emem") == 0 || type.compare("tmem") == 0 || type.compare("viscoemem") == 0 || type.compare("viscotmem") == 0, "Unkown type");
+    SCAI_ASSERT_ERROR(type.compare("acoustic") == 0 || type.compare("elastic") == 0 || type.compare("viscoelastic") == 0 || type.compare("sh") == 0 || type.compare("viscosh") == 0 || type.compare("emem") == 0 || type.compare("tmem") == 0 || type.compare("viscoemem") == 0 || type.compare("viscotmem") == 0, "Unkown type");
     
     // 2D
     if (dimension.compare("2d") == 0 && type.compare("sh") == 0) {
@@ -26,6 +26,9 @@ typename KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::ZeroLagXcorrPtr KITGPI::
     }
     if (dimension.compare("2d") == 0 && type.compare("viscoelastic") == 0) {
         return ZeroLagXcorrPtr(new ZeroLagXcorr2Dviscoelastic<ValueType>);
+    }
+    if (dimension.compare("2d") == 0 && type.compare("viscosh") == 0) {
+        return ZeroLagXcorrPtr(new ZeroLagXcorr2Dviscosh<ValueType>);
     }
 
     // 3D

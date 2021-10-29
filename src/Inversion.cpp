@@ -2127,7 +2127,7 @@ int main(int argc, char *argv[])
                             HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
                             HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " 2 to " << equationType << " 1 ============");
                             HOST_PRINT(commAll, "\n=================================================\n");
-                            modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config); 
+                            modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, config); 
                         } else if (inversionTypeEM == 4) {
                             HOST_PRINT(commAll, "\n=================================================");
                             HOST_PRINT(commAll, "\n================ Joint inversion ================");
@@ -2244,7 +2244,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
                     HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " 2 to " << equationType << " 1 ============");
                     HOST_PRINT(commAll, "\n=================================================\n");
-                    modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config); 
+                    modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, config); 
                 } else if (inversionTypeEM == 4) {
                     HOST_PRINT(commAll, "\n=================================================");
                     HOST_PRINT(commAll, "\n================ Joint inversion ================");

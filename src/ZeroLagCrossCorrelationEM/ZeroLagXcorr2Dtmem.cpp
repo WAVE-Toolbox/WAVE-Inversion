@@ -50,7 +50,7 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::get
     return (xcorrEpsilonEM.getContextPtr());
 }
 
-/*! \brief override Methode tor write Wavefield Snapshot to file
+/*! \brief override Method to write Wavefield Snapshot to file
  *
  *
  \param filename file name

@@ -37,7 +37,7 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::get
 }
 
 
-/*! \brief override Methode tor write Wavefield Snapshot to file
+/*! \brief override Method to write Wavefield Snapshot to file
  \param filename file name
  \param t Current Timestep
  */

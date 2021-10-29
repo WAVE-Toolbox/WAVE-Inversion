@@ -42,7 +42,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::init(scai::hmemo::C
     }
 }
 
-/*! \brief override Methode tor write Wavefield Snapshot to file
+/*! \brief override Method to write Wavefield Snapshot to file
  *
  *
  \param filename file name

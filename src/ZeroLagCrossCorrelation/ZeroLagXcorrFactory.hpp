@@ -5,6 +5,7 @@
 #include "ZeroLagXcorr2Dacoustic.hpp"
 #include "ZeroLagXcorr2Dsh.hpp"
 #include "ZeroLagXcorr2Delastic.hpp"
+#include "ZeroLagXcorr2Dviscosh.hpp"
 #include "ZeroLagXcorr2Dviscoelastic.hpp"
 #include "ZeroLagXcorr3Dacoustic.hpp"
 #include "ZeroLagXcorr3Delastic.hpp"

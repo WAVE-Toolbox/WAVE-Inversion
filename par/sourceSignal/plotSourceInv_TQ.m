@@ -2,15 +2,15 @@ clear all;close all;
 addpath('../configuration');
 addpath('../common');
 
-modelName = 'Horstwalde';
-observationType = 'Surface_Stream';
-equationType = 'TMEM';
-NoiseType = '';
+modelName = 'EttlingerCB';
+observationType = 'Surface';
+equationType = 'Viscoelastic';
+NoiseType = 'Noisy';
 modelType = 'Inv';
 HPCType = 'HPC';
 dimension=cellMerge({equationType,'2D'},0);
 configFilename=cellMerge({'configuration',modelName,observationType,dimension...
-    ,NoiseType,modelType,HPCType},1);
+    ,modelType,NoiseType,HPCType},1);
 modelType = 'True';
 configTrueFilename=cellMerge({'configuration',modelName,observationType,dimension...
     ,modelType},1);
@@ -21,10 +21,10 @@ configTrue=conf(configTrueFilename);
 
 % Output file
 % switch for saving snapshots to picture file 1=yes (jpg) 2= yes (png) other=no
-imagesave=2;
+imagesave=0;
 writefiles=1;
 stage=5;
-useDamping=0; T0damp=30e-9; T1damp=100e-9; 
+useDamping=1; T0damp=10e-3; T1damp=60e-3; 
 showLegend = 0;
 showResidual = 0;
 showmax=30;
@@ -96,13 +96,16 @@ end
 %% plot
 imageScale=1.2;
 symblicName='';
+showMarker=0;
+showText=[1,1]*0; % 0=no, 1st:1=white, 2=black; 2nd:1=left bottom, 2=left top, 3=right top, 4=center
+textName={'',''};
 legendNameAll = getLegendName(legendType,equationType,...
     inversionType,parameterisation,exchangeStrategy,symblicName);
-lineSettingAll = getLinesettingInv(equationType,inversionType,parameterisation,exchangeStrategy); 
+lineSettingAll = getLinesettingInv(equationType,inversionType,parameterisation,exchangeStrategy,showMarker); 
 lineSettingAll{2}.Color='k';
 titleName = '';
 [titleLabelSettingAll] = getTitleLabelSettingAll(showTitle,showXlabel,showYlabel...
-    ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType);
+    ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType,showText,textName);
 offset.value=[1:Nshot];
 offset.labelName='Source number';
 syntheticDatanameAll = getFilenameModelAll(filenameTrue,filenameStart,{filenameInv}...

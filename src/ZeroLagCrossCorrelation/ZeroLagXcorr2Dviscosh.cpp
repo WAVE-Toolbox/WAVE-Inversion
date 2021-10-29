@@ -1,24 +1,24 @@
-#include "ZeroLagXcorr2Dsh.hpp"
+#include "ZeroLagXcorr2Dviscosh.hpp"
 
 using namespace scai;
 
 /*! \brief Constructor which will set context, allocate and set the wavefields to zero.
  *
- * Initialisation of 2D sh wavefields
+ * Initialisation of 2D viscosh wavefields
  *
  \param ctx Context
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::ZeroLagXcorr2Dsh(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::ZeroLagXcorr2Dviscosh(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    equationType="sh"; 
+    equationType="viscosh"; 
     numDimension=2;
     init(ctx, dist, workflow);
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
@@ -30,7 +30,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::init(scai::hmemo::Contex
 /*! \brief Returns hmemo::ContextPtr from this wavefields
  */
 template <typename ValueType>
-scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getContextPtr()
+scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::getContextPtr()
 {
     return (xcorrRho.getContextPtr());
 }
@@ -42,7 +42,7 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getCo
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
@@ -53,7 +53,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::write(std::string filena
 /*! \brief Set all wavefields to zero.
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrRho);
@@ -72,7 +72,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::resetXcorr(KITGPI::Workf
  * 
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp;
@@ -94,42 +94,42 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::update(Wavefields::Wavef
 /*! \brief Get numDimension (2)
  */
 template <typename ValueType>
-int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getNumDimension() const
+int KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::getNumDimension() const
 {
     return (numDimension);
 }
 
-/*! \brief Get equationType (sh)
+/*! \brief Get equationType (viscosh)
  */
 template <typename ValueType>
-std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getEquationType() const
+std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::getEquationType() const
 {
     return (equationType);
 }
 
-
-//! \brief Not valid in the sh case
+//! \brief Not valid in the viscosh case
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getXcorrMuA() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::getXcorrMuA() const
 {
-    COMMON_THROWEXCEPTION("There is no MuA Gradient in the sh case.");
+    COMMON_THROWEXCEPTION("There is no MuA Gradient in the viscosh case.");
     return (xcorrMuA);
 }
 
-//! \brief Not valid in the sh case
+//! \brief Not valid in the viscosh case
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getXcorrMuB() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::getXcorrMuB() const
 {
-    COMMON_THROWEXCEPTION("There is no MuB Gradient in the sh case.");
+    COMMON_THROWEXCEPTION("There is no MuB Gradient in the viscosh case.");
     return (xcorrMuB);
 }
 
-//! \brief Not valid in the sh case
+//! \brief Not valid in the viscosh case
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::getXcorrLambda() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<ValueType>::getXcorrLambda() const
 {
-    COMMON_THROWEXCEPTION("There is no Lambda Gradient in the sh case.");
+    COMMON_THROWEXCEPTION("There is no Lambda Gradient in the viscosh case.");
     return (xcorrLambda);
 }
-template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<double>;
-template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<float>;
+
+template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<double>;
+template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscosh<float>;

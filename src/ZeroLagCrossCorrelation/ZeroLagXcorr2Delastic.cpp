@@ -42,7 +42,7 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::getCon
     return (xcorrRho.getContextPtr());
 }
 
-/*! \brief override Methode tor write Wavefield Snapshot to file
+/*! \brief override Method to write Wavefield Snapshot to file
  *
  *
  \param filename file name
