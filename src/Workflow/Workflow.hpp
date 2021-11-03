@@ -54,6 +54,8 @@ namespace KITGPI
             ValueType getTimeDampingFactor() const;
             scai::IndexType getSkipCount() const;
             
+            KITGPI::Workflow::Workflow<ValueType> &operator=(KITGPI::Workflow::Workflow<ValueType> const &rhs);
+            
             int maxStage;
             scai::IndexType workflowStage;
             scai::IndexType iteration;

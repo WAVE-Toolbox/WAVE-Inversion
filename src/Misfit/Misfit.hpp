@@ -37,6 +37,8 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> getMisfitIt(int iteration);
             ValueType getMisfitShot(int iteration, int shotInd);
             void addToStorage(scai::lama::DenseVector<ValueType> vector);
+            void addToCrossGradientMisfitStorage(ValueType crossGradientMisfit); 
+            ValueType getCrossGradientMisfit(int iteration);
             void clearStorage();            
             
             virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots) = 0;
@@ -66,6 +68,7 @@ namespace KITGPI
             std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;            
             std::vector<scai::lama::DenseVector<ValueType>> misfitStorageL2;          
             std::vector<scai::lama::DenseVector<ValueType>> misfitSum0Ratio;
+            std::vector<ValueType> crossGradientMisfitStorage; 
             scai::lama::DenseVector<ValueType> misfitTypeShots; 
             scai::IndexType numMisfitTypes = 6;
             std::vector<scai::IndexType> uniqueMisfitTypes{2, 5, 6, 7, 8, 9};

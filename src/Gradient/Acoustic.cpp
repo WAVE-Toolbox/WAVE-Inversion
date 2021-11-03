@@ -731,6 +731,17 @@ void KITGPI::Gradient::Acoustic<ValueType>::calcCrossGradientDerivative(KITGPI::
 {
 }
 
+/*! \brief calculate the misfit of CrossGradient
+ *
+ */
+template <typename ValueType>
+ValueType KITGPI::Gradient::Acoustic<ValueType>::calcCrossGradientMisfit()
+{
+    ValueType misfitSum = velocityP.l2Norm() + density.l2Norm();
+    
+    return (misfitSum);
+}
+
 template <typename ValueType>
 void KITGPI::Gradient::Acoustic<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    

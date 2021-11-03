@@ -57,12 +57,21 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Configuration::Configuration config;
     Configuration::Configuration configEM; 
+    IndexType inversionType = 0;
+    IndexType inversionTypeEM = 0;
     if (argc == 2) {
         config.readFromFile(argv[1], true);
         configEM.readFromFile(argv[1], true);
+        inversionType = config.getAndCatch("inversionType", 1);
     } else if (argc == 3) {
         config.readFromFile(argv[1], true);
         configEM.readFromFile(argv[2], true);
+        inversionType = config.getAndCatch("inversionType", 1);
+        inversionTypeEM = configEM.getAndCatch("inversionType", 1);
+        if (inversionType == 0)
+            config.readFromFile(argv[2], true);
+        if (inversionTypeEM == 0)
+            configEM.readFromFile(argv[1], true);
     } else {
         std::cout << "\n\nNo configuration file given!\n\n" << std::endl;
         return (2);
@@ -71,29 +80,18 @@ int main(int argc, char *argv[])
     
     // Initialization of inversion
     /* inversionType: 0 = no inversion, 1 = single inversion, 2 = joint structural inversion, 3 = joint petrophysical inversion, 4 = joint inversion of the seismic waves or EM waves */
-    IndexType inversionType = config.getAndCatch("inversionType", 1);
     std::string dimension = config.get<std::string>("dimension");
     std::string equationType = config.get<std::string>("equationType");
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
     bool isSeismic = Common::checkEquationType<ValueType>(equationType);
     
-    IndexType inversionTypeEM = configEM.getAndCatch("inversionType", 1);
     std::string dimensionEM = configEM.get<std::string>("dimension");
     std::string equationTypeEM = configEM.get<std::string>("equationType"); 
     std::transform(dimensionEM.begin(), dimensionEM.end(), dimensionEM.begin(), ::tolower);   
     std::transform(equationTypeEM.begin(), equationTypeEM.end(), equationTypeEM.begin(), ::tolower);  
     bool isSeismicEM = Common::checkEquationType<ValueType>(equationTypeEM);      
-    
-    // In case of that there is only one input configuration file
-    if (argc == 2) {
-        if (isSeismic) {
-            inversionTypeEM = 0;
-        } else {
-            inversionType = 0;
-        }
-    }
-    
+        
     Configuration::Configuration configBig;
     Configuration::Configuration configBigEM;
     bool useStreamConfig = config.getAndCatch("useStreamConfig", false);
@@ -295,6 +293,8 @@ int main(int argc, char *argv[])
     IndexType dtinversionEM = configEM.get<IndexType>("DTInversion");
     IndexType numShotDomains = config.get<IndexType>("NumShotDomains"); // total number of shot domains
     IndexType numShotDomainsEM = configEM.get<IndexType>("NumShotDomains");
+    Common::checkNumShotDomains(numShotDomains, commAll);
+    Common::checkNumShotDomains(numShotDomainsEM, commAll);
     if (inversionType != 0) {
         ValueType memDerivatives = derivatives->estimateMemory(config, dist, modelCoordinates);
         ValueType memWavefileds = wavefields->estimateMemory(dist);
@@ -315,7 +315,6 @@ int main(int argc, char *argv[])
         HOST_PRINT(commAll, " -  Model Vectors \t\t" << memModel << " MB\n");
         HOST_PRINT(commAll, " -  Boundary Condition Vectors \t" << memSolver << " MB\n");
         HOST_PRINT(commAll, "\n Memory Usage (total / per partition): \n " << memTotal << " / " << memTotal / dist->getNumPartitions() << " MB ");
-        IndexType numShotDomains = config.get<IndexType>("NumShotDomains"); // total number of shot domains
         if (numShotDomains > 1)
             HOST_PRINT(commAll, "\n Total Memory Usage (" << numShotDomains << " shot Domains ): \n " << memTotal * numShotDomains << " MB  ");
 
@@ -368,11 +367,17 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     /* Calculate derivative matrices           */
     /* --------------------------------------- */
+    ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr derivativesInversion(ForwardSolver::Derivatives::Factory<ValueType>::Create(dimension));
     ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr derivativesInversionEM(ForwardSolver::Derivatives::Factory<ValueType>::Create(dimensionEM));
     
     if (inversionType != 0) {
         start_t = common::Walltime::get();
         derivatives->init(dist, ctx, config, modelCoordinates, commShot);
+        if (!useStreamConfig) {
+            derivativesInversion->init(dist, ctx, config, modelCoordinates, commShot);
+        } else {
+            derivativesInversion->init(distBig, ctx, config, modelCoordinatesBig, commShot);
+        }
         end_t = common::Walltime::get();
         HOST_PRINT(commAll, "", "Finished initializing matrices " << equationType << " 1 in " << end_t - start_t << " sec.\n\n");
     }
@@ -692,9 +697,9 @@ int main(int argc, char *argv[])
     StepLengthSearch<ValueType> SLsearch;
     StepLengthSearch<ValueType> SLsearchEM;
     if (inversionType != 0)
-        SLsearch.initLogFile(commAll, logFilename, misfitType, config.getAndCatch("steplengthType", 2), workflow.getInvertForParameters().size());
+        SLsearch.initLogFile(commAll, logFilename, misfitType, config.getAndCatch("steplengthType", 2), workflow.getInvertForParameters().size(), config.getAndCatch("saveCrossGradientMisfit", 0));
     if (inversionTypeEM != 0)
-        SLsearchEM.initLogFile(commAll, logFilenameEM, misfitTypeEM, configEM.getAndCatch("steplengthType", 2), workflowEM.getInvertForParameters().size());
+        SLsearchEM.initLogFile(commAll, logFilenameEM, misfitTypeEM, configEM.getAndCatch("steplengthType", 2), workflowEM.getInvertForParameters().size(), configEM.getAndCatch("saveCrossGradientMisfit", 0));
 
     /* --------------------------------------- */
     /* Source estimation                       */
@@ -819,7 +824,22 @@ int main(int argc, char *argv[])
         wavefieldTaper2DEM.initWavefieldAverageMatrix(configEM, distInversionEM, distEM, ctx);
         wavefieldTaper2DEM.calcWavefieldAverageMatrix(modelCoordinatesEM, modelCoordinatesInversionEM);
     } 
-    if (inversionType != 0 && inversionTypeEM != 0) {
+    
+    // to ensure the self-constraint of individual FWI, e.g., structural constraint of vs on density in SH FWI.
+    if (inversionType != 0 && inversionTypeEM == 0) {
+        *modelEM = *model;
+        *derivativesInversionEM = *derivativesInversion;
+        distEM = dist;
+        distBigEM = distBig;
+        modelCoordinatesBigEM = modelCoordinatesBig;
+    } else if (inversionType == 0 && inversionTypeEM != 0) {
+        *model = *modelEM;
+        *derivativesInversion = *derivativesInversionEM;
+        dist = distEM;
+        distBig = distBigEM;
+        modelCoordinatesBig = modelCoordinatesBigEM;
+    }
+    if (inversionType != 1 || inversionTypeEM != 1) {
         if (!useStreamConfig) {
             modelTaper2DJoint.initModelTransform(dist, distEM, ctx);  
             modelTaper2DJoint.calcSeismictoEMMatrix(modelCoordinates, config, modelCoordinatesEM, configEM);
@@ -919,12 +939,11 @@ int main(int argc, char *argv[])
                 
                 if (!useStreamConfig) { 
                     /* Update model for fd simulation (averaging, inverse Density ...) */
-                    model->prepareForModelling(modelCoordinates, ctx, dist, commShot);  
+                    model->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
                 } else {
                     gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds);
                 }
-                
                 if (workflow.iteration == 0 && commInterShot->getRank() == 0) {
                     /* only shot Domain 0 writes output */
                     model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
@@ -962,6 +981,8 @@ int main(int argc, char *argv[])
 //                     }
                 }
                 gradient->setInvertForParameters(invertForParameters);
+                crossGradientDerivative->setInvertForParameters(invertForParameters);
+                stabilizingFunctionalGradient->setInvertForParameters(invertForParameters);
                 workflow.setInvertForParameters(invertForParameters);
 
                 if (config.getAndCatch("useRandomSource", 0) != 0) { 
@@ -1303,52 +1324,39 @@ int main(int argc, char *argv[])
                 dataMisfit->addToStorage(misfitPerIt);
                 misfitPerIt = 0;
                 
-                SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration));
-                dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
-                dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
-
-                /* Check abort criteria */
-                HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
-                            
                 if (config.get<bool>("useGradientTaper"))
                     gradientTaper1D.apply(*gradient);
-
-                if (inversionType == 2) {
+                            
+                if (inversionType == 2 || config.getAndCatch("saveCrossGradientMisfit", 0)) {
                     // joint inversion with cross-gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n========= calcCrossGradient " << equationType << " 1 =========");
                     HOST_PRINT(commAll, "\n===========================================\n");
-                    gradient->normalize();  
                     
                     crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM);
                     
                     crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);  
-                    if (config.get<bool>("useGradientTaper")) {
-                        gradientTaper1D.apply(*crossGradientDerivative);
-                    }  
-                    crossGradientDerivative->applyMedianFilter(config); 
-                    crossGradientDerivative->normalize();  
+                    dataMisfit->addToCrossGradientMisfitStorage(crossGradientDerivative->calcCrossGradientMisfit());
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradient", config.get<IndexType>("FileFormat"), workflow);
                     }
                                             
                     crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
-                    if (config.get<bool>("useGradientTaper")) {
-                        gradientTaper1D.apply(*crossGradientDerivative);
-                    }  
-                    crossGradientDerivative->applyMedianFilter(config); 
-                    crossGradientDerivative->normalize();              
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradientDerivative", config.get<IndexType>("FileFormat"), workflow);
                     }      
-                    if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1 ) < 0)) {
-                        weightingCrossGradient *= 0.8;
+                    if (inversionType == 2 && workflow.workflowStage * maxiterations + workflow.iteration > 1) {
+                        if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1) < 0)) {
+                            weightingCrossGradient *= 0.8;
+                        }
+                        HOST_PRINT(commAll, "weightingCrossGradient " << equationType << " 1 = " << weightingCrossGradient << "\n");  
+                        HOST_PRINT(commAll, "\n===========================================\n");
+                        
+                        gradient->normalize();  
+                        crossGradientDerivative->normalize();  
+                        *crossGradientDerivative *= weightingCrossGradient;            
+                        *gradient += *crossGradientDerivative;
                     }
-                    HOST_PRINT(commAll, "weightingCrossGradient " << equationType << " 1 = " << weightingCrossGradient << "\n");  
-                    HOST_PRINT(commAll, "\n===========================================\n");
-                    
-                    *crossGradientDerivative *= weightingCrossGradient;            
-                    *gradient += *crossGradientDerivative;
                 }
                 
                 if (workflow.iteration != 0 && config.get<IndexType>("stablizingFunctionalType") != 0) {
@@ -1357,23 +1365,21 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient " << equationType << " 1 ===");
                     HOST_PRINT(commAll, "\n===========================================\n");
-                    gradient->normalize();  
                     
                     stabilizingFunctionalGradient->calcStabilizingFunctionalGradient(*model, *modelPriori, config, *dataMisfit, workflow);
-                    if (config.get<bool>("useGradientTaper")) {
-                        gradientTaper1D.apply(*stabilizingFunctionalGradient);
-                    }  
-                    stabilizingFunctionalGradient->applyMedianFilter(config);  
-                    stabilizingFunctionalGradient->normalize();  
+                    
+//                     stabilizingFunctionalGradient->applyMedianFilter(config);  
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         stabilizingFunctionalGradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".stabilizingFunctionalGradient", config.get<IndexType>("FileFormat"), workflow);
                     }  
-                    if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1 ) < 0)) {
+                    if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1) < 0)) {
                         weightingStabilizingFunctionalGradient *= 0.6;
                     }
                     HOST_PRINT(commAll, "weightingStabilizingFunctionalGradient = " << weightingStabilizingFunctionalGradient << "\n");  
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
+                    gradient->normalize();  
+                    stabilizingFunctionalGradient->normalize();  
                     *stabilizingFunctionalGradient *= weightingStabilizingFunctionalGradient;
                     *gradient += *stabilizingFunctionalGradient;   
                 }
@@ -1383,9 +1389,16 @@ int main(int argc, char *argv[])
                 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
-                if (config.get<IndexType>("writeGradient") == 1 && commInterShot->getRank() == 0) {
+                if (config.get<IndexType>("writeGradient") > 0 && commInterShot->getRank() == 0) {
                     gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
                 }
+                
+                SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration), dataMisfit->getCrossGradientMisfit(workflow.iteration));
+                dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
+                dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
+
+                /* Check abort criteria */
+                HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
                 
                 /* --------------------------------------- */
                 /* Check abort criteria for two inversions */
@@ -1616,7 +1629,7 @@ int main(int argc, char *argv[])
                 dataMisfit->sumShotDomain(commInterShot);  
                 dataMisfit->addToStorage(misfitPerIt);
 
-                SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1));
+                SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1), dataMisfit->getCrossGradientMisfit(workflow.iteration + 1));
                 dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
                 dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
 
@@ -1689,6 +1702,8 @@ int main(int argc, char *argv[])
 //                     }
                 }
                 gradientEM->setInvertForParameters(invertForParametersEM);
+                crossGradientDerivativeEM->setInvertForParameters(invertForParametersEM);
+                stabilizingFunctionalGradientEM->setInvertForParameters(invertForParametersEM);
                 workflowEM.setInvertForParameters(invertForParametersEM);
     
                 if (configEM.getAndCatch("useRandomSource", 0) != 0) { 
@@ -2017,65 +2032,56 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
                 } //end of loop over shots
-
+                
+                commInterShot->sumArray(misfitPerItEM.getLocalValues());
+                dataMisfitEM->sumShotDomain(commInterShot);        
+                dataMisfitEM->addToStorage(misfitPerItEM);
+                misfitPerItEM = 0;                
                 gradientEM->sumShotDomain(commInterShot);           
                 if (useStreamConfigEM && configEM.getAndCatch("gradientWeight", 0) != 0)
                     *gradientEM *= gradientEM->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationTypeEM << " 2 =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
-
-                commInterShot->sumArray(misfitPerItEM.getLocalValues());
-                dataMisfitEM->sumShotDomain(commInterShot);        
-                dataMisfitEM->addToStorage(misfitPerItEM);
-                misfitPerItEM = 0;
-
-                SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration));
-                dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
-                dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
-
-                /* Check abort criteria */
-                HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration) << "\n");
-            
+                            
                 if (configEM.get<bool>("useGradientTaper"))
                     gradientTaper1DEM.apply(*gradientEM);
-
-                if (inversionTypeEM == 2) {
+                
+                if (inversionTypeEM == 2 || configEM.getAndCatch("saveCrossGradientMisfit", 0)) {
                     // joint inversion with cross-gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n========== calcCrossGradient " << equationTypeEM << " 2 ========");
                     HOST_PRINT(commAll, "\n===========================================\n");
-                    gradientEM->normalize();  
                     
                     crossGradientDerivative->calcModelDerivative(*dataMisfit, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
                     
-                    crossGradientDerivativeEM->calcCrossGradient(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM);
-                    if (configEM.get<bool>("useGradientTaper")) {
-                        gradientTaper1DEM.apply(*crossGradientDerivativeEM);
-                    }  
-                    crossGradientDerivativeEM->applyMedianFilter(configEM);  
-                    crossGradientDerivativeEM->normalize();  
+                    crossGradientDerivativeEM->calcCrossGradient(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM); 
                     if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradient", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  
+                    dataMisfitEM->addToCrossGradientMisfitStorage(crossGradientDerivativeEM->calcCrossGradientMisfit());
+                    HOST_PRINT(commAll, "cross gradient misfit" << equationTypeEM << " 2 = " << crossGradientDerivativeEM->calcCrossGradientMisfit() << "\n"); 
                     
                     crossGradientDerivativeEM->calcCrossGradientDerivative(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM); 
-                    if (configEM.get<bool>("useGradientTaper")) {
-                        gradientTaper1DEM.apply(*crossGradientDerivativeEM);
-                    }   
-                    crossGradientDerivativeEM->applyMedianFilter(configEM);      
-                    crossGradientDerivativeEM->normalize();   
                     if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradientDerivative", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }             
-                    if ((workflowEM.iteration > 0) && (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration) - 0.01 * dataMisfitEM->getMisfitSum(workflowEM.iteration - 1 ) < 0)) {
-                        weightingCrossGradientEM *= 0.8;
+                    if (inversionTypeEM == 2 && workflowEM.iteration > 1) {
+                        ValueType relativeCrossGradientMisfit = (dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration - 1) - dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration)) / dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration - 1);
+                        ValueType relativeMisfit = (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration)) / dataMisfitEM->getMisfitSum(workflowEM.iteration - 1);
+                        if (relativeMisfit > 0) {
+                            weightingCrossGradientEM = abs(relativeCrossGradientMisfit) / (abs(relativeCrossGradientMisfit) + relativeMisfit);
+                        } else {
+                            weightingCrossGradientEM = 0;
+                        } 
+                        HOST_PRINT(commAll, "weightingCrossGradient " << equationTypeEM << " 2 = " << weightingCrossGradientEM << "\n");  
+                        HOST_PRINT(commAll, "\n===========================================\n");
+                        
+                        gradientEM->normalize();       
+                        crossGradientDerivativeEM->normalize();   
+                        *crossGradientDerivativeEM *= weightingCrossGradientEM;
+                        *gradientEM += *crossGradientDerivativeEM;      
                     }
-                    HOST_PRINT(commAll, "weightingCrossGradient " << equationTypeEM << " 2 = " << weightingCrossGradientEM << "\n");  
-                    HOST_PRINT(commAll, "\n===========================================\n");
-                    
-                    *crossGradientDerivativeEM *= weightingCrossGradientEM;
-                    *gradientEM += *crossGradientDerivativeEM;           
                 }
                 
                 if (workflowEM.iteration != 0 && configEM.get<IndexType>("stablizingFunctionalType") != 0) {
@@ -2084,23 +2090,20 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient " << equationTypeEM << " 2 ===");
                     HOST_PRINT(commAll, "\n===========================================\n");
-                    gradientEM->normalize();  
                     
                     stabilizingFunctionalGradientEM->calcStabilizingFunctionalGradient(*modelEM, *modelPrioriEM, configEM, *dataMisfitEM, workflowEM);
-                    if (config.get<bool>("useGradientTaper")) {
-                        gradientTaper1DEM.apply(*stabilizingFunctionalGradientEM);
-                    }  
-                    stabilizingFunctionalGradientEM->applyMedianFilter(configEM);  
-                    stabilizingFunctionalGradientEM->normalize();  
+//                     stabilizingFunctionalGradientEM->applyMedianFilter(configEM);  
                     if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         stabilizingFunctionalGradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".stabilizingFunctionalGradientEM", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  
-                    if ((workflowEM.iteration > 0) && (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration) - 0.01 * dataMisfitEM->getMisfitSum(workflowEM.iteration - 1 ) < 0)) {
+                    if ((workflowEM.iteration > 0) && (dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) - dataMisfitEM->getMisfitSum(workflowEM.iteration) - 0.01 * dataMisfitEM->getMisfitSum(workflowEM.iteration - 1) < 0)) {
                         weightingStabilizingFunctionalGradientEM *= 0.6;
                     }
                     HOST_PRINT(commAll, "weightingStabilizingFunctionalGradient = " << weightingStabilizingFunctionalGradientEM << "\n");  
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
+                    gradientEM->normalize();  
+                    stabilizingFunctionalGradientEM->normalize();  
                     *stabilizingFunctionalGradientEM *= weightingStabilizingFunctionalGradientEM;
                     *gradientEM += *stabilizingFunctionalGradientEM;   
                 }
@@ -2110,10 +2113,16 @@ int main(int argc, char *argv[])
 
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
-                if (configEM.get<IndexType>("writeGradient") == 1 && commInterShot->getRank() == 0) {
+                if (configEM.get<IndexType>("writeGradient") > 0 && commInterShot->getRank() == 0) {
                     gradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), configEM.get<IndexType>("FileFormat"), workflowEM);
                 }
-                
+
+                SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration), dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration));
+                dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
+                dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
+
+                /* Check abort criteria */
+                HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration) << "\n");
                 /* --------------------------------------- */
                 /* Check abort criteria for two inversions */
                 /* --------------------------------------- */   
@@ -2374,7 +2383,7 @@ int main(int argc, char *argv[])
                 dataMisfitEM->sumShotDomain(commInterShot);  
                 dataMisfitEM->addToStorage(misfitPerItEM);
 
-                SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration + 1, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration + 1));
+                SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration + 1, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration + 1), dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration + 1));
                 dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
                 dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
 
@@ -2432,7 +2441,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n=================================================\n");
                     modelTaper2DJoint.exchangeModelparameters(*modelEM, *model, configEM, config); 
                     
-                    SLsearch.initLogFile(commAll, logFilename, misfitType, config.getAndCatch("steplengthType", 2), workflow.getInvertForParameters().size());
+                    SLsearch.initLogFile(commAll, logFilename, misfitType, config.getAndCatch("steplengthType", 2), workflow.getInvertForParameters().size(), config.getAndCatch("saveCrossGradientMisfit", 0));
                     HOST_PRINT(commAll, "\nChange workflow stage from " << equationTypeEM << " 2 to " << equationType << " 1\n");
                     dataMisfit->clearStorage();
                 }

@@ -57,6 +57,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.getAndCatch("useRandomSource", 0) != 0) {  
         IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+        Common::checkNumShotDomains(numShotDomains, commAll);
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
         shotDist = dmemo::blockDistribution(numshots, commInterShot);
@@ -149,6 +150,7 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.getAndCatch("useRandomSource", 0) != 0) {  
         IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+        Common::checkNumShotDomains(numShotDomains, commAll);
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
         shotDist = dmemo::blockDistribution(numshots, commInterShot);
@@ -377,6 +379,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.getAndCatch("useRandomSource", 0) != 0) {  
         IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+        Common::checkNumShotDomains(numShotDomains, commAll);
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
         shotDist = dmemo::blockDistribution(numshots, commInterShot);
@@ -590,10 +593,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
  \param logFilename Name of log-file
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, std::string misfitType, scai::IndexType setSteplengthType, scai::IndexType setInvertNumber)
+void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, std::string misfitType, scai::IndexType setSteplengthType, scai::IndexType setInvertNumber, scai::IndexType setSaveCrossGradientMisfit)
 {
     steplengthType = setSteplengthType;
     invertNumber = setInvertNumber;
+    saveCrossGradientMisfit = setSaveCrossGradientMisfit;
     int myRank = comm->getRank();
     if (myRank == MASTERGPI) {
         logFile.open(logFilename);
@@ -609,9 +613,17 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
             for (int i = 0; i < invertNumber; i++) {
                 logFile << " | misfit of slg" << i+1;                    
             }
-            logFile << " | final misfit of all shots\n";
+            if (saveCrossGradientMisfit) {
+                logFile << " | final misfit of all shots | misfit of cross gradient\n";
+            } else {
+                logFile << " | final misfit of all shots\n";
+            }
         } else if (steplengthType == 2) {
-            logFile << "# Stage | Iteration | optimum step length | forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots\n";
+            if (saveCrossGradientMisfit) {
+                logFile << "# Stage | Iteration | optimum step length | forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots | misfit of cross gradient\n";
+            } else {
+                logFile << "# Stage | Iteration | optimum step length | forward calculations | step length guess 1 | step length guess 2 | step length guess 3 | misfit of slg1 | misfit of slg2 | misfit of slg3 | final misfit of all shots\n";
+            }
         }
         logFile.close();
     }
@@ -624,7 +636,7 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
  \param iteration Iteration count
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType workflowStage, scai::IndexType iteration, std::string logFilename, ValueType misfitSum)
+void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType workflowStage, scai::IndexType iteration, std::string logFilename, ValueType misfitSum, ValueType crossGradientMisfit)
 {
     int myRank = comm->getRank();
     if (steplengthType == 1) {
@@ -641,7 +653,11 @@ void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::Communica
                 for (int i = 0; i < invertNumber; i++) {
                     logFile << std::setw(17) << 0;                    
                 }
-                logFile << std::setw(22) << misfitSum << "\n";
+                if (saveCrossGradientMisfit) {
+                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
+                } else {
+                    logFile << std::setw(22) << misfitSum << "\n";
+                }
                 logFile.close();
             } else {
                 std::string filename(logFilename);
@@ -657,7 +673,11 @@ void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::Communica
                     ValueType misfitLine1 = misfitLine.getValue(i);
                     logFile << std::setw(17) << misfitLine1;                    
                 }
-                logFile << std::setw(22) << misfitSum << "\n";
+                if (saveCrossGradientMisfit) {
+                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
+                } else {
+                    logFile << std::setw(22) << misfitSum << "\n";
+                }
                 logFile.close();
             }
         }
@@ -675,13 +695,23 @@ void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::Communica
                 std::string filename(logFilename);
                 logFile.open(filename, std::ios_base::app);
                 logFile << std::scientific;
-                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << 0 << std::setw(17) << 0 << std::setw(30) << 0 << std::setw(22) << 0 << std::setw(22) << 0 << std::setw(19) << 0 << std::setw(17) << 0 << std::setw(17) << 0 << std::setw(22) << misfitSum << "\n";
+                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << 0 << std::setw(17) << 0 << std::setw(30) << 0 << std::setw(22) << 0 << std::setw(22) << 0 << std::setw(19) << 0 << std::setw(17) << 0 << std::setw(17) << 0;
+                if (saveCrossGradientMisfit) {
+                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
+                } else {
+                    logFile << std::setw(22) << misfitSum << "\n";
+                }
                 logFile.close();
             } else {
                 std::string filename(logFilename);
                 logFile.open(filename, std::ios_base::app);
                 logFile << std::scientific;
-                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << steplengthOptimum << std::setw(17) << stepCalcCount << std::setw(30) << steplengthParabola0 << std::setw(22) << steplengthParabola1 << std::setw(22) << steplengthParabola2 << std::setw(19) << misfitParabola0 << std::setw(17) << misfitParabola1 << std::setw(17) << misfitParabola2 << std::setw(22) << misfitSum << "\n";
+                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << steplengthOptimum << std::setw(17) << stepCalcCount << std::setw(30) << steplengthParabola0 << std::setw(22) << steplengthParabola1 << std::setw(22) << steplengthParabola2 << std::setw(19) << misfitParabola0 << std::setw(17) << misfitParabola1 << std::setw(17) << misfitParabola2;
+                if (saveCrossGradientMisfit) {
+                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
+                } else {
+                    logFile << std::setw(22) << misfitSum << "\n";
+                }
                 logFile.close();
             }
         }

@@ -182,9 +182,9 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
     ValueType xEM;
     ValueType yEM;
     ValueType zEM;
-    ValueType xEM0 = configEM.get<ValueType>("x0");
-    ValueType yEM0 = configEM.get<ValueType>("y0");
-    ValueType zEM0 = configEM.get<ValueType>("z0");
+    ValueType x0EM = configEM.get<ValueType>("x0");
+    ValueType y0EM = configEM.get<ValueType>("y0");
+    ValueType z0EM = configEM.get<ValueType>("z0");
     IndexType supplementaryOrder;
     IndexType supplementaryWidth;        
     
@@ -207,9 +207,9 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
         distEM->getOwnedIndexes(ownedIndexes);
         for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
             coordinateEM = modelCoordinatesEM.index2coordinate(ownedIndex);
-            xEM=coordinateEM.x*DHEM+xEM0;
-            yEM=coordinateEM.y*DHEM+yEM0;
-            zEM=coordinateEM.z*DHEM+zEM0;
+            xEM=coordinateEM.x*DHEM+x0EM;
+            yEM=coordinateEM.y*DHEM+y0EM;
+            zEM=coordinateEM.z*DHEM+z0EM;
             coordinate.x=round((xEM-x0)/DH)-supplementaryWidth;
             coordinate.y=round((yEM-y0)/DH)-supplementaryWidth;
             coordinate.z=round((zEM-z0)/DH)-supplementaryWidth;
@@ -233,9 +233,9 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
             x=coordinate.x*DH+x0;
             y=coordinate.y*DH+y0;
             z=coordinate.z*DH+z0;
-            coordinateEM.x=round((x-xEM0)/DHEM)-supplementaryWidth;
-            coordinateEM.y=round((y-yEM0)/DHEM)-supplementaryWidth;
-            coordinateEM.z=round((z-zEM0)/DHEM)-supplementaryWidth;
+            coordinateEM.x=round((x-x0EM)/DHEM)-supplementaryWidth;
+            coordinateEM.y=round((y-y0EM)/DHEM)-supplementaryWidth;
+            coordinateEM.z=round((z-z0EM)/DHEM)-supplementaryWidth;
             for (IndexType iXorder = 0; iXorder < supplementaryOrder; iXorder++) {            
                 for (IndexType iYorder = 0; iYorder < supplementaryOrder; iYorder++) {            
                     for (IndexType iZorder = 0; iZorder < supplementaryOrder; iZorder++) {
@@ -249,7 +249,7 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
         }
         modelTransformMatrixToEM.fillFromAssembly(assembly);
     }
-//     modelTransformMatrixToEM.writeToFile("model/modelTransformMatrixToEM_" + std::to_string(modelCoordinates.getNX()) + "_" + std::to_string(modelCoordinates.getNY()) + "_" + std::to_string(modelCoordinates.getNZ()) + ".mtx");
+//     modelTransformMatrixToEM.writeToFile("model/modelTransformMatrixToEM.mtx");
 }
 
 /*! \brief calculate a matrix to transform EM model to Seismic model
@@ -275,9 +275,9 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
     ValueType xEM;
     ValueType yEM;
     ValueType zEM;
-    ValueType xEM0 = configEM.get<ValueType>("x0");
-    ValueType yEM0 = configEM.get<ValueType>("y0");
-    ValueType zEM0 = configEM.get<ValueType>("z0");
+    ValueType x0EM = configEM.get<ValueType>("x0");
+    ValueType y0EM = configEM.get<ValueType>("y0");
+    ValueType z0EM = configEM.get<ValueType>("z0");
     IndexType supplementaryOrder;
     IndexType supplementaryWidth;        
     
@@ -298,9 +298,9 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
         distEM->getOwnedIndexes(ownedIndexes);
         for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
             coordinateEM = modelCoordinatesEM.index2coordinate(ownedIndex);
-            xEM=coordinateEM.x*DHEM+xEM0;
-            yEM=coordinateEM.y*DHEM+yEM0;
-            zEM=coordinateEM.z*DHEM+zEM0;
+            xEM=coordinateEM.x*DHEM+x0EM;
+            yEM=coordinateEM.y*DHEM+y0EM;
+            zEM=coordinateEM.z*DHEM+z0EM;
             coordinate.x=round((xEM-x0)/DH)-supplementaryWidth;
             coordinate.y=round((yEM-y0)/DH)-supplementaryWidth;
             coordinate.z=round((zEM-z0)/DH)-supplementaryWidth;
@@ -325,9 +325,9 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
             x=coordinate.x*DH+x0;
             y=coordinate.y*DH+y0;
             z=coordinate.z*DH+z0;
-            coordinateEM.x=round((x-xEM0)/DHEM)-supplementaryWidth;
-            coordinateEM.y=round((y-yEM0)/DHEM)-supplementaryWidth;
-            coordinateEM.z=round((z-zEM0)/DHEM)-supplementaryWidth;
+            coordinateEM.x=round((x-x0EM)/DHEM)-supplementaryWidth;
+            coordinateEM.y=round((y-y0EM)/DHEM)-supplementaryWidth;
+            coordinateEM.z=round((z-z0EM)/DHEM)-supplementaryWidth;
             for (IndexType iXorder = 0; iXorder < supplementaryOrder; iXorder++) {            
                 for (IndexType iYorder = 0; iYorder < supplementaryOrder; iYorder++) {            
                     for (IndexType iZorder = 0; iZorder < supplementaryOrder; iZorder++) {
@@ -342,7 +342,7 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
         SeismictoEMMatrix.fillFromAssembly(assembly);
         modelTransformMatrixToSeismic = transpose(SeismictoEMMatrix);
     }
-//     modelTransformMatrixToSeismic.writeToFile("model/modelTransformMatrixToSeismic_" + std::to_string(modelCoordinatesEM.getNX()) + "_" + std::to_string(modelCoordinatesEM.getNY()) + "_" + std::to_string(modelCoordinatesEM.getNZ()) + ".mtx");
+//     modelTransformMatrixToSeismic.writeToFile("model/modelTransformMatrixToSeismic.mtx");
 }
 
 /*! \brief exchange porosity and saturation from EM to seismic or from seismic to EM

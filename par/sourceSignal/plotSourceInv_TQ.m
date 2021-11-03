@@ -4,7 +4,7 @@ addpath('../common');
 
 modelName = 'EttlingerCB';
 observationType = 'Surface';
-equationType = 'Viscoelastic';
+equationType = 'ViscoSH';
 NoiseType = 'Noisy';
 modelType = 'Inv';
 HPCType = 'HPC';
@@ -24,7 +24,7 @@ configTrue=conf(configTrueFilename);
 imagesave=0;
 writefiles=1;
 stage=5;
-useDamping=1; T0damp=10e-3; T1damp=60e-3; 
+useDamping=1; T0damp=10e-3; T1damp=100e-3; 
 showLegend = 0;
 showResidual = 0;
 showmax=30;

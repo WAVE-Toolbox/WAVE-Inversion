@@ -111,6 +111,25 @@ void KITGPI::Misfit::Misfit<ValueType>::addToStorage(scai::lama::DenseVector<Val
     this->misfitStorage.push_back(vector);
 }
 
+/*! \brief Add the crossGradientMisfit of one iteration to the crossGradientMisfit storage
+ *
+ \param crossGradientMisfit the crossGradientMisfit during one iteration
+ */
+template <typename ValueType>
+void KITGPI::Misfit::Misfit<ValueType>::addToCrossGradientMisfitStorage(ValueType crossGradientMisfit)
+{
+    this->crossGradientMisfitStorage.push_back(crossGradientMisfit);
+}
+
+/*! \brief Clear the crossGradientMisfit storage 
+ *
+ */
+template <typename ValueType>
+ValueType KITGPI::Misfit::Misfit<ValueType>::getCrossGradientMisfit(int iteration)
+{
+    return this->crossGradientMisfitStorage.at(iteration);
+}
+
 /*! \brief Clear the misfit storage 
  *
  */
@@ -119,6 +138,7 @@ void KITGPI::Misfit::Misfit<ValueType>::clearStorage()
 {
     this->misfitStorage.clear();
     this->misfitStorageL2.clear();
+    this->crossGradientMisfitStorage.clear();
 }
 
 /*! \brief Set number of Relaxation Mechanisms
@@ -204,6 +224,8 @@ KITGPI::Misfit::Misfit<ValueType> &KITGPI::Misfit::Misfit<ValueType>::operator=(
     misfitTypeShots = rhs.misfitTypeShots;
     misfitSum0Ratio = rhs.misfitSum0Ratio;
     uniqueMisfitTypes = rhs.uniqueMisfitTypes;
+    modelDerivativeX = rhs.modelDerivativeX;
+    modelDerivativeY = rhs.modelDerivativeY;
     
     return *this;
 }

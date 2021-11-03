@@ -281,5 +281,26 @@ scai::IndexType KITGPI::Workflow::Workflow<ValueType>::getSkipCount() const
     return skipCount;
 }
 
+/*! \brief Overloading = Operation
+ *
+ \param rhs Workflow which is copied.
+ */
+template <typename ValueType>
+KITGPI::Workflow::Workflow<ValueType> &KITGPI::Workflow::Workflow<ValueType>::operator=(KITGPI::Workflow::Workflow<ValueType> const &rhs)
+{
+    invertForVp = rhs.invertForVp;
+    invertForVs = rhs.invertForVs;
+    invertForDensity = rhs.invertForDensity;
+    invertForPorosity = rhs.invertForPorosity;
+    invertForSaturation = rhs.invertForSaturation;
+    invertForReflectivity = rhs.invertForReflectivity;
+    invertForSigmaEM = rhs.invertForSigmaEM;
+    invertForEpsilonEM = rhs.invertForEpsilonEM;
+    invertForTauSigmaEM = rhs.invertForTauSigmaEM;
+    invertForTauEpsilonEM = rhs.invertForTauEpsilonEM;
+    
+    return *this;
+}
+
 template class KITGPI::Workflow::Workflow<double>;
 template class KITGPI::Workflow::Workflow<float>;

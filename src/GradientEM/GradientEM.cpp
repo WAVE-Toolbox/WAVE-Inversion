@@ -425,6 +425,17 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     }     
 }
 
+/*! \brief calculate the misfit of CrossGradient
+ *
+ */
+template <typename ValueType>
+ValueType KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientMisfit()
+{
+    ValueType misfitSum = dielectricPermittivity.l2Norm() + electricConductivity.l2Norm();
+    
+    return (misfitSum);
+}
+
 /*! \brief Get const reference to electricConductivity
  *
  */

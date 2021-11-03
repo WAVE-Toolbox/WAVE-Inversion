@@ -937,7 +937,6 @@ void KITGPI::Gradient::Elastic<ValueType>::calcModelDerivative(KITGPI::Misfit::M
     dataMisfit.setModelDerivativeY(modelDerivativeYtemp);
 }
 
-
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
@@ -1031,9 +1030,9 @@ void KITGPI::Gradient::Elastic<ValueType>::calcCrossGradientDerivative(KITGPI::M
     scai::lama::DenseVector<ValueType> densitytemp;
     scai::lama::DenseVector<ValueType> velocityStemp;
     scai::lama::DenseVector<ValueType> velocityPtemp;
+    scai::lama::DenseVector<ValueType> temp;
     scai::lama::DenseVector<ValueType> tempX;
     scai::lama::DenseVector<ValueType> tempY;
-    scai::lama::DenseVector<ValueType> temp;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
     scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
@@ -1097,6 +1096,17 @@ void KITGPI::Gradient::Elastic<ValueType>::calcCrossGradientDerivative(KITGPI::M
     } else {
         this->initParameterisation(velocityP, ctx, dist, 0.0);
     }       
+}
+
+/*! \brief calculate the misfit of CrossGradient
+ *
+ */
+template <typename ValueType>
+ValueType KITGPI::Gradient::Elastic<ValueType>::calcCrossGradientMisfit()
+{
+    ValueType misfitSum = velocityP.l2Norm() + velocityS.l2Norm() + density.l2Norm();
+    
+    return (misfitSum);
 }
 
 template <typename ValueType>
