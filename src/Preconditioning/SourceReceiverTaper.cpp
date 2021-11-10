@@ -50,7 +50,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     acquisition1DCoordinates.replicate();
     auto rAcquisition1DCoordinates = scai::hmemo::hostReadAccess(acquisition1DCoordinates.getLocalValues());
 
-    if(radius>0){
+    if(radius>0 && taperType>0){
         //loop over all gridpoint -> this is costly maybe there is a better alternative because the size of the taper is known
         for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)){
             ValueType valueTemp=1;

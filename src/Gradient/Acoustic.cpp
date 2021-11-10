@@ -577,6 +577,13 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
     }
 }
 
+/*! \brief Function for applying EnergyPreconditioning to the gradient
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::applyEnergyPreconditioning(ValueType epsilonHessian, scai::IndexType saveApproxHessian, std::string filename, scai::IndexType fileFormat)
+{
+}
+
 /*! \brief Function for normalizing the gradient
  */
 template <typename ValueType>
@@ -751,36 +758,36 @@ void KITGPI::Gradient::Acoustic<ValueType>::calcStabilizingFunctionalGradient(KI
 /*! \brief Apply a median filter to filter the extrame value of the gradient
  */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
+void KITGPI::Gradient::Acoustic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    scai::lama::DenseVector<ValueType> density_temp;
-    scai::lama::DenseVector<ValueType> velocityP_temp;
-    scai::lama::DenseVector<ValueType> porosity_temp;
-    scai::lama::DenseVector<ValueType> saturation_temp;
+    scai::lama::DenseVector<ValueType> densitytemp;
+    scai::lama::DenseVector<ValueType> velocityPtemp;
+    scai::lama::DenseVector<ValueType> porositytemp;
+    scai::lama::DenseVector<ValueType> saturationtemp;
     scai::lama::DenseVector<ValueType> reflectivity_temp;
     
-    density_temp = this->getDensity();
-    velocityP_temp = this->getVelocityP();
-    porosity_temp = this->getPorosity();
-    saturation_temp = this->getSaturation();
+    densitytemp = this->getDensity();
+    velocityPtemp = this->getVelocityP();
+    porositytemp = this->getPorosity();
+    saturationtemp = this->getSaturation();
     reflectivity_temp = this->getReflectivity();
 
     scai::IndexType NZ = config.get<IndexType>("NZ");
     if (NZ == 1) {
         scai::IndexType NY = config.get<IndexType>("NY");
-        scai::IndexType NX = porosity_temp.size() / NY;
-        scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+        scai::IndexType NX = porositytemp.size() / NY;
+        scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
             
-        KITGPI::Common::applyMedianFilterTo2DVector(density_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(velocityP_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(reflectivity_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(porositytemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(saturationtemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(reflectivity_temp, NX, NY, spatialLength);
         
-        this->setDensity(density_temp);
-        this->setVelocityP(velocityP_temp);
-        this->setPorosity(porosity_temp);    
-        this->setSaturation(saturation_temp);
+        this->setDensity(densitytemp);
+        this->setVelocityP(velocityPtemp);
+        this->setPorosity(porositytemp);    
+        this->setSaturation(saturationtemp);
         this->setReflectivity(reflectivity_temp);
     }
 }

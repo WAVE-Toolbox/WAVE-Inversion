@@ -215,7 +215,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
     ValueType modelMax;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
-    scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+    scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
@@ -237,8 +237,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
         tempX = DxfEM * dielectricPermittivitytemp;    
         tempY = DyfEM * dielectricPermittivitytemp;
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);  
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);  
         
         modelMax = tempX.maxNorm();
         if (modelMax != 0)
@@ -259,8 +259,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
             tempX = DxfEM * electricConductivitytemp;    
             tempY = DyfEM * electricConductivitytemp;
             
-            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
-            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);   
+            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);   
             
             modelMax = tempX.maxNorm();
             if (modelMax != 0)
@@ -293,7 +293,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
     scai::lama::DenseVector<ValueType> tempY;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
-    scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+    scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
@@ -320,11 +320,11 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
         tempX = DxfEM * dielectricPermittivitytemp;    
         tempY = DyfEM * dielectricPermittivitytemp;
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder); 
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength); 
         
         if (exchangeStrategy != 0) {
-            // cross-gradient of vs and modelDerivative   
+            // cross gradient of vs and modelDerivative   
             dielectricPermittivitytemp = modelDerivativeYtemp * tempX;   
             temp = modelDerivativeXtemp * tempY;   
             dielectricPermittivitytemp -= temp;  
@@ -344,12 +344,12 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
         tempX = DxfEM * electricConductivitytemp;    
         tempY = DyfEM * electricConductivitytemp;          
         
-        // cross-gradient of electricConductivity and modelDerivative   
+        // cross gradient of electricConductivity and modelDerivative   
         electricConductivitytemp = modelDerivativeYtemp * tempX;   
         temp = modelDerivativeXtemp * tempY;   
         electricConductivitytemp -= temp;  
         
-        KITGPI::Common::applyMedianFilterTo2DVector(electricConductivitytemp, NX, NY, spatialFDorder);        
+        KITGPI::Common::applyMedianFilterTo2DVector(electricConductivitytemp, NX, NY, spatialLength);        
         electricConductivity = electricConductivitytemp;                
     } else {
         this->initParameterisation(electricConductivity, ctx, dist, 0.0);
@@ -368,7 +368,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     scai::lama::DenseVector<ValueType> temp;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
-    scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+    scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
         
@@ -394,11 +394,11 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
         tempX = DxfEM * dielectricPermittivitytemp;    
         tempY = DyfEM * dielectricPermittivitytemp;   
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder); 
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);
         
         if (exchangeStrategy != 0) {
-            // derivative of cross-gradient with respect to dielectricPermittivity 
+            // derivative of cross gradient with respect to dielectricPermittivity 
             dielectricPermittivitytemp = this->getDielectricPermittivity();
             dielectricPermittivitytemp *= temp;  
             
@@ -415,7 +415,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     temp = tempX - tempY; 
         
     if (workflow.getInvertForSigmaEM()) {      
-        // derivative of cross-gradient with respect to electricConductivity   
+        // derivative of cross gradient with respect to electricConductivity   
         electricConductivitytemp = this->getElectricConductivity();
         electricConductivitytemp *= temp;  
                       

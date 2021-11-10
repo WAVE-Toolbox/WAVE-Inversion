@@ -613,6 +613,12 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::scale(KITGPI::Modelparameter::Mo
     }
 }
 
+/*! \brief Function for applying EnergyPreconditioning to the gradient
+ */
+template <typename ValueType>
+void KITGPI::Gradient::Viscoelastic<ValueType>::applyEnergyPreconditioning(ValueType epsilonHessian, scai::IndexType saveApproxHessian, std::string filename, scai::IndexType fileFormat)
+{
+}
 /*! \brief Function for normalizing the gradient
  */
 template <typename ValueType>
@@ -851,7 +857,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
     ValueType modelMax;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
-    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+    scai::IndexType spatialLength = configEM.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
         
     /* Get references to required derivatives matrixes */
@@ -867,8 +873,8 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
         tempX = DxfEM * velocityStemp;    
         tempY = DyfEM * velocityStemp;
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);  
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);  
         
         modelMax = tempX.maxNorm();
         if (modelMax != 0)
@@ -894,8 +900,8 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
             tempX = DxfEM * densitytemp;    
             tempY = DyfEM * densitytemp;
             
-            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
-            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);   
+            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);   
             
             modelMax = tempX.maxNorm();
             if (modelMax != 0)
@@ -920,8 +926,8 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcModelDerivative(KITGPI::Misf
             tempX = DxfEM * velocityPtemp;    
             tempY = DyfEM * velocityPtemp;
             
-            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
-            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);  
+            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);  
             
             modelMax = tempX.maxNorm();
             if (modelMax != 0)
@@ -958,7 +964,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
     scai::lama::DenseVector<ValueType> tempY;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
-    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+    scai::IndexType spatialLength = configEM.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
             
     /* Get references to required derivatives matrixes */
@@ -975,11 +981,11 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
         tempX = DxfEM * velocityStemp;    
         tempY = DyfEM * velocityStemp;
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);       
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);       
                        
         if (exchangeStrategy != 0) {
-            // cross-gradient of vs and modelEMDerivative   
+            // cross gradient of vs and modelEMDerivative   
             velocityStemp = dataMisfitEM.getModelDerivativeX() * tempY;   
             temp = dataMisfitEM.getModelDerivativeY() * tempX;   
             velocityStemp -= temp;   
@@ -1003,12 +1009,12 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
         tempX = DxfEM * densitytemp;    
         tempY = DyfEM * densitytemp;          
         
-        // cross-gradient of density and modelDerivative   
+        // cross gradient of density and modelDerivative   
         densitytemp = modelDerivativeXtemp * tempY;   
         temp = modelDerivativeYtemp * tempX;   
         densitytemp -= temp;         
         
-        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialFDorder);        
+        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialLength);        
         density = modelTaper2DJoint.applyGradientTransformToSeismic(densitytemp);
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
@@ -1020,12 +1026,12 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
         tempX = DxfEM * velocityPtemp;    
         tempY = DyfEM * velocityPtemp;          
         
-        // cross-gradient of vp and modelDerivative   
+        // cross gradient of vp and modelDerivative   
         velocityPtemp = modelDerivativeXtemp * tempY;   
         temp = modelDerivativeYtemp * tempX;   
         velocityPtemp -= temp;   
         
-        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialFDorder);        
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);        
         velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
     } else {
         this->initParameterisation(velocityP, ctx, dist, 0.0);
@@ -1043,7 +1049,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITG
     scai::lama::DenseVector<ValueType> tempY;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
-    scai::IndexType spatialFDorder = configEM.get<IndexType>("spatialFDorder");
+    scai::IndexType spatialLength = configEM.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
             
     scai::hmemo::ContextPtr ctx = model.getDensity().getContextPtr();
@@ -1062,13 +1068,13 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITG
         tempX = DxfEM * velocityStemp;    
         tempY = DyfEM * velocityStemp;
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);
         
         if (exchangeStrategy != 0) {
             velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(this->getVelocityS());          
             
-            // derivative of cross-gradient with respect to vs  
+            // derivative of cross gradient with respect to vs  
             velocityStemp *= temp;  
                    
             velocityS = modelTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);         
@@ -1086,7 +1092,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITG
     if (workflow.getInvertForDensity()) {
         densitytemp = modelTaper2DJoint.applyGradientTransformToEM(this->getDensity());  
         
-        // derivative of cross-gradient with respect to density   
+        // derivative of cross gradient with respect to density   
         densitytemp *= temp;  
                        
         density = modelTaper2DJoint.applyGradientTransformToSeismic(densitytemp); 
@@ -1097,7 +1103,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITG
     if (workflow.getInvertForVp()) { 
         velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(this->getVelocityP());         
         
-        // derivative of cross-gradient with respect to vs  
+        // derivative of cross gradient with respect to vs  
         velocityPtemp *= temp;  
                  
         velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
@@ -1158,37 +1164,37 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcStabilizingFunctionalGradien
 /*! \brief Apply a median filter to filter the extrame value of the gradient
  */
 template <typename ValueType>
-void KITGPI::Gradient::Viscoelastic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
+void KITGPI::Gradient::Viscoelastic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    scai::lama::DenseVector<ValueType> density_temp;
-    scai::lama::DenseVector<ValueType> velocityS_temp;
-    scai::lama::DenseVector<ValueType> velocityP_temp;
-    scai::lama::DenseVector<ValueType> porosity_temp;
-    scai::lama::DenseVector<ValueType> saturation_temp;
+    scai::lama::DenseVector<ValueType> densitytemp;
+    scai::lama::DenseVector<ValueType> velocityStemp;
+    scai::lama::DenseVector<ValueType> velocityPtemp;
+    scai::lama::DenseVector<ValueType> porositytemp;
+    scai::lama::DenseVector<ValueType> saturationtemp;
     
-    density_temp = this->getDensity();
-    velocityS_temp = this->getVelocityS();
-    velocityP_temp = this->getVelocityP();
-    porosity_temp = this->getPorosity();
-    saturation_temp = this->getSaturation();
+    densitytemp = this->getDensity();
+    velocityStemp = this->getVelocityS();
+    velocityPtemp = this->getVelocityP();
+    porositytemp = this->getPorosity();
+    saturationtemp = this->getSaturation();
     
     scai::IndexType NZ = config.get<IndexType>("NZ");
     if (NZ == 1) {
         scai::IndexType NY = config.get<IndexType>("NY");
-        scai::IndexType NX = porosity_temp.size() / NY;
-        scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+        scai::IndexType NX = porositytemp.size() / NY;
+        scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
                 
-        KITGPI::Common::applyMedianFilterTo2DVector(density_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(velocityS_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(velocityP_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(porositytemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(saturationtemp, NX, NY, spatialLength);
         
-        this->setDensity(density_temp);
-        this->setVelocityS(velocityS_temp);
-        this->setVelocityP(velocityP_temp);
-        this->setPorosity(porosity_temp);    
-        this->setSaturation(saturation_temp);
+        this->setDensity(densitytemp);
+        this->setVelocityS(velocityStemp);
+        this->setVelocityP(velocityPtemp);
+        this->setPorosity(porositytemp);    
+        this->setSaturation(saturationtemp);
     }
 }
 

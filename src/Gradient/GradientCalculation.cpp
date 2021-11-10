@@ -205,7 +205,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
 
     /* Apply energy preconditioning per shot */
     energyPrecond.apply(gradient, shotNumber, config.get<IndexType>("FileFormat"));
-    gradient.applyMedianFilter(config); 
+    gradient.applyMedianFilter(config, model, workflow); 
     
     scai::lama::DenseVector<ValueType> mask; //mask to restore vacuum
     if (isSeismic) {
@@ -271,7 +271,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
 
         /* Apply energy preconditioning per shot */
         energyPrecond.apply(gradient, shotNumber, config.get<IndexType>("FileFormat"));
-        gradient.applyMedianFilter(config); 
+        gradient.applyMedianFilter(config, model, workflow); 
         gradient *= mask;
         gradient.normalize(); 
         gradient += *testgradient;

@@ -981,6 +981,7 @@ int main(int argc, char *argv[])
 //                     }
                 }
                 gradient->setInvertForParameters(invertForParameters);
+                gradientPerShot->setInvertForParameters(invertForParameters);
                 crossGradientDerivative->setInvertForParameters(invertForParameters);
                 stabilizingFunctionalGradient->setInvertForParameters(invertForParameters);
                 workflow.setInvertForParameters(invertForParameters);
@@ -1328,7 +1329,7 @@ int main(int argc, char *argv[])
                     gradientTaper1D.apply(*gradient);
                             
                 if (inversionType == 2 || config.getAndCatch("saveCrossGradientMisfit", 0)) {
-                    // joint inversion with cross-gradient constraint
+                    // joint inversion with cross gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n========= calcCrossGradient " << equationType << " 1 =========");
                     HOST_PRINT(commAll, "\n===========================================\n");
@@ -1336,19 +1337,27 @@ int main(int argc, char *argv[])
                     crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM);
                     
                     crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);  
-                    dataMisfit->addToCrossGradientMisfitStorage(crossGradientDerivative->calcCrossGradientMisfit());
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradient", config.get<IndexType>("FileFormat"), workflow);
                     }
                                             
+                    ValueType crossGradientMisfit = crossGradientDerivative->calcCrossGradientMisfit();
+                    dataMisfit->addToCrossGradientMisfitStorage(crossGradientMisfit);
+                    HOST_PRINT(commAll, "cross gradient misfit " << equationType << " 1 = " << crossGradientMisfit << "\n"); 
+                    
                     crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
+                    crossGradientDerivativeEM->sumShotDomain(commInterShot); 
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradientDerivative", config.get<IndexType>("FileFormat"), workflow);
                     }      
-                    if (inversionType == 2 && workflow.workflowStage * maxiterations + workflow.iteration > 1) {
-                        if ((workflow.iteration > 0) && (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration) - 0.01 * dataMisfit->getMisfitSum(workflow.iteration - 1) < 0)) {
-                            weightingCrossGradient *= 0.8;
-                        }
+                    if (inversionType == 2 && workflow.iteration > 1) {
+                        ValueType relativeCrossGradientMisfit = (dataMisfit->getCrossGradientMisfit(workflow.iteration - 1) - dataMisfit->getCrossGradientMisfit(workflow.iteration)) / dataMisfit->getCrossGradientMisfit(workflow.iteration - 1);
+                        ValueType relativeMisfit = (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration)) / dataMisfit->getMisfitSum(workflow.iteration - 1);
+                        if (relativeMisfit > 0) {
+                            weightingCrossGradient = abs(relativeCrossGradientMisfit) / (abs(relativeCrossGradientMisfit) + relativeMisfit);
+                        } else {
+                            weightingCrossGradient = 0;
+                        } 
                         HOST_PRINT(commAll, "weightingCrossGradient " << equationType << " 1 = " << weightingCrossGradient << "\n");  
                         HOST_PRINT(commAll, "\n===========================================\n");
                         
@@ -1702,6 +1711,7 @@ int main(int argc, char *argv[])
 //                     }
                 }
                 gradientEM->setInvertForParameters(invertForParametersEM);
+                gradientPerShotEM->setInvertForParameters(invertForParametersEM);
                 crossGradientDerivativeEM->setInvertForParameters(invertForParametersEM);
                 stabilizingFunctionalGradientEM->setInvertForParameters(invertForParametersEM);
                 workflowEM.setInvertForParameters(invertForParametersEM);
@@ -2048,21 +2058,23 @@ int main(int argc, char *argv[])
                     gradientTaper1DEM.apply(*gradientEM);
                 
                 if (inversionTypeEM == 2 || configEM.getAndCatch("saveCrossGradientMisfit", 0)) {
-                    // joint inversion with cross-gradient constraint
+                    // joint inversion with cross gradient constraint
                     HOST_PRINT(commAll, "\n===========================================");
                     HOST_PRINT(commAll, "\n========== calcCrossGradient " << equationTypeEM << " 2 ========");
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
-                    crossGradientDerivative->calcModelDerivative(*dataMisfit, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
+                    crossGradientDerivative->calcModelDerivative(*dataMisfit, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);  
                     
                     crossGradientDerivativeEM->calcCrossGradient(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM); 
                     if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradient", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  
-                    dataMisfitEM->addToCrossGradientMisfitStorage(crossGradientDerivativeEM->calcCrossGradientMisfit());
-                    HOST_PRINT(commAll, "cross gradient misfit" << equationTypeEM << " 2 = " << crossGradientDerivativeEM->calcCrossGradientMisfit() << "\n"); 
+                    ValueType crossGradientMisfit = crossGradientDerivativeEM->calcCrossGradientMisfit();
+                    dataMisfitEM->addToCrossGradientMisfitStorage(crossGradientMisfit);
+                    HOST_PRINT(commAll, "cross gradient misfit " << equationTypeEM << " 2 = " << crossGradientMisfit << "\n"); 
                     
                     crossGradientDerivativeEM->calcCrossGradientDerivative(*dataMisfit, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM); 
+                    crossGradientDerivativeEM->sumShotDomain(commInterShot); 
                     if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradientDerivative", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }             

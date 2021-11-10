@@ -564,6 +564,12 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::scale(KITGPI::Modelparameter::Model
     }
 }
 
+/*! \brief Function for applying EnergyPreconditioning to the gradient
+ */
+template <typename ValueType>
+void KITGPI::Gradient::ViscoEMEM<ValueType>::applyEnergyPreconditioning(ValueType epsilonHessian, scai::IndexType saveApproxHessian, std::string filename, scai::IndexType fileFormat)
+{
+}
 /*! \brief Function for normalizing the gradient
  */
 template <typename ValueType>
@@ -798,41 +804,41 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::calcStabilizingFunctionalGradient(K
 /*! \brief Apply a median filter to filter the extrame value of the gradient
  */
 template <typename ValueType>
-void KITGPI::Gradient::ViscoEMEM<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config)
+void KITGPI::Gradient::ViscoEMEM<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> sigmaEM_temp;
     scai::lama::DenseVector<ValueType> epsilonEM_temp;
     scai::lama::DenseVector<ValueType> tauSigmaEM_temp;
     scai::lama::DenseVector<ValueType> tauEpsilonEM_temp;
-    scai::lama::DenseVector<ValueType> porosity_temp;
-    scai::lama::DenseVector<ValueType> saturation_temp;
+    scai::lama::DenseVector<ValueType> porositytemp;
+    scai::lama::DenseVector<ValueType> saturationtemp;
     
     sigmaEM_temp = this->getElectricConductivity();
     epsilonEM_temp = this->getDielectricPermittivity();
     tauSigmaEM_temp = this->getTauElectricConductivity();
     tauEpsilonEM_temp = this->getTauDielectricPermittivity();
-    porosity_temp = this->getPorosity();
-    saturation_temp = this->getSaturation();
+    porositytemp = this->getPorosity();
+    saturationtemp = this->getSaturation();
     
     scai::IndexType NZ = config.get<IndexType>("NZ");
     if (NZ == 1) {
         scai::IndexType NY = config.get<IndexType>("NY");
-        scai::IndexType NX = porosity_temp.size() / NY;
-        scai::IndexType spatialFDorder = config.get<IndexType>("spatialFDorder");
+        scai::IndexType NX = porositytemp.size() / NY;
+        scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
             
-        KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(tauSigmaEM_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(tauEpsilonEM_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(porosity_temp, NX, NY, spatialFDorder);
-        KITGPI::Common::applyMedianFilterTo2DVector(saturation_temp, NX, NY, spatialFDorder);
+        KITGPI::Common::applyMedianFilterTo2DVector(sigmaEM_temp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tauSigmaEM_temp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tauEpsilonEM_temp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(porositytemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(saturationtemp, NX, NY, spatialLength);
         
         this->setElectricConductivity(sigmaEM_temp);    
         this->setDielectricPermittivity(epsilonEM_temp);
         this->setTauElectricConductivity(tauSigmaEM_temp);    
         this->setTauDielectricPermittivity(tauEpsilonEM_temp);
-        this->setPorosity(porosity_temp);    
-        this->setSaturation(saturation_temp);
+        this->setPorosity(porositytemp);    
+        this->setSaturation(saturationtemp);
     }
 }
 
