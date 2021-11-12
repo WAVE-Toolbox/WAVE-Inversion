@@ -57,7 +57,7 @@ namespace KITGPI
 
             std::string getEquationType() const;
 
-            /* Getter methods for not requiered parameters */
+            /* Getter methods for not required parameters */
             scai::lama::Vector<ValueType> const &getTauP() override;
             scai::lama::Vector<ValueType> const &getTauS() override;
             scai::IndexType getNumRelaxationMechanisms() const override;
@@ -105,9 +105,13 @@ namespace KITGPI
             using Gradient<ValueType>::velocityS;
             using Gradient<ValueType>::porosity;
             using Gradient<ValueType>::saturation;
+            using Gradient<ValueType>::reflectivity;
             using Gradient<ValueType>::workflowInner;
+            ValueType density0mean;
+            ValueType velocityS0mean;
+            ValueType velocityP0mean;
 
-            /* Not requiered parameters */
+            /* Not required parameters */
             using Gradient<ValueType>::tauP;
             using Gradient<ValueType>::tauS;
             using Gradient<ValueType>::relaxationFrequency;

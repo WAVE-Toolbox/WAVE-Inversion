@@ -56,7 +56,7 @@ namespace KITGPI
 
             std::string getEquationType() const;
 
-            /* Getter methods for not requiered parameters */
+            /* Getter methods for not required parameters */
             scai::lama::Vector<ValueType> const &getTauElectricConductivity() override;
             scai::lama::Vector<ValueType> const &getTauDielectricPermittivity() override;
             scai::IndexType getNumRelaxationMechanisms() const override;
@@ -101,7 +101,7 @@ namespace KITGPI
             using Gradient<ValueType>::reflectivity;
             using Gradient<ValueType>::workflowInner;
                         
-            /* Not requiered parameters */
+            /* Not required parameters */
             using Gradient<ValueType>::tauElectricConductivity;
             using Gradient<ValueType>::tauDielectricPermittivity;
             using Gradient<ValueType>::relaxationFrequency;

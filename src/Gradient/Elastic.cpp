@@ -43,6 +43,7 @@ void KITGPI::Gradient::Elastic<ValueType>::init(scai::hmemo::ContextPtr ctx, sca
     this->initParameterisation(density, ctx, dist, rho_const);
     this->initParameterisation(porosity, ctx, dist, 0.0);
     this->initParameterisation(saturation, ctx, dist, 0.0);
+    this->initParameterisation(reflectivity, ctx, dist, 0.0);
 }
 
 //! \brief Copy constructor
@@ -55,6 +56,7 @@ KITGPI::Gradient::Elastic<ValueType>::Elastic(const Elastic &rhs)
     density = rhs.density;
     porosity = rhs.porosity;
     saturation = rhs.saturation;
+    reflectivity = rhs.reflectivity;
 }
 
 /*! \brief Set all parameter to zero.
@@ -67,6 +69,7 @@ void KITGPI::Gradient::Elastic<ValueType>::resetGradient()
     this->resetParameter(density);
     this->resetParameter(porosity);
     this->resetParameter(saturation);
+    this->resetParameter(reflectivity);
 }
 
 /*! \brief Write model to an external file
@@ -100,6 +103,11 @@ void KITGPI::Gradient::Elastic<ValueType>::write(std::string filename, IndexType
     if (workflow.getInvertForSaturation()) { 
         std::string filenameSaturation = filename + ".saturation";
         this->writeParameterisation(saturation, filenameSaturation, fileFormat);
+    }
+    
+    if (workflow.getInvertForReflectivity()) { 
+        std::string filenameReflectivity = filename + ".reflectivity";
+        this->writeParameterisation(reflectivity, filenameReflectivity, fileFormat);
     }
 };
 
@@ -186,6 +194,8 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
         porosity *= rhs;
     if (workflowInner.getInvertForSaturation()) 
         saturation *= rhs;
+    if (workflowInner.getInvertForReflectivity()) 
+        reflectivity *= rhs;
 
     return *this;
 }
@@ -214,6 +224,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     velocityS += rhs.velocityS;
     porosity += rhs.porosity;
     saturation += rhs.saturation;
+    reflectivity += rhs.reflectivity;
 
     return *this;
 }
@@ -242,6 +253,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     velocityS -= rhs.velocityS;
     porosity -= rhs.porosity;
     saturation -= rhs.saturation;
+    reflectivity -= rhs.reflectivity;
 
     return *this;
 }
@@ -258,6 +270,7 @@ KITGPI::Gradient::Elastic<ValueType> &KITGPI::Gradient::Elastic<ValueType>::oper
     density = rhs.density;
     porosity = rhs.porosity;
     saturation = rhs.saturation;
+    reflectivity = rhs.reflectivity;
 
     return *this;
 }
@@ -274,6 +287,7 @@ void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<Val
     velocityS = rhs.getVelocityS();
     porosity = rhs.getPorosity();
     saturation = rhs.getSaturation();
+    reflectivity = rhs.getReflectivity();
 }
 
 /*! \brief Function for overloading -= Operation (called in base class)
@@ -283,12 +297,12 @@ void KITGPI::Gradient::Elastic<ValueType>::assign(KITGPI::Gradient::Gradient<Val
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Gradient::Gradient<ValueType> const &rhs)
 {
-
     density -= rhs.getDensity();
     velocityP -= rhs.getVelocityP();
     velocityS -= rhs.getVelocityS();
     porosity -= rhs.getPorosity();
     saturation -= rhs.getSaturation();
+    reflectivity -= rhs.getReflectivity();
 }
 
 /*! \brief Function for overloading += Operation (called in base class)
@@ -304,6 +318,7 @@ void KITGPI::Gradient::Elastic<ValueType>::plusAssign(KITGPI::Gradient::Gradient
     velocityS += rhs.getVelocityS();
     porosity += rhs.getPorosity();
     saturation += rhs.getSaturation();
+    reflectivity += rhs.getReflectivity();
 }
 
 /*! \brief Function for overloading *= Operation (called in base class)
@@ -323,6 +338,8 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(ValueType const &rhs)
         porosity *= rhs;
     if (workflowInner.getInvertForSaturation()) 
         saturation *= rhs;
+    if (workflowInner.getInvertForReflectivity()) 
+        reflectivity *= rhs;
 }
 
 /*! \brief Function for overloading *= Operation (called in base class)
@@ -337,6 +354,7 @@ void KITGPI::Gradient::Elastic<ValueType>::timesAssign(scai::lama::Vector<ValueT
     velocityS *= rhs;
     porosity *= rhs;
     saturation *= rhs;
+    reflectivity *= rhs;
 }
 
 /*! \brief Function for overloading -= Operation (called in base class)
@@ -400,6 +418,10 @@ void KITGPI::Gradient::Elastic<ValueType>::minusAssign(KITGPI::Modelparameter::M
             lhs.setVelocityP(lambda);
         }
     }
+    if (workflowInner.getInvertForReflectivity()) {
+        temp = lhs.getReflectivity() - rhs.getReflectivity();
+        lhs.setReflectivity(temp); 
+    }
 };
 
 /*! \brief Function for summing the gradients of all shot domains
@@ -448,6 +470,10 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
     saturation.redistribute(singleDist);
     commInterShot->sumArray(saturation.getLocalValues());
     saturation.redistribute(dist);
+    
+    reflectivity.redistribute(singleDist);
+    commInterShot->sumArray(reflectivity.getLocalValues());
+    reflectivity.redistribute(dist);
 }
 
 /*! \brief If stream configuration is used, set a gradient per shot into the big gradient
@@ -495,6 +521,11 @@ void KITGPI::Gradient::Elastic<ValueType>::sumGradientPerShot(KITGPI::Modelparam
     temp *= recoverVector;
     saturation *= eraseVector;
     saturation += temp; //take over the values
+    
+    temp = recoverMatrix * gradientPerShot.getReflectivity(); //transform pershot into big model
+    temp *= recoverVector;
+    reflectivity *= eraseVector;
+    reflectivity += temp; //take over the values
 }
 
 /*! \brief Function for scaling the gradients with the model parameter
@@ -507,109 +538,210 @@ void KITGPI::Gradient::Elastic<ValueType>::scale(KITGPI::Modelparameter::Modelpa
     ValueType maxValue = 1;      
     
     IndexType scaleGradient = config.get<IndexType>("scaleGradient");
-    if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
-        if (scaleGradient == 1) {
-            if (model.getParameterisation() == 3) {
-                maxValue = model.getVelocityP().maxNorm();
-            } else if (model.getParameterisation() == 0) {
-                scai::lama::DenseVector<ValueType> lambda;
-                scai::lama::DenseVector<ValueType> mu;
-                lambda = scai::lama::pow(model.getVelocityP(), 2);
-                lambda *= model.getDensity();
-                mu = scai::lama::pow(model.getVelocityS(), 2);
-                mu *= model.getDensity();
-                lambda -= 2 * mu;
-                maxValue = lambda.maxNorm();
-            }
-        } else if (scaleGradient == 2) {
-            if (model.getParameterisation() == 3) {
-                maxValue = config.get<ValueType>("upperVPTh") - config.get<ValueType>("lowerVPTh");
-            } else if (model.getParameterisation() == 0) {
-                ValueType lambdaMax;
-                ValueType lambdaMin;
-                ValueType muMax;
-                ValueType muMin;
-                lambdaMax = pow(config.get<ValueType>("upperVPTh"), 2);
-                lambdaMax *= config.get<ValueType>("upperDensityTh");
-                lambdaMin = pow(config.get<ValueType>("lowerVPTh"), 2);
-                lambdaMin *= config.get<ValueType>("lowerDensityTh");
-                muMax = pow(config.get<ValueType>("upperVSTh"), 2);
-                muMax *= config.get<ValueType>("upperDensityTh");
-                muMin = pow(config.get<ValueType>("lowerVSTh"), 2);
-                muMin *= config.get<ValueType>("lowerDensityTh");
-                lambdaMax -= 2 * muMin;
-                lambdaMin -= 2 * muMax;
-                maxValue = lambdaMax - lambdaMin;
-            }
-        }
-        velocityP *= 1 / velocityP.maxNorm() * maxValue;
-    }
-    
-    if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {
-        if (scaleGradient == 1) {
-            if (model.getParameterisation() == 3) {
-                maxValue = model.getVelocityS().maxNorm();
-            } else if (model.getParameterisation() == 0) {
-                scai::lama::DenseVector<ValueType> mu;
-                mu = scai::lama::pow(model.getVelocityS(), 2);
-                mu *= model.getDensity();
-                maxValue = mu.maxNorm();
-            }
-        } else if (scaleGradient == 2) {
-            if (model.getParameterisation() == 3) {
-                maxValue = config.get<ValueType>("upperVSTh") - config.get<ValueType>("lowerVSTh");
-            } else if (model.getParameterisation() == 0) {
-                ValueType muMax;
-                ValueType muMin;
-                muMax = pow(config.get<ValueType>("upperVSTh"), 2);
-                muMax *= config.get<ValueType>("upperDensityTh");
-                muMin = pow(config.get<ValueType>("lowerVSTh"), 2);
-                muMin *= config.get<ValueType>("lowerDensityTh");
-                maxValue = muMax - muMin;
-            }
-        }
-        velocityS *= 1 / velocityS.maxNorm() * maxValue;
-    }
-    
-    if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
-        if (model.getParameterisation() != 1 && model.getParameterisation() != 2) {
+    if (scaleGradient != 0) {
+        if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
             if (scaleGradient == 1) {
-                maxValue = model.getDensity().maxNorm();
+                if (model.getParameterisation() == 3) {
+                    maxValue = model.getVelocityP().maxNorm();
+                } else if (model.getParameterisation() == 0) {
+                    scai::lama::DenseVector<ValueType> lambda;
+                    scai::lama::DenseVector<ValueType> mu;
+                    lambda = scai::lama::pow(model.getVelocityP(), 2);
+                    lambda *= model.getDensity();
+                    mu = scai::lama::pow(model.getVelocityS(), 2);
+                    mu *= model.getDensity();
+                    lambda -= 2 * mu;
+                    maxValue = lambda.maxNorm();
+                }
             } else if (scaleGradient == 2) {
-                maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
+                if (model.getParameterisation() == 3) {
+                    maxValue = config.get<ValueType>("upperVPTh") - config.get<ValueType>("lowerVPTh");
+                } else if (model.getParameterisation() == 0) {
+                    ValueType lambdaMax;
+                    ValueType lambdaMin;
+                    ValueType muMax;
+                    ValueType muMin;
+                    lambdaMax = pow(config.get<ValueType>("upperVPTh"), 2);
+                    lambdaMax *= config.get<ValueType>("upperDensityTh");
+                    lambdaMin = pow(config.get<ValueType>("lowerVPTh"), 2);
+                    lambdaMin *= config.get<ValueType>("lowerDensityTh");
+                    muMax = pow(config.get<ValueType>("upperVSTh"), 2);
+                    muMax *= config.get<ValueType>("upperDensityTh");
+                    muMin = pow(config.get<ValueType>("lowerVSTh"), 2);
+                    muMin *= config.get<ValueType>("lowerDensityTh");
+                    lambdaMax -= 2 * muMin;
+                    lambdaMin -= 2 * muMax;
+                    maxValue = lambdaMax - lambdaMin;
+                }
             }
+            velocityP *= 1 / velocityP.maxNorm() * maxValue;
         }
-        density *= 1 / density.maxNorm() * maxValue;
-    }    
-    
-    if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {
-        if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+        
+        if (workflow.getInvertForVs() && velocityS.maxNorm() != 0) {
             if (scaleGradient == 1) {
-                maxValue = model.getPorosity().maxNorm();
+                if (model.getParameterisation() == 3) {
+                    maxValue = model.getVelocityS().maxNorm();
+                } else if (model.getParameterisation() == 0) {
+                    scai::lama::DenseVector<ValueType> mu;
+                    mu = scai::lama::pow(model.getVelocityS(), 2);
+                    mu *= model.getDensity();
+                    maxValue = mu.maxNorm();
+                }
             } else if (scaleGradient == 2) {
-                maxValue = config.getAndCatch("upperPorosityTh", 1.0) - config.getAndCatch("lowerPorosityTh", 0.0);
+                if (model.getParameterisation() == 3) {
+                    maxValue = config.get<ValueType>("upperVSTh") - config.get<ValueType>("lowerVSTh");
+                } else if (model.getParameterisation() == 0) {
+                    ValueType muMax;
+                    ValueType muMin;
+                    muMax = pow(config.get<ValueType>("upperVSTh"), 2);
+                    muMax *= config.get<ValueType>("upperDensityTh");
+                    muMin = pow(config.get<ValueType>("lowerVSTh"), 2);
+                    muMin *= config.get<ValueType>("lowerDensityTh");
+                    maxValue = muMax - muMin;
+                }
             }
-        }        
-        porosity *= 1 / porosity.maxNorm() * maxValue;
-    }    
-    
-    if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) { 
-        if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+            velocityS *= 1 / velocityS.maxNorm() * maxValue;
+        }
+        
+        if (workflow.getInvertForDensity() && density.maxNorm() != 0) {
+            if (model.getParameterisation() != 1 && model.getParameterisation() != 2) {
+                if (scaleGradient == 1) {
+                    maxValue = model.getDensity().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = config.get<ValueType>("upperDensityTh") - config.get<ValueType>("lowerDensityTh");
+                }
+            }
+            density *= 1 / density.maxNorm() * maxValue;
+        }    
+        
+        if (workflow.getInvertForPorosity() && porosity.maxNorm() != 0) {
+            if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+                if (scaleGradient == 1) {
+                    maxValue = model.getPorosity().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = config.getAndCatch("upperPorosityTh", 1.0) - config.getAndCatch("lowerPorosityTh", 0.0);
+                }
+            }        
+            porosity *= 1 / porosity.maxNorm() * maxValue;
+        }    
+        
+        if (workflow.getInvertForSaturation() && saturation.maxNorm() != 0) { 
+            if (model.getParameterisation() == 1 || model.getParameterisation() == 2) {
+                if (scaleGradient == 1) {
+                    maxValue = model.getSaturation().maxNorm();
+                } else if (scaleGradient == 2) {
+                    maxValue = config.getAndCatch("upperSaturationTh", 1.0) - config.getAndCatch("lowerSaturationTh", 0.0);
+                }
+            }              
+            saturation *= 1 / saturation.maxNorm() * maxValue;        
+        }
+        
+        if (workflow.getInvertForReflectivity() && reflectivity.maxNorm() != 0) { 
             if (scaleGradient == 1) {
-                maxValue = model.getSaturation().maxNorm();
+                maxValue = model.getReflectivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = config.getAndCatch("upperSaturationTh", 1.0) - config.getAndCatch("lowerSaturationTh", 0.0);
-            }
-        }              
-        saturation *= 1 / saturation.maxNorm() * maxValue;        
+                maxValue = config.getAndCatch("upperReflectivityTh", 1.0) - config.getAndCatch("lowerReflectivityTh", -1.0);
+            }      
+            reflectivity *= 1 / reflectivity.maxNorm() * maxValue;      
+        }
     }
 }
 
 /*! \brief Function for applying EnergyPreconditioning to the gradient
+ \param epsilonHessian a small value to stabilize the calculation of inverse Hessian.
+ \param saveApproxHessian save the approximated Hessian.
+ \param filename filename.
+ \param fileFormat fileFormat.
  */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::applyEnergyPreconditioning(ValueType epsilonHessian, scai::IndexType saveApproxHessian, std::string filename, scai::IndexType fileFormat)
 {
+    // see Nuber et al., 2015., Enhancement of near-surface elastic full waveform inversion results in regions of low sensitivities.
+    scai::lama::DenseVector<ValueType> approxHessian;  
+       
+    if (workflowInner.getInvertForVp() && velocityP.maxNorm() != 0) {
+        approxHessian = velocityP;
+        approxHessian *= velocityP;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".vp", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        velocityP *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForVs() && velocityS.maxNorm() != 0) {
+        approxHessian = velocityS;
+        approxHessian *= velocityS;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".vs", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        velocityS *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForDensity() && density.maxNorm() != 0) {
+        approxHessian = density;
+        approxHessian *= density;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".density", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        density *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForPorosity() && porosity.maxNorm() != 0) {
+        approxHessian = porosity;
+        approxHessian *= porosity;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".porosity", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        porosity *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForSaturation() && saturation.maxNorm() != 0) {
+        approxHessian = saturation;
+        approxHessian *= saturation;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".saturation", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        saturation *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForReflectivity() && reflectivity.maxNorm() != 0) {
+        approxHessian = reflectivity;
+        approxHessian *= reflectivity;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".reflectivity", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        reflectivity *= approxHessian; 
+    }
 }
 /*! \brief Function for normalizing the gradient
  */
@@ -632,6 +764,9 @@ void KITGPI::Gradient::Elastic<ValueType>::normalize()
         gradientMax = saturation.maxNorm();
         if (gradientMax != 0)
             saturation *= 1 / gradientMax;
+        gradientMax = reflectivity.maxNorm();
+        if (gradientMax != 0)
+            reflectivity *= 1 / gradientMax;
     }
 }
 
@@ -834,8 +969,24 @@ void KITGPI::Gradient::Elastic<ValueType>::estimateParameter(KITGPI::ZeroLagXcor
     } else {
         this->initParameterisation(saturation, ctx, dist, 0.0);
     }    
+    
+    if (workflow.getInvertForReflectivity()) {
+        reflectivity = correlatedWavefields.getXcorrMuC();
+        reflectivity *= -1;
+    } else {
+        this->initParameterisation(reflectivity, ctx, dist, 0.0);
+    }  
 }
 
+/*! \brief Function for calculating the model derivatives 
+ *
+ \param dataMisfit dataMisfit to store the model derivatives.
+ \param model model parameters.
+ \param derivativesEM EM derivatives
+ \param configEM EM config handle
+ \param modelTaper2DJoint Taper to provide transform matrix
+ \param workflow workflow
+ */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
@@ -846,106 +997,82 @@ void KITGPI::Gradient::Elastic<ValueType>::calcModelDerivative(KITGPI::Misfit::M
     scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
     scai::lama::DenseVector<ValueType> tempX;
     scai::lama::DenseVector<ValueType> tempY;
-    ValueType modelMax;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
     scai::IndexType spatialLength = configEM.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
-        
-    /* Get references to required derivatives matrixes */
-    auto const &DxfEM = derivativesEM.getDxf();
-    auto const &DyfEM = derivativesEM.getDyf();              
+    ValueType DT = configEM.get<ValueType>("DT");
+    
+    /* Get references to required derivatives matrices */
+    scai::lama::CSRSparseMatrix<ValueType> DxfEM;
+    scai::lama::CSRSparseMatrix<ValueType> DyfEM;
+    DxfEM = derivativesEM.getDxf();
+    DyfEM = derivativesEM.getDyf();
+    DxfEM.scale(1.0 / DT);
+    DyfEM.scale(1.0 / DT);            
                       
     scai::hmemo::ContextPtr ctx = model.getDensity().getContextPtr();
     scai::dmemo::DistributionPtr dist = model.getDensity().getDistributionPtr();   
                
-    if (workflow.getInvertForVs()) {
-        velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityS()); 
-        // velocityStemp *= 1 / velocityStemp.maxNorm();    
+    densitytemp = modelTaper2DJoint.applyGradientTransformToEM(model.getDensity());
+    velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityS()); 
+    velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityP()); 
+    
+    // store the mean value of model parameters for weighting the gradient in summing
+    if (workflow.workflowStage + workflow.iteration == 0) {
+        density0mean = densitytemp.sum() / densitytemp.size();
+        velocityS0mean = velocityStemp.sum() / velocityStemp.size();
+        velocityP0mean = velocityPtemp.sum() / velocityPtemp.size();
+    }
+    
+    velocityStemp *= 1 / velocityS0mean;
+    
+    tempX = DxfEM * velocityStemp;    
+    tempY = DyfEM * velocityStemp;
+    
+    KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+    KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);  
         
-        tempX = DxfEM * velocityStemp;    
-        tempY = DyfEM * velocityStemp;
+    modelDerivativeXtemp = modelTaper2DJoint.applyGradientTransformToSeismic(tempX);    
+    modelDerivativeYtemp = modelTaper2DJoint.applyGradientTransformToSeismic(tempY);  
+        
+    if (exchangeStrategy == 2) {   
+        densitytemp *= 1 / density0mean;
+        
+        tempX = DxfEM * densitytemp;    
+        tempY = DyfEM * densitytemp;
         
         KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);  
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);   
         
-        modelMax = tempX.maxNorm();
-        if (modelMax != 0)
-            tempX *= 1 / modelMax;  
-        modelMax = tempY.maxNorm();
-        if (modelMax != 0)
-            tempY *= 1 / modelMax; 
+        modelDerivativeXtemp += modelTaper2DJoint.applyGradientTransformToSeismic(tempX);  
+        modelDerivativeYtemp += modelTaper2DJoint.applyGradientTransformToSeismic(tempY); 
         
-        tempX = modelTaper2DJoint.applyGradientTransformToSeismic(tempX);    
-        tempY = modelTaper2DJoint.applyGradientTransformToSeismic(tempY);                       
-    } else {
-        this->initParameterisation(tempX, ctx, dist, 0.0);
-        this->initParameterisation(tempY, ctx, dist, 0.0);
-    }    
-    
-    modelDerivativeXtemp = tempX;
-    modelDerivativeYtemp = tempY; 
-          
-    if (exchangeStrategy == 2) {
-        if (workflow.getInvertForDensity()) {
-            densitytemp = modelTaper2DJoint.applyGradientTransformToEM(model.getDensity());    
-            // densitytemp *= 1 / densitytemp.maxNorm();          
-            
-            tempX = DxfEM * densitytemp;    
-            tempY = DyfEM * densitytemp;
-            
-            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
-            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);   
-            
-            modelMax = tempX.maxNorm();
-            if (modelMax != 0)
-                tempX *= 1 / modelMax;  
-            modelMax = tempY.maxNorm();
-            if (modelMax != 0)
-                tempY *= 1 / modelMax; 
-            
-            tempX = modelTaper2DJoint.applyGradientTransformToSeismic(tempX);  
-            tempY = modelTaper2DJoint.applyGradientTransformToSeismic(tempY);                           
-        } else {
-            this->initParameterisation(tempX, ctx, dist, 0.0);
-            this->initParameterisation(tempY, ctx, dist, 0.0);
-        }   
+        velocityPtemp *= 1 / velocityP0mean;
         
-        modelDerivativeXtemp += tempX;
-        modelDerivativeYtemp += tempY;      
+        tempX = DxfEM * velocityPtemp;    
+        tempY = DyfEM * velocityPtemp;
         
-        if (workflow.getInvertForVp()) {
-            velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityP());  
-            // velocityPtemp *= 1 / velocityPtemp.maxNorm();    
-            
-            tempX = DxfEM * velocityPtemp;    
-            tempY = DyfEM * velocityPtemp;
-            
-            KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
-            KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);  
-            
-            modelMax = tempX.maxNorm();
-            if (modelMax != 0)
-                tempX *= 1 / modelMax;  
-            modelMax = tempY.maxNorm();
-            if (modelMax != 0)
-                tempY *= 1 / modelMax; 
-            
-            tempX = modelTaper2DJoint.applyGradientTransformToSeismic(tempX);  
-            tempY = modelTaper2DJoint.applyGradientTransformToSeismic(tempY);   
-        } else {
-            this->initParameterisation(tempX, ctx, dist, 0.0);
-            this->initParameterisation(tempY, ctx, dist, 0.0);
-        }    
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);   
         
-        modelDerivativeXtemp += tempX;
-        modelDerivativeYtemp += tempY; 
+        modelDerivativeXtemp += modelTaper2DJoint.applyGradientTransformToSeismic(tempX);  
+        modelDerivativeYtemp += modelTaper2DJoint.applyGradientTransformToSeismic(tempY); 
     }
     
     dataMisfit.setModelDerivativeX(modelDerivativeXtemp);
     dataMisfit.setModelDerivativeY(modelDerivativeYtemp);
 }
 
+/*! \brief Function for calculating the cross gradient 
+ *
+ \param dataMisfitEM EM dataMisfit to store the modelEM derivatives.
+ \param model model parameters.
+ \param derivativesEM EM derivatives
+ \param configEM EM config handle
+ \param modelTaper2DJoint Taper to provide transform matrix
+ \param workflow workflow
+ */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
@@ -954,163 +1081,226 @@ void KITGPI::Gradient::Elastic<ValueType>::calcCrossGradient(KITGPI::Misfit::Mis
     scai::lama::DenseVector<ValueType> velocityPtemp;
     scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
     scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
-    scai::lama::DenseVector<ValueType> temp;
-    scai::lama::DenseVector<ValueType> tempX;
-    scai::lama::DenseVector<ValueType> tempY;
+    scai::lama::DenseVector<ValueType> tempXY;
+    scai::lama::DenseVector<ValueType> tempYX;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
     scai::IndexType spatialLength = configEM.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
-            
-    /* Get references to required derivatives matrixes */
-    auto const &DxfEM = derivativesEM.getDxf();
-    auto const &DyfEM = derivativesEM.getDyf();      
+    ValueType DT = configEM.get<ValueType>("DT");
+    
+    /* Get references to required derivatives matrices */
+    scai::lama::CSRSparseMatrix<ValueType> DxfEM;
+    scai::lama::CSRSparseMatrix<ValueType> DyfEM;
+    DxfEM = derivativesEM.getDxf();
+    DyfEM = derivativesEM.getDyf();
+    DxfEM.scale(1.0 / DT);
+    DyfEM.scale(1.0 / DT);
                       
     scai::hmemo::ContextPtr ctx = model.getDensity().getContextPtr();
     scai::dmemo::DistributionPtr dist = model.getDensity().getDistributionPtr();  
-    scai::dmemo::DistributionPtr distEM = dataMisfitEM.getModelDerivativeX().getDistributionPtr();  
-                 
-    if (workflow.getInvertForVs()) {
-        velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityS());
-        // velocityStemp *= 1 / velocityStemp.maxNorm();     
         
-        tempX = DxfEM * velocityStemp;    
-        tempY = DyfEM * velocityStemp;
+    densitytemp = modelTaper2DJoint.applyGradientTransformToEM(model.getDensity());  
+    velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityS()); 
+    velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityP()); 
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);       
-                       
-        if (exchangeStrategy != 0) {
-            // cross gradient of vs and modelEMDerivative   
-            velocityStemp = dataMisfitEM.getModelDerivativeX() * tempY;   
-            temp = dataMisfitEM.getModelDerivativeY() * tempX;   
-            velocityStemp -= temp;   
-            
-            velocityS = modelTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);   
-        } else {
-            this->initParameterisation(velocityS, ctx, dist, 0.0);
-        }
+    // store the mean value of model parameters for weighting the gradient in summing
+    if (workflow.workflowStage + workflow.iteration == 0) {
+        density0mean = densitytemp.sum() / densitytemp.size();
+        velocityS0mean = velocityStemp.sum() / velocityStemp.size();
+        velocityP0mean = velocityPtemp.sum() / velocityPtemp.size();
+    }
+    
+    velocityStemp *= 1 / velocityS0mean;
+    
+    modelDerivativeXtemp = DxfEM * velocityStemp;    
+    modelDerivativeYtemp = DyfEM * velocityStemp;
+    
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);       
+                                                   
+    if (workflow.getInvertForVs() && exchangeStrategy != 0) {  
+        // cross gradient of vs and EM model   
+        tempYX = modelDerivativeYtemp * dataMisfitEM.getModelDerivativeX();   
+        tempXY = modelDerivativeXtemp * dataMisfitEM.getModelDerivativeY();
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);   
+        
+        velocityStemp = tempYX - tempXY;   
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialLength);
+        
+        velocityS = modelTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);  
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
-        this->initParameterisation(tempX, ctx, distEM, 0.0);
-        this->initParameterisation(tempY, ctx, distEM, 0.0);
     }       
-                
-    modelDerivativeXtemp = tempX;
-    modelDerivativeYtemp = tempY; 
     
-    if (workflow.getInvertForDensity()) {
-        densitytemp = modelTaper2DJoint.applyGradientTransformToEM(model.getDensity()); 
-        // densitytemp *= 1 / densitytemp.maxNorm();    
+    if (workflow.getInvertForDensity()) { 
+        // cross gradient of density and vs   
+        densitytemp *= 1 / density0mean;
         
-        tempX = DxfEM * densitytemp;    
-        tempY = DyfEM * densitytemp;          
+        tempXY = DxfEM * densitytemp;    
+        tempYX = DyfEM * densitytemp; 
         
-        // cross gradient of density and modelDerivative   
-        densitytemp = modelDerivativeXtemp * tempY;   
-        temp = modelDerivativeYtemp * tempX;   
-        densitytemp -= temp;         
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);          
         
-        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialLength);        
+        tempYX = tempYX * modelDerivativeXtemp;   
+        tempXY = tempXY * modelDerivativeYtemp;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);   
+        
+        densitytemp = tempYX - tempXY;    
+        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialLength);     
+               
         density = modelTaper2DJoint.applyGradientTransformToSeismic(densitytemp);
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }    
     
-    if (workflow.getInvertForVp()) {
-        velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityP()); 
-        // velocityPtemp *= 1 / velocityPtemp.maxNorm();       
+    if (workflow.getInvertForVp()) { 
+        // cross gradient of vp and vs   
+        velocityPtemp *= 1 / velocityP0mean;
         
-        tempX = DxfEM * velocityPtemp;    
-        tempY = DyfEM * velocityPtemp;          
+        tempXY = DxfEM * velocityPtemp;    
+        tempYX = DyfEM * velocityPtemp; 
         
-        // cross gradient of vp and modelDerivative   
-        velocityPtemp = modelDerivativeXtemp * tempY;   
-        temp = modelDerivativeYtemp * tempX;   
-        velocityPtemp -= temp;   
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);          
         
-        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);        
-        velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
+        tempYX = tempYX * modelDerivativeXtemp;   
+        tempXY = tempXY * modelDerivativeYtemp;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);   
+        
+        velocityPtemp = tempYX - tempXY;    
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);     
+               
+        velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);
     } else {
         this->initParameterisation(velocityP, ctx, dist, 0.0);
-    }      
+    }     
 }
 
+/*! \brief Function for calculating the derivatives of cross gradient 
+ *
+ \param dataMisfitEM EM dataMisfit to store the modelEM derivatives.
+ \param model model parameters.
+ \param derivativesEM EM derivatives
+ \param configEM EM config handle
+ \param modelTaper2DJoint Taper to provide transform matrix
+ \param workflow workflow
+ */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     scai::lama::DenseVector<ValueType> densitytemp;
     scai::lama::DenseVector<ValueType> velocityStemp;
     scai::lama::DenseVector<ValueType> velocityPtemp;
-    scai::lama::DenseVector<ValueType> temp;
-    scai::lama::DenseVector<ValueType> tempX;
-    scai::lama::DenseVector<ValueType> tempY;
+    scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> tempXY;
+    scai::lama::DenseVector<ValueType> tempYX;
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(configEM, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(configEM, "NY");
     scai::IndexType spatialLength = configEM.get<IndexType>("spatialFDorder");
     scai::IndexType exchangeStrategy = configEM.get<IndexType>("exchangeStrategy");
-            
+    ValueType DT = configEM.get<ValueType>("DT");
+        
     scai::hmemo::ContextPtr ctx = model.getDensity().getContextPtr();
     scai::dmemo::DistributionPtr dist = model.getDensity().getDistributionPtr();  
-    scai::dmemo::DistributionPtr distEM = dataMisfitEM.getModelDerivativeX().getDistributionPtr();  
                   
-    /* Get references to required derivatives matrixes */
-    auto const &DxfEM = derivativesEM.getDxf();
-    auto const &DyfEM = derivativesEM.getDyf();
-    
-    temp = dataMisfitEM.getModelDerivativeY() - dataMisfitEM.getModelDerivativeX(); 
-                 
-    if (workflow.getInvertForVs()) {
-        velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityS()); 
-        // velocityStemp *= 1 / velocityStemp.maxNorm();    
+    /* Get references to required derivatives matrices */
+    scai::lama::CSRSparseMatrix<ValueType> DxfEM;
+    scai::lama::CSRSparseMatrix<ValueType> DyfEM;
+    DxfEM = derivativesEM.getDxf();
+    DyfEM = derivativesEM.getDyf();
+    DxfEM.scale(1.0 / DT);
+    DyfEM.scale(1.0 / DT);
+                     
+    if (workflow.getInvertForVs() && exchangeStrategy != 0) {    
+        velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(velocityS);          
         
-        tempX = DxfEM * velocityStemp;    
-        tempY = DyfEM * velocityStemp;
+        // derivative of cross gradient of vs and EM model with respect to vs  
+        tempYX = dataMisfitEM.getModelDerivativeX() * velocityStemp; 
+        tempXY = dataMisfitEM.getModelDerivativeY() * velocityStemp;
         
-        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);   
         
-        if (exchangeStrategy != 0) {
-            velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(this->getVelocityS());          
-            
-            // derivative of cross gradient with respect to vs  
-            velocityStemp *= temp;  
-                   
-            velocityS = modelTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);         
-        } else {
-            this->initParameterisation(velocityS, ctx, dist, 0.0);
-        }     
+        tempYX = DyfEM * tempYX;   
+        tempXY = DxfEM * tempXY;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        velocityStemp = tempXY - tempYX;   
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialLength);
+                
+        velocityS = modelTaper2DJoint.applyGradientTransformToSeismic(velocityStemp);    
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
-        this->initParameterisation(tempX, ctx, distEM, 0.0);
-        this->initParameterisation(tempY, ctx, distEM, 0.0);
     }   
-    
-    temp = tempY - tempX;
-    
-    if (workflow.getInvertForDensity()) {
-        densitytemp = modelTaper2DJoint.applyGradientTransformToEM(this->getDensity());
-        // densitytemp *= 1 / densitytemp.maxNorm();      
         
-        // derivative of cross gradient with respect to density   
-        densitytemp *= temp;  
+    velocityStemp = modelTaper2DJoint.applyGradientTransformToEM(model.getVelocityS()); 
+    
+    velocityStemp *= 1 / velocityS0mean;
+    
+    modelDerivativeXtemp = DxfEM * velocityStemp;    
+    modelDerivativeYtemp = DyfEM * velocityStemp;
+    
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);       
+                                   
+    if (workflow.getInvertForDensity()) {
+        densitytemp = modelTaper2DJoint.applyGradientTransformToEM(density);  
+        
+        // derivative of cross gradient of density and vs with respect to density  
+        tempYX = modelDerivativeXtemp * densitytemp; 
+        tempXY = modelDerivativeYtemp * densitytemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        tempYX = DyfEM * tempYX;   
+        tempXY = DxfEM * tempXY;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        densitytemp = tempXY - tempYX;  
+        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialLength);
                        
         density = modelTaper2DJoint.applyGradientTransformToSeismic(densitytemp); 
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
-    }     
-                 
-    if (workflow.getInvertForVp()) { 
-        velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(this->getVelocityP()); 
-        // velocityPtemp *= 1 / velocityPtemp.maxNorm();            
+    }         
+    
+    if (workflow.getInvertForVp()) {
+        velocityPtemp = modelTaper2DJoint.applyGradientTransformToEM(velocityP);  
         
-        // derivative of cross gradient with respect to vs  
-        velocityPtemp *= temp;  
-                 
-        velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp);          
+        // derivative of cross gradient of vp and vs with respect to vp  
+        tempYX = modelDerivativeXtemp * velocityPtemp; 
+        tempXY = modelDerivativeYtemp * velocityPtemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        tempYX = DyfEM * tempYX;   
+        tempXY = DxfEM * tempXY;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        velocityPtemp = tempXY - tempYX;  
+        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);
+                       
+        velocityP = modelTaper2DJoint.applyGradientTransformToSeismic(velocityPtemp); 
     } else {
         this->initParameterisation(velocityP, ctx, dist, 0.0);
-    }       
+    }         
 }
 
 /*! \brief calculate the misfit of CrossGradient
@@ -1119,11 +1309,33 @@ void KITGPI::Gradient::Elastic<ValueType>::calcCrossGradientDerivative(KITGPI::M
 template <typename ValueType>
 ValueType KITGPI::Gradient::Elastic<ValueType>::calcCrossGradientMisfit()
 {
-    ValueType misfitSum = velocityP.l2Norm() + velocityS.l2Norm() + density.l2Norm();
+    ValueType misfitSum = 0;
+    IndexType count = 0;
+    if (velocityP.l2Norm() != 0) {
+        misfitSum += velocityP.l2Norm() / velocityP.size();
+        count++;
+    }
+    if (velocityS.l2Norm() != 0) {
+        misfitSum += velocityS.l2Norm() / velocityS.size();
+        count++;
+    }
+    if (density.l2Norm() != 0) {
+        misfitSum += density.l2Norm() / density.size();
+        count++;
+    }
+    if (count != 0)
+        misfitSum /= count;
     
     return (misfitSum);
 }
 
+/*! \brief Function for calculating the stabilizing functional gradient 
+ *
+ \param model model parameters.
+ \param modelPriori Priori model parameters.
+ \param dataMisfit dataMisfit.
+ \param workflow workflow.
+ */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    
@@ -1162,7 +1374,7 @@ void KITGPI::Gradient::Elastic<ValueType>::calcStabilizingFunctionalGradient(KIT
     }  
 }
 
-/*! \brief Apply a median filter to filter the extrame value of the gradient
+/*! \brief Apply a median filter to filter the extreme value of the gradient
  */
 template <typename ValueType>
 void KITGPI::Gradient::Elastic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
@@ -1172,12 +1384,14 @@ void KITGPI::Gradient::Elastic<ValueType>::applyMedianFilter(KITGPI::Configurati
     scai::lama::DenseVector<ValueType> velocityPtemp;
     scai::lama::DenseVector<ValueType> porositytemp;
     scai::lama::DenseVector<ValueType> saturationtemp;
+    scai::lama::DenseVector<ValueType> reflectivitytemp;
     
     densitytemp = this->getDensity();
     velocityStemp = this->getVelocityS();
     velocityPtemp = this->getVelocityP();
     porositytemp = this->getPorosity();
     saturationtemp = this->getSaturation();
+    reflectivitytemp = this->getReflectivity();
     
     scai::IndexType NZ = config.get<IndexType>("NZ");
     if (NZ == 1) {
@@ -1190,12 +1404,14 @@ void KITGPI::Gradient::Elastic<ValueType>::applyMedianFilter(KITGPI::Configurati
         KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);
         KITGPI::Common::applyMedianFilterTo2DVector(porositytemp, NX, NY, spatialLength);
         KITGPI::Common::applyMedianFilterTo2DVector(saturationtemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(reflectivitytemp, NX, NY, spatialLength);
         
         this->setDensity(densitytemp);
         this->setVelocityS(velocityStemp);
         this->setVelocityP(velocityPtemp);
         this->setPorosity(porositytemp);    
         this->setSaturation(saturationtemp);
+        this->setReflectivity(reflectivitytemp);
     }
 }
 

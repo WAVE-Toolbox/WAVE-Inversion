@@ -801,7 +801,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::calcStabilizingFunctionalGradient(K
     this->initParameterisation(tauDielectricPermittivity, ctx, dist, 0.0);
 }
 
-/*! \brief Apply a median filter to filter the extrame value of the gradient
+/*! \brief Apply a median filter to filter the extreme value of the gradient
  */
 template <typename ValueType>
 void KITGPI::Gradient::ViscoEMEM<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)

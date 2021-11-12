@@ -21,6 +21,8 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
     isSeismic = Common::checkEquationType<ValueType>(equationType);
     
     approxHessian.setSameValue(dist, 0);
+    if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
+        approxHessianAdjoint.setSameValue(dist, 0);
 
     if (isSeismic) {
         wavefieldVX.setSameValue(dist, 0);
@@ -40,7 +42,7 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
  \param DT temporal sampling interval
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldBack, ValueType DT)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldAdjoint, ValueType DT)
 {
     if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3 && isSeismic) {               
         if(equationType.compare("sh") != 0 && equationType.compare("viscosh") != 0){
@@ -49,11 +51,12 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             wavefieldVX *= DT;
             approxHessian += wavefieldVX;  
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldVX = wavefieldBack.getRefVX();
-                wavefieldVX *= wavefield.getRefVX().maxNorm() / wavefieldVX.maxNorm();
+                wavefieldVX = wavefieldAdjoint.getRefVX();
+                if (wavefieldVX.maxNorm() != 0)
+                    wavefieldVX *= wavefield.getRefVX().maxNorm() / wavefieldVX.maxNorm();
                 wavefieldVX *= wavefieldVX;
                 wavefieldVX *= DT;
-                approxHessian += wavefieldVX; 
+                approxHessianAdjoint += wavefieldVX; 
             }      
         }
             
@@ -63,11 +66,12 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             wavefieldVY *= DT;
             approxHessian += wavefieldVY;   
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldVY = wavefieldBack.getRefVY();
-                wavefieldVY *= wavefield.getRefVY().maxNorm() / wavefieldVY.maxNorm();
+                wavefieldVY = wavefieldAdjoint.getRefVY();
+                if (wavefieldVY.maxNorm() != 0)
+                    wavefieldVY *= wavefield.getRefVY().maxNorm() / wavefieldVY.maxNorm();
                 wavefieldVY *= wavefieldVY;
                 wavefieldVY *= DT;
-                approxHessian += wavefieldVY;
+                approxHessianAdjoint += wavefieldVY;
             }             
         }
         
@@ -77,11 +81,12 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             wavefieldVZ *= DT;
             approxHessian += wavefieldVZ;  
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldVZ = wavefieldBack.getRefVZ();
-                wavefieldVZ *= wavefield.getRefVZ().maxNorm() / wavefieldVZ.maxNorm();
+                wavefieldVZ = wavefieldAdjoint.getRefVZ();
+                if (wavefieldVZ.maxNorm() != 0)
+                    wavefieldVZ *= wavefield.getRefVZ().maxNorm() / wavefieldVZ.maxNorm();
                 wavefieldVZ *= wavefieldVZ;
                 wavefieldVZ *= DT;
-                approxHessian += wavefieldVZ; 
+                approxHessianAdjoint += wavefieldVZ; 
             }                   
         }    
     } else if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3 && !isSeismic) {            
@@ -91,11 +96,10 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             wavefieldEX *= DT;
             approxHessian += wavefieldEX;  
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldEX = wavefieldBack.getRefEX();
-                wavefieldEX *= wavefield.getRefEX().maxNorm() / wavefieldEX.maxNorm();
+                wavefieldEX = wavefieldAdjoint.getRefEX();
                 wavefieldEX *= wavefieldEX;
                 wavefieldEX *= DT;
-                approxHessian += wavefieldEX; 
+                approxHessianAdjoint += wavefieldEX; 
             }
         }
             
@@ -105,11 +109,10 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             wavefieldEY *= DT;
             approxHessian += wavefieldEY;
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldEY = wavefieldBack.getRefEY();
-                wavefieldEY *= wavefield.getRefEY().maxNorm() / wavefieldEY.maxNorm();
+                wavefieldEY = wavefieldAdjoint.getRefEY();
                 wavefieldEY *= wavefieldEY;
                 wavefieldEY *= DT;
-                approxHessian += wavefieldEY;
+                approxHessianAdjoint += wavefieldEY;
             }        
         }
         
@@ -119,11 +122,10 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             wavefieldEZ *= DT;
             approxHessian += wavefieldEZ;    
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldEZ = wavefieldBack.getRefEZ();
-                wavefieldEZ *= wavefield.getRefEZ().maxNorm() / wavefieldEZ.maxNorm();
+                wavefieldEZ = wavefieldAdjoint.getRefEZ();
                 wavefieldEZ *= wavefieldEZ;
                 wavefieldEZ *= DT;
-                approxHessian += wavefieldEZ; 
+                approxHessianAdjoint += wavefieldEZ; 
             }            
         } 
     }
@@ -140,6 +142,10 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
 {
     if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3) {  
     //     sqrt(approxHessian) missing because of |u_i| (see IFOS2D)?
+        
+        if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
+            approxHessian += approxHessianAdjoint;
+        }
         
         /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
@@ -164,6 +170,8 @@ template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::resetApproxHessian()
 {
     approxHessian = 0;   // does not change size/distribution
+    if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
+        approxHessianAdjoint = 0;   // does not change size/distribution
 }
 
 template class KITGPI::Preconditioning::EnergyPreconditioning<double>;

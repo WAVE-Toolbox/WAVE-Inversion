@@ -534,7 +534,7 @@ void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparam
             if (scaleGradient == 1) {
                 maxValue = model.getReflectivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = config.getAndCatch("upperReflectivityEMrTh", 1.0) - config.getAndCatch("lowerReflectivityEMrTh", -1.0);
+                maxValue = config.getAndCatch("upperReflectivityTh", 1.0) - config.getAndCatch("lowerReflectivityTh", -1.0);
             }      
             reflectivity *= 1 / reflectivity.maxNorm() * maxValue;      
         }
@@ -692,7 +692,7 @@ void KITGPI::Gradient::EMEM<ValueType>::calcStabilizingFunctionalGradient(KITGPI
     }    
 }
 
-/*! \brief Apply a median filter to filter the extrame value of the gradient
+/*! \brief Apply a median filter to filter the extreme value of the gradient
  */
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
@@ -701,13 +701,13 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration:
     scai::lama::DenseVector<ValueType> epsilonEM_temp;
     scai::lama::DenseVector<ValueType> porositytemp;
     scai::lama::DenseVector<ValueType> saturationtemp;
-    scai::lama::DenseVector<ValueType> reflectivity_temp;
+    scai::lama::DenseVector<ValueType> reflectivitytemp;
     
     sigmaEM_temp = this->getElectricConductivity();
     epsilonEM_temp = this->getDielectricPermittivity();
     porositytemp = this->getPorosity();
     saturationtemp = this->getSaturation();
-    reflectivity_temp = this->getReflectivity();
+    reflectivitytemp = this->getReflectivity();
     
     scai::IndexType NZ = config.get<IndexType>("NZ");
     if (NZ == 1) {
@@ -719,13 +719,13 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(KITGPI::Configuration:
         KITGPI::Common::applyMedianFilterTo2DVector(epsilonEM_temp, NX, NY, spatialLength);
         KITGPI::Common::applyMedianFilterTo2DVector(porositytemp, NX, NY, spatialLength);
         KITGPI::Common::applyMedianFilterTo2DVector(saturationtemp, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(reflectivity_temp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(reflectivitytemp, NX, NY, spatialLength);
         
         this->setElectricConductivity(sigmaEM_temp);    
         this->setDielectricPermittivity(epsilonEM_temp);
         this->setPorosity(porositytemp);    
         this->setSaturation(saturationtemp);
-        this->setReflectivity(reflectivity_temp);
+        this->setReflectivity(reflectivitytemp);
     }
 }
 

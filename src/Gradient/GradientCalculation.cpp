@@ -195,9 +195,11 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     /*       Calculate gradients          */
     /* ---------------------------------- */
     gradient.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);
+    
+    /* Apply receiver Taper (if sourceTaperRadius=0 gradient will be multiplied by 1) */
     SourceTaper.init(dist, ctx, sources, config, modelCoordinates, config.get<IndexType>("sourceTaperRadius"));
-    SourceTaper.apply(gradient);
-    /* Apply receiver Taper (if ReceiverTaperRadius=0 gradient will be multplied by 1) */
+    SourceTaper.apply(gradient);    
+    /* Apply receiver Taper (if receiverTaperRadius=0 gradient will be multiplied by 1) */
     ReceiverTaper.init(dist, ctx, receivers, config, modelCoordinates, config.get<IndexType>("receiverTaperRadius"));
     ReceiverTaper.apply(gradient);
     sourceReceiverTaper.init(dist, ctx, sources, receivers, config, modelCoordinates);

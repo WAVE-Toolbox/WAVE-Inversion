@@ -944,6 +944,7 @@ int main(int argc, char *argv[])
                 } else {
                     gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds);
                 }
+                
                 if (workflow.iteration == 0 && commInterShot->getRank() == 0) {
                     /* only shot Domain 0 writes output */
                     model->write((config.get<std::string>("ModelFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration)), config.get<IndexType>("FileFormat"));
@@ -985,7 +986,7 @@ int main(int argc, char *argv[])
                 crossGradientDerivative->setInvertForParameters(invertForParameters);
                 stabilizingFunctionalGradient->setInvertForParameters(invertForParameters);
                 workflow.setInvertForParameters(invertForParameters);
-
+                
                 if (config.getAndCatch("useRandomSource", 0) != 0) { 
                     start_t = common::Walltime::get();
                     Acquisition::getRandomShotInds<ValueType>(uniqueShotInds, shotHistory, numshots, maxcount, config.getAndCatch("useRandomSource", 0));
@@ -1346,7 +1347,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "cross gradient misfit " << equationType << " 1 = " << crossGradientMisfit << "\n"); 
                     
                     crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
-                    crossGradientDerivativeEM->sumShotDomain(commInterShot); 
+                    crossGradientDerivative->sumShotDomain(commInterShot); 
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradientDerivative", config.get<IndexType>("FileFormat"), workflow);
                     }      
@@ -1375,8 +1376,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n=== calcStabilizingFunctionalGradient " << equationType << " 1 ===");
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
-                    stabilizingFunctionalGradient->calcStabilizingFunctionalGradient(*model, *modelPriori, config, *dataMisfit, workflow);
-                    
+                    stabilizingFunctionalGradient->calcStabilizingFunctionalGradient(*model, *modelPriori, config, *dataMisfit, workflow);                    
 //                     stabilizingFunctionalGradient->applyMedianFilter(config);  
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         stabilizingFunctionalGradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".stabilizingFunctionalGradient", config.get<IndexType>("FileFormat"), workflow);
@@ -2069,6 +2069,7 @@ int main(int argc, char *argv[])
                     if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         crossGradientDerivativeEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".crossGradient", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  
+                    
                     ValueType crossGradientMisfit = crossGradientDerivativeEM->calcCrossGradientMisfit();
                     dataMisfitEM->addToCrossGradientMisfitStorage(crossGradientMisfit);
                     HOST_PRINT(commAll, "cross gradient misfit " << equationTypeEM << " 2 = " << crossGradientMisfit << "\n"); 

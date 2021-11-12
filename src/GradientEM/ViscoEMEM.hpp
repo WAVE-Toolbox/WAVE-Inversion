@@ -56,7 +56,7 @@ namespace KITGPI
 
             std::string getEquationType() const;
 
-            /* Getter methods for not requiered parameters */
+            /* Getter methods for not required parameters */
 
             void estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             void applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
@@ -100,7 +100,7 @@ namespace KITGPI
             using Gradient<ValueType>::saturation;
             using Gradient<ValueType>::workflowInner;
                         
-            /* Not requiered parameters */
+            /* Not required parameters */
             using Gradient<ValueType>::weightingVector;
         };
     }

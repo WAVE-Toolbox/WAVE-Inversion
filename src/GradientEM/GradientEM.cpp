@@ -220,7 +220,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
         
-    /* Get references to required derivatives matrixes */
+    /* Get references to required derivatives matrices */
     auto const &DxfEM = derivativesEM.getDxf();
     auto const &DyfEM = derivativesEM.getDyf();  
           
@@ -298,7 +298,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
     
-    /* Get references to required derivatives matrixes */
+    /* Get references to required derivatives matrices */
     auto const &DxfEM = derivativesEM.getDxf();
     auto const &DyfEM = derivativesEM.getDyf();  
     
@@ -381,7 +381,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     scai::hmemo::ContextPtr ctx = dielectricPermittivitytemp.getContextPtr();
     scai::dmemo::DistributionPtr dist = dielectricPermittivitytemp.getDistributionPtr();  
         
-    /* Get references to required derivatives matrixes */
+    /* Get references to required derivatives matrices */
     auto const &DxfEM = derivativesEM.getDxf();
     auto const &DyfEM = derivativesEM.getDyf();  
     

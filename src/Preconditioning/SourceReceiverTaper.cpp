@@ -25,7 +25,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::apply(KITGPI::Grad
  \param dist_wavefield Distribution of the wavefields
  \param ctx Context
  \param Acquisition sources or receivers
- \param config Configuration class, which is used to derive all requiered parameters
+ \param config Configuration class, which is used to derive all required parameters
  \param modelCoordinates Coordinate class, which eg. maps 3D coordinates to 1D model indices
  \param radius radius of the taper. 0=not apply taper.
  */
@@ -112,7 +112,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
  \param ctx Context
  \param sources sources
  \param receivers receivers
- \param config Configuration class, which is used to derive all requiered parameters
+ \param config Configuration class, which is used to derive all required parameters
  \param modelCoordinates Coordinate class, which eg. maps 3D coordinates to 1D model indices
  \param radius radius of the taper. 0=not apply taper.
  */
