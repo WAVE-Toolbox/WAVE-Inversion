@@ -39,8 +39,7 @@ namespace KITGPI
             std::string getEquationType() const;
             
             /* Getter routines for non-required wavefields: Will throw an error */ 
-            scai::lama::DenseVector<ValueType> const &getXcorrRSigmaEM() const override;   
-            scai::lama::DenseVector<ValueType> const &getXcorrREpsilonEM() const override;       
+            scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigmaEM() const override;     
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
@@ -69,10 +68,8 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep;
             
             /* non required wavefields */
-            using ZeroLagXcorr<ValueType>::xcorrRSigmaEM;
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonEM;
-            using ZeroLagXcorr<ValueType>::xcorrRSigmaEMstep;
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonEMstep;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEMstep;
             
             std::string type;
         };

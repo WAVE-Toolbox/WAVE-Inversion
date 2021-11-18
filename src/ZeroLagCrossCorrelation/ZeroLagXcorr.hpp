@@ -51,8 +51,7 @@ namespace KITGPI
             virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
-            void setDecomposeType(scai::IndexType setDecomposeType);
-            void setGradientType(scai::IndexType setGradientType);
+            void prepareForInversion(scai::IndexType setGradientType, KITGPI::Configuration::Configuration config);
 
             /* Seismic */
             virtual scai::lama::DenseVector<ValueType> const &getXcorrRho() const = 0;
@@ -64,8 +63,7 @@ namespace KITGPI
             /* EM */
             virtual scai::lama::DenseVector<ValueType> const &getXcorrSigmaEM() const = 0;  
             virtual scai::lama::DenseVector<ValueType> const &getXcorrEpsilonEM() const = 0; 
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrRSigmaEM() const = 0;   
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonEM() const = 0;
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigmaEM() const = 0; 
 
           protected:
             /* Common */
@@ -78,6 +76,8 @@ namespace KITGPI
             
             scai::IndexType decomposeType = 0;
             scai::IndexType gradientType = 0;
+            scai::IndexType numRelaxationMechanisms = 0; //!< Number of relaxation mechanisms
+            std::vector<ValueType> relaxationFrequency; 
 
             /* Seismic */
             scai::lama::DenseVector<ValueType> xcorrMuA; //!< correlated Wavefields for the Mu gradient
@@ -100,8 +100,7 @@ namespace KITGPI
             /* EM */
             scai::lama::DenseVector<ValueType> xcorrSigmaEM; //!< correlated Wavefields for the sigma gradient
             scai::lama::DenseVector<ValueType> xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradient
-            scai::lama::DenseVector<ValueType> xcorrRSigmaEM; //!< correlated Wavefields for the rSigma gradient
-            scai::lama::DenseVector<ValueType> xcorrREpsilonEM;    //!< correlated Wavefields for the rEpsilonEM gradient
+            scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEM; //!< correlated Wavefields for the rEpsilonSigma gradient
             scai::lama::DenseVector<ValueType> xcorrSigmaEMstep; //!< correlated Wavefields for the sigma gradient
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMstep; //!< correlated Wavefields for the epsilon gradient
             scai::lama::DenseVector<ValueType> xcorrSigmaEMSuRu;
@@ -112,8 +111,7 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRd;
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSuRd;
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRu;
-            scai::lama::DenseVector<ValueType> xcorrRSigmaEMstep; //!< correlated Wavefields for the rSigma gradient
-            scai::lama::DenseVector<ValueType> xcorrREpsilonEMstep;    //!< correlated Wavefields for the rEpsilonEM gradient
+            scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEMstep; //!< correlated Wavefields for the rEpsilonSigma gradient
         };
     }
 }

@@ -80,7 +80,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::deleteParameterisation(scai::lama:
 
 /*! \brief apply parameterisation to gradient parameters */
 template <typename ValueType>
-void KITGPI::Gradient::GradientEM<ValueType>::gradientParameterisation(scai::lama::DenseVector<ValueType> &vecGradientParameter, scai::lama::DenseVector<ValueType> vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
+void KITGPI::Gradient::GradientEM<ValueType>::gradientParameterisation(scai::lama::DenseVector<ValueType> &vecGradientParameter, scai::lama::Vector<ValueType> const &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
 {     
     scai::lama::DenseVector<ValueType> temp;
     switch (parameterisation) {

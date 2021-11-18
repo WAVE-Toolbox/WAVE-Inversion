@@ -116,20 +116,12 @@ std::string KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::getEquationType
     return (equationType);
 }
 
-//! \brief Getter routine for xcorrRSigmaEM
+//! \brief Getter routine for xcorrREpsilonSigmaEM
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::getXcorrRSigmaEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::getXcorrREpsilonSigmaEM() const
 {
-    COMMON_THROWEXCEPTION("There is no xcorrRSigmaEM in an emem modelling")
-    return (xcorrRSigmaEM);
-}
-
-//! \brief Getter routine for xcorrREpsilonEM
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::getXcorrREpsilonEM() const
-{
-    COMMON_THROWEXCEPTION("There is no xcorrREpsilonEM in an emem modelling")
-    return (xcorrREpsilonEM);
+    COMMON_THROWEXCEPTION("There is no xcorrREpsilonSigmaEM in an emem modelling")
+    return (xcorrREpsilonSigmaEM);
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<double>;

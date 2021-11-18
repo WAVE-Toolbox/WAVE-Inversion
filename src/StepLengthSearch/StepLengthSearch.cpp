@@ -71,8 +71,9 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
 
+    scai::IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
     typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType));
-    wavefields->init(ctx, dist);
+    wavefields->init(ctx, dist, numRelaxationMechanisms);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
     *dataMisfit = currentMisfit;
@@ -165,8 +166,9 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
     int testShotIncr = config.get<int>("testShotIncr");
 
+    scai::IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
     typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefields(KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType));
-    wavefields->init(ctx, dist);
+    wavefields->init(ctx, dist, numRelaxationMechanisms);
 
     typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr dataMisfit(KITGPI::Misfit::Factory<ValueType>::Create(config.get<std::string>("misfitType")));
     *dataMisfit = currentMisfit;

@@ -50,8 +50,7 @@ namespace KITGPI
             /* EM */
             virtual scai::lama::DenseVector<ValueType> const &getXcorrSigmaEM() const override;  
             virtual scai::lama::DenseVector<ValueType> const &getXcorrEpsilonEM() const override; 
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrRSigmaEM() const override;   
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonEM() const override;
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigmaEM() const override;   
 
           protected:
             /* Common */
@@ -82,8 +81,7 @@ namespace KITGPI
             /* EM */
             using ZeroLagXcorr<ValueType>::xcorrSigmaEM; //!< correlated Wavefields for the sigma gradient
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradient
-            using ZeroLagXcorr<ValueType>::xcorrRSigmaEM; //!< correlated Wavefields for the rSigma gradient
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonEM;    //!< correlated Wavefields for the rEpsilonEM gradient
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM; //!< correlated Wavefields for the rSigma gradient
             using ZeroLagXcorr<ValueType>::xcorrSigmaEMstep; //!< correlated Wavefields for the sigma gradient
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep; //!< correlated Wavefields for the epsilon gradient
             using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRu;
@@ -94,8 +92,7 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRd;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRd;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
-            using ZeroLagXcorr<ValueType>::xcorrRSigmaEMstep; //!< correlated Wavefields for the rSigma gradient
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonEMstep;    //!< correlated Wavefields for the rEpsilonEM gradient
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEMstep; //!< correlated Wavefields for the rSigma gradient
         };
     }
 }

@@ -583,6 +583,7 @@ template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    
     scai::lama::DenseVector<ValueType> gradEpsilonEM;
+    scai::lama::DenseVector<ValueType> gradSigmaEM;
     scai::lama::DenseVector<ValueType> temp;     
     
     gradEpsilonEM = DT * correlatedWavefields.getXcorrEpsilonEM();
@@ -591,11 +592,10 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
     scai::dmemo::DistributionPtr dist = gradEpsilonEM.getDistributionPtr();
     
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
-        electricConductivity = DT * correlatedWavefields.getXcorrSigmaEM(); 
+        gradSigmaEM = DT * correlatedWavefields.getXcorrSigmaEM(); 
+        electricConductivity = gradSigmaEM;
         
-        temp = model.getElectricConductivity();
-        ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
-        this->gradientParameterisation(electricConductivity, temp, ElectricConductivityReference, model.getParameterisation());
+        this->gradientParameterisation(electricConductivity, model.getElectricConductivity(), model.getElectricConductivityReference(), model.getParameterisation());
     } else {
         this->initParameterisation(electricConductivity, ctx, dist, 0.0);
     }
@@ -603,9 +603,7 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
     if (workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation() || workflow.getInvertForReflectivity()) {
         dielectricPermittivity = gradEpsilonEM;
         
-        temp = model.getDielectricPermittivity();
-        ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
-        this->gradientParameterisation(dielectricPermittivity, temp, DielectricPermittivityVacuum, model.getParameterisation());
+        this->gradientParameterisation(dielectricPermittivity, model.getDielectricPermittivity(), model.getDielectricPermittivityVacuum(), model.getParameterisation());
     } else {
         this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }
@@ -618,11 +616,11 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
         // Based on complex refractive index model (CRIM)    
         dielectricPermittiviyDePorosity = this->getDielectricPermittiviyDePorosity(model);             
         
-        porosity = dielectricPermittiviyDePorosity * dielectricPermittivity;
+        porosity = dielectricPermittiviyDePorosity * gradEpsilonEM;
         if (model.getParameterisation() == 2) {
             // Based on Archie equation
             conductivityDePorosity = this->getElectricConductivityDePorosity(model);    
-            conductivityDePorosity *= electricConductivity;
+            conductivityDePorosity *= gradSigmaEM;
             porosity += conductivityDePorosity; 
         } 
     } else {
@@ -637,11 +635,11 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
         // Based on complex refractive index model (CRIM)            
         dielectricPermittiviyDeSaturation = this->getDielectricPermittiviyDeSaturation(model);             
         
-        saturation = dielectricPermittiviyDeSaturation * dielectricPermittivity;
+        saturation = dielectricPermittiviyDeSaturation * gradEpsilonEM;
         if (model.getParameterisation() == 2) {
             // Based on Archie equation
             conductivityDeSaturation = this->getElectricConductivityDeSaturation(model); 
-            conductivityDeSaturation *= electricConductivity;
+            conductivityDeSaturation *= gradSigmaEM;
             saturation += conductivityDeSaturation; 
         }           
     } else {
@@ -649,7 +647,7 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
     }  
     
     if (workflow.getInvertForReflectivity()) {
-        reflectivity = -dielectricPermittivity;
+        reflectivity = -gradEpsilonEM;
     } else {
         this->initParameterisation(reflectivity, ctx, dist, 0.0);
     }  

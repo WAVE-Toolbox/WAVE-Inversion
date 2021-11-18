@@ -48,6 +48,7 @@ namespace KITGPI
               
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType; 
+            using ZeroLagXcorr<ValueType>::numRelaxationMechanisms; 
             
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrRho;

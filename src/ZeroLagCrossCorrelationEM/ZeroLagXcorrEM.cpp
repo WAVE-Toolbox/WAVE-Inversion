@@ -16,18 +16,11 @@ scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<V
     return (xcorrEpsilonEM);
 }
 
-//! \brief Getter routine for xcorrRSigmaEM
+//! \brief Getter routine for xcorrREpsilonSigmaEM
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrRSigmaEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrREpsilonSigmaEM() const
 {
-    return (xcorrRSigmaEM);
-}
-
-//! \brief Getter routine for xcorrREpsilonEM
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrREpsilonEM() const
-{
-    return (xcorrREpsilonEM);
+    return (xcorrREpsilonSigmaEM);
 }
 
 

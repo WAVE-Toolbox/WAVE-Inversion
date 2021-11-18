@@ -11,22 +11,30 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::resetWavefield(scai::lama::D
     vector = 0;
 }
 
-/*! \brief set decomposeType
- \param setDecomposeType setDecomposeType
- */
-template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::setDecomposeType(scai::IndexType setDecomposeType)
-{
-    decomposeType = setDecomposeType;
-}
-
-/*! \brief set gradientType
+/*! \brief prepare for inversion
  \param setGradientType setGradientType
+ \param config Configuration
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::setGradientType(scai::IndexType setGradientType)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::prepareForInversion(scai::IndexType setGradientType, KITGPI::Configuration::Configuration config)
 {
     gradientType = setGradientType;
+    decomposeType = config.getAndCatch("decomposeType", 0);
+    numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
+    if (numRelaxationMechanisms > 0) {
+        std::vector<ValueType> relaxationFrequency_in(numRelaxationMechanisms, 0);
+        for (int l=0; l<numRelaxationMechanisms; l++) {
+            if (l==0)
+                relaxationFrequency_in[l] = config.get<ValueType>("relaxationFrequency");
+            if (l==1)
+                relaxationFrequency_in[l] = config.get<ValueType>("relaxationFrequency2");
+            if (l==2)
+                relaxationFrequency_in[l] = config.get<ValueType>("relaxationFrequency3");
+            if (l==3)
+                relaxationFrequency_in[l] = config.get<ValueType>("relaxationFrequency4");
+        }
+        relaxationFrequency = relaxationFrequency_in;
+    }
 }
 
 /*! \brief Intitialisation of a single wavefield vector.

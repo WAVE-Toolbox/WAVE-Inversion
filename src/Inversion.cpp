@@ -110,14 +110,14 @@ int main(int argc, char *argv[])
     /* exchangeStrategy: 0 = self-restraint, 1 = self-restraint + mutual restraint (single parameter), 2 = self-restraint + mutual restraint (all parameters), 3 = self-restraint + mutual restraint + staged exchange, 4 = self-restraint + mutual restraint + sequential exchange, 5 = mutual restraint + staged exchange, 6 = mutual restraint + sequential exchange. */
     IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
     IndexType exchangeStrategyEM = configEM.get<IndexType>("exchangeStrategy");
-    SCAI_ASSERT_ERROR(exchangeStrategy == exchangeStrategyEM, "exchangeStrategy != exchangeStrategyEM"); // check whether exchangeStrategy has been applied sucessfully.
+    SCAI_ASSERT_ERROR(exchangeStrategy == exchangeStrategyEM, "exchangeStrategy != exchangeStrategyEM"); // check whether exchangeStrategy has been applied successfully.
         
     /*breakLoop: 0 = break iteration loop of which the abort criterion is true while do not influence another one. 0 is the same as individual inversion. 1 = break iteration loop if one of the two abort criterion is true. 2 = break iteration loop if both the two abort criterion is true. */
     IndexType breakLoopType = config.get<IndexType>("breakLoopType"); 
     IndexType breakLoopTypeEM = configEM.get<IndexType>("breakLoopType");
-    SCAI_ASSERT_ERROR(breakLoopType == breakLoopTypeEM, "breakLoopType != breakLoopTypeEM"); // check whether breakLoopType has been applied sucessfully.
+    SCAI_ASSERT_ERROR(breakLoopType == breakLoopTypeEM, "breakLoopType != breakLoopTypeEM"); // check whether breakLoopType has been applied successfully.
     if (inversionType == 1 || inversionTypeEM == 1 || exchangeStrategy > 2) {
-        SCAI_ASSERT_ERROR(breakLoopType == 0, "breakLoopType != 0"); // check whether breakLoopType has been applied sucessfully.
+        SCAI_ASSERT_ERROR(breakLoopType == 0, "breakLoopType != 0"); // check whether breakLoopType has been applied successfully.
     }
     if (inversionType == 4 && inversionTypeEM == 4) {
         SCAI_ASSERT_ERROR(isSeismic == isSeismicEM, "isSeismic != isSeismicEM");
@@ -293,11 +293,13 @@ int main(int argc, char *argv[])
     IndexType dtinversionEM = configEM.get<IndexType>("DTInversion");
     IndexType numShotDomains = config.get<IndexType>("NumShotDomains"); // total number of shot domains
     IndexType numShotDomainsEM = configEM.get<IndexType>("NumShotDomains");
+    IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
+    IndexType numRelaxationMechanismsEM = configEM.get<IndexType>("numRelaxationMechanisms");
     Common::checkNumShotDomains(numShotDomains, commAll);
     Common::checkNumShotDomains(numShotDomainsEM, commAll);
     if (inversionType != 0) {
         ValueType memDerivatives = derivatives->estimateMemory(config, dist, modelCoordinates);
-        ValueType memWavefileds = wavefields->estimateMemory(dist);
+        ValueType memWavefileds = wavefields->estimateMemory(dist, numRelaxationMechanisms);
         ValueType memWavefiledsStorage;
         if (dimension.compare("3d") == 0) {
             memWavefiledsStorage = memWavefileds* (int) (tStepEnd / dtinversion) / pow(config.get<IndexType>("DHInversion"), 3);
@@ -322,7 +324,7 @@ int main(int argc, char *argv[])
     }    
     if (inversionTypeEM != 0) {
         ValueType memDerivativesEM = derivativesEM->estimateMemory(configEM, distEM, modelCoordinatesEM);
-        ValueType memWavefiledsEM = wavefieldsEM->estimateMemory(distEM);
+        ValueType memWavefiledsEM = wavefieldsEM->estimateMemory(distEM, numRelaxationMechanismsEM);
         ValueType memWavefiledsStorageEM;
         if (dimensionEM.compare("3d") == 0) {
             memWavefiledsStorageEM = memWavefiledsEM* (int) (tStepEndEM / dtinversionEM) / pow(configEM.get<IndexType>("DHInversion"), 3);
@@ -406,9 +408,9 @@ int main(int argc, char *argv[])
     //Temporary Wavefield for the derivative of the forward wavefields
     wavefieldPtr wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
     if (inversionType != 0) {
-        wavefields->init(ctx, dist);
+        wavefields->init(ctx, dist, numRelaxationMechanisms);
         if (gradientType > 1 && decomposeType == 0)
-            wavefieldsTemp->init(ctx, dist);
+            wavefieldsTemp->init(ctx, dist, numRelaxationMechanisms);
         if (gradientType > 1 && decomposeType != 0)
             snapType = decomposeType + 3;
     }
@@ -416,9 +418,9 @@ int main(int argc, char *argv[])
     //Temporary Wavefield for the derivative of the forward wavefields
     wavefieldPtr wavefieldsTempEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
     if (inversionTypeEM != 0) {
-        wavefieldsEM->init(ctx, distEM);
+        wavefieldsEM->init(ctx, distEM, numRelaxationMechanismsEM);
         if (gradientTypeEM > 1 && decomposeTypeEM == 0)
-            wavefieldsTempEM->init(ctx, distEM);
+            wavefieldsTempEM->init(ctx, distEM, numRelaxationMechanismsEM);
         if (gradientTypeEM > 1 && decomposeTypeEM != 0)
             snapTypeEM = decomposeTypeEM + 3;
     }
@@ -436,7 +438,7 @@ int main(int argc, char *argv[])
             if (tStep % dtinversion == 0) {
                 // Only the local shared_ptr can be used to initialize a std::vector
                 wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
-                wavefieldsInversion->init(ctx, distInversion);
+                wavefieldsInversion->init(ctx, distInversion, numRelaxationMechanisms);
                 wavefieldrecord.push_back(wavefieldsInversion);
             }
         }
@@ -444,7 +446,7 @@ int main(int argc, char *argv[])
             for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                 if (tStep % dtinversion == 0) {
                     wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
-                    wavefieldsInversion->init(ctx, distInversion);
+                    wavefieldsInversion->init(ctx, distInversion, numRelaxationMechanisms);
                     wavefieldrecordReflect.push_back(wavefieldsInversion);
                 }
             }
@@ -454,7 +456,7 @@ int main(int argc, char *argv[])
         for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
             if (tStep % dtinversionEM == 0) {
                 wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
-                wavefieldsInversionEM->init(ctx, distInversionEM);
+                wavefieldsInversionEM->init(ctx, distInversionEM, numRelaxationMechanismsEM);
                 wavefieldrecordEM.push_back(wavefieldsInversionEM);
             }
         }
@@ -462,7 +464,7 @@ int main(int argc, char *argv[])
             for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
                 if (tStep % dtinversionEM == 0) {
                     wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
-                    wavefieldsInversionEM->init(ctx, distInversionEM);
+                    wavefieldsInversionEM->init(ctx, distInversionEM, numRelaxationMechanismsEM);
                     wavefieldrecordReflectEM.push_back(wavefieldsInversionEM);
                 }
             }
@@ -513,7 +515,7 @@ int main(int argc, char *argv[])
         SCAI_ASSERT_ERROR(numshots >= numShotDomains, "numshots < numShotDomains");
         if (useStreamConfig) {
             numCuts = cutCoordinates.size();
-            SCAI_ASSERT_ERROR(numshots == numCuts, "numshots != numCuts"); // check whether mdel pershot has been applied sucessfully.
+            SCAI_ASSERT_ERROR(numshots == numCuts, "numshots != numCuts"); // check whether model pershot has been applied successfully.
             Acquisition::writeCutCoordToFile(config.get<std::string>("cutCoordinatesFilename"), cutCoordinates, uniqueShotNos);        
         }
         if (config.getAndCatch("useRandomSource", 0) != 0) {  
@@ -548,7 +550,7 @@ int main(int argc, char *argv[])
         SCAI_ASSERT_ERROR(numshotsEM >= numShotDomainsEM, "numshotsEM < numShotDomainsEM");
         if (useStreamConfigEM) {
             numCutsEM = cutCoordinatesEM.size();
-            SCAI_ASSERT_ERROR(numshotsEM == numCutsEM, "numshotsEM != numCutsEM"); // check whether mdel pershot has been applied sucessfully.
+            SCAI_ASSERT_ERROR(numshotsEM == numCutsEM, "numshotsEM != numCutsEM"); // check whether model pershot has been applied successfully.
             Acquisition::writeCutCoordToFile(configEM.get<std::string>("cutCoordinatesFilename"), cutCoordinatesEM, uniqueShotNosEM);        
         }    
         if (configEM.getAndCatch("useRandomSource", 0) != 0) {  

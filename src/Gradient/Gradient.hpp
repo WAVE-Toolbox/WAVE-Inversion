@@ -182,7 +182,7 @@ namespace KITGPI
             virtual void applyParameterisation(ValueType &modelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation) = 0;
             virtual void applyParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation) = 0;
             virtual void deleteParameterisation(scai::lama::DenseVector<ValueType> &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation) = 0;
-            virtual void gradientParameterisation(scai::lama::DenseVector<ValueType> &vecGradientParameter, scai::lama::DenseVector<ValueType> vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation) = 0;
+            virtual void gradientParameterisation(scai::lama::DenseVector<ValueType> &vecGradientParameter, scai::lama::Vector<ValueType> const &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation) = 0;
             virtual scai::lama::DenseVector<ValueType> getElectricConductivityDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model) = 0;
             virtual scai::lama::DenseVector<ValueType> getDielectricPermittiviyDePorosity(KITGPI::Modelparameter::Modelparameter<ValueType> const &model) = 0;
             virtual scai::lama::DenseVector<ValueType> getElectricConductivityDeSaturation(KITGPI::Modelparameter::Modelparameter<ValueType> const &model) = 0;

@@ -464,10 +464,11 @@ void KITGPI::Taper::Taper2D<ValueType>::initWavefieldAverageMatrix(KITGPI::Confi
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
     
+    scai::IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
     wavefieldsInversion = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
     wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-    wavefieldsInversion->init(ctx, distInversion);
-    wavefields->init(ctx, dist);
+    wavefieldsInversion->init(ctx, distInversion, numRelaxationMechanisms);
+    wavefields->init(ctx, dist, numRelaxationMechanisms);
 }
 
 /*! \brief calculate a matrix for averaging inversion

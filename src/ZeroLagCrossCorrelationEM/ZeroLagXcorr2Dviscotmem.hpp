@@ -50,12 +50,14 @@ namespace KITGPI
               
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType;
+            using ZeroLagXcorr<ValueType>::numRelaxationMechanisms; 
+            using ZeroLagXcorr<ValueType>::relaxationFrequency; 
+            std::vector<ValueType> relaxationTime; 
             
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrSigmaEM;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEM;
-            using ZeroLagXcorr<ValueType>::xcorrRSigmaEM;
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonEM;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;
             
             /* non required wavefields */
             

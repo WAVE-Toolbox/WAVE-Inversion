@@ -317,7 +317,7 @@ void KITGPI::Gradient::GradientSeismic<ValueType>::deleteParameterisation(scai::
 
 /*! \brief apply parameterisation to gradient parameters */
 template <typename ValueType>
-void KITGPI::Gradient::GradientSeismic<ValueType>::gradientParameterisation(scai::lama::DenseVector<ValueType> &vecGradientParameter, scai::lama::DenseVector<ValueType> vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
+void KITGPI::Gradient::GradientSeismic<ValueType>::gradientParameterisation(scai::lama::DenseVector<ValueType> &vecGradientParameter, scai::lama::Vector<ValueType> const &vecModelParameter, ValueType const modelParameterReference, scai::IndexType parameterisation)
 {     
     COMMON_THROWEXCEPTION("There is no gradientParameterisation in the GradientSeismic.")
 }

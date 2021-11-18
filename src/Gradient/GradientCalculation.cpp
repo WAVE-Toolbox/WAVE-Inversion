@@ -19,10 +19,11 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
     std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);
 
+    scai::IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
     wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-    wavefields->init(ctx, dist);
+    wavefields->init(ctx, dist, numRelaxationMechanisms);
     wavefieldsTemp = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-    wavefieldsTemp->init(ctx, dist);
+    wavefieldsTemp->init(ctx, dist, numRelaxationMechanisms);
 
     ZeroLagXcorr = KITGPI::ZeroLagXcorr::Factory<ValueType>::Create(dimension, equationType);
 }
@@ -93,8 +94,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     
     energyPrecond.init(dist, config);
     wavefields->resetWavefields();
-    ZeroLagXcorr->setDecomposeType(decomposeType);
-    ZeroLagXcorr->setGradientType(gradientType);
+    ZeroLagXcorr->prepareForInversion(gradientType, config);
     ZeroLagXcorr->init(ctx, dist, workflow);
     
     /* --------------------------------------- */
@@ -117,10 +117,11 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
                 distInversion = wavefieldrecord[0]->getRefEX().getDistributionPtr();        
             }  
         }
+        scai::IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
         for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
             if (tStep % dtinversion == 0) {
                 wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
-                wavefieldsInversion->init(ctx, distInversion);
+                wavefieldsInversion->init(ctx, distInversion, numRelaxationMechanisms);
                 wavefieldrecordAdjointReflect.push_back(wavefieldsInversion);
             }
         }
