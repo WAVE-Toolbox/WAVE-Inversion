@@ -108,7 +108,6 @@ ValueType KITGPI::Misfit::Misfit<ValueType>::getMisfitShot(int iteration, int sh
 template <typename ValueType>
 void KITGPI::Misfit::Misfit<ValueType>::addToStorage(scai::lama::DenseVector<ValueType> vector)
 {
-//     std::cout<< "vector[0] = " << vector[0] <<std::endl;
     this->misfitStorage.push_back(vector);
 }
 
@@ -119,11 +118,10 @@ void KITGPI::Misfit::Misfit<ValueType>::addToStorage(scai::lama::DenseVector<Val
 template <typename ValueType>
 void KITGPI::Misfit::Misfit<ValueType>::addToCrossGradientMisfitStorage(ValueType crossGradientMisfit)
 {
-//     std::cout<< "crossGradientMisfit = " << crossGradientMisfit <<std::endl;
     this->crossGradientMisfitStorage.push_back(crossGradientMisfit);
 }
 
-/*! \brief Clear the crossGradientMisfit storage 
+/*! \brief get the crossGradientMisfit at iteration
  *
  */
 template <typename ValueType>
