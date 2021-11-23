@@ -883,10 +883,13 @@ int main(int argc, char *argv[])
     for (workflow.workflowStage = 0; workflow.workflowStage < workflow.maxStage; workflow.workflowStage++) {
         bool breakLoopLast = breakLoop;
         bool breakLoopLastEM = breakLoopEM;
-        if (inversionType != 0 && breakLoop == false) {
+        if (inversionType != 0 && (breakLoop == false || breakLoopType == 2)) {
             if (exchangeStrategy == 4 || exchangeStrategy == 6)
                 breakLoopEM = true;
-            
+    
+            HOST_PRINT(commAll, "\nChange workflow stage " << equationType << " 1\n");
+            workflow.changeStage(config, *dataMisfit, steplengthInit);
+                   
             workflow.printParameters(commAll);
 
             gradientCalculation.allocate(config, dist, ctx, workflow);
@@ -900,8 +903,12 @@ int main(int argc, char *argv[])
                 freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());            
         }
         
-        if (inversionTypeEM != 0 && breakLoopEM == false) {
+        if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2)) {
             workflowEM.workflowStage = workflow.workflowStage;
+    
+            HOST_PRINT(commAll, "\nChange workflow stage " << equationTypeEM << " 2\n");
+            workflowEM.changeStage(configEM, *dataMisfitEM, steplengthInitEM);
+                
             workflowEM.printParameters(commAll);
 
             gradientCalculationEM.allocate(configEM, distEM, ctx, workflowEM);
@@ -1419,7 +1426,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */              
                 HOST_PRINT(commAll, "\n========== Check abort criteria " << equationType << " 1 ==========\n"); 
                 breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
-                // We set a new break condition so that two inversions can change stage simutanously in joint inversion
+                // We set a new break condition so that two inversions can change stage simultaneously in joint inversion
                 if (breakLoop == true) {                 
                     if (inversionType > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) { 
                         if (inversionType == 3) {
@@ -1668,11 +1675,6 @@ int main(int argc, char *argv[])
                 dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
                 dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
 
-                if (workflow.workflowStage != workflow.maxStage - 1) {
-                    HOST_PRINT(commAll, "\nChange workflow stage " << equationType << " 1\n");
-                    workflow.changeStage(config, *dataMisfit, steplengthInit);
-                }
-                   
                 if (breakLoopType == 0 && breakLoopEM == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     breakLoop = true;
                     breakLoopEM = false;
@@ -2170,7 +2172,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */   
                 HOST_PRINT(commAll, "\n========== Check abort criteria " << equationTypeEM << " 2 ==========\n"); 
                 breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
-                // We set a new break condition so that two inversions can change stage simutanously in joint inversion
+                // We set a new break condition so that two inversions can change stage simultaneously in joint inversion
                 if (breakLoopEM == true) {   
                     if (inversionTypeEM > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) {
                         if (inversionTypeEM == 3) {
@@ -2188,19 +2190,9 @@ int main(int argc, char *argv[])
                         } 
                     }   
                     if (breakLoopType == 1) {
-                        if (breakLoop == false) {
-                            if(workflow.workflowStage != workflow.maxStage-1) {
-                                HOST_PRINT(commAll, "\nChange workflow stage " << equationType << " 1\n");
-                                workflow.changeStage(config, *dataMisfit, steplengthInit);                
-                            }
-                        }
                         break;  
                     } else if (breakLoopType == 2) {
                         if (breakLoop == true) {
-                            if(workflow.workflowStage != workflow.maxStage-1) {
-                                HOST_PRINT(commAll, "\nChange workflow stage " << equationType << " 1\n");
-                                workflow.changeStage(config, *dataMisfit, steplengthInit);                
-                            }
                             break; 
                         } else {
                             breakLoopEM = false;
@@ -2450,14 +2442,9 @@ int main(int argc, char *argv[])
                 dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
                 dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
 
-                if (workflowEM.workflowStage != workflowEM.maxStage - 1) {
-                    HOST_PRINT(commAll, "\nChange workflow stage " << equationTypeEM << " 2\n");
-                    workflowEM.changeStage(configEM, *dataMisfitEM, steplengthInitEM);
-                }
-                
                 if (breakLoopType == 0 && breakLoop == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     breakLoopEM = true;
-                }         
+                }
             } // end extra EM forward modelling
         } // end of loop over iterations 
     
@@ -2506,7 +2493,6 @@ int main(int argc, char *argv[])
                     
                     SLsearch.initLogFile(commAll, logFilename, misfitType, config.getAndCatch("steplengthType", 2), workflow.getInvertForParameters().size(), config.getAndCatch("saveCrossGradientMisfit", 0));
                     HOST_PRINT(commAll, "\nChange workflow stage from " << equationTypeEM << " 2 to " << equationType << " 1\n");
-                    dataMisfit->clearStorage();
                 }
             } 
             if ((inversionType == 3 && stageCount < 2) || (inversionType == 4 && stageCount < 3)) {

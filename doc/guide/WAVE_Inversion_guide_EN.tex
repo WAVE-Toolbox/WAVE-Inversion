@@ -470,8 +470,8 @@ The gradient of the objective function $\Phi_1(\mathbf{m})$ with respect to elas
  \pdv{\Phi_1}{\lambda}&=\pdv{A}{\lambda}\int_T  \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right) \left(\sigma_{1xx}+\sigma_{1yy}+\sigma_{1zz}\right)  dt\\
  \pdv{\Phi_1}{\mu}&=\int_T \left\{\pdv{A}{\mu}\left(\pdv{\sigma_{xx}}{t}\sigma_{1xx}+\pdv{\sigma_{yy}}{t}\sigma_{1yy}+\pdv{\sigma_{zz}}{t}\sigma_{1zz}\right)\right. \\
  &+ \pdv{B}{\mu} \left[\left(\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1xx}
- + \pdv{B}{\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1yy}
-  + \pdv{B}{\mu} \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}\right)\sigma_{1zz}\right]\\
+ + \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1yy}
+  + \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}\right)\sigma_{1zz}\right]\\
   &-\left.\frac{1}{\mu^2}\left(\pdv{\sigma_{xy}}{t}\sigma_{1xy}+\pdv{\sigma_{yz}}{t}\sigma_{1yz}+\pdv{\sigma_{xz}}{t}\sigma_{1xz}\right)\right\} dt
 \end{align}
 with:

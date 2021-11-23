@@ -41,7 +41,7 @@ void KITGPI::Workflow::Workflow<ValueType>::init(KITGPI::Configuration::Configur
 template <typename ValueType>
 void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType &steplengthInit)
 {
-    skipCount += 1;
+    skipCount = workflowStage;
     readFromFile(config.get<std::string>("workflowFilename"));
     
     dataMisfit.clearStorage();

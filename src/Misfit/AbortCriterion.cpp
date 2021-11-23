@@ -39,13 +39,7 @@ bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm,
         }        
         if (breakLoopType == 1 && breakLoopEM == true) {
             breakLoop = true;
-        }
-        if ((breakLoopType != 2 && breakLoop == true) || (breakLoopType == 2 && breakLoop == true && breakLoopEM == true)) {
-            if(workflow.workflowStage != workflow.maxStage-1) {
-                HOST_PRINT(comm, "\nChange workflow stage\n");
-                workflow.changeStage(config, misfit, steplengthInit);                
-            }                
-        }        
+        }      
     }    
     return breakLoop;    
 }

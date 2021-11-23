@@ -26,6 +26,7 @@ void KITGPI::GradientCalculation<ValueType>::allocate(KITGPI::Configuration::Con
     wavefieldsTemp->init(ctx, dist, numRelaxationMechanisms);
 
     ZeroLagXcorr = KITGPI::ZeroLagXcorr::Factory<ValueType>::Create(dimension, equationType);
+    energyPrecond.init(dist, config);
 }
 
 /*! \brief Initialitation of the boundary conditions
@@ -92,7 +93,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         snapType = decomposeType + 3;
     }  
     
-    energyPrecond.init(dist, config);
+    energyPrecond.resetApproxHessian();
     wavefields->resetWavefields();
     ZeroLagXcorr->prepareForInversion(gradientType, config);
     ZeroLagXcorr->init(ctx, dist, workflow);
@@ -235,7 +236,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         scai::lama::DenseVector<ValueType> reflectivity;
         reflectivity = model.getReflectivity();
         dataMisfit.calcReflectSources(adjointSourcesReflect, reflectivity);
-        energyPrecond.init(dist, config);
+        energyPrecond.resetApproxHessian();
         wavefields->resetWavefields();
         ZeroLagXcorr->resetXcorr(workflow);
         for (IndexType tStep = tStepEnd - 1; tStep > 0; tStep--) {
