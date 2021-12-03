@@ -33,7 +33,8 @@ namespace KITGPI
             void init(KITGPI::Configuration::Configuration config);
             void changeStage(KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType &steplengthInit);
             void readFromFile(std::string workflowFilename);
-            void printParameters(scai::dmemo::CommunicatorPtr comm);
+            void printParameters(scai::dmemo::CommunicatorPtr comm) const;
+            void printInvertForParameters(scai::dmemo::CommunicatorPtr comm) const;
             
             bool getInvertForVp() const;
             bool getInvertForVs() const;

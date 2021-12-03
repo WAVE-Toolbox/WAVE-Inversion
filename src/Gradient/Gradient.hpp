@@ -117,6 +117,7 @@ namespace KITGPI
 
             virtual void setInvertForParameters(std::vector<bool> setInvertForParameters) = 0;
             std::vector<bool> getInvertForParameters();
+            void printInvertForParameters(scai::dmemo::CommunicatorPtr comm);
             
             /* Operator overloading */
             /*lhs Base rhs Base */

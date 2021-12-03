@@ -351,33 +351,112 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::minusAssign(KITGPI::Modelparameter:
         ValueType const TauDielectricPermittivityReference = lhs.getTauDielectricPermittivityReference();     
         ValueType const TauElectricConductivityReference = lhs.getTauElectricConductivityReference(); 
         
-        if (workflowInner.getInvertForSigmaEM()) {
-            electricConductivitytemp = lhs.getElectricConductivity();  
-            this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 
-            electricConductivitytemp -= rhs.getElectricConductivity();    
-            this->deleteParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation());  
-            lhs.setElectricConductivity(electricConductivitytemp);
+        if (workflowInner.getInvertForSigmaEM()) {       
+            scai::lama::DenseVector<ValueType> dielectricPermittivityRealEffective; 
+            if (lhs.getParameterisation() != 0) {
+                dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
+                
+                electricConductivitytemp = lhs.getElectricConductivityRealEffective();  
+                this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 
+                electricConductivitytemp -= rhs.getElectricConductivity();    
+                this->deleteParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 
+                
+                IndexType calculateType = 2;
+                scai::lama::DenseVector<ValueType> electricConductivityStatic = lhs.getElectricConductivityStatic(dielectricPermittivityRealEffective, electricConductivitytemp, calculateType); 
+                lhs.setElectricConductivity(electricConductivityStatic);
+            } else {
+                if (!workflowInner.getInvertForEpsilonEM())
+                    dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
+                
+                electricConductivitytemp = lhs.getElectricConductivity();  
+                this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 
+                electricConductivitytemp -= rhs.getElectricConductivity();    
+                this->deleteParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 
+                lhs.setElectricConductivity(electricConductivitytemp);
+                
+                if (!workflowInner.getInvertForEpsilonEM()) {     
+                    IndexType calculateType = 1;
+                    scai::lama::DenseVector<ValueType> dielectricPermittivityStatic = lhs.getDielectricPermittivityStatic(dielectricPermittivityRealEffective, electricConductivitytemp, calculateType); 
+                    lhs.setDielectricPermittivity(dielectricPermittivityStatic);
+                }
+            }
         }
         if (workflowInner.getInvertForEpsilonEM()) {
-            dielectricPermittivitytemp = lhs.getDielectricPermittivity(); 
-            this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());  
-            dielectricPermittivitytemp -= rhs.getDielectricPermittivity(); 
-            this->deleteParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());
-            lhs.setDielectricPermittivity(dielectricPermittivitytemp);
+            scai::lama::DenseVector<ValueType> electricConductivityRealEffective; 
+            if (lhs.getParameterisation() != 0) { 
+                electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
+                
+                dielectricPermittivitytemp = lhs.getDielectricPermittivityRealEffective(); 
+                this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());  
+                dielectricPermittivitytemp -= rhs.getDielectricPermittivity(); 
+                this->deleteParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());
+                
+                IndexType calculateType = 2;
+                scai::lama::DenseVector<ValueType> dielectricPermittivityStatic = lhs.getDielectricPermittivityStatic(dielectricPermittivitytemp, electricConductivityRealEffective, calculateType); 
+                lhs.setDielectricPermittivity(dielectricPermittivityStatic);
+            } else {
+                if (!workflowInner.getInvertForSigmaEM())
+                    electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
+                
+                dielectricPermittivitytemp = lhs.getDielectricPermittivity(); 
+                this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());  
+                dielectricPermittivitytemp -= rhs.getDielectricPermittivity(); 
+                this->deleteParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());
+                lhs.setDielectricPermittivity(dielectricPermittivitytemp);
+                
+                if (!workflowInner.getInvertForSigmaEM()) {    
+                    IndexType calculateType = 1;
+                    scai::lama::DenseVector<ValueType> electricConductivityStatic = lhs.getElectricConductivityStatic(dielectricPermittivitytemp, electricConductivityRealEffective, calculateType); 
+                    lhs.setElectricConductivity(electricConductivityStatic);
+                }
+            }
         }
         if (workflowInner.getInvertForTauSigmaEM()) {
+//             scai::lama::DenseVector<ValueType> dielectricPermittivityRealEffective; 
+//             scai::lama::DenseVector<ValueType> electricConductivityRealEffective;   
+//             if (!workflowInner.getInvertForEpsilonEM() && workflowInner.getInvertForSigmaEM()) {
+//                 dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
+//             } 
+            
             tauElectricConductivitytemp = lhs.getTauElectricConductivity();  
             this->applyParameterisation(tauElectricConductivitytemp, TauElectricConductivityReference, lhs.getParameterisation());  
             tauElectricConductivitytemp -= rhs.getTauElectricConductivity();  
             this->deleteParameterisation(tauElectricConductivitytemp, TauElectricConductivityReference, lhs.getParameterisation()); 
             lhs.setTauElectricConductivity(tauElectricConductivitytemp);
+                        
+//             if (!workflowInner.getInvertForEpsilonEM() && workflowInner.getInvertForSigmaEM()) {   
+//                 IndexType calculateType = 2;
+//                 electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
+//                 scai::lama::DenseVector<ValueType> dielectricPermittivityStatic = lhs.getDielectricPermittivityStatic(dielectricPermittivityRealEffective, electricConductivityRealEffective, calculateType); 
+//                 lhs.setDielectricPermittivity(dielectricPermittivityStatic);
+//             } 
         }
         if (workflowInner.getInvertForTauEpsilonEM()) {
+            scai::lama::DenseVector<ValueType> dielectricPermittivityRealEffective; 
+            scai::lama::DenseVector<ValueType> electricConductivityRealEffective;  
+            if (!workflowInner.getInvertForEpsilonEM() && workflowInner.getInvertForSigmaEM()) {  
+                dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
+            } else if (!workflowInner.getInvertForSigmaEM() && workflowInner.getInvertForEpsilonEM()) {
+                electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
+            }
+            
             tauDielectricPermittivitytemp = lhs.getTauDielectricPermittivity();          
             this->applyParameterisation(tauDielectricPermittivitytemp, TauDielectricPermittivityReference, lhs.getParameterisation());                  
             tauDielectricPermittivitytemp -= rhs.getTauDielectricPermittivity();                    
             this->deleteParameterisation(tauDielectricPermittivitytemp, TauDielectricPermittivityReference, lhs.getParameterisation());         
             lhs.setTauDielectricPermittivity(tauDielectricPermittivitytemp);
+                        
+            if (!workflowInner.getInvertForEpsilonEM() && workflowInner.getInvertForSigmaEM()) {     
+                IndexType calculateType = 2;
+                electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
+                scai::lama::DenseVector<ValueType> dielectricPermittivityStatic = lhs.getDielectricPermittivityStatic(dielectricPermittivityRealEffective, electricConductivityRealEffective, calculateType); 
+                lhs.setDielectricPermittivity(dielectricPermittivityStatic);
+            } else if (!workflowInner.getInvertForSigmaEM() && workflowInner.getInvertForEpsilonEM()) {
+                IndexType calculateType = 2;
+                dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
+                scai::lama::DenseVector<ValueType> electricConductivityStatic = lhs.getElectricConductivityStatic(dielectricPermittivityRealEffective, electricConductivityRealEffective, calculateType); 
+                lhs.setElectricConductivity(electricConductivityStatic);
+            }
         }
     }
 };
@@ -503,7 +582,11 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::scale(KITGPI::Modelparameter::Model
     IndexType scaleGradient = config.get<IndexType>("scaleGradient");
     if (workflow.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {  
         if (scaleGradient == 1) {
-            maxValue = model.getElectricConductivity().maxNorm();
+            if (model.getParameterisation() != 0) {
+                maxValue = model.getElectricConductivityRealEffective().maxNorm();
+            } else {
+                maxValue = model.getElectricConductivity().maxNorm();
+            }
         } else if (scaleGradient == 2) {
             maxValue = config.get<ValueType>("upperSigmaEMTh") - config.get<ValueType>("lowerSigmaEMTh");
         }
@@ -513,7 +596,11 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::scale(KITGPI::Modelparameter::Model
     
     if (workflow.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
         if (scaleGradient == 1) {
-            maxValue = model.getDielectricPermittivity().maxNorm();
+            if (model.getParameterisation() != 0) {
+                maxValue = model.getDielectricPermittivityRealEffective().maxNorm();
+            } else {
+                maxValue = model.getDielectricPermittivity().maxNorm();
+            }
         } else if (scaleGradient == 2) {
             maxValue = (config.get<ValueType>("upperEpsilonEMrTh") - config.get<ValueType>("lowerEpsilonEMrTh")) * DielectricPermittivityVacuum;
         }      
@@ -629,11 +716,22 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::normalize()
 template <typename ValueType>
 void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    
-    scai::lama::DenseVector<ValueType> gradEpsilonEMeffectiveOptical;
-    scai::lama::DenseVector<ValueType> gradSigmaEMeffectiveOptical;
-    scai::lama::DenseVector<ValueType> gradEpsilonEMstatic;
+    scai::lama::DenseVector<ValueType> gradEpsilonEffectiveOptical;
+    scai::lama::DenseVector<ValueType> gradSigmaEffectiveOptical;
+    scai::lama::DenseVector<ValueType> gradEpsilonStatic;
     scai::lama::DenseVector<ValueType> gradTauEpsilonEM;
-    scai::lama::DenseVector<ValueType> temp;     
+    scai::lama::DenseVector<ValueType> gradEpsilonStatic1;
+    scai::lama::DenseVector<ValueType> gradSigmaStatic;
+    scai::lama::DenseVector<ValueType> gradTauEpsilonEM1;
+    scai::lama::DenseVector<ValueType> gradTauSigmaEM;
+    scai::lama::DenseVector<ValueType> gradEpsilonEffective;
+    scai::lama::DenseVector<ValueType> gradSigmaEffective;
+    scai::lama::DenseVector<ValueType> gradTauEpsilonEM2;
+    scai::lama::DenseVector<ValueType> gradTauSigmaEM1;
+    scai::lama::DenseVector<ValueType> temp; 
+    scai::lama::DenseVector<ValueType> a_temp;
+    scai::lama::DenseVector<ValueType> b_temp;  
+    scai::lama::DenseVector<ValueType> c_temp;     
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum(); 
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();    
     ValueType const TauDielectricPermittivityReference = model.getTauDielectricPermittivityReference();      
@@ -641,80 +739,152 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
     ValueType w_average = 0;
     IndexType numRelaxationMechanisms = model.getNumRelaxationMechanisms();
     std::vector<ValueType> relaxationTime;          // = 1 / ( 2 * Pi * f_relax )
+    ValueType a_average = 0;
+    ValueType b_average = 0;
+    ValueType w_ref = 2.0 * M_PI * model.getCenterFrequencyCPML();
     for (int l=0; l<numRelaxationMechanisms; l++) {
         relaxationTime.push_back(1.0 / (2.0 * M_PI * model.getRelaxationFrequency()[l])); // = 1 / ( 2 * Pi * f_relax )
+        w_average += 1.0 / relaxationTime[l];
+        a_average += (w_ref * w_ref * relaxationTime[l] * relaxationTime[l] / (1 + w_ref * w_ref * relaxationTime[l] * relaxationTime[l]));
+        b_average += (w_ref * w_ref * relaxationTime[l] / (1 + w_ref * w_ref * relaxationTime[l] * relaxationTime[l]));
     }
+    w_average /= numRelaxationMechanisms;
+    a_average /= numRelaxationMechanisms;
+    b_average /= numRelaxationMechanisms;
+    a_temp = a_average * model.getTauDielectricPermittivity();
+    a_temp = 1 - a_temp;
+    b_temp = b_average * model.getTauDielectricPermittivity();
+    c_temp = b_average * model.getTauElectricConductivity();
+    c_temp = a_temp - c_temp;
+    c_temp = 1.0 / c_temp;
+
+    gradEpsilonEffectiveOptical = DT * correlatedWavefields.getXcorrEpsilonEM();
     
-    gradEpsilonEMeffectiveOptical = DT * correlatedWavefields.getXcorrEpsilonEM();
+    scai::hmemo::ContextPtr ctx = gradEpsilonEffectiveOptical.getContextPtr();
+    scai::dmemo::DistributionPtr dist = gradEpsilonEffectiveOptical.getDistributionPtr();
     
-    scai::hmemo::ContextPtr ctx = gradEpsilonEMeffectiveOptical.getContextPtr();
-    scai::dmemo::DistributionPtr dist = gradEpsilonEMeffectiveOptical.getDistributionPtr();
-    
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
-        gradSigmaEMeffectiveOptical = DT * correlatedWavefields.getXcorrSigmaEM(); 
-        for (int l=0; l<numRelaxationMechanisms; l++) { 
-            w_average += 1.0 / relaxationTime[l];
-        }
-        w_average /= numRelaxationMechanisms;
-    }
-    
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {              
-//         \nabla f_1(\varepsilon^s_e) =& -\sum_{l=1}^L \frac{L \tau_{Dl}}{{\varepsilon^s_e}^2 \tau_{\varepsilon e l}} \left( \tau_{Dl} r_{\varepsilon e l} + r_{\sigma e l} \right)
-//         \nabla f_1(\tau_{\varepsilon e l}) =& - \frac{L \tau_{Dl}}{\varepsilon^s_e \tau_{\varepsilon e l}^2} \left( \tau_{Dl} r_{\varepsilon e l} + r_{\sigma e l} \right)
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
+        // basic gradients
+        gradSigmaEffectiveOptical = DT * correlatedWavefields.getXcorrSigmaEM(); 
+                
         scai::lama::DenseVector<ValueType> gradREpsilonSigmaEM;   
         gradREpsilonSigmaEM = DT * correlatedWavefields.getXcorrREpsilonSigmaEM(); 
         gradREpsilonSigmaEM *= -numRelaxationMechanisms;      
         gradREpsilonSigmaEM /= model.getDielectricPermittivity();       
         gradREpsilonSigmaEM /= model.getTauDielectricPermittivity();  
-        gradEpsilonEMstatic = gradREpsilonSigmaEM / model.getDielectricPermittivity();
+        gradEpsilonStatic = gradREpsilonSigmaEM / model.getDielectricPermittivity();
         gradTauEpsilonEM = gradREpsilonSigmaEM / model.getTauDielectricPermittivity(); 
         
         // In case that tauDielectricPermittivity = 0 in air layer
-        Common::replaceInvalid<ValueType>(gradEpsilonEMstatic, 0.0);
+        Common::replaceInvalid<ValueType>(gradEpsilonStatic, 0.0);
         Common::replaceInvalid<ValueType>(gradTauEpsilonEM, 0.0);
+             
+        // convert the gradient from (gradEpsilonEffectiveOptical, gradSigmaEffectiveOptical, gradEpsilonStatic, gradTauEpsilonEM) to (gradEpsilonStatic, gradSigmaStatic, gradTauEpsilonEM1, gradTauSigmaEM).
+        gradSigmaStatic = gradSigmaEffectiveOptical;
+        temp = model.getTauElectricConductivity() * gradEpsilonEffectiveOptical;
+        gradSigmaStatic += temp;  
+        
+        gradEpsilonStatic1 = gradEpsilonStatic;         
+        temp = gradSigmaEffectiveOptical * w_average;
+        temp *= model.getTauDielectricPermittivity();  
+        gradEpsilonStatic1 += temp;
+        temp = 1 - model.getTauDielectricPermittivity();     
+        temp *= gradEpsilonEffectiveOptical;
+        gradEpsilonStatic1 += temp;
+        
+        gradTauSigmaEM = model.getElectricConductivity() * gradEpsilonEffectiveOptical;
+        
+        gradTauEpsilonEM1 = gradTauEpsilonEM;        
+        temp = gradSigmaEffectiveOptical * w_average;
+        temp *= model.getDielectricPermittivity();
+        gradTauEpsilonEM1 += temp;  
+        temp = gradEpsilonEffectiveOptical * model.getDielectricPermittivity(); 
+        gradTauEpsilonEM1 -= temp;        
     }
     
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {      
-        electricConductivity = gradSigmaEMeffectiveOptical;
-        temp = model.getTauElectricConductivity() * gradEpsilonEMeffectiveOptical;
-        electricConductivity += temp;  
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
+        if (model.getParameterisation() != 0) {
+            scai::lama::DenseVector<ValueType> epsilonStatic1DeSigmaEffective;
+            scai::lama::DenseVector<ValueType> sigmaStaticDeSigmaEffective;
+            epsilonStatic1DeSigmaEffective = -c_temp * model.getTauElectricConductivity();
+            sigmaStaticDeSigmaEffective = b_temp * epsilonStatic1DeSigmaEffective;
+            sigmaStaticDeSigmaEffective = 1 - sigmaStaticDeSigmaEffective;
+            
+            electricConductivity = epsilonStatic1DeSigmaEffective * gradEpsilonStatic1;
+            temp = sigmaStaticDeSigmaEffective * gradSigmaStatic;
+            electricConductivity += temp;
+        } else {
+            electricConductivity = gradSigmaStatic;  
+        }
         
         this->gradientParameterisation(electricConductivity, model.getElectricConductivity(), ElectricConductivityReference, model.getParameterisation());
     } else {
         this->initParameterisation(electricConductivity, ctx, dist, 0.0);
     }
     
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        dielectricPermittivity = gradEpsilonEMstatic; 
-        
-        temp = gradSigmaEMeffectiveOptical * w_average;
-        temp *= model.getTauDielectricPermittivity();  
-        dielectricPermittivity += temp;
-        temp = 1 - model.getTauDielectricPermittivity();     
-        temp *= gradEpsilonEMeffectiveOptical;
-        dielectricPermittivity += temp;
+    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {        
+        if (model.getParameterisation() != 0) {
+            scai::lama::DenseVector<ValueType> epsilonStatic1DeEpsilonEffective;
+            scai::lama::DenseVector<ValueType> sigmaStaticDeEpsilonEffective;
+            epsilonStatic1DeEpsilonEffective = c_temp;
+            sigmaStaticDeEpsilonEffective = -b_temp * epsilonStatic1DeEpsilonEffective;
+            
+            dielectricPermittivity = epsilonStatic1DeEpsilonEffective * gradEpsilonStatic1;
+            temp = sigmaStaticDeEpsilonEffective * gradSigmaStatic;
+            dielectricPermittivity += temp;
+        } else {
+            dielectricPermittivity = gradEpsilonStatic1;
+        }
         
         this->gradientParameterisation(dielectricPermittivity, model.getDielectricPermittivity(), DielectricPermittivityVacuum, model.getParameterisation());
     } else {
         this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }
 
-    if (workflow.getInvertForTauSigmaEM()) {
-        tauElectricConductivity = model.getElectricConductivity() * gradEpsilonEMeffectiveOptical;
+    if (workflow.getInvertForTauSigmaEM()) {              
+        if (model.getParameterisation() != 0) {
+            scai::lama::DenseVector<ValueType> epsilonStatic1DeTauSigma1;
+            scai::lama::DenseVector<ValueType> sigmaStaticDeTauSigma1;
+            epsilonStatic1DeTauSigma1 = b_temp * model.getDielectricPermittivityRealEffective();
+            temp = a_temp * model.getElectricConductivityRealEffective();
+            epsilonStatic1DeTauSigma1 -= temp;
+            epsilonStatic1DeTauSigma1 *= c_temp;
+            epsilonStatic1DeTauSigma1 *= c_temp;
+            sigmaStaticDeTauSigma1 = -b_temp * epsilonStatic1DeTauSigma1;
+            
+            tauElectricConductivity = epsilonStatic1DeTauSigma1 * gradEpsilonStatic1;
+            temp = sigmaStaticDeTauSigma1 * gradSigmaStatic;
+            tauElectricConductivity += temp;
+            tauElectricConductivity += gradTauSigmaEM;
+        } else {
+            tauElectricConductivity = gradTauSigmaEM;
+        }
         
         this->gradientParameterisation(tauElectricConductivity, model.getTauElectricConductivity(), TauElectricConductivityReference, model.getParameterisation()); 
     } else {
         this->initParameterisation(tauElectricConductivity, ctx, dist, 0.0);
     }
     
-    if (workflow.getInvertForTauEpsilonEM()) {
-        tauDielectricPermittivity = gradTauEpsilonEM;
-        
-        temp = gradSigmaEMeffectiveOptical * w_average;
-        temp *= model.getDielectricPermittivity();
-        tauDielectricPermittivity += temp;  
-        temp = gradEpsilonEMeffectiveOptical * model.getDielectricPermittivity(); 
-        tauDielectricPermittivity -= temp;
+    if (workflow.getInvertForTauEpsilonEM()) {                 
+        if (model.getParameterisation() != 0) {
+            scai::lama::DenseVector<ValueType> epsilonStatic1DeTauEpsilon2;
+            scai::lama::DenseVector<ValueType> sigmaStaticDeTauEpsilon2;
+            epsilonStatic1DeTauEpsilon2 = model.getElectricConductivityRealEffective() * model.getTauElectricConductivity();
+            epsilonStatic1DeTauEpsilon2 = model.getDielectricPermittivityRealEffective()- epsilonStatic1DeTauEpsilon2;
+            temp = b_average * model.getTauElectricConductivity();
+            temp += a_average;
+            epsilonStatic1DeTauEpsilon2 *= temp;
+            epsilonStatic1DeTauEpsilon2 *= c_temp;
+            epsilonStatic1DeTauEpsilon2 *= c_temp;
+            sigmaStaticDeTauEpsilon2 = -b_temp * epsilonStatic1DeTauEpsilon2;
+            
+            tauDielectricPermittivity = epsilonStatic1DeTauEpsilon2 * gradEpsilonStatic1;
+            temp = sigmaStaticDeTauEpsilon2 * gradSigmaStatic;
+            tauDielectricPermittivity += temp;
+            tauDielectricPermittivity += gradTauEpsilonEM1;
+        } else {
+            tauDielectricPermittivity = gradTauEpsilonEM1;
+        }
         
         this->gradientParameterisation(tauDielectricPermittivity, model.getTauDielectricPermittivity(), TauDielectricPermittivityReference, model.getParameterisation()); 
     } else {
@@ -729,11 +899,11 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
         // Based on complex refractive index model (CRIM)    
         dielectricPermittiviyDePorosity = this->getDielectricPermittiviyDePorosity(model);             
         
-        porosity = dielectricPermittiviyDePorosity * gradEpsilonEMeffectiveOptical;
+        porosity = dielectricPermittiviyDePorosity * gradEpsilonEffectiveOptical;
         if (model.getParameterisation() == 2) {
             // Based on Archie equation
             conductivityDePorosity = this->getElectricConductivityDePorosity(model);    
-            conductivityDePorosity *= gradSigmaEMeffectiveOptical;
+            conductivityDePorosity *= gradSigmaEffectiveOptical;
             porosity += conductivityDePorosity; 
         }        
     } else {
@@ -748,11 +918,11 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
         // Based on complex refractive index model (CRIM)            
         dielectricPermittiviyDeSaturation = this->getDielectricPermittiviyDeSaturation(model);             
         
-        saturation = dielectricPermittiviyDeSaturation * gradEpsilonEMeffectiveOptical;
+        saturation = dielectricPermittiviyDeSaturation * gradEpsilonEffectiveOptical;
         if (model.getParameterisation() == 2) {
             // Based on Archie equation
             conductivityDeSaturation = this->getElectricConductivityDeSaturation(model); 
-            conductivityDeSaturation *= gradSigmaEMeffectiveOptical;
+            conductivityDeSaturation *= gradSigmaEffectiveOptical;
             saturation += conductivityDeSaturation; 
         }               
     } else {

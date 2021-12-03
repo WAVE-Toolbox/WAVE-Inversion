@@ -28,11 +28,11 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     type = equationType+std::to_string(numDimension)+"D";
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrSigmaEM, ctx, dist);
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrEpsilonEM, ctx, dist);
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->initWavefield(xcorrREpsilonSigmaEM, ctx, dist);
 
     relaxationTime.clear();
@@ -58,11 +58,11 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename, t);
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename, t);
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->writeWavefield(xcorrREpsilonSigmaEM, "xcorrREpsilonSigmaEM", filename, t);
 }
 
@@ -71,11 +71,11 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::write(std::string
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrSigmaEM);
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrEpsilonEM);
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM())
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
         this->resetWavefield(xcorrREpsilonSigmaEM);
 }
 
@@ -100,7 +100,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::update(Wavefields
     lama::DenseVector<ValueType> temp;    
     lama::DenseVector<ValueType> xcorrREpsilonEM;    
     lama::DenseVector<ValueType> xcorrRSigmaEM;    
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         temp = adjointWavefield.getRefEX();
         temp *= forwardWavefield.getRefEX();
         xcorrSigmaEM += temp;
@@ -116,7 +116,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::update(Wavefields
         temp *= forwardWavefieldDerivative.getRefEY();
         xcorrEpsilonEM += temp;
     }
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForTauEpsilonEM()) {
+    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         for (int l=0; l<numRelaxationMechanisms; l++) {
             xcorrRSigmaEM = adjointWavefield.getRefRX()[l];
             xcorrRSigmaEM *= forwardWavefield.getRefRX()[l];

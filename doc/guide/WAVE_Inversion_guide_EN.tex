@@ -328,13 +328,13 @@ B=&-\frac{\lambda}{2\mu(N\lambda+2\mu)}
 where $N\in[2,3]$ (Number of dimensions).\\
 Then we obtain the matrix formulation of forward problem as follows:
 \begin{equation}
- M^{-1}\left( \pdv{}{t}\mathbf{u}-b \right) =Q\mathbf{u}
+ M\left( \pdv{}{t}\mathbf{u}-\mathbf{s} \right) =Q\mathbf{u}
 \end{equation}
 \begin{equation}
 \mathbf{u}=\left(v_x,v_y,v_z,\sigma_{xx},\sigma_{yy},\sigma_{zz},\sigma_{xy},\sigma_{yz} ,\sigma_{xz} \right)^T
 \end{equation}
 \begin{equation}
-\mathbf{b}=\left(\frac{f_x}{\rho}, \frac{f_y}{\rho}, \frac{f_z}{\rho},\frac{NB}{A} \pdv{p_0}{t},\frac{NB}{A} \pdv{p_0}{t},\frac{NB}{A} \pdv{p_0}{t},0,0,0\right)^T
+\mathbf{s}=\left(\frac{f_x}{\rho}, \frac{f_y}{\rho}, \frac{f_z}{\rho},\frac{NB}{A} \pdv{p_0}{t},\frac{NB}{A} \pdv{p_0}{t},\frac{NB}{A} \pdv{p_0}{t},0,0,0\right)^T
 \end{equation}
 \begin{equation}
 Q=
@@ -348,11 +348,11 @@ Q=
    \pdv{}{y}  & \pdv{}{x} &  0        & 0         & 0         & 0         & 0         & 0         & 0        \\
    0          & \pdv{}{z} & \pdv{}{y} & 0         & 0         & 0         & 0         & 0         & 0        \\
    \pdv{}{z}  & 0         & \pdv{}{x} & 0         & 0         & 0         & 0         & 0         & 0        \\
- \end{pmatrix}
+ \end{pmatrix}, \quad Q^{*}=-Q
 \end{equation}
 
 \begin{equation}
-M^{-1}=
+M=
  \begin{pmatrix}
    \rho       & 0         & 0         & 0         & 0         & 0         & 0         & 0         & 0       \\
    0          & \rho      & 0         & 0         & 0         & 0         & 0         & 0         & 0        \\
@@ -363,8 +363,9 @@ M^{-1}=
    0          & 0         & 0         & 0         & 0         & 0         & 1/\mu      & 0         & 0        \\
    0          & 0         & 0         & 0         & 0         & 0         & 0         & 1/\mu      & 0        \\
    0          & 0         & 0         & 0         & 0         & 0         & 0         & 0         & 1/\mu     \\
- \end{pmatrix}
+ \end{pmatrix}, \quad M^{*}=M
 \end{equation}
+where $^{*}$ is the transpose conjugate operator and equals the transpose operator for the real values.
 
 \section{1st order adjoint method}
 The misfit function $\Phi_1$:
@@ -374,19 +375,19 @@ The misfit function $\Phi_1$:
 where the synthetic data $\mathbf{d}^{cal}$ is extracted by the restriction operator $R$ from the synthetic wavefield $\mathbf{u}$. $\mathbf{d}^{obs}$ is the observed data. To identify with the 2$nd$ order adjoint method used in truncated Newton method, we add a subscript ``1'' to the misfit function used by the 1$st$ order adjoint method in this manual.\\
 Augmented functional $L_1$ used in 1st order adjoint method:
 \begin{equation}
- L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \Phi_1(\mathbf{u}) + \langle \mathbf{u}_{1}, F(\mathbf{u},\mathbf{m}) \rangle_W \\
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \Phi_1(\mathbf{u}) - \langle \mathbf{u}_{1}, F(\mathbf{u},\mathbf{m}) \rangle_W \\
 \end{equation}
 with
 \begin{equation}
 \begin{split}
-\label{eqn:initialCondition1}
- & F(\mathbf{u},\mathbf{m}) = M^{-1} \partial_{t} \mathbf{u}  - Q\mathbf{u} - M^{-1} \mathbf{b} = 0 \\
+\label{eqn:initialCondition11}
+ & F(\mathbf{u},\mathbf{m}) = M \partial_{t} \mathbf{u}  - Q\mathbf{u} - M \mathbf{s} = 0 \\
  & \mathbf{m} = (\rho, \lambda, \mu)^T, \mathbf{u}|_{t=0} = 0, \mathbf{u}|_{x\in \partial \Omega} = 0
  \end{split}
 \end{equation}
-where the inner product $\langle h_1, h_2 \rangle_W$ in the domain $W=\Omega \times [0, T]$ is defined by ($\Omega$ is the spatial computation domain)\\
+where the inner product $\langle \mathbf{h}_1, \mathbf{h}_2 \rangle_W$ in the domain $W=\Omega \times [0, T]$ is defined by ($\Omega$ is the spatial computation domain)\\
 \begin{equation}
- \langle h_1, h_2 \rangle_W = \int_0^T \int_\Omega h_1(x,t) h_2(x,t) dt dx\\
+ \langle \mathbf{h}_1, \mathbf{h}_2 \rangle_W = \int_0^T \int_\Omega \mathbf{h}_1^{*}(x,t) \mathbf{h}_2(x,t) dt dx\\
 \end{equation}
 For any $\mathbf{u}_{1}$:
 \begin{equation}
@@ -395,84 +396,97 @@ For any $\mathbf{u}_{1}$:
 We write the augmented functional explicitly:
 \begin{equation}
 \label{eqn:AugmentFunctional}
- L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega \mathbf{u}_{1} (M^{-1} \partial_{t} \mathbf{u} - Q \mathbf{u} - M^{-1} \mathbf{b})  dt dx\\
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx - \int_0^T \int_\Omega \mathbf{u}_{1}^{*} (M \partial_{t} \mathbf{u} - Q \mathbf{u} - M \mathbf{s})  dt dx\\
 \end{equation}
 If the final condition and boundary condition of $\mathbf{u}_{1}$ are satisfied by:
 \begin{equation}
-\label{eqn:initialCondition2}
+\label{eqn:initialCondition22}
  \mathbf{u}_{1}|_{t=T} = 0, \mathbf{u}_{1}|_{x\in \partial \Omega} = 0\\
 \end{equation}
-Integration by parts and then we get:
+Based on the initial and final condition shown in \ref{eqn:initialCondition11} and \ref{eqn:initialCondition22}, we integrate in time by parts \citep{yang2016review}:
+\begin{equation}
+\begin{split}
+\int_0^T \int_\Omega \mathbf{u}_{1}^{*} (M \partial_{t} \mathbf{u}) dt dx 
+&=  \int_\Omega \mathbf{u}_{1}^{*} M\mathbf{u}|_0^T dx - \int_0^T \int_\Omega (M^{*} \partial_{t} \mathbf{u}_{1})^{*} \mathbf{u} dt dx\\
+&= -\int_0^T \int_\Omega (M \partial_{t} \mathbf{u}_{1})^{*} \mathbf{u} dt dx
+\end{split}
+\end{equation}
+Similarly, based on the boundary condition shown in \ref{eqn:initialCondition11} and \ref{eqn:initialCondition22}, we integrate in space by parts:
+\begin{equation}
+\begin{split}
+\int_0^T \int_\Omega \mathbf{u}_{1}^{*} Q \mathbf{u} dt dx 
+&=-\int_0^T \int_\Omega (Q \mathbf{u}_{1})^{*} \mathbf{u} dt dx
+\end{split}
+\end{equation}
+Then we get:
 \begin{equation}
 \begin{split}
 L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1})
-  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega ((M^{-1} \partial_{t})^* \mathbf{u}_{1} \mathbf{u} - Q^* \mathbf{u}_{1} \mathbf{u} - {M^{-1}}^{*} \mathbf{u}_{1} \mathbf{b})  dt dx \\
-  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1} \mathbf{u} - Q \mathbf{u}_{1} \mathbf{u} - M^{-1} \mathbf{u}_{1} \mathbf{b})  dt dx\\
+  = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega ((M \partial_{t} \mathbf{u}_{1})^{*} \mathbf{u} - (Q \mathbf{u}_{1})^{*} \mathbf{u} + (M \mathbf{u}_{1})^{*} \mathbf{s})  dt dx
  \end{split}
 \end{equation}
-where 
-\begin{equation}
-\begin{split}
-& {M^{-1}}^{*} =  M^{-1}, (M^{-1} \partial_{t}) ^{*} = -{M^{-1}}^{*} \partial_{t} = -M^{-1} \partial_{t}, \quad Q^{*} = Q\\
- \end{split}
-\end{equation}
-which is derived from the initial, final condition and boundary condition \ref{eqn:initialCondition1} and \ref{eqn:initialCondition2} \citep{yang2016review}.\\
 The derivative of $L_1$ with respect to wavefields $\mathbf{u}$:
 \begin{equation}
- \pdv{L_1}{\mathbf{u}} = \int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx + \int_0^T \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1} - Q \mathbf{u}_{1})  dt dx\\
+ \pdv{L_1}{\mathbf{u}} = \int_0^T \int_\Omega \left((R\mathbf{u} - \mathbf{d}^{obs})R + M \partial_{t} \mathbf{u}_{1} - Q \mathbf{u}_{1}\right)^{*} dt dx
 \end{equation}
-The operator $R^{*}$ force the virtual sources injected at the receiver location. By making $\pdv{L_1}{\mathbf{u}} = 0$, we get:
+To satisfy the final condition of $\mathbf{u}_{1}$ (equation \ref{eqn:initialCondition22}), the time needs to be reversed by substituting $t^{'}=T-t$ ($\partial_{t^{'}} = -\partial_{t}$ and $dt^{'}=-dt$) in the above equation. Thus we get
 \begin{equation}
- \int_0^T \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1}  - Q \mathbf{u}_{1})  dt dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx\\
+ \pdv{L_1}{\mathbf{u}} = -\int_T^0 \int_\Omega \left( R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) - M \partial_{t^{'}} \mathbf{u}_{1} - Q \mathbf{u}_{1} \right)^{*} dt^{'} dx
 \end{equation}
-Reverse time: $t \to T-t$
-\begin{equation}
- \int_T^0 \int_\Omega (-M^{-1} \partial_{t} \mathbf{u}_{1}(T-t) - Q \mathbf{u}_{1}(T-t) )  dt dx = -\int_T^0 \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(T-t) dt dx\\
-\end{equation}
-Substition: 
-\begin{equation}
- \tau = T - t, d\tau = -dt, \partial \tau = -\partial t\\
-\end{equation}
-Boundaries $T \to 0$ to $0 \to T$
-\begin{equation}
- \int_0^T \int_\Omega (M^{-1} \partial_{\tau} \mathbf{u}_{1}(\tau) - Q \mathbf{u}_{1}(\tau) )  d\tau dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(\tau) d\tau dx\\
-\end{equation}
-Therefore we obtain a self-adjoint equation:
+By making $\pdv{L_1}{\mathbf{u}} = 0$, therefore we obtain the adjoint state equation:
 \begin{equation}
 \begin{aligned}
 \label{eqn:AdjointEquation1}
-& M^{-1} \partial_{\tau} \mathbf{u}_{1} - Q \mathbf{u}_{1} =  - R^{*}(R\mathbf{u} - \mathbf{d}^{obs})
+& M \partial_{t^{'}} \mathbf{u}_{1} = -Q \mathbf{u}_{1} + R^{*}(R\mathbf{u} - \mathbf{d}^{obs})
 \end{aligned}
 \end{equation}
-The 1$st$ order adjoint wavefields:
+where the wavefield residual $R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) $ is used as the sources for back propagation. The 1$st$ order adjoint wavefields:
 \begin{equation}
 \mathbf{ u}_1=\left(v_{1x},v_{1y},v_{1z},\sigma_{1xx},\sigma_{1yy},\sigma_{1zz},\sigma_{1xy},\sigma_{1yz},\sigma_{1xz}\right)^T
 \end{equation}
-Here the postive wavefield residual $R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) $ is used as the sources for back propagation. \\
-The 1st order adjoint equation is:
+The 1st order adjoint equation (anti self-adjoint) is:
 \begin{equation}
 \label{eqn:AdjointEquation11}
 \mathbf{u}_{1}:
 \begin{cases}
-\rho\pdv{v_{1i}}{t}=\pdv{\sigma_{1ij}}{x_j}-R^{*}(R v_i -v_i^{obs})\\
-\pdv{\sigma_{1ii}}{t} = \lambda \pdv{v_{1k}}{x_k} + 2\mu \pdv{v_{1i}}{x_i}-\pdv{R^{*}(R p - p^{obs})}{t}\\
-\pdv{\sigma_{1ij}}{t} = \mu \left(\pdv{v_{1i}}{x_j} +\pdv{v_{1j}}{x_i}\right), \quad i \neq j
+\rho\pdv{v_{1i}}{t^{'}}=-\pdv{\sigma_{1ij}}{x_j} + R^{*}(R v_i -v_i^{obs})\\
+\pdv{\sigma_{1ii}}{t^{'}} = -\lambda \pdv{v_{1k}}{x_k} - 2\mu \pdv{v_{1i}}{x_i} + R^{*}(R p - p^{obs})\\
+\pdv{\sigma_{1ij}}{t^{'}} = -\mu \left(\pdv{v_{1i}}{x_j} +\pdv{v_{1j}}{x_i}\right), \quad i \neq j
 \end{cases}
 \end{equation}
-where $p=\frac{1}{N} \sum \sigma_{ii}$.\\
+where $p=\frac{1}{N} \sum \sigma_{ii}$ and $t^{'}=T-t$ (the reversed time).
+If one prefers to use the same forward solver for both the forward problem and adjoint problem, one can use the equivalent equation with a slight change of the adjoint wavefields, as follows:
+\begin{equation}
+\begin{align}
+&\mathbf{u}_{1}^{’} = \varLambda \mathbf{u}_{1} = \left(v_{1x}^{’},v_{1y}^{’},v_{1z}^{’},\sigma_{1xx}^{’},\sigma_{1yy}^{’},\sigma_{1zz}^{’},\sigma_{1xy}^{’},\sigma_{1yz}^{’},\sigma_{1xz}^{’}\right)^T \\
+&\mathbf{u}_{1} = \varLambda \mathbf{u}_{1}^{’}, \quad diag(\varLambda) = \left(1,1,1,-1,-1,-1,-1,-1,-1 \right)
+\end{align}
+\end{equation}
+\begin{equation}
+\label{eqn:AdjointEquation111}
+\mathbf{u}_{1}^{’}:
+\begin{cases}
+\rho\pdv{v_{1i}^{’}}{t^{'}}=\pdv{\sigma_{1ij}^{’}}{x_j} + R^{*}(R v_i -v_i^{obs})\\
+\pdv{\sigma_{1ii}^{’}}{t^{'}} = \lambda \pdv{v_{1k}^{’}}{x_k} + 2\mu \pdv{v_{1i}^{’}}{x_i} - R^{*}(R p - p^{obs})\\
+\pdv{\sigma_{1ij}^{’}}{t^{'}} = \mu \left(\pdv{v_{1i}^{’}}{x_j} +\pdv{v_{1j}^{’}}{x_i}\right), \quad i \neq j
+\end{cases}
+\end{equation}
 The derivative of $L_1$ with respect to model parameters $\mathbf{m}$ can be obtained from Eq. \ref{eqn:AugmentFunctional} as follows:
 \begin{equation}
- \pdv{\Phi_1}{\mathbf{m}} = \pdv{L_1}{\mathbf{u}}\pdv{\mathbf{u}}{\mathbf{m}} + \pdv{L_1}{\mathbf{m}} =  \pdv{L_1}{\mathbf{m}} = \int_0^T \mathbf{u}_{1}^T \pdv{M^{-1}}{\mathbf{m}} \left( \partial_{t}\mathbf{u} -b \right) dt\\ 
+\begin{align}
+ \pdv{\Phi_1}{\mathbf{m}} &= \pdv{L_1}{\mathbf{u}}\pdv{\mathbf{u}}{\mathbf{m}} + \pdv{L_1}{\mathbf{m}} =  \pdv{L_1}{\mathbf{m}} \\
+ &= -\int_0^T \mathbf{u}_{1}^{*} \pdv{M}{\mathbf{m}} \left( \partial_{t}\mathbf{u} - \mathbf{s} \right) dt = -\int_0^T (\varLambda \mathbf{u}_{1}^{'})^{*} \pdv{M}{\mathbf{m}} \left( \partial_{t}\mathbf{u} - \mathbf{s} \right) dt
+\end{align}
 \end{equation}
 The gradient of the objective function $\Phi_1(\mathbf{m})$ with respect to elastic parameters are shown as:
 \begin{align}
- \pdv{\Phi_1}{\rho}&=\int_T \left( \pdv{v_x}{t} v_{1x} + \pdv{v_y}{t} v_{1y} + \pdv{v_z}{t} v_{1z} \right) dt\\
- \pdv{\Phi_1}{\lambda}&=\pdv{A}{\lambda}\int_T  \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right) \left(\sigma_{1xx}+\sigma_{1yy}+\sigma_{1zz}\right)  dt\\
- \pdv{\Phi_1}{\mu}&=\int_T \left\{\pdv{A}{\mu}\left(\pdv{\sigma_{xx}}{t}\sigma_{1xx}+\pdv{\sigma_{yy}}{t}\sigma_{1yy}+\pdv{\sigma_{zz}}{t}\sigma_{1zz}\right)\right. \\
- &+ \pdv{B}{\mu} \left[\left(\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1xx}
- + \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1yy}
-  + \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}\right)\sigma_{1zz}\right]\\
-  &-\left.\frac{1}{\mu^2}\left(\pdv{\sigma_{xy}}{t}\sigma_{1xy}+\pdv{\sigma_{yz}}{t}\sigma_{1yz}+\pdv{\sigma_{xz}}{t}\sigma_{1xz}\right)\right\} dt
+ \pdv{\Phi_1}{\rho}&=-\int_0^T \left( \pdv{v_x}{t} v_{1x}^{'} + \pdv{v_y}{t} v_{1y}^{'} + \pdv{v_z}{t} v_{1z}^{'} \right) dt\\
+ \pdv{\Phi_1}{\lambda}&=\pdv{A}{\lambda}\int_0^T  \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right) \left(\sigma_{1xx}^{'}+\sigma_{1yy}^{'}+\sigma_{1zz}^{'}\right)  dt\\
+ \pdv{\Phi_1}{\mu}&=\int_0^T \left\{\pdv{A}{\mu}\left(\pdv{\sigma_{xx}}{t}\sigma_{1xx}^{'}+\pdv{\sigma_{yy}}{t}\sigma_{1yy}^{'}+\pdv{\sigma_{zz}}{t}\sigma_{1zz}^{'}\right)\right. \\
+ &+ \pdv{B}{\mu} \left[\left(\pdv{\sigma_{yy}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1xx}^{'}
+ + \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{zz}}{t}\right)\sigma_{1yy}^{'}
+  + \left(\pdv{\sigma_{xx}}{t}+\pdv{\sigma_{yy}}{t}\right)\sigma_{1zz}^{'}\right]\\
+  &-\left.\frac{1}{\mu^2}\left(\pdv{\sigma_{xy}}{t}\sigma_{1xy}^{'}+\pdv{\sigma_{yz}}{t}\sigma_{1yz}^{'}+\pdv{\sigma_{xz}}{t}\sigma_{1xz}^{'}\right)\right\} dt
 \end{align}
 with:
 \begin{align}
@@ -939,17 +953,17 @@ For faultless function of WAVE-Inversion all tests should execute without failur
 \rho\pdv{v_x}{t}&=\pdv{p}{x} + f_x\\
 \rho\pdv{v_y}{t}&=\pdv{p}{y} + f_y\\
 \rho\pdv{v_z}{t}&=\pdv{p}{z} + f_z\\
-\frac{1}{\lambda}\pdv{p}{t} &= \pdv{v_x}{x} +  \pdv{v_y}{y} + \pdv{v_z}{z} + \frac{1}{\lambda}\pdv{p_0}{t}\\
+\frac{1}{\lambda}\pdv{p}{t} &= \pdv{v_x}{x} +  \pdv{v_y}{y} + \pdv{v_z}{z} + \frac{1}{\lambda}\pdv{p_0}{t}
 \end{align}
 Matrix formulation of forward problem:
 \begin{equation}
- M^{-1}\left( \pdv{}{t}\mathbf{u}-b \right) =Q\mathbf{u}
+ M\left( \pdv{}{t}\mathbf{u}-\mathbf{s} \right) =Q\mathbf{u}
 \end{equation}
 \begin{equation}
 \mathbf{u}=\left(v_x,v_y,v_z,p \right)^T
 \end{equation}
 \begin{equation}
-\mathbf{b}=\left(\frac{f_x}{\rho},\frac{f_y}{\rho},\frac{f_z}{\rho},\pdv{p_0}{t}\right)^T
+\mathbf{s}=\left(\frac{f_x}{\rho},\frac{f_y}{\rho},\frac{f_z}{\rho},\pdv{p_0}{t}\right)^T
 \end{equation}
 \begin{equation}
 Q=
@@ -957,32 +971,44 @@ Q=
    0         & 0         & 0         & \pdv{}{x}\\
    0         & 0         & 0         & \pdv{}{y}\\
    0         & 0         & 0         & \pdv{}{z}\\
-   \pdv{}{x} & \pdv{}{y} & \pdv{}{z} & 0        \\
-
- \end{pmatrix}
+   \pdv{}{x} & \pdv{}{y} & \pdv{}{z} & 0        
+ \end{pmatrix}, \quad Q^{*} = -Q
 \end{equation}
 \begin{equation}
-M^{-1}=
+M=
  \begin{pmatrix}
    \rho       & 0         & 0         & 0                \\
    0          & \rho      & 0         & 0                \\
    0          & 0         & \rho      & 0                \\
-   0          & 0         & 0         & \frac{1}{\lambda}\\
- \end{pmatrix}
+   0          & 0         & 0         & \frac{1}{\lambda}
+ \end{pmatrix}, \quad M^{*}=M
 \end{equation}
 
 \section{Gradient}
+Adjoint state equation
 \begin{equation}
- \pdv{\Phi_1}{m}=\int_T \mathbf{u}_1^T \pdv{M^{-1}}{m}\left( \pdv{}{t}\mathbf{u}-b \right)dt
+\label{eqn:AdjointEquation111}
+\mathbf{u}_{1}^{’}:
+\begin{cases}
+\rho\pdv{v_{1i}^{’}}{t^{'}}=\pdv{p^{’}}{x_j} + R^{*}(R v_i -v_i^{obs})\\
+\pdv{p^{’}}{t^{'}} = \lambda \pdv{v_{1k}^{’}}{x_k} - \pdv{R^{*}(R p - p^{obs})}{t^{'}}
+\end{cases}
 \end{equation}
-The 1$st$ order adjoint wavefields:
 \begin{equation}
-\mathbf{ u}_1=\left(v_{1x},v_{1y},v_{1z},p_1\right)^T
+\begin{align}
+&\mathbf{u}_{1}^{’} = \varLambda \mathbf{u}_{1} = \left(v_{1x}^{’},v_{1y}^{’},v_{1z}^{’},p^{’}\right)^T \\
+&\mathbf{u}_{1} = \varLambda \mathbf{u}_{1}^{’}, \quad diag(\varLambda) = \left(1,1,1,-1 \right)
+\end{align}
+\end{equation}
+where $t^{'}=T-t$ (the reversed time).\\
+The gradient in compact form:
+\begin{equation}
+ \pdv{\Phi_1}{m}=-\int_0^T (\varLambda \mathbf{u}_{1}^{’})^{*} \pdv{M}{m}\left( \pdv{}{t}\mathbf{u}-\mathbf{s} \right)dt
 \end{equation}
 Gradient in details:
 \begin{align}
- \pdv{\Phi_1}{\rho}&= \int_T \left( \pdv{v_x}{t} v_{1x} + \pdv{v_y}{t} v_{1y} + \pdv{v_z}{t} v_{1z} \right) dt\\
- \pdv{\Phi_1}{\lambda}&=- \frac{1}{\lambda^2}\int_T  \pdv{p}{t}p_1 dt \\
+ \pdv{\Phi_1}{\rho}&= -\int_0^T \left( \pdv{v_x}{t} v_{1x}^{’} + \pdv{v_y}{t} v_{1y}^{’} + \pdv{v_z}{t} v_{1z}^{’} \right) dt\\
+ \pdv{\Phi_1}{\lambda}&=- \frac{1}{\lambda^2}\int_0^T  \pdv{p}{t}p_1^{’} dt \\
 \end{align}
 
 \chapter{EM wave}
@@ -1013,8 +1039,8 @@ where $\sigma_{e}$, $\sigma_{m}$, $\varepsilon$ and $\mu_{m}$ are the electric c
 \begin{equation}
 \begin{aligned}
 \label{eqn:MaxwellEquationMatrix}
-&M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q\mathbf{u} = \mathbf{b} \\
-&\mathbf{u} = (\mathbf{H}, \mathbf{E})^T, \mathbf{b} = (\mathbf{J_{m}}, -\mathbf{J_{e}})^T \\
+&M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q\mathbf{u} = \mathbf{s} \\
+&\mathbf{u} = (\mathbf{H}, \mathbf{E})^T, \mathbf{s} = (\mathbf{J_{m}}, -\mathbf{J_{e}})^T \\
 \end{aligned}
 \end{equation}
 \begin{equation}
@@ -1054,7 +1080,7 @@ where $\sigma_{e}$, $\sigma_{m}$, $\varepsilon$ and $\mu_{m}$ are the electric c
  \begin{pmatrix}
    0          & D_i \partial_{i}         \\
    D_i \partial_{i}          & 0         \\
- \end{pmatrix} \\
+ \end{pmatrix}, \quad Q^{*}=Q \\
 & D_1= 
  \begin{pmatrix}
    0          & 0        & 0 \\
@@ -1092,34 +1118,33 @@ with
 \begin{equation}
 \begin{split}
 \label{eqn:initialCondition1}
- & F(\mathbf{u},\mathbf{m}) = M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q\mathbf{u} - \mathbf{b} = 0 \\
+ & F(\mathbf{u},\mathbf{m}) = M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q\mathbf{u} - \mathbf{s} = 0 \\
  & \mathbf{m} = (\varepsilon, \sigma_e, \mu_m, \sigma_m)^T, \mathbf{u}|_{t=0} = 0, \mathbf{u}|_{x\in \partial \Omega} = 0
  \end{split}
 \end{equation}
-where the inner product $\langle h_1, h_2 \rangle_W$ in the domain $W=\Omega \times [0, T]$ is defined by ($\Omega$ is the spatial computation domain)\\
+where the inner product $\langle \mathbf{h}_1, \mathbf{h}_2 \rangle_W$ in the domain $W=\Omega \times [0, T]$ is defined by ($\Omega$ is the spatial computation domain)\\
 \begin{equation}
- \langle h_1, h_2 \rangle_W = \int_0^T \int_\Omega h_1(x,t) h_2(x,t) dt dx\\
+ \langle \mathbf{h}_1, \mathbf{h}_2 \rangle_W = \int_0^T \int_\Omega \mathbf{h}_1^{*}(x,t) \mathbf{h}_2(x,t) dt dx
 \end{equation}
 \par For any $\mathbf{u}_{1}$:
 \begin{equation}
- L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = f(\mathbf{u}) \\
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \Phi_1(\mathbf{u}) 
 \end{equation}
 \par We write the augmented functional explicitly:
 \begin{equation}
-\label{eqn:AugmentFunctional}
- L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega \mathbf{u}_{1} (M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q \mathbf{u} - \mathbf{b})  dt dx\\
+\label{eqn:AugmentFunctional1}
+ L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1}) = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega \mathbf{u}_{1}^{*} (M_1 \partial_{t} \mathbf{u} + M_2 \mathbf{u} - Q \mathbf{u} - \mathbf{s})  dt dx
 \end{equation}
 \par If the final condition and boundary condition of $\mathbf{u}_{1}$ are satisfied by:
 \begin{equation}
 \label{eqn:initialCondition2}
- \mathbf{u}_{1}|_{t=T} = 0, \mathbf{u}_{1}|_{x\in \partial \Omega} = 0\\
+ \mathbf{u}_{1}|_{t=T} = 0, \mathbf{u}_{1}|_{x\in \partial \Omega} = 0
 \end{equation}
 \par Integration by parts and then we get:
 \begin{equation}
 \begin{split}
 L_1(\mathbf{m}, \mathbf{u},\mathbf{u}_{1})
-  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega ((M_1 \partial_{t})^* \mathbf{u}_{1} \mathbf{u} + M_2^* \mathbf{u}_{1} \mathbf{u} - Q^* \mathbf{u}_{1} \mathbf{u} - \mathbf{u}_{1} \mathbf{b})  dt dx \\
-  & = \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx + \int_0^T \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1} \mathbf{u} + M_2 \mathbf{u}_{1} \mathbf{u} - Q \mathbf{u}_{1} \mathbf{u} - \mathbf{u}_{1} \mathbf{b})  dt dx\\
+  &= \frac{1}{2} \int_0^T \int_\Omega (R\mathbf{u} - \mathbf{d}^{obs})^2 dt dx\\ &+ \int_0^T \int_\Omega [(-M_1 \partial_{t} \mathbf{u}_{1})^* \mathbf{u} + (M_2 \mathbf{u}_{1})^* \mathbf{u} - (Q \mathbf{u}_{1})^* \mathbf{u} - \mathbf{u}_{1}^* \mathbf{s} ] dt dx
  \end{split}
 \end{equation}
 where 
@@ -1132,45 +1157,33 @@ where
 which is derived from the initial, final condition and boundary condition \ref{eqn:initialCondition1} and \ref{eqn:initialCondition2} \citep{yang2016review}.\\
 \par Derivative in respect to wavefields $\mathbf{u}$:
 \begin{equation}
- \pdv{L_1}{\mathbf{u}} = \int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx + \int_0^T \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1}  + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1})  dt dx\\
+ \pdv{L_1}{\mathbf{u}} = \int_0^T \int_\Omega \left((R\mathbf{u} - \mathbf{d}^{obs})R -M_1 \partial_{t} \mathbf{u}_{1}  + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1}\right)^{*}  dt dx
 \end{equation}
-\par The operator $R^{*}$ force the virtual sources injected at the receiver location. By making $\pdv{L_1}{\mathbf{u}} = 0$, we get:
+To satisfy the final condition of $\mathbf{u}_{1}$ (equation \ref{eqn:initialCondition2}), the time needs to be reversed by substituting $t^{'}=T-t$ ($\partial_{t^{'}} = -\partial_{t}$ and $dt^{'}=-dt$) in the above equation. Thus we get
 \begin{equation}
- \int_0^T \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1}  + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1})  dt dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) dt dx\\
+ \pdv{L_1}{\mathbf{u}} = -\int_T^0 \int_\Omega \left( R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) + M_1 \partial_{t^{'}} \mathbf{u}_{1} + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1} \right)^{*} dt^{'} dx
 \end{equation}
-\par Reverse time: $t \to T-t$
-\begin{equation}
- \int_T^0 \int_\Omega (-M_1 \partial_{t} \mathbf{u}_{1}(T-t)  + M_2 \mathbf{u}_{1}(T-t) - Q \mathbf{u}_{1}(T-t) )  dt dx = -\int_T^0 \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(T-t) dt dx\\
-\end{equation}
-\par Substition: 
-\begin{equation}
- \tau = T - t, d\tau = -dt, \partial \tau = -\partial t\\
-\end{equation}
-\par Boundaries $T \to 0$ to $0 \to T$
-\begin{equation}
- \int_0^T \int_\Omega (M_1 \partial_{\tau} \mathbf{u}_{1}(\tau) + M_2 \mathbf{u}_{1}(\tau) - Q \mathbf{u}_{1}(\tau) )  d\tau dx = -\int_0^T \int_\Omega R^{*}(R\mathbf{u} - \mathbf{d}^{obs})(\tau) d\tau dx\\
-\end{equation}
-\par Therefore we obtain a self-adjoint equation:
+\par By making $\pdv{L_1}{\mathbf{u}} = 0$, we obtain a self-adjoint equation:
 \begin{equation}
 \begin{aligned}
 \label{eqn:AdjointEquation1}
-& M_1 \partial_{\tau} \mathbf{u}_{1} + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1} =  - R^{*}(R\mathbf{u} - \mathbf{d}^{obs})  \\
-& \mathbf{u}_{1} = ( \mathbf{H}_{1}, \mathbf{E}_{1}) = (H_{1x}, H_{1y}, H_{1z}, E_{1x}, E_{1y}, E_{1z})^T  \\ 
+ &M_1 \partial_{t^{'}} \mathbf{u}_{1}  + M_2 \mathbf{u}_{1} - Q \mathbf{u}_{1} = - R^{*}(R\mathbf{u} - \mathbf{d}^{obs})\\
+& \mathbf{u}_{1} = ( \mathbf{H}_{1}, \mathbf{E}_{1}) = (H_{1x}, H_{1y}, H_{1z}, E_{1x}, E_{1y}, E_{1z})^T 
 \end{aligned}
 \end{equation}
-\par Here the postive wavefield residual $R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) $ is used as the sources for back propagation. \\
+\par Here the wavefield residual $R^{*}(R\mathbf{u} - \mathbf{d}^{obs}) $ is used as the sources for back propagation. \\
 \par The 1st order adjoint equation is:
 \begin{equation}
 \label{eqn:AdjointEquation11}
 \mathbf{u}_{1}:
 \begin{cases}
--\mu_{m} \pdv{\mathbf{H}_{1}}{t} - \sigma_{m}\mathbf{H}_{1} - \nabla \times\mathbf{E}_{1} =  -R^{*}(R\mathbf{H} - \mathbf{H}^{obs}) \\
-\varepsilon\pdv{\mathbf{E}_{1}}{t} + \sigma_{e}\mathbf{E}_{1} -\nabla \times \mathbf{H}_{1} =  - R^{*}(R\mathbf{E} - \mathbf{E}^{obs})
+-\mu_{m} \pdv{\mathbf{H}_{1}}{t^{'}} - \sigma_{m}\mathbf{H}_{1} - \nabla \times\mathbf{E}_{1} =  -R^{*}(R\mathbf{H} - \mathbf{H}^{obs}) \\
+\varepsilon\pdv{\mathbf{E}_{1}}{t^{'}} + \sigma_{e}\mathbf{E}_{1} -\nabla \times \mathbf{H}_{1} =  - R^{*}(R\mathbf{E} - \mathbf{E}^{obs})
 \end{cases}
 \end{equation}
-\par Derivative in respect to model parameters $\mathbf{m}$ from Eq. \ref{eqn:AugmentFunctional}:
+\par Derivative in respect to model parameters $\mathbf{m}$ from Eq. \ref{eqn:AugmentFunctional1}:
 \begin{equation}
- \nabla \Phi_1(\mathbf{m})=\pdv{\Phi_1}{\mathbf{m}} = \pdv{L_1}{\mathbf{u}}\pdv{\mathbf{u}}{\mathbf{m}} + \pdv{L_1}{\mathbf{m}} =  \pdv{L_1}{\mathbf{m}} = \int_0^T \mathbf{u}_{1} (\pdv{M_{1}}{\mathbf{m}} \partial_{t}\mathbf{u} + \pdv{M_{2}}{\mathbf{m}} \mathbf{u} ) dt\\ 
+ \nabla \Phi_1(\mathbf{m})=\pdv{\Phi_1}{\mathbf{m}} = \pdv{L_1}{\mathbf{u}}\pdv{\mathbf{u}}{\mathbf{m}} + \pdv{L_1}{\mathbf{m}} =  \pdv{L_1}{\mathbf{m}} = \int_0^T \mathbf{u}_{1}^{*} (\pdv{M_{1}}{\mathbf{m}} \partial_{t}\mathbf{u} + \pdv{M_{2}}{\mathbf{m}} \mathbf{u} ) dt\\ 
 \end{equation}
 \par The gradient of the objective function $\Phi_1(\mathbf{m})$ with respect to electric parameters are shown as:
 \begin{equation}

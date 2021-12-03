@@ -22,6 +22,7 @@ using scai::IndexType;
 template <typename ValueType>
 void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Receivers<ValueType> &receivers, std::vector<Acquisition::sourceSettings<ValueType>> &sourceSettings, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, KITGPI::Misfit::Misfit<ValueType> &currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> const &sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper, std::vector<scai::IndexType> uniqueShotInds)
 {
+    scaledGradient.printInvertForParameters(commAll);
     if (steplengthType == 1) {
         this->runLineSearch(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, dist, config, modelCoordinates, scaledGradient, steplengthInit, currentMisfit, workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotInds);
     } else if (steplengthType == 2) {
@@ -83,6 +84,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     /* ------------------------------------------- */
     /* Set values for step length search           */
     /* ------------------------------------------- */
+    ValueType scalingFactor = config.get<ValueType>("scalingFactor");
     ValueType steplengthMin = config.get<ValueType>("steplengthMin");
     ValueType steplengthMax = config.get<ValueType>("steplengthMax");
 
@@ -94,6 +96,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
 
     HOST_PRINT(commAll, "\nEstimation of steplength by line search\n");
     misfitTestSum = this->calcMisfit(commAll, solver, derivatives, receivers, sourceSettings, receiversTrue, model, *wavefields, config, modelCoordinates, scaledGradient, *dataMisfit, steplengthInit, workflow, freqFilter, sourceEst, sourceSignalTaper, uniqueShotInds);
+    HOST_PRINT(commAll, "\nOptimum step length in line search: " << steplengthOptimum << "\n");
 
     steplengthGuess = steplengthInit;
     /* Check if accepted step length is smaller than maximally allowed step length */
@@ -103,6 +106,10 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     } else if (steplengthOptimum < steplengthMin) {
         steplengthOptimum = steplengthMin;
         HOST_PRINT(commAll, "\nVariable steplengthMin used to update the model");
+    }
+    if (steplengthOptimum > steplengthGuess * scalingFactor) {
+        steplengthOptimum = steplengthGuess * scalingFactor;
+        HOST_PRINT(commAll, "\nVariable steplengthInit and scalingFactor used to update the model");
     }
     if (std::isnan(steplengthOptimum))
         steplengthOptimum = steplengthMin;
@@ -277,6 +284,7 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
             steplengthOptimum = steplengthParabola.getValue(1);}
         else {
             steplengthOptimum = steplengthParabola.getValue(2);}
+        HOST_PRINT(commAll, "\nVariable steplengthInit and scalingFactor used to update the model");
     } else if (step2ok == false && step3ok == true) {
         steplengthOptimum = parabolicFit(steplengthParabola, misfitParabola); //case 3: parabolic fit instead of steplengthParabola.getValue(2)
         HOST_PRINT(commAll, "\nApply parabolic fit");
@@ -563,21 +571,22 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             seismoHandlerSynLast = receiversLast.getSeismogramHandler();
             seismoHandlerObs = receiversTrue.getSeismogramHandler();
             for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-                seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-                seismogramSynLast = seismoHandlerSynLast.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
-                seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramTypeEM>(i));
+                seismogramSyn = seismoHandlerSyn.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
+                seismogramSynLast = seismoHandlerSynLast.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
+                seismogramObs = seismoHandlerObs.getSeismogram(static_cast<Acquisition::SeismogramType>(i));
                 seismogramObs -= seismogramSynLast;
                 seismogramSyn -= seismogramSynLast;
                 denominator += seismogramSyn.getData().l2Norm() * seismogramSyn.getData().l2Norm();
-                seismogramObs *= seismogramSynLast;
-                numerator += seismogramObs.getData().l2Norm();
+                seismogramObs *= seismogramSyn;
+                scai::lama::DenseVector<ValueType> traceSum = seismogramObs.getTraceSum();
+                numerator += traceSum.sum();
             }  
         }
     }
     if (steplengthType == 1) {    
         steplengthOptimum = steplength * numerator / denominator;
-//         if (steplengthOptimum < 0)
-//             steplengthOptimum = -steplengthOptimum;
+        HOST_PRINT(commAll, "\nnumerator: " << numerator << "\n");
+        HOST_PRINT(commAll, "\ndenominator: " << denominator << "\n");
     }
 
     commInterShot->sumArray(misfitTest.getLocalValues());

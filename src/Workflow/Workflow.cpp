@@ -84,23 +84,43 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
  \param comm Communicator 
  */
 template <typename ValueType>
-void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::CommunicatorPtr comm)
+void KITGPI::Workflow::Workflow<ValueType>::printInvertForParameters(scai::dmemo::CommunicatorPtr comm) const
+{
+    if (isSeismic) {
+        if (invertForVp)
+            HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
+        if (invertForVs)
+            HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
+        if (invertForDensity)
+            HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
+    } else {
+        if (invertForSigmaEM)
+            HOST_PRINT(comm, "invertForSigmaEM = " << invertForSigmaEM << "\n");
+        if (invertForEpsilonEM)
+            HOST_PRINT(comm, "invertForEpsilonEM = " << invertForEpsilonEM << "\n");
+        if (invertForTauSigmaEM)
+            HOST_PRINT(comm, "invertForTauSigmaEM = " << invertForTauSigmaEM << "\n");
+        if (invertForTauEpsilonEM)
+            HOST_PRINT(comm, "invertForTauEpsilonEM = " << invertForTauEpsilonEM << "\n");
+    }
+    if (invertForPorosity)
+        HOST_PRINT(comm, "invertForPorosity = " << invertForPorosity << "\n");
+    if (invertForSaturation)
+        HOST_PRINT(comm, "invertForSaturation = " << invertForSaturation << "\n");
+    if (invertForReflectivity)
+        HOST_PRINT(comm, "invertForReflectivity = " << invertForReflectivity << "\n");
+}
+
+/*! \brief Print current set of workflow variables to terminal
+ *
+ \param comm Communicator 
+ */
+template <typename ValueType>
+void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::CommunicatorPtr comm) const
 {
     HOST_PRINT(comm, "=================================================\n");
     HOST_PRINT(comm, "Workflow stage parameters: \n");
-    if (isSeismic) {
-        HOST_PRINT(comm, "invertForVp = " << invertForVp << "\n");
-        HOST_PRINT(comm, "invertForVs = " << invertForVs << "\n");
-        HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
-    } else {
-        HOST_PRINT(comm, "invertForSigmaEM = " << invertForSigmaEM << "\n");
-        HOST_PRINT(comm, "invertForEpsilonEM = " << invertForEpsilonEM << "\n");
-        HOST_PRINT(comm, "invertForTauSigmaEM = " << invertForTauSigmaEM << "\n");
-        HOST_PRINT(comm, "invertForTauEpsilonEM = " << invertForTauEpsilonEM << "\n");
-    }
-    HOST_PRINT(comm, "invertForPorosity = " << invertForPorosity << "\n");
-    HOST_PRINT(comm, "invertForSaturation = " << invertForSaturation << "\n");
-    HOST_PRINT(comm, "invertForReflectivity = " << invertForReflectivity << "\n");
+    printInvertForParameters(comm);
     HOST_PRINT(comm, "relativeMisfitChange = " << relativeMisfitChange << "\n");
     HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
     HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");

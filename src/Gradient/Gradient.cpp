@@ -146,6 +146,13 @@ std::vector<bool> KITGPI::Gradient::Gradient<ValueType>::getInvertForParameters(
     return workflowInner.getInvertForParameters();
 }
 
+/*! \brief get an inner workflow */
+template <typename ValueType>
+void KITGPI::Gradient::Gradient<ValueType>::printInvertForParameters(scai::dmemo::CommunicatorPtr comm)
+{
+    workflowInner.printInvertForParameters(comm);
+}
+
 /*! \brief calculate the gradient of stabilizing functional of each model parameter */
 template <typename ValueType>
 scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcStabilizingFunctionalGradientPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit)

@@ -380,6 +380,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquis
         
         bool isSeismic = seismogramSyn.getIsSeismic();
         if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
+            // Seismic adjoint source P and EM adjoint source E times -1 for different reason. Seismic adjoint source P times -1 in an anti self-adjoint state equation, while EM adjoint source E times -1 in a self-adjoint state equation. Please see details in the manual.
             seismogramAdj *= -1;        
         }
     }
@@ -593,7 +594,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
         seismogramObstemp.getData().scaleRows(tempL2NormSyn);  */  
         // Choi 2012
         // seismogramSyntemp *= seismogramObstemp.getData().maxNorm() / seismogramSyntemp.getData().maxNorm();
-        scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
+        scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
+        Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
         tempL2NormSyn = 1 / tempL2NormSyn;
         seismogramSyntemp.normalizeTrace(2);
         seismogramObstemp.normalizeTrace(2);
@@ -779,7 +781,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
         seismogramObstemp.getData() = tempDataSyn; 
         
         seismogramAdj = seismogramSyntemp + seismogramObstemp;
-//     seismogramAdj *= -1;   
     
         bool isSeismic = seismogramSyn.getIsSeismic();
         if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
