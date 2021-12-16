@@ -176,15 +176,15 @@ void KITGPI::Taper::Taper2D<ValueType>::calcSeismictoEMMatrix(KITGPI::Acquisitio
     ValueType x;
     ValueType y;
     ValueType z;
-    ValueType x0 = config.get<ValueType>("x0");
-    ValueType y0 = config.get<ValueType>("y0");
-    ValueType z0 = config.get<ValueType>("z0");
     ValueType xEM;
     ValueType yEM;
     ValueType zEM;
-    ValueType x0EM = configEM.get<ValueType>("x0");
-    ValueType y0EM = configEM.get<ValueType>("y0");
-    ValueType z0EM = configEM.get<ValueType>("z0");
+    ValueType x0 = modelCoordinates.getX0();
+    ValueType y0 = modelCoordinates.getY0();
+    ValueType z0 = modelCoordinates.getZ0();
+    ValueType x0EM = modelCoordinatesEM.getX0();
+    ValueType y0EM = modelCoordinatesEM.getY0();
+    ValueType z0EM = modelCoordinatesEM.getZ0();
     IndexType supplementaryOrder;
     IndexType supplementaryWidth;        
     
@@ -269,15 +269,15 @@ void KITGPI::Taper::Taper2D<ValueType>::calcEMtoSeismicMatrix(KITGPI::Acquisitio
     ValueType x;
     ValueType y;
     ValueType z;
-    ValueType x0 = config.get<ValueType>("x0");
-    ValueType y0 = config.get<ValueType>("y0");
-    ValueType z0 = config.get<ValueType>("z0");
     ValueType xEM;
     ValueType yEM;
     ValueType zEM;
-    ValueType x0EM = configEM.get<ValueType>("x0");
-    ValueType y0EM = configEM.get<ValueType>("y0");
-    ValueType z0EM = configEM.get<ValueType>("z0");
+    ValueType x0 = modelCoordinates.getX0();
+    ValueType y0 = modelCoordinates.getY0();
+    ValueType z0 = modelCoordinates.getZ0();
+    ValueType x0EM = modelCoordinatesEM.getX0();
+    ValueType y0EM = modelCoordinatesEM.getY0();
+    ValueType z0EM = modelCoordinatesEM.getZ0();
     IndexType supplementaryOrder;
     IndexType supplementaryWidth;        
     

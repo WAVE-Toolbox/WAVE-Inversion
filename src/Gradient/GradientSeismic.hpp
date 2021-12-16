@@ -54,6 +54,7 @@ namespace KITGPI
             virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
             
             virtual void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) = 0;
+            virtual void smoothGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) = 0;
             
             virtual void setInvertForParameters(std::vector<bool> setInvertForParameters);
             

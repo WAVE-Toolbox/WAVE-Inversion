@@ -421,7 +421,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         modelCoordinatesBig.init(configBig);
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
         sources.getAcquisitionSettings(configBig, sourceSettingsBig);
-        Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig);
+        Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
     }
     
     typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));

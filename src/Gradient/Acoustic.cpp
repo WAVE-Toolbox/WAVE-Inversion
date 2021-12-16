@@ -493,6 +493,29 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumGradientPerShot(KITGPI::Modelpara
     reflectivity += temp; //take over the values
 }
 
+/*! \brief Smooth gradient by Gaussian window
+\param modelCoordinates coordinate class object of the model
+*/
+template <typename ValueType>
+void KITGPI::Gradient::Acoustic<ValueType>::smoothGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
+{
+    scai::lama::DenseVector<ValueType> velocity; 
+    velocity = model.getVelocityP();
+    ValueType velocityMean = velocity.sum() / velocity.size(); 
+    if (workflowInner.getInvertForVp()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(velocityP, modelCoordinates, velocityMean, FCmax);
+    }
+    if (workflowInner.getInvertForDensity()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(density, modelCoordinates, velocityMean, FCmax);
+    }
+    if (workflowInner.getInvertForPorosity()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(porosity, modelCoordinates, velocityMean, FCmax);
+    }
+    if (workflowInner.getInvertForSaturation()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(saturation, modelCoordinates, velocityMean, FCmax);
+    }
+}
+
 /*! \brief function for scaling the gradients with the model parameter
  *
  \param model Abstract model.

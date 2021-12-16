@@ -3,9 +3,9 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface';
-equationType = 'ViscoSH';
-NoiseType = 'Noisy';
+observationType = 'Surface_Stream';
+equationType = 'TMEM';
+NoiseType = '';
 modelType = 'Inv';
 HPCType = 'HPC';
 dimension=cellMerge({equationType,'2D'},0);
@@ -19,12 +19,22 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-% Output file
-% switch for saving snapshots to picture file 1=yes (jpg) 2= yes (png) other=no
-imagesave=0;
+copy_inv = 0; copy_true_start = 0;
+imagesave = 0;
+DIR_PATH_NEW = 'data/';
+invertParameterType = 'EpsilonEMSigmaEM';
+bandPass = 'BP550MHz';
+NoisedB = '';
+NoisedB = cellMerge({NoiseType,NoisedB},0);
+sourceType = '';
+timeGain = '';
+depthGain = '';
+Insert_name = cellMerge({invertParameterType,...
+    bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
+
 writefiles=1;
-stage=5;
-useDamping=1; T0damp=10e-3; T1damp=100e-3; 
+stage=1;
+useDamping=0; T0damp=15e-9; T1damp=25e-9; 
 showLegend = 0;
 showResidual = 0;
 showmax=30;
@@ -38,7 +48,7 @@ parameterisation = [0 0];
 exchangeStrategy = [0 0];
 orientation = 'vertical';
 wiggleType='vararea';
-writeSource=0;
+writeSourceTrue=1;
 source = readSourcesfromConfig(configTrue);
 DT=config.getValue('seismoDT');
 fileFormat=config.getValue('SeismogramFormat');
@@ -49,7 +59,7 @@ else
 end
 [Nshot n]=size(source);
 seismogram=[];seismogramTrue=[];
-dampFactor=1e-2/DT;
+dampFactor=2e-2/DT;
 for ishot=1:Nshot
     shotnr=source(ishot,1);
     SOURCE_TYPE=source(ishot,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
@@ -68,31 +78,16 @@ for ishot=1:Nshot
     end
     sourceInv=sourceInv.*timeDamping;
     writeSourceFilename=configTrue.getString('writeSourceFilename');
-    if writeSource~=0        
-        filenameTrue=['../' writeSourceFilename '_shot_' num2str(shotnr)];
+    if writeSourceTrue~=0        
+        filenameTrue=['../' writeSourceFilename '.shot_' num2str(shotnr)];
         sourceTrue=readSeismogram(filenameTrue,fileFormat);
         seismogramTrue=[seismogramTrue;sourceTrue];
     end
     seismogram=[seismogram;sourceInv];
 end
-%% write
 filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage) '.' component];
 filenameTrue=['../' writeSourceFilename '.' component];
-filenameStart=['../' writeSourceFilename '.' component];
-if writefiles~=0
-    answer=overwritedlg(filenameInv,fileFormat);
-    if answer==0
-        return;
-    end
-    writeSeismogram(filenameInv,seismogram,fileFormat);
-    if writeSource~=0  
-        answer=overwritedlg(filenameTrue,fileFormat);
-        if answer==0
-            return;
-        end
-        writeSeismogram(filenameTrue,seismogramTrue,fileFormat);
-    end
-end
+
 %% plot
 imageScale=1.2;
 symblicName='';
@@ -108,13 +103,43 @@ titleName = '';
     ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType,showText,textName);
 offset.value=[1:Nshot];
 offset.labelName='Source number';
-syntheticDatanameAll = getFilenameModelAll(filenameTrue,filenameStart,{filenameInv}...
-    ,inversionType);
 residualScale=1;
-[h answer] = plotSeismogram_multi(DT,showmax,...
-    syntheticDatanameAll,imagesave,orientation,lineSettingAll,legendNameAll,offset,...
+syntheticDatanameAll={filenameTrue;filenameInv};
+syntheticDataAll = {seismogramTrue;seismogram};
+[imagename] = getImagenameFromfileList(syntheticDatanameAll);
+[h answer] = plotSeismogramData_multi(DT,showmax,...
+    syntheticDataAll,imagesave,orientation,lineSettingAll,legendNameAll,offset,...
     titleLabelSettingAll,showLegend,showResidual,normalize,wiggleType...
-    ,imageScale,fileFormat,residualScale);
+    ,imageScale,imagename,residualScale);
+
+%% write
+if writefiles~=0
+    answer=overwritedlg(filenameInv,fileFormat);
+    if answer==0
+        return;
+    end
+    writeSeismogram(filenameInv,seismogram,fileFormat);
+    if writeSourceTrue~=0  
+        answer=overwritedlg(filenameTrue,fileFormat);
+        if answer==0
+            return;
+        end
+        writeSeismogram(filenameTrue,seismogramTrue,fileFormat);
+    end
+end
+
+if copy_inv == 1
+    answer = copyfile_image(filenameInv,fileFormat,DIR_PATH_NEW,Insert_name,config); 
+    if answer==0
+        return;
+    end 
+end
+if copy_true_start == 1
+    answer = copyfile_image_forward(filenameTrue,fileFormat,DIR_PATH_NEW,Insert_name,config);  
+    if answer==0
+        return;
+    end 
+end
 
 addpath('../configuration');
 addpath('../common');

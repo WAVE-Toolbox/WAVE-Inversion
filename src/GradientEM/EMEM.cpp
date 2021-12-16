@@ -443,36 +443,59 @@ void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparamete
     scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
     recoverMatrix.assignTranspose(recoverMatrix);
     
-    scai::lama::SparseVector<ValueType> eraseVector = model.getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
-    scai::lama::SparseVector<ValueType> recoverVector;
-    recoverVector = 1.0 - eraseVector;
+//     scai::lama::SparseVector<ValueType> eraseVector = model.getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
+//     scai::lama::SparseVector<ValueType> recoverVector;
+//     recoverVector = 1.0 - eraseVector;
     
     scai::lama::DenseVector<ValueType> temp;
     
     temp = recoverMatrix * gradientPerShot.getDielectricPermittivity(); //transform pershot into big model
-    temp *= recoverVector;
-    dielectricPermittivity *= eraseVector;
+//     temp *= recoverVector;
+//     dielectricPermittivity *= eraseVector;
     dielectricPermittivity += temp; //take over the values
   
     temp = recoverMatrix * gradientPerShot.getElectricConductivity(); //transform pershot into big model
-    temp *= recoverVector;
-    electricConductivity *= eraseVector;
+//     temp *= recoverVector;
+//     electricConductivity *= eraseVector;
     electricConductivity += temp; //take over the values
     
     temp = recoverMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
-    temp *= recoverVector;
-    porosity *= eraseVector;
+//     temp *= recoverVector;
+//     porosity *= eraseVector;
     porosity += temp; //take over the values
     
     temp = recoverMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
-    temp *= recoverVector;
-    saturation *= eraseVector;
+//     temp *= recoverVector;
+//     saturation *= eraseVector;
     saturation += temp; //take over the values
     
     temp = recoverMatrix * gradientPerShot.getReflectivity(); //transform pershot into big model
-    temp *= recoverVector;
-    reflectivity *= eraseVector;
+//     temp *= recoverVector;
+//     reflectivity *= eraseVector;
     reflectivity += temp; //take over the values
+}
+
+/*! \brief Smooth gradient by Gaussian window
+\param modelCoordinates coordinate class object of the model
+*/
+template <typename ValueType>
+void KITGPI::Gradient::EMEM<ValueType>::smoothGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
+{
+    scai::lama::DenseVector<ValueType> velocity; 
+    velocity = model.getVelocityEM();
+    ValueType velocityMean = velocity.sum() / velocity.size();
+    if (workflowInner.getInvertForEpsilonEM()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(dielectricPermittivity, modelCoordinates, velocityMean, FCmax);
+    }
+    if (workflowInner.getInvertForSigmaEM()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(electricConductivity, modelCoordinates, velocityMean, FCmax);
+    }
+    if (workflowInner.getInvertForPorosity()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(porosity, modelCoordinates, velocityMean, FCmax);
+    }
+    if (workflowInner.getInvertForSaturation()) {
+        KITGPI::Common::applyGaussianSmoothTo2DVector(saturation, modelCoordinates, velocityMean, FCmax);
+    }
 }
 
 /*! \brief Function for scaling the gradients with the model parameter 
@@ -546,7 +569,80 @@ void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparam
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::applyEnergyPreconditioning(ValueType epsilonHessian, scai::IndexType saveApproxHessian, std::string filename, scai::IndexType fileFormat)
 {
+    // see Nuber et al., 2015., Enhancement of near-surface elastic full waveform inversion results in regions of low sensitivities.
+    scai::lama::DenseVector<ValueType> approxHessian;  
+       
+    if (workflowInner.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {
+        approxHessian = electricConductivity;
+        approxHessian *= electricConductivity;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".sigmaEM", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        electricConductivity *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
+        approxHessian = dielectricPermittivity;
+        approxHessian *= dielectricPermittivity;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".epsilonEMr", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        dielectricPermittivity *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForPorosity() && porosity.maxNorm() != 0) {
+        approxHessian = porosity;
+        approxHessian *= porosity;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".porosity", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        porosity *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForSaturation() && saturation.maxNorm() != 0) {
+        approxHessian = saturation;
+        approxHessian *= saturation;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".saturation", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        saturation *= approxHessian; 
+    }
+    
+    if (workflowInner.getInvertForReflectivity() && reflectivity.maxNorm() != 0) {
+        approxHessian = reflectivity;
+        approxHessian *= reflectivity;
+        approxHessian += epsilonHessian*approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm(); 
+        
+        if(saveApproxHessian){
+            IO::writeVector(approxHessian, filename + ".reflectivity", fileFormat);        
+        }
+            
+        approxHessian = 1 / approxHessian;
+        reflectivity *= approxHessian; 
+    }
 }
+
 /*! \brief Function for normalizing the gradient
  */
 template <typename ValueType>

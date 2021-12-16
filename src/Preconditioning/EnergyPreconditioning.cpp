@@ -24,15 +24,9 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
     if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
         approxHessianAdjoint.setSameValue(dist, 0);
 
-    if (isSeismic) {
-        wavefieldVX.setSameValue(dist, 0);
-        wavefieldVY.setSameValue(dist, 0);
-        wavefieldVZ.setSameValue(dist, 0);
-    } else {
-        wavefieldEX.setSameValue(dist, 0);
-        wavefieldEY.setSameValue(dist, 0);
-        wavefieldEZ.setSameValue(dist, 0);       
-    }
+    wavefieldX.setSameValue(dist, 0);
+    wavefieldY.setSameValue(dist, 0);
+    wavefieldZ.setSameValue(dist, 0);
 }
 
 /*! \brief Calculate the approximation of the diagonal of the inverse of the Hessian for one shot
@@ -46,99 +40,86 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
 {
     if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3 && isSeismic) {               
         if(equationType.compare("sh") != 0 && equationType.compare("viscosh") != 0){
-            wavefieldVX = wavefield.getRefVX();
-            wavefieldVX *= wavefieldVX;
-            wavefieldVX *= DT;
-            approxHessian += wavefieldVX;  
+            wavefieldX = wavefield.getRefVX();
+            wavefieldX *= wavefieldX;
+            wavefieldX *= DT;
+            approxHessian += wavefieldX;  
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldVX = wavefieldAdjoint.getRefVX();
-                if (wavefieldVX.maxNorm() != 0)
-                    wavefieldVX *= wavefield.getRefVX().maxNorm() / wavefieldVX.maxNorm();
-                wavefieldVX *= wavefieldVX;
-                wavefieldVX *= DT;
-                approxHessianAdjoint += wavefieldVX; 
+                wavefieldX = wavefieldAdjoint.getRefVX();
+                wavefieldX *= wavefieldX;
+                wavefieldX *= DT;
+                approxHessianAdjoint += wavefieldX; 
             }      
         }
             
         if(equationType.compare("sh") != 0 && equationType.compare("viscosh") != 0){
-            wavefieldVY = wavefield.getRefVY();
-            wavefieldVY *= wavefieldVY;
-            wavefieldVY *= DT;
-            approxHessian += wavefieldVY;   
+            wavefieldY = wavefield.getRefVY();
+            wavefieldY *= wavefieldY;
+            wavefieldY *= DT;
+            approxHessian += wavefieldY;   
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldVY = wavefieldAdjoint.getRefVY();
-                if (wavefieldVY.maxNorm() != 0)
-                    wavefieldVY *= wavefield.getRefVY().maxNorm() / wavefieldVY.maxNorm();
-                wavefieldVY *= wavefieldVY;
-                wavefieldVY *= DT;
-                approxHessianAdjoint += wavefieldVY;
+                wavefieldY = wavefieldAdjoint.getRefVY();
+                wavefieldY *= wavefieldY;
+                wavefieldY *= DT;
+                approxHessianAdjoint += wavefieldY;
             }             
         }
         
         if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
-            wavefieldVZ = wavefield.getRefVZ();
-            wavefieldVZ *= wavefieldVZ;
-            wavefieldVZ *= DT;
-            approxHessian += wavefieldVZ;  
+            wavefieldZ = wavefield.getRefVZ();
+            wavefieldZ *= wavefieldZ;
+            wavefieldZ *= DT;
+            approxHessian += wavefieldZ;  
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldVZ = wavefieldAdjoint.getRefVZ();
-                if (wavefieldVZ.maxNorm() != 0)
-                    wavefieldVZ *= wavefield.getRefVZ().maxNorm() / wavefieldVZ.maxNorm();
-                wavefieldVZ *= wavefieldVZ;
-                wavefieldVZ *= DT;
-                approxHessianAdjoint += wavefieldVZ; 
+                wavefieldZ = wavefieldAdjoint.getRefVZ();
+                wavefieldZ *= wavefieldZ;
+                wavefieldZ *= DT;
+                approxHessianAdjoint += wavefieldZ; 
             }                   
         }    
     } else if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3 && !isSeismic) {            
         if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
-            wavefieldEX = wavefield.getRefEX();
-            wavefieldEX *= wavefieldEX;
-            wavefieldEX *= DT;
-            approxHessian += wavefieldEX;  
+            wavefieldX = wavefield.getRefEX();
+            wavefieldX *= wavefieldX;
+            wavefieldX *= DT;
+            approxHessian += wavefieldX;  
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldEX = wavefieldAdjoint.getRefEX();
-                if (wavefieldEX.maxNorm() != 0)
-                    wavefieldEX *= wavefield.getRefEX().maxNorm() / wavefieldEX.maxNorm();
-                wavefieldEX *= wavefieldEX;
-                wavefieldEX *= DT;
-                approxHessianAdjoint += wavefieldEX; 
+                wavefieldX = wavefieldAdjoint.getRefEX();
+                wavefieldX *= wavefieldX;
+                wavefieldX *= DT;
+                approxHessianAdjoint += wavefieldX; 
             }
         }
             
         if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
-            wavefieldEY = wavefield.getRefEY();
-            wavefieldEY *= wavefieldEY;
-            wavefieldEY *= DT;
-            approxHessian += wavefieldEY;
+            wavefieldY = wavefield.getRefEY();
+            wavefieldY *= wavefieldY;
+            wavefieldY *= DT;
+            approxHessian += wavefieldY;
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldEY = wavefieldAdjoint.getRefEY();
-                if (wavefieldEY.maxNorm() != 0)
-                    wavefieldEY *= wavefield.getRefEY().maxNorm() / wavefieldEY.maxNorm();
-                wavefieldEY *= wavefieldEY;
-                wavefieldEY *= DT;
-                approxHessianAdjoint += wavefieldEY;
+                wavefieldY = wavefieldAdjoint.getRefEY();
+                wavefieldY *= wavefieldY;
+                wavefieldY *= DT;
+                approxHessianAdjoint += wavefieldY;
             }        
         }
         
         if(dimension.compare("3d") == 0 || equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
-            wavefieldEZ = wavefield.getRefEZ();
-            wavefieldEZ *= wavefieldEZ;
-            wavefieldEZ *= DT;
-            approxHessian += wavefieldEZ;    
+            wavefieldZ = wavefield.getRefEZ();
+            wavefieldZ *= wavefieldZ;
+            wavefieldZ *= DT;
+            approxHessian += wavefieldZ;    
             if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldEZ = wavefieldAdjoint.getRefEZ();
-                if (wavefieldEZ.maxNorm() != 0)
-                    wavefieldEZ *= wavefield.getRefEZ().maxNorm() / wavefieldEZ.maxNorm();
-                wavefieldEZ *= wavefieldEZ;
-                wavefieldEZ *= DT;
-                approxHessianAdjoint += wavefieldEZ; 
+                wavefieldZ = wavefieldAdjoint.getRefEZ();
+                wavefieldZ *= wavefieldZ;
+                wavefieldZ *= DT;
+                approxHessianAdjoint += wavefieldZ; 
             }            
         } 
     }
 }
 
 /*! \brief Apply the approximation of the diagonal of the inverse of the Hessian for one shot
- *
  *
  \param gradientPerShot 
  \param shotNumber 
@@ -148,14 +129,14 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
 {
     if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3) {  
     //     sqrt(approxHessian) missing because of |u_i| (see IFOS2D)?
-        
-        if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-            approxHessian += approxHessianAdjoint;
-        }
-        
+    
         /* Stabilize Hessian for inversion (of diagonal matrix) and normalize Hessian */
+        if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
+            approxHessian *= approxHessianAdjoint;
+            approxHessian = scai::lama::sqrt(approxHessian);
+        }
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
-        approxHessian *= 1 / approxHessian.maxNorm(); 
+        approxHessian *= 1 / approxHessian.maxNorm();   
         
         if(saveApproxHessian){
             IO::writeVector(approxHessian, approxHessianName + ".shot_" + std::to_string(shotNumber), fileFormat);        

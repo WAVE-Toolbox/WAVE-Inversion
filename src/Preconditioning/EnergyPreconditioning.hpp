@@ -40,12 +40,9 @@ namespace KITGPI
         private:
             scai::lama::DenseVector<ValueType> approxHessian;            // approximation of the diagonal of the inverse of the Hessian 
             scai::lama::DenseVector<ValueType> approxHessianAdjoint; 
-            scai::lama::DenseVector<ValueType> wavefieldVX;
-            scai::lama::DenseVector<ValueType> wavefieldVY;
-            scai::lama::DenseVector<ValueType> wavefieldVZ;
-            scai::lama::DenseVector<ValueType> wavefieldEX;
-            scai::lama::DenseVector<ValueType> wavefieldEY;
-            scai::lama::DenseVector<ValueType> wavefieldEZ;
+            scai::lama::DenseVector<ValueType> wavefieldX;
+            scai::lama::DenseVector<ValueType> wavefieldY;
+            scai::lama::DenseVector<ValueType> wavefieldZ;
             scai::IndexType useEnergyPreconditioning;
             bool saveApproxHessian;
             std::string approxHessianName;

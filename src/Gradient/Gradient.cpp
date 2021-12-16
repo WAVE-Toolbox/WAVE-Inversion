@@ -107,9 +107,9 @@ void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama:
 template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds)
 {
-    auto dist = modelPerShot.getDensity().getDistributionPtr();
-    auto distBig = density.getDistributionPtr();
-    scai::hmemo::ContextPtr ctx = density.getContextPtr();
+    auto dist = modelPerShot.getPorosity().getDistributionPtr();
+    auto distBig = porosity.getDistributionPtr();
+    scai::hmemo::ContextPtr ctx = porosity.getContextPtr();
 
     scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix;
     scai::lama::CSRSparseMatrix<ValueType> recoverMatrix;

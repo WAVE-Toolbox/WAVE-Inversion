@@ -502,7 +502,7 @@ int main(int argc, char *argv[])
         if (useStreamConfig) {
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
             sources.getAcquisitionSettings(configBig, sourceSettingsBig);
-            Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig);
+            Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
             Acquisition::getSettingsPerShot<ValueType>(sourceSettings, sourceSettingsBig, cutCoordinates);
         } else {
             sources.getAcquisitionSettings(config, sourceSettings);
@@ -537,7 +537,7 @@ int main(int argc, char *argv[])
         if (useStreamConfigEM) {
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBigEM;
             sourcesEM.getAcquisitionSettings(configBigEM, sourceSettingsBigEM);
-            Acquisition::getCutCoord(cutCoordinatesEM, sourceSettingsBigEM);
+            Acquisition::getCutCoord(cutCoordinatesEM, sourceSettingsBigEM, modelCoordinatesEM, modelCoordinatesBigEM);
             Acquisition::getSettingsPerShot<ValueType>(sourceSettingsEM, sourceSettingsBigEM, cutCoordinatesEM);
         } else {
             sourcesEM.getAcquisitionSettings(configEM, sourceSettingsEM);
@@ -950,7 +950,7 @@ int main(int argc, char *argv[])
                     /* Update model for fd simulation (averaging, inverse Density ...) */
                     model->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
-                } else {
+                } else if (config.getAndCatch("gradientWeight", 0) != 0) {
                     gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds);
                 }
                 
@@ -1093,14 +1093,14 @@ int main(int argc, char *argv[])
                             sourceEst.applyFilter(sources, shotIndTrue);
                             if (config.get<bool>("useSourceSignalTaper"))
                                 sourceSignalTaper.apply(sources.getSeismogramHandler());
-                            if (config.get<bool>("writeInvertedSource"))
-                                sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                         } else {
                             sourceEst.applyFilter(sources, shotIndTrue);
                             if (config.get<bool>("useSourceSignalTaper"))
                                 sourceSignalTaper.apply(sources.getSeismogramHandler());
                         }
                     }
+                    if (config.get<bool>("writeInvertedSource"))
+                        sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     
                     if (config.get<IndexType>("useSeismogramTaper") > 1) {
                         seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
@@ -1323,17 +1323,22 @@ int main(int argc, char *argv[])
 
                 } //end of loop over shots
            
-                gradient->sumShotDomain(commInterShot);     
+                commInterShot->sumArray(misfitPerIt.getLocalValues());
+                dataMisfit->sumShotDomain(commInterShot);
+                dataMisfit->addToStorage(misfitPerIt);
+                misfitPerIt = 0;
+                gradient->sumShotDomain(commInterShot); 
+                if (!useStreamConfig) {
+                    gradient->smoothGradient(*model, modelCoordinates, workflow.getUpperCornerFreq());    
+                } else {
+                    gradient->smoothGradient(*model, modelCoordinatesBig, workflow.getUpperCornerFreq());    
+                }
                 if (useStreamConfig && config.getAndCatch("gradientWeight", 0) != 0)
                     *gradient *= gradient->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationType << " 1 =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
 
-                commInterShot->sumArray(misfitPerIt.getLocalValues());
-                dataMisfit->sumShotDomain(commInterShot);
-                dataMisfit->addToStorage(misfitPerIt);
-                misfitPerIt = 0;
                 
                 if (config.get<bool>("useGradientTaper"))
                     gradientTaper1D.apply(*gradient);
@@ -1698,7 +1703,7 @@ int main(int argc, char *argv[])
                     /* Update modelEM for fd simulation (averaging, getVelocityEM ...) */
                     modelEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot);  
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
-                } else {
+                } else if (configEM.getAndCatch("gradientWeight", 0) != 0) {
                     gradientEM->calcWeightingVector(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, uniqueShotIndsEM);
                 }
                 
@@ -1841,14 +1846,14 @@ int main(int argc, char *argv[])
                             sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
                             if (configEM.get<bool>("useSourceSignalTaper"))
                                 sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
-                            if (configEM.get<bool>("writeInvertedSource"))
-                                sourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                         } else {
                             sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
                             if (configEM.get<bool>("useSourceSignalTaper"))
                                 sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
                         }
                     }
+                    if (configEM.get<bool>("writeInvertedSource"))
+                        sourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                     
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1) {
                         seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
@@ -2075,7 +2080,12 @@ int main(int argc, char *argv[])
                 dataMisfitEM->sumShotDomain(commInterShot);        
                 dataMisfitEM->addToStorage(misfitPerItEM);
                 misfitPerItEM = 0;                
-                gradientEM->sumShotDomain(commInterShot);           
+                gradientEM->sumShotDomain(commInterShot);  
+                if (!useStreamConfig) {
+                    gradientEM->smoothGradient(*modelEM, modelCoordinatesEM, workflowEM.getUpperCornerFreq());    
+                } else {
+                    gradientEM->smoothGradient(*modelEM, modelCoordinatesBigEM, workflowEM.getUpperCornerFreq());    
+                }       
                 if (useStreamConfigEM && configEM.getAndCatch("gradientWeight", 0) != 0)
                     *gradientEM *= gradientEM->getWeightingVector();
 
