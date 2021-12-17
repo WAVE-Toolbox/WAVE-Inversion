@@ -127,7 +127,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     HOST_PRINT(commAll, "\nOptimum step length: " << steplengthOptimum << "\n");
 
     end_t = scai::common::Walltime::get();
-    HOST_PRINT(commAll, "\nFinished step length search in  " << end_t - start_t << " sec.\n\n\n");
+    HOST_PRINT(commAll, "\nFinished step length search in " << end_t - start_t << " sec.\n\n\n");
 }
 
 /*! \brief Find the optimal steplength
@@ -308,7 +308,7 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     HOST_PRINT(commAll, "\nOptimum step length: " << steplengthOptimum << "\n");
 
     end_t = scai::common::Walltime::get();
-    HOST_PRINT(commAll, "\nFinished step length search in  " << end_t - start_t << " sec.\n\n\n");
+    HOST_PRINT(commAll, "\nFinished step length search in " << end_t - start_t << " sec.\n\n\n");
 }
 
 /*! \brief Parabolic fit

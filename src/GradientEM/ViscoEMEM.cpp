@@ -589,28 +589,32 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::sumGradientPerShot(KITGPI::Modelpar
 \param modelCoordinates coordinate class object of the model
 */
 template <typename ValueType>
-void KITGPI::Gradient::ViscoEMEM<ValueType>::smoothGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
+void KITGPI::Gradient::ViscoEMEM<ValueType>::smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
 {
-    scai::lama::DenseVector<ValueType> velocity; 
-    velocity = model.getVelocityEM();
-    ValueType velocityMean = velocity.sum() / velocity.size(); 
+    scai::lama::DenseVector<ValueType> vector2Dpadded;
     if (workflowInner.getInvertForEpsilonEM()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(dielectricPermittivity, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(dielectricPermittivity, vector2Dpadded, ksize, modelCoordinates); 
+        dielectricPermittivity = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForSigmaEM()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(electricConductivity, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(electricConductivity, vector2Dpadded, ksize, modelCoordinates); 
+        electricConductivity = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForTauEpsilonEM()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(tauDielectricPermittivity, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(tauDielectricPermittivity, vector2Dpadded, ksize, modelCoordinates); 
+        tauDielectricPermittivity = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForTauSigmaEM()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(tauElectricConductivity, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(tauElectricConductivity, vector2Dpadded, ksize, modelCoordinates); 
+        tauElectricConductivity = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForPorosity()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(porosity, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(porosity, vector2Dpadded, ksize, modelCoordinates); 
+        porosity = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForSaturation()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(saturation, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(saturation, vector2Dpadded, ksize, modelCoordinates); 
+        saturation = GaussianKernel * vector2Dpadded;
     }
 }
 

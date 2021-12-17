@@ -255,12 +255,14 @@ bool KITGPI::Gradient::Gradient<ValueType>::getNormalizeGradient() const
     return (normalizeGradient);
 }
 
-/*! \brief Set normalizeGradient parameter
+/*! \brief prepare for inversion
  */
 template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::setNormalizeGradient(bool const &gradNorm)
+void KITGPI::Gradient::Gradient<ValueType>::prepareForInversion(KITGPI::Configuration::Configuration config)
 {
-    normalizeGradient = gradNorm;
+    normalizeGradient = config.get<bool>("normalizeGradient");
+    weightGradient = config.get<scai::IndexType>("weightGradient");
+    smoothGradient = config.get<scai::IndexType>("smoothGradient");
 }
 
 /*! \brief Overloading = Operation

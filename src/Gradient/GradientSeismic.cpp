@@ -166,6 +166,27 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientSeismic<ValueType>:
     return (K_satDeSaturation);
 }
 
+/*! \brief calculate Gaussian kernel
+\param model model
+\param modelCoordinates coordinate class object of the model
+\param FCmax max frequency
+*/
+template <typename ValueType>
+void KITGPI::Gradient::GradientSeismic<ValueType>::calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
+{
+    if (smoothGradient == 2 || smoothGradient == 3) {
+        ValueType start_t = common::Walltime::get();
+        scai::lama::DenseVector<ValueType> velocity; 
+        velocity = model.getVelocityS();
+        ValueType velocityMean = velocity.sum() / velocity.size(); 
+        
+        KITGPI::Common::calcGaussianKernelFor2DVector(velocity, GaussianKernel, ksize, modelCoordinates, velocityMean, FCmax);
+        
+        ValueType end_t = common::Walltime::get();
+        HOST_PRINT(commAll, "\nCalculate Gaussian kernel with kernel size " << ksize << " (" << ksize*modelCoordinates.getDH() << " m) in " << end_t - start_t << " sec.\n");
+    }
+}
+
 /*! \brief Get const reference to density parameter
  * 
  */

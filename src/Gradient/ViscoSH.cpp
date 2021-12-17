@@ -496,22 +496,24 @@ void KITGPI::Gradient::ViscoSH<ValueType>::sumGradientPerShot(KITGPI::Modelparam
 \param modelCoordinates coordinate class object of the model
 */
 template <typename ValueType>
-void KITGPI::Gradient::ViscoSH<ValueType>::smoothGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
+void KITGPI::Gradient::ViscoSH<ValueType>::smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
 {
-    scai::lama::DenseVector<ValueType> velocity; 
-    velocity = model.getVelocityS();
-    ValueType velocityMean = velocity.sum() / velocity.size(); 
+    scai::lama::DenseVector<ValueType> vector2Dpadded;
     if (workflowInner.getInvertForVs()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(velocityS, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(velocityS, vector2Dpadded, ksize, modelCoordinates); 
+        velocityS = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForDensity()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(density, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(density, vector2Dpadded, ksize, modelCoordinates); 
+        density = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForPorosity()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(porosity, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(porosity, vector2Dpadded, ksize, modelCoordinates); 
+        porosity = GaussianKernel * vector2Dpadded;
     }
     if (workflowInner.getInvertForSaturation()) {
-        KITGPI::Common::applyGaussianSmoothTo2DVector(saturation, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::pad2DVector(saturation, vector2Dpadded, ksize, modelCoordinates); 
+        saturation = GaussianKernel * vector2Dpadded;
     }
 }
 

@@ -96,7 +96,7 @@ namespace KITGPI
             virtual void setSaturation(scai::lama::Vector<ValueType> const &setSaturation);
             virtual void setReflectivity(scai::lama::Vector<ValueType> const &setReflectivity); 
 
-            void setNormalizeGradient(bool const &normGrad);
+            void prepareForInversion(KITGPI::Configuration::Configuration config);
 
             virtual void scale(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) = 0;
             virtual void applyEnergyPreconditioning(ValueType epsilonHessian, scai::IndexType saveApproxHessian, std::string filename, scai::IndexType fileFormat) = 0;
@@ -111,7 +111,8 @@ namespace KITGPI
             virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
             
             virtual void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) = 0;
-            virtual void smoothGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) = 0;
+            virtual void calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) = 0;
+            virtual void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) = 0;
             void calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds);
             scai::lama::DenseVector<ValueType> getWeightingVector();
 
@@ -207,9 +208,13 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> saturation; //!< Vector storing saturation
             scai::lama::DenseVector<ValueType> reflectivity; //!< Vector storing reflectivity
 
-            bool normalizeGradient;
+            bool normalizeGradient = false;
+            scai::IndexType weightGradient = 0;
+            scai::IndexType smoothGradient = 0;
             KITGPI::Workflow::Workflow<ValueType> workflowInner;
             scai::lama::DenseVector<ValueType> weightingVector;
+            scai::lama::CSRSparseMatrix<ValueType> GaussianKernel;
+            scai::IndexType ksize;
             
             /* Seismic */
             scai::lama::DenseVector<ValueType> density; //!< Vector storing Density.

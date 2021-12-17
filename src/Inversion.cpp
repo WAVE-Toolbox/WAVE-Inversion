@@ -763,10 +763,10 @@ int main(int argc, char *argv[])
             crossGradientDerivative->init(ctx, distBig);
         }
         gradientPerShot->init(ctx, dist); 
-        gradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));
-        gradientPerShot->setNormalizeGradient(config.get<bool>("normalizeGradient"));  
-        stabilizingFunctionalGradient->setNormalizeGradient(config.get<bool>("normalizeGradient"));
-        crossGradientDerivative->setNormalizeGradient(config.get<bool>("normalizeGradient"));     
+        gradient->prepareForInversion(config);
+        gradientPerShot->prepareForInversion(config);  
+        stabilizingFunctionalGradient->prepareForInversion(config);
+        crossGradientDerivative->prepareForInversion(config);     
     }
     if (inversionTypeEM != 0) {
         if (!useStreamConfigEM) {
@@ -779,10 +779,10 @@ int main(int argc, char *argv[])
             crossGradientDerivativeEM->init(ctx, distBigEM);
         }
         gradientPerShotEM->init(ctx, distEM);   
-        gradientEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));
-        gradientPerShotEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));  
-        stabilizingFunctionalGradientEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient")); 
-        crossGradientDerivativeEM->setNormalizeGradient(configEM.get<bool>("normalizeGradient"));     
+        gradientEM->prepareForInversion(configEM);
+        gradientPerShotEM->prepareForInversion(configEM);  
+        stabilizingFunctionalGradientEM->prepareForInversion(configEM); 
+        crossGradientDerivativeEM->prepareForInversion(configEM);     
     }
     
     /* --------------------------------------- */
@@ -900,7 +900,13 @@ int main(int argc, char *argv[])
             else if (workflow.getLowerCornerFreq() != 0.0 && workflow.getUpperCornerFreq() == 0.0)
                 freqFilter.calc(transFcnFmly, "lp", workflow.getFilterOrder(), workflow.getLowerCornerFreq());
             else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
-                freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq());            
+                freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq()); 
+            
+            if (!useStreamConfig) {
+                gradient->calcGaussianKernel(commAll, *model, modelCoordinates, workflow.getUpperCornerFreq());    
+            } else {
+                gradient->calcGaussianKernel(commAll, *model, modelCoordinatesBig, workflow.getUpperCornerFreq());    
+            }
         }
         
         if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2)) {
@@ -919,7 +925,13 @@ int main(int argc, char *argv[])
             else if (workflowEM.getLowerCornerFreq() != 0.0 && workflowEM.getUpperCornerFreq() == 0.0)
                 freqFilterEM.calc(transFcnFmly, "lp", workflowEM.getFilterOrder(), workflowEM.getLowerCornerFreq());
             else if (workflowEM.getLowerCornerFreq() == 0.0 && workflowEM.getUpperCornerFreq() != 0.0)
-                freqFilterEM.calc(transFcnFmly, "hp", workflowEM.getFilterOrder(), workflowEM.getUpperCornerFreq());                                
+                freqFilterEM.calc(transFcnFmly, "hp", workflowEM.getFilterOrder(), workflowEM.getUpperCornerFreq());  
+            
+            if (!useStreamConfigEM) {
+                gradientEM->calcGaussianKernel(commAll, *modelEM, modelCoordinatesEM, workflowEM.getUpperCornerFreq());    
+            } else {
+                gradientEM->calcGaussianKernel(commAll, *modelEM, modelCoordinatesBigEM, workflowEM.getUpperCornerFreq());    
+            }
         }
         
         /* --------------------------------------- */
@@ -950,7 +962,7 @@ int main(int argc, char *argv[])
                     /* Update model for fd simulation (averaging, inverse Density ...) */
                     model->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
-                } else if (config.getAndCatch("gradientWeight", 0) != 0) {
+                } else if (config.getAndCatch("weightGradient", 0) != 0) {
                     gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds);
                 }
                 
@@ -1329,11 +1341,11 @@ int main(int argc, char *argv[])
                 misfitPerIt = 0;
                 gradient->sumShotDomain(commInterShot); 
                 if (!useStreamConfig) {
-                    gradient->smoothGradient(*model, modelCoordinates, workflow.getUpperCornerFreq());    
+                    gradient->smooth(commAll, *model, modelCoordinates, workflow.getUpperCornerFreq());    
                 } else {
-                    gradient->smoothGradient(*model, modelCoordinatesBig, workflow.getUpperCornerFreq());    
+                    gradient->smooth(commAll, *model, modelCoordinatesBig, workflow.getUpperCornerFreq());    
                 }
-                if (useStreamConfig && config.getAndCatch("gradientWeight", 0) != 0)
+                if (useStreamConfig && config.getAndCatch("weightGradient", 0) != 0)
                     *gradient *= gradient->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationType << " 1 =========");
@@ -1703,7 +1715,7 @@ int main(int argc, char *argv[])
                     /* Update modelEM for fd simulation (averaging, getVelocityEM ...) */
                     modelEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot);  
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
-                } else if (configEM.getAndCatch("gradientWeight", 0) != 0) {
+                } else if (configEM.getAndCatch("weightGradient", 0) != 0) {
                     gradientEM->calcWeightingVector(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, uniqueShotIndsEM);
                 }
                 
@@ -2082,11 +2094,11 @@ int main(int argc, char *argv[])
                 misfitPerItEM = 0;                
                 gradientEM->sumShotDomain(commInterShot);  
                 if (!useStreamConfig) {
-                    gradientEM->smoothGradient(*modelEM, modelCoordinatesEM, workflowEM.getUpperCornerFreq());    
+                    gradientEM->smooth(commAll, *modelEM, modelCoordinatesEM, workflowEM.getUpperCornerFreq());    
                 } else {
-                    gradientEM->smoothGradient(*modelEM, modelCoordinatesBigEM, workflowEM.getUpperCornerFreq());    
+                    gradientEM->smooth(commAll, *modelEM, modelCoordinatesBigEM, workflowEM.getUpperCornerFreq());    
                 }       
-                if (useStreamConfigEM && configEM.getAndCatch("gradientWeight", 0) != 0)
+                if (useStreamConfigEM && configEM.getAndCatch("weightGradient", 0) != 0)
                     *gradientEM *= gradientEM->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationTypeEM << " 2 =========");

@@ -85,8 +85,8 @@ namespace KITGPI
 
             void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);        
             
-            void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;
-            void smoothGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) override;
+            void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) override;            
+            void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) override;
             
           private:
             using Gradient<ValueType>::equationType;
@@ -100,10 +100,16 @@ namespace KITGPI
             using Gradient<ValueType>::porosity;
             using Gradient<ValueType>::saturation;
             using Gradient<ValueType>::reflectivity;
+            
+            using Gradient<ValueType>::normalizeGradient;
+            using Gradient<ValueType>::weightGradient;
+            using Gradient<ValueType>::smoothGradient;
+            using Gradient<ValueType>::weightingVector;
             using Gradient<ValueType>::workflowInner;
+            using Gradient<ValueType>::GaussianKernel;
+            using Gradient<ValueType>::ksize;
                         
             /* Not required parameters */
-            using Gradient<ValueType>::weightingVector;
         };
     }
 }
