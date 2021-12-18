@@ -902,11 +902,8 @@ int main(int argc, char *argv[])
             else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
                 freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq()); 
             
-            if (!useStreamConfig) {
-                gradient->calcGaussianKernel(commAll, *model, modelCoordinates, workflow.getUpperCornerFreq());    
-            } else {
-                gradient->calcGaussianKernel(commAll, *model, modelCoordinatesBig, workflow.getUpperCornerFreq());    
-            }
+            gradient->calcGaussianKernel(commAll, *model, config, workflow.getUpperCornerFreq());
+            gradientPerShot->calcGaussianKernel(commAll, *model, config, workflow.getUpperCornerFreq());
         }
         
         if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2)) {
@@ -927,11 +924,8 @@ int main(int argc, char *argv[])
             else if (workflowEM.getLowerCornerFreq() == 0.0 && workflowEM.getUpperCornerFreq() != 0.0)
                 freqFilterEM.calc(transFcnFmly, "hp", workflowEM.getFilterOrder(), workflowEM.getUpperCornerFreq());  
             
-            if (!useStreamConfigEM) {
-                gradientEM->calcGaussianKernel(commAll, *modelEM, modelCoordinatesEM, workflowEM.getUpperCornerFreq());    
-            } else {
-                gradientEM->calcGaussianKernel(commAll, *modelEM, modelCoordinatesBigEM, workflowEM.getUpperCornerFreq());    
-            }
+            gradientEM->calcGaussianKernel(commAll, *modelEM, configEM, workflowEM.getUpperCornerFreq());  
+            gradientPerShotEM->calcGaussianKernel(commAll, *modelEM, configEM, workflowEM.getUpperCornerFreq());    
         }
         
         /* --------------------------------------- */
@@ -1340,11 +1334,7 @@ int main(int argc, char *argv[])
                 dataMisfit->addToStorage(misfitPerIt);
                 misfitPerIt = 0;
                 gradient->sumShotDomain(commInterShot); 
-                if (!useStreamConfig) {
-                    gradient->smooth(commAll, *model, modelCoordinates, workflow.getUpperCornerFreq());    
-                } else {
-                    gradient->smooth(commAll, *model, modelCoordinatesBig, workflow.getUpperCornerFreq());    
-                }
+                gradient->smooth(commAll, config);
                 if (useStreamConfig && config.getAndCatch("weightGradient", 0) != 0)
                     *gradient *= gradient->getWeightingVector();
 
@@ -1406,7 +1396,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
                     stabilizingFunctionalGradient->calcStabilizingFunctionalGradient(*model, *modelPriori, config, *dataMisfit, workflow);                    
-//                     stabilizingFunctionalGradient->applyMedianFilter(config);  
+//                     stabilizingFunctionalGradient->smooth(commAll, config);  
                     if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         stabilizingFunctionalGradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".stabilizingFunctionalGradient", config.get<IndexType>("FileFormat"), workflow);
                     }  
@@ -2092,12 +2082,8 @@ int main(int argc, char *argv[])
                 dataMisfitEM->sumShotDomain(commInterShot);        
                 dataMisfitEM->addToStorage(misfitPerItEM);
                 misfitPerItEM = 0;                
-                gradientEM->sumShotDomain(commInterShot);  
-                if (!useStreamConfig) {
-                    gradientEM->smooth(commAll, *modelEM, modelCoordinatesEM, workflowEM.getUpperCornerFreq());    
-                } else {
-                    gradientEM->smooth(commAll, *modelEM, modelCoordinatesBigEM, workflowEM.getUpperCornerFreq());    
-                }       
+                gradientEM->sumShotDomain(commInterShot); 
+                gradientEM->smooth(commAll, configEM); 
                 if (useStreamConfigEM && configEM.getAndCatch("weightGradient", 0) != 0)
                     *gradientEM *= gradientEM->getWeightingVector();
 
@@ -2158,7 +2144,7 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commAll, "\n===========================================\n");
                     
                     stabilizingFunctionalGradientEM->calcStabilizingFunctionalGradient(*modelEM, *modelPrioriEM, configEM, *dataMisfitEM, workflowEM);
-//                     stabilizingFunctionalGradientEM->applyMedianFilter(configEM);  
+//                     stabilizingFunctionalGradientEM->smooth(commAll, configEM);  
                     if (configEM.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                         stabilizingFunctionalGradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".stabilizingFunctionalGradientEM", configEM.get<IndexType>("FileFormat"), workflowEM);
                     }  

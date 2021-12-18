@@ -585,8 +585,6 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     }
     if (steplengthType == 1) {    
         steplengthOptimum = steplength * numerator / denominator;
-        HOST_PRINT(commAll, "\nnumerator: " << numerator << "\n");
-        HOST_PRINT(commAll, "\ndenominator: " << denominator << "\n");
     }
 
     commInterShot->sumArray(misfitTest.getLocalValues());

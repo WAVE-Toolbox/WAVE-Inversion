@@ -69,8 +69,6 @@ namespace KITGPI
             virtual void calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
             virtual ValueType calcCrossGradientMisfit() = 0;            
             
-            virtual void applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
-
             scai::lama::DenseVector<ValueType> calcStabilizingFunctionalGradientPerModel(scai::lama::DenseVector<ValueType> modelResidualVec, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit);
             virtual void calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
             
@@ -111,8 +109,8 @@ namespace KITGPI
             virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
             
             virtual void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) = 0;
-            virtual void calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) = 0;
-            virtual void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) = 0;
+            virtual void calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config, ValueType FCmax) = 0;
+            virtual void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) = 0;
             void calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds);
             scai::lama::DenseVector<ValueType> getWeightingVector();
 
@@ -210,7 +208,6 @@ namespace KITGPI
 
             bool normalizeGradient = false;
             scai::IndexType weightGradient = 0;
-            scai::IndexType smoothGradient = 0;
             KITGPI::Workflow::Workflow<ValueType> workflowInner;
             scai::lama::DenseVector<ValueType> weightingVector;
             scai::lama::CSRSparseMatrix<ValueType> GaussianKernel;

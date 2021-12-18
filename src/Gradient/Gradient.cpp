@@ -262,7 +262,6 @@ void KITGPI::Gradient::Gradient<ValueType>::prepareForInversion(KITGPI::Configur
 {
     normalizeGradient = config.get<bool>("normalizeGradient");
     weightGradient = config.get<scai::IndexType>("weightGradient");
-    smoothGradient = config.get<scai::IndexType>("smoothGradient");
 }
 
 /*! \brief Overloading = Operation

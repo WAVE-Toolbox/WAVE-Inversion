@@ -532,28 +532,57 @@ void KITGPI::Gradient::Elastic<ValueType>::sumGradientPerShot(KITGPI::Modelparam
 \param modelCoordinates coordinate class object of the model
 */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
+void KITGPI::Gradient::Elastic<ValueType>::smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config)
 {
-    scai::lama::DenseVector<ValueType> vector2Dpadded;
-    if (workflowInner.getInvertForVp()) {
-        KITGPI::Common::pad2DVector(velocityP, vector2Dpadded, ksize, modelCoordinates); 
-        velocityP = GaussianKernel * vector2Dpadded;
-    }
-    if (workflowInner.getInvertForVs()) {
-        KITGPI::Common::pad2DVector(velocityS, vector2Dpadded, ksize, modelCoordinates); 
-        velocityS = GaussianKernel * vector2Dpadded;
-    }
-    if (workflowInner.getInvertForDensity()) {
-        KITGPI::Common::pad2DVector(density, vector2Dpadded, ksize, modelCoordinates); 
-        density = GaussianKernel * vector2Dpadded;
-    }
-    if (workflowInner.getInvertForPorosity()) {
-        KITGPI::Common::pad2DVector(porosity, vector2Dpadded, ksize, modelCoordinates); 
-        porosity = GaussianKernel * vector2Dpadded;
-    }
-    if (workflowInner.getInvertForSaturation()) {
-        KITGPI::Common::pad2DVector(saturation, vector2Dpadded, ksize, modelCoordinates); 
-        saturation = GaussianKernel * vector2Dpadded;
+    if (config.get<IndexType>("NZ") == 1) {
+        scai::IndexType smoothGradient = config.get<IndexType>("smoothGradient");
+        scai::IndexType NY = config.get<IndexType>("NY");
+        scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
+        if (smoothGradient == 1 || smoothGradient == 3) {
+            HOST_PRINT(commAll, "\nApply median filter to gradient\n");
+            scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
+            
+            if (workflowInner.getInvertForVp())
+                KITGPI::Common::applyMedianFilterTo2DVector(velocityP, NX, NY, spatialLength);
+            if (workflowInner.getInvertForVs())
+                KITGPI::Common::applyMedianFilterTo2DVector(velocityS, NX, NY, spatialLength);
+            if (workflowInner.getInvertForDensity())
+                KITGPI::Common::applyMedianFilterTo2DVector(density, NX, NY, spatialLength);
+            if (workflowInner.getInvertForPorosity())
+                KITGPI::Common::applyMedianFilterTo2DVector(porosity, NX, NY, spatialLength);
+            if (workflowInner.getInvertForSaturation())
+                KITGPI::Common::applyMedianFilterTo2DVector(saturation, NX, NY, spatialLength);
+            if (workflowInner.getInvertForReflectivity())
+                KITGPI::Common::applyMedianFilterTo2DVector(reflectivity, NX, NY, spatialLength);
+        }
+        if (smoothGradient == 2 || smoothGradient == 3) {
+            HOST_PRINT(commAll, "\nApply Gaussian filter to gradient\n");
+            scai::lama::DenseVector<ValueType> vector2Dpadded;
+            if (workflowInner.getInvertForVp()) {
+                KITGPI::Common::pad2DVector(velocityP, vector2Dpadded, NX, NY, ksize); 
+                velocityP = GaussianKernel * vector2Dpadded;
+            }
+            if (workflowInner.getInvertForVs()) {
+                KITGPI::Common::pad2DVector(velocityS, vector2Dpadded, NX, NY, ksize); 
+                velocityS = GaussianKernel * vector2Dpadded;
+            }
+            if (workflowInner.getInvertForDensity()) {
+                KITGPI::Common::pad2DVector(density, vector2Dpadded, NX, NY, ksize); 
+                density = GaussianKernel * vector2Dpadded;
+            }
+            if (workflowInner.getInvertForPorosity()) {
+                KITGPI::Common::pad2DVector(porosity, vector2Dpadded, NX, NY, ksize); 
+                porosity = GaussianKernel * vector2Dpadded;
+            }
+            if (workflowInner.getInvertForSaturation()) {
+                KITGPI::Common::pad2DVector(saturation, vector2Dpadded, NX, NY, ksize); 
+                saturation = GaussianKernel * vector2Dpadded;
+            }
+            if (workflowInner.getInvertForReflectivity()) {
+                KITGPI::Common::pad2DVector(reflectivity, vector2Dpadded, NX, NY, ksize); 
+                reflectivity = GaussianKernel * vector2Dpadded;
+            }
+        }
     }
 }
 
@@ -1401,47 +1430,6 @@ void KITGPI::Gradient::Elastic<ValueType>::calcStabilizingFunctionalGradient(KIT
     } else {
         this->initParameterisation(density, ctx, dist, 0.0);
     }  
-}
-
-/*! \brief Apply a median filter to filter the extreme value of the gradient
- */
-template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow)
-{
-    scai::lama::DenseVector<ValueType> densitytemp;
-    scai::lama::DenseVector<ValueType> velocityStemp;
-    scai::lama::DenseVector<ValueType> velocityPtemp;
-    scai::lama::DenseVector<ValueType> porositytemp;
-    scai::lama::DenseVector<ValueType> saturationtemp;
-    scai::lama::DenseVector<ValueType> reflectivitytemp;
-    
-    densitytemp = this->getDensity();
-    velocityStemp = this->getVelocityS();
-    velocityPtemp = this->getVelocityP();
-    porositytemp = this->getPorosity();
-    saturationtemp = this->getSaturation();
-    reflectivitytemp = this->getReflectivity();
-    
-    scai::IndexType NZ = config.get<IndexType>("NZ");
-    if (NZ == 1) {
-        scai::IndexType NY = config.get<IndexType>("NY");
-        scai::IndexType NX = porositytemp.size() / NY;
-        scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-            
-        KITGPI::Common::applyMedianFilterTo2DVector(densitytemp, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(velocityStemp, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(velocityPtemp, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(porositytemp, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(saturationtemp, NX, NY, spatialLength);
-        KITGPI::Common::applyMedianFilterTo2DVector(reflectivitytemp, NX, NY, spatialLength);
-        
-        this->setDensity(densitytemp);
-        this->setVelocityS(velocityStemp);
-        this->setVelocityP(velocityPtemp);
-        this->setPorosity(porositytemp);    
-        this->setSaturation(saturationtemp);
-        this->setReflectivity(reflectivitytemp);
-    }
 }
 
 template class KITGPI::Gradient::Elastic<float>;

@@ -36,8 +36,6 @@ namespace KITGPI
             virtual void calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivativesEM, KITGPI::Configuration::Configuration configEM, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             virtual ValueType calcCrossGradientMisfit() override;
             
-            virtual void applyMedianFilter(KITGPI::Configuration::Configuration config, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
-
             virtual void calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPriori, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
             
             virtual void write(std::string filename, scai::IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const = 0;
@@ -57,8 +55,8 @@ namespace KITGPI
             virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
             
             virtual void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth) = 0;
-            virtual void calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) override;
-            virtual void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax) = 0;
+            virtual void calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config, ValueType FCmax) override;
+            virtual void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) = 0;
             
             virtual void setInvertForParameters(std::vector<bool> setInvertForParameters) override;
             
@@ -128,9 +126,6 @@ namespace KITGPI
             using Gradient<ValueType>::saturation; //!< Vector storing saturation
             using Gradient<ValueType>::reflectivity; //!< Vector storing reflectivity
 
-            using Gradient<ValueType>::normalizeGradient;
-            using Gradient<ValueType>::weightGradient;
-            using Gradient<ValueType>::smoothGradient;
             using Gradient<ValueType>::workflowInner;
             using Gradient<ValueType>::GaussianKernel;
             using Gradient<ValueType>::ksize;         

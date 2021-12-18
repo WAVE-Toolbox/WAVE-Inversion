@@ -172,18 +172,22 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientSeismic<ValueType>:
 \param FCmax max frequency
 */
 template <typename ValueType>
-void KITGPI::Gradient::GradientSeismic<ValueType>::calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType FCmax)
+void KITGPI::Gradient::GradientSeismic<ValueType>::calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config, ValueType FCmax)
 {
+    scai::IndexType smoothGradient = config.get<IndexType>("smoothGradient");
     if (smoothGradient == 2 || smoothGradient == 3) {
-        ValueType start_t = common::Walltime::get();
+        double start_t = common::Walltime::get();
+        scai::IndexType NY = config.get<IndexType>("NY");
+        scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
+        ValueType DH = config.get<ValueType>("DH");
         scai::lama::DenseVector<ValueType> velocity; 
         velocity = model.getVelocityS();
         ValueType velocityMean = velocity.sum() / velocity.size(); 
         
-        KITGPI::Common::calcGaussianKernelFor2DVector(velocity, GaussianKernel, ksize, modelCoordinates, velocityMean, FCmax);
+        KITGPI::Common::calcGaussianKernelFor2DVector(porosity, GaussianKernel, ksize, NX, NY, DH, velocityMean, FCmax);
         
-        ValueType end_t = common::Walltime::get();
-        HOST_PRINT(commAll, "\nCalculate Gaussian kernel with kernel size " << ksize << " (" << ksize*modelCoordinates.getDH() << " m) in " << end_t - start_t << " sec.\n");
+        double end_t = common::Walltime::get();
+        HOST_PRINT(commAll, "\nCalculate Gaussian kernel with matrix size = " << NX*NY << " and kernel size = " << ksize << " (" << ksize*DH << " m) in " << end_t - start_t << " sec.\n");
     }
 }
 

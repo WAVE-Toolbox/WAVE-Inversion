@@ -68,16 +68,14 @@ namespace KITGPI
         \param FCmax max frequency
         */
         template <typename ValueType>
-        void calcGaussianKernelFor2DVector(scai::lama::DenseVector<ValueType> &vector2D, scai::lama::CSRSparseMatrix<ValueType> &GaussianKernel, IndexType &ksize, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, ValueType velocityMean, ValueType FCmax)
+        void calcGaussianKernelFor2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::CSRSparseMatrix<ValueType> &GaussianKernel, IndexType &ksize, IndexType NX, IndexType NY, ValueType DH, ValueType velocityMean, ValueType FCmax)
         {
-            IndexType NX = modelCoordinates.getNX();
-            IndexType NY = modelCoordinates.getNY();
             scai::hmemo::ContextPtr ctx = vector2D.getContextPtr();
 			
 			/* define filter size as fraction of reference velocity wavelength */
             ValueType wavelengthMin = velocityMean / FCmax;
-            ValueType WD_DAMP = 0.4;
-            ksize = round(WD_DAMP * wavelengthMin / modelCoordinates.getDH());
+            ValueType WD_DAMP = 0.25;
+            ksize = round(WD_DAMP * wavelengthMin / DH);
 			
             if (!(ksize % 2)) {
                 ksize += 1;
@@ -106,12 +104,14 @@ namespace KITGPI
             IndexType colIndex;
             lama::MatrixAssembly<ValueType> assembly;
             dist->getOwnedIndexes(ownedIndexes);
-            KITGPI::Acquisition::coordinate3D coordinate;
+            IndexType X;
+            IndexType Y;
             for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
-                coordinate = modelCoordinates.index2coordinate(ownedIndex);
+                Y = ownedIndex / NX;
+                X = ownedIndex - NX * Y;
                 for (IndexType ix=-khalf; ix<=khalf; ix++){
                     for (IndexType iy=-khalf; iy<=khalf; iy++){					 
-                        colIndex=(coordinate.y+khalf+iy)*(NX+ksize-1)+coordinate.x+khalf+ix;
+                        colIndex=(Y+khalf+iy)*(NX+ksize-1)+X+khalf+ix;
                         assembly.push(ownedIndex, colIndex, kernel[(iy+khalf)*ksize+ix+khalf]);
                     }
                 }
@@ -125,10 +125,8 @@ namespace KITGPI
         \param modelCoordinates coordinate class object of the model
         */
         template <typename ValueType>
-        void pad2DVector(scai::lama::DenseVector<ValueType> &vector2D, scai::lama::DenseVector<ValueType> &vector2Dpadded, IndexType ksize, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates)
+        void pad2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::DenseVector<ValueType> &vector2Dpadded, IndexType NX, IndexType NY, IndexType ksize)
         {
-            IndexType NX = modelCoordinates.getNX();
-            IndexType NY = modelCoordinates.getNY();
             scai::hmemo::ContextPtr ctx = vector2D.getContextPtr();
 			
             if (!(ksize % 2)) {
