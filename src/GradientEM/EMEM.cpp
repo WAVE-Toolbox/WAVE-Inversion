@@ -435,43 +435,34 @@ void KITGPI::Gradient::EMEM<ValueType>::sumShotDomain(scai::dmemo::CommunicatorP
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd, scai::IndexType boundaryWidth)
+void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd)
 {
     auto distBig = dielectricPermittivity.getDistributionPtr();
     auto dist = gradientPerShot.getDielectricPermittivity().getDistributionPtr();
 
     scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
     recoverMatrix.assignTranspose(recoverMatrix);
-    
-//     scai::lama::SparseVector<ValueType> eraseVector = model.getEraseVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd), boundaryWidth);
-//     scai::lama::SparseVector<ValueType> recoverVector;
-//     recoverVector = 1.0 - eraseVector;
-    
+        
     scai::lama::DenseVector<ValueType> temp;
     
     temp = recoverMatrix * gradientPerShot.getDielectricPermittivity(); //transform pershot into big model
-//     temp *= recoverVector;
-//     dielectricPermittivity *= eraseVector;
+    temp *= this->getWeightingVector();
     dielectricPermittivity += temp; //take over the values
   
     temp = recoverMatrix * gradientPerShot.getElectricConductivity(); //transform pershot into big model
-//     temp *= recoverVector;
-//     electricConductivity *= eraseVector;
+    temp *= this->getWeightingVector();
     electricConductivity += temp; //take over the values
     
     temp = recoverMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
-//     temp *= recoverVector;
-//     porosity *= eraseVector;
+    temp *= this->getWeightingVector();
     porosity += temp; //take over the values
     
     temp = recoverMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
-//     temp *= recoverVector;
-//     saturation *= eraseVector;
+    temp *= this->getWeightingVector();
     saturation += temp; //take over the values
     
     temp = recoverMatrix * gradientPerShot.getReflectivity(); //transform pershot into big model
-//     temp *= recoverVector;
-//     reflectivity *= eraseVector;
+    temp *= this->getWeightingVector();
     reflectivity += temp; //take over the values
 }
 

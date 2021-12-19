@@ -63,7 +63,6 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart, IndexT
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, IndexType iEnd1, IndexType iStart2, IndexType iEnd2, bool reverse)
 {
-
     SCAI_ASSERT_ERROR(iStart1 >= 0 && iEnd2 < data.size() && iStart1 < iEnd1 && iStart2 < iEnd2 && iEnd1 <= iStart2, "invalid taper edges");
 
     lama::DenseVector<ValueType> helpTaper;
@@ -178,6 +177,15 @@ template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
 {
     grad *= data;
+}
+
+/*! \brief Apply taper to a Gradient
+ \param grad Gradient
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Taper::Taper1D<ValueType>::getTaper()
+{
+    return data;
 }
 
 /*! \brief Read a taper from file

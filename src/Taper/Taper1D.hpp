@@ -34,6 +34,7 @@ namespace KITGPI
             void read(std::string filename, scai::IndexType fileFormat);
             
             bool getDirection() const;
+            scai::lama::DenseVector<ValueType> getTaper();
 
           private:
             void calcCosineTaperUp(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd);

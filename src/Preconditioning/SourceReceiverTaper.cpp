@@ -5,9 +5,9 @@ using namespace scai;
  *
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::getTaper()
+scai::lama::SparseVector<ValueType> KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::getTaper()
 {
-//     return taper;
+    return taper;
 }
 
 /*! \brief apply taper on gradient

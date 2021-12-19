@@ -956,8 +956,8 @@ int main(int argc, char *argv[])
                     /* Update model for fd simulation (averaging, inverse Density ...) */
                     model->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
-                } else if (config.getAndCatch("weightGradient", 0) != 0) {
-                    gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds);
+                } else {
+                    gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds, config.get<IndexType>("BoundaryWidth"));
                 }
                 
                 if (workflow.iteration == 0 && commInterShot->getRank() == 0) {
@@ -1321,7 +1321,7 @@ int main(int argc, char *argv[])
                     if (!useStreamConfig) {
                         *gradient += *gradientPerShot;
                     } else {
-                        gradient->sumGradientPerShot(*model, *gradientPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, shotIndTrue, config.get<IndexType>("BoundaryWidth"));
+                        gradient->sumGradientPerShot(*model, *gradientPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, shotIndTrue);
                     }
 
                     end_t_shot = common::Walltime::get();
@@ -1335,8 +1335,6 @@ int main(int argc, char *argv[])
                 misfitPerIt = 0;
                 gradient->sumShotDomain(commInterShot); 
                 gradient->smooth(commAll, config);
-                if (useStreamConfig && config.getAndCatch("weightGradient", 0) != 0)
-                    *gradient *= gradient->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationType << " 1 =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
@@ -1705,8 +1703,8 @@ int main(int argc, char *argv[])
                     /* Update modelEM for fd simulation (averaging, getVelocityEM ...) */
                     modelEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot);  
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
-                } else if (configEM.getAndCatch("weightGradient", 0) != 0) {
-                    gradientEM->calcWeightingVector(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, uniqueShotIndsEM);
+                } else {
+                    gradientEM->calcWeightingVector(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, uniqueShotIndsEM, configEM.get<IndexType>("BoundaryWidth"));
                 }
                 
                 if (workflowEM.iteration == 0 && commInterShot->getRank() == 0) {
@@ -2070,7 +2068,7 @@ int main(int argc, char *argv[])
                     if (!useStreamConfigEM) {
                         *gradientEM += *gradientPerShotEM;
                     } else {
-                        gradientEM->sumGradientPerShot(*modelEM, *gradientPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, shotIndTrue, configEM.get<IndexType>("BoundaryWidth"));
+                        gradientEM->sumGradientPerShot(*modelEM, *gradientPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, shotIndTrue);
                     }
 
                     end_t_shot = common::Walltime::get();
@@ -2084,8 +2082,6 @@ int main(int argc, char *argv[])
                 misfitPerItEM = 0;                
                 gradientEM->sumShotDomain(commInterShot); 
                 gradientEM->smooth(commAll, configEM); 
-                if (useStreamConfigEM && configEM.getAndCatch("weightGradient", 0) != 0)
-                    *gradientEM *= gradientEM->getWeightingVector();
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationTypeEM << " 2 =========");
                 HOST_PRINT(commAll, "\n=================================================\n");

@@ -105,30 +105,25 @@ void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama:
  \param uniqueShotInds unique shot indexes 
  */
 template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds)
+void KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds, scai::IndexType boundaryWidth)
 {
-    auto dist = modelPerShot.getPorosity().getDistributionPtr();
     auto distBig = porosity.getDistributionPtr();
     scai::hmemo::ContextPtr ctx = porosity.getContextPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> shrinkMatrix;
-    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix;
-    shrinkMatrix.allocate(dist, distBig);
-    recoverMatrix.allocate(distBig, dist);
-    shrinkMatrix.setContextPtr(ctx);
-    recoverMatrix.setContextPtr(ctx);
-    scai::lama::DenseVector<ValueType> weightingVectorPerShot(dist, 1.0);
-    scai::lama::DenseVector<ValueType> weightingVectorTemp(distBig, 0.0);
-    IndexType numshots = uniqueShotInds.size();
-    for (IndexType shotInd = 0; shotInd < numshots; shotInd++) {        
-        shrinkMatrix = modelPerShot.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(uniqueShotInds[shotInd]));
-        recoverMatrix.assignTranspose(shrinkMatrix);
-        weightingVectorTemp += recoverMatrix * weightingVectorPerShot;
-    }
     weightingVector.allocate(distBig);
-    weightingVector = 1.0 / weightingVectorTemp; // the weighting of overlapping area
-    Common::replaceInvalid<ValueType>(weightingVector, 0.0);
-    
+    weightingVector.setContextPtr(ctx);
+    if (weightGradient == 0) {
+        weightingVector = 1.0;
+    } else if (weightGradient == 1) {
+        weightingVector = 0.0;
+        auto dist = modelPerShot.getPorosity().getDistributionPtr();
+        IndexType numshots = uniqueShotInds.size();
+        for (IndexType shotInd = 0; shotInd < numshots; shotInd++) {        
+            weightingVector += modelPerShot.getShrinkVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(uniqueShotInds[shotInd]), 2*boundaryWidth);
+        }
+        weightingVector = 1.0 / weightingVector; // the weighting of overlapping area
+        Common::replaceInvalid<ValueType>(weightingVector, 0.0);
+    }
     IO::writeVector(weightingVector, "gradients/weightingVector", 1);
 }
 
@@ -261,7 +256,7 @@ template <typename ValueType>
 void KITGPI::Gradient::Gradient<ValueType>::prepareForInversion(KITGPI::Configuration::Configuration config)
 {
     normalizeGradient = config.get<bool>("normalizeGradient");
-    weightGradient = config.get<scai::IndexType>("weightGradient");
+    weightGradient = config.getAndCatch("weightGradient", 0);
 }
 
 /*! \brief Overloading = Operation
