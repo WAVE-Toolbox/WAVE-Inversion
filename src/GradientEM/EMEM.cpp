@@ -444,26 +444,43 @@ void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparamete
     recoverMatrix.assignTranspose(recoverMatrix);
         
     scai::lama::DenseVector<ValueType> temp;
+    scai::lama::DenseVector<ValueType> weightingVector;
+    scai::IndexType NY = modelCoordinates.getNY();
     
-    temp = recoverMatrix * gradientPerShot.getDielectricPermittivity(); //transform pershot into big model
-    temp *= this->getWeightingVector();
-    dielectricPermittivity += temp; //take over the values
+    if (workflowInner.getInvertForEpsilonEM()) {
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getDielectricPermittivity(), NY, shotInd);
+        temp = weightingVector * gradientPerShot.getDielectricPermittivity();  
+        temp = recoverMatrix * temp;
+        dielectricPermittivity += temp; 
+    }
   
-    temp = recoverMatrix * gradientPerShot.getElectricConductivity(); //transform pershot into big model
-    temp *= this->getWeightingVector();
-    electricConductivity += temp; //take over the values
-    
-    temp = recoverMatrix * gradientPerShot.getPorosity(); //transform pershot into big model
-    temp *= this->getWeightingVector();
-    porosity += temp; //take over the values
-    
-    temp = recoverMatrix * gradientPerShot.getSaturation(); //transform pershot into big model
-    temp *= this->getWeightingVector();
-    saturation += temp; //take over the values
-    
-    temp = recoverMatrix * gradientPerShot.getReflectivity(); //transform pershot into big model
-    temp *= this->getWeightingVector();
-    reflectivity += temp; //take over the values
+    if (workflowInner.getInvertForSigmaEM()) {
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getElectricConductivity(), NY, shotInd);
+        temp = weightingVector * gradientPerShot.getElectricConductivity();  
+        temp = recoverMatrix * temp;
+        electricConductivity += temp; 
+    }
+        
+    if (workflowInner.getInvertForPorosity()) {
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getPorosity(), NY, shotInd);
+        temp = weightingVector * gradientPerShot.getPorosity();  
+        temp = recoverMatrix * temp;
+        porosity += temp; 
+    }
+        
+    if (workflowInner.getInvertForSaturation()) {
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getSaturation(), NY, shotInd);
+        temp = weightingVector * gradientPerShot.getSaturation();  
+        temp = recoverMatrix * temp;
+        saturation += temp; 
+    }
+        
+    if (workflowInner.getInvertForReflectivity()) {
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getReflectivity(), NY, shotInd);
+        temp = weightingVector * gradientPerShot.getReflectivity();  
+        temp = recoverMatrix * temp;
+        reflectivity += temp; 
+    }
 }
 
 /*! \brief Smooth gradient by Gaussian window
@@ -473,52 +490,63 @@ template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config)
 {    
     if (config.get<IndexType>("NZ") == 1) {
-        scai::IndexType smoothGradient = config.get<IndexType>("smoothGradient");
+        scai::IndexType smoothGradient = config.getAndCatch("smoothGradient", 0);
         scai::IndexType NY = config.get<IndexType>("NY");
         scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
-        if (smoothGradient == 1 || smoothGradient == 3) {
-            double start_t = common::Walltime::get();
-            scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-            
-            if (workflowInner.getInvertForEpsilonEM())
-                KITGPI::Common::applyMedianFilterTo2DVector(dielectricPermittivity, NX, NY, spatialLength);
-            if (workflowInner.getInvertForSigmaEM())
-                KITGPI::Common::applyMedianFilterTo2DVector(electricConductivity, NX, NY, spatialLength);
-            if (workflowInner.getInvertForPorosity())
-                KITGPI::Common::applyMedianFilterTo2DVector(porosity, NX, NY, spatialLength);
-            if (workflowInner.getInvertForSaturation())
-                KITGPI::Common::applyMedianFilterTo2DVector(saturation, NX, NY, spatialLength);
-            if (workflowInner.getInvertForReflectivity())
-                KITGPI::Common::applyMedianFilterTo2DVector(reflectivity, NX, NY, spatialLength);
-            double end_t = common::Walltime::get();
-            HOST_PRINT(commAll, "\nApply median filter to gradient in " << end_t - start_t << " sec.\n");
-        }
-        if (smoothGradient == 2 || smoothGradient == 3) {
+        if (smoothGradient != 0) {
             double start_t = common::Walltime::get();
             scai::lama::DenseVector<ValueType> vector2Dpadded;
             if (workflowInner.getInvertForEpsilonEM()) {
-                KITGPI::Common::pad2DVector(dielectricPermittivity, vector2Dpadded, NX, NY, ksize); 
+                KITGPI::Common::pad2DVector(dielectricPermittivity, vector2Dpadded, NX, NY, PX, PY); 
                 dielectricPermittivity = GaussianKernel * vector2Dpadded;
             }
             if (workflowInner.getInvertForSigmaEM()) {
-                KITGPI::Common::pad2DVector(electricConductivity, vector2Dpadded, NX, NY, ksize); 
+                KITGPI::Common::pad2DVector(electricConductivity, vector2Dpadded, NX, NY, PX, PY); 
                 electricConductivity = GaussianKernel * vector2Dpadded;
             }
             if (workflowInner.getInvertForPorosity()) {
-                KITGPI::Common::pad2DVector(porosity, vector2Dpadded, NX, NY, ksize); 
+                KITGPI::Common::pad2DVector(porosity, vector2Dpadded, NX, NY, PX, PY); 
                 porosity = GaussianKernel * vector2Dpadded;
             }
             if (workflowInner.getInvertForSaturation()) {
-                KITGPI::Common::pad2DVector(saturation, vector2Dpadded, NX, NY, ksize); 
+                KITGPI::Common::pad2DVector(saturation, vector2Dpadded, NX, NY, PX, PY); 
                 saturation = GaussianKernel * vector2Dpadded;
             }
             if (workflowInner.getInvertForReflectivity()) {
-                KITGPI::Common::pad2DVector(reflectivity, vector2Dpadded, NX, NY, ksize); 
+                KITGPI::Common::pad2DVector(reflectivity, vector2Dpadded, NX, NY, PX, PY); 
                 reflectivity = GaussianKernel * vector2Dpadded;
             }
             double end_t = common::Walltime::get();
             HOST_PRINT(commAll, "\nApply Gaussian filter to gradient in " << end_t - start_t << " sec.\n");
         }
+    }
+}
+
+/*! \brief Smooth gradient by Gaussian window
+\param modelCoordinates coordinate class object of the model
+*/
+template <typename ValueType>
+void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config)
+{    
+    if (config.get<IndexType>("NZ") == 1) {
+        scai::IndexType NY = config.get<IndexType>("NY");
+        scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
+    
+        double start_t = common::Walltime::get();
+        scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
+        
+        if (workflowInner.getInvertForEpsilonEM())
+            KITGPI::Common::applyMedianFilterTo2DVector(dielectricPermittivity, NX, NY, spatialLength);
+        if (workflowInner.getInvertForSigmaEM())
+            KITGPI::Common::applyMedianFilterTo2DVector(electricConductivity, NX, NY, spatialLength);
+        if (workflowInner.getInvertForPorosity())
+            KITGPI::Common::applyMedianFilterTo2DVector(porosity, NX, NY, spatialLength);
+        if (workflowInner.getInvertForSaturation())
+            KITGPI::Common::applyMedianFilterTo2DVector(saturation, NX, NY, spatialLength);
+        if (workflowInner.getInvertForReflectivity())
+            KITGPI::Common::applyMedianFilterTo2DVector(reflectivity, NX, NY, spatialLength);
+        double end_t = common::Walltime::get();
+        HOST_PRINT(commAll, "\nApply median filter to gradient in " << end_t - start_t << " sec.\n");
     }
 }
 

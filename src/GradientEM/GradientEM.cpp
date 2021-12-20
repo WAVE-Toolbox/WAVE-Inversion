@@ -444,8 +444,8 @@ ValueType KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientMisfit()
 template <typename ValueType>
 void KITGPI::Gradient::GradientEM<ValueType>::calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config, ValueType FCmax)
 {
-    scai::IndexType smoothGradient = config.get<IndexType>("smoothGradient");
-    if (smoothGradient == 2 || smoothGradient == 3) {
+    scai::IndexType smoothGradient = config.getAndCatch("smoothGradient", 0);
+    if (smoothGradient != 0) {
         double start_t = common::Walltime::get();
         scai::IndexType NY = config.get<IndexType>("NY");
         scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
@@ -454,10 +454,10 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcGaussianKernel(scai::dmemo::Co
         velocity = model.getVelocityEM();
         ValueType velocityMean = velocity.sum() / velocity.size(); 
         
-        KITGPI::Common::calcGaussianKernelFor2DVector(porosity, GaussianKernel, ksize, NX, NY, DH, velocityMean, FCmax);
+        KITGPI::Common::calcGaussianKernelFor2DVector(porosity, GaussianKernel, PX, PY, NX, NY, DH, velocityMean, FCmax, smoothGradient);
         
         double end_t = common::Walltime::get();
-        HOST_PRINT(commAll, "\nCalculate Gaussian kernel with matrix size = " << NX*NY << " and kernel size = " << ksize << " (" << ksize*DH << " m) in " << end_t - start_t << " sec.\n");
+        HOST_PRINT(commAll, "\nCalculate Gaussian kernel with matrix size = " << (NX+PX-1)*(NY+PY-1) << " x " << (NX+PX-1)*(NY+PY-1) << " and kernel size = " << PX << " x " << PY << " (" << PX*DH << " m x " << PY*DH << " m) in " << end_t - start_t << " sec.\n");
     }
 }
 

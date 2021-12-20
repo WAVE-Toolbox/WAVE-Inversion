@@ -956,8 +956,6 @@ int main(int argc, char *argv[])
                     /* Update model for fd simulation (averaging, inverse Density ...) */
                     model->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
-                } else {
-                    gradient->calcWeightingVector(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates, uniqueShotInds, config.get<IndexType>("BoundaryWidth"));
                 }
                 
                 if (workflow.iteration == 0 && commInterShot->getRank() == 0) {
@@ -1338,7 +1336,6 @@ int main(int argc, char *argv[])
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationType << " 1 =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
-
                 
                 if (config.get<bool>("useGradientTaper"))
                     gradientTaper1D.apply(*gradient);
@@ -1421,6 +1418,7 @@ int main(int argc, char *argv[])
                 
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration), dataMisfit->getCrossGradientMisfit(workflow.iteration));
                 dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
+                dataMisfit->appendMisfitPerShotToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
                 dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
 
                 /* Check abort criteria */
@@ -1678,6 +1676,7 @@ int main(int argc, char *argv[])
                 
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1), dataMisfit->getCrossGradientMisfit(workflow.iteration + 1));
                 dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
+                dataMisfit->appendMisfitPerShotToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
                 dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
 
                 if (breakLoopType == 0 && breakLoopEM == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
@@ -1703,8 +1702,6 @@ int main(int argc, char *argv[])
                     /* Update modelEM for fd simulation (averaging, getVelocityEM ...) */
                     modelEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot);  
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
-                } else {
-                    gradientEM->calcWeightingVector(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM, uniqueShotIndsEM, configEM.get<IndexType>("BoundaryWidth"));
                 }
                 
                 if (workflowEM.iteration == 0 && commInterShot->getRank() == 0) {
@@ -2167,6 +2164,7 @@ int main(int argc, char *argv[])
 
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration), dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration));
                 dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
+                dataMisfitEM->appendMisfitPerShotToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
                 dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
 
                 /* Check abort criteria */
@@ -2444,6 +2442,7 @@ int main(int argc, char *argv[])
                 
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration + 1, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration + 1), dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration + 1));
                 dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
+                dataMisfitEM->appendMisfitPerShotToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
                 dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
 
                 if (breakLoopType == 0 && breakLoop == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {

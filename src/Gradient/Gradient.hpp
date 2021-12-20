@@ -111,8 +111,8 @@ namespace KITGPI
             virtual void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd) = 0;
             virtual void calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config, ValueType FCmax) = 0;
             virtual void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) = 0;
-            void calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds, scai::IndexType boundaryWidth);
-            scai::lama::DenseVector<ValueType> getWeightingVector();
+            virtual void applyMedianFilter(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) = 0;
+            scai::lama::DenseVector<ValueType> calcWeightingVector(scai::lama::Vector<ValueType> const &gradientPerShotVector, scai::IndexType NY, scai::IndexType shotInd);
 
             virtual void setInvertForParameters(std::vector<bool> setInvertForParameters) = 0;
             std::vector<bool> getInvertForParameters();
@@ -208,10 +208,11 @@ namespace KITGPI
 
             bool normalizeGradient = false;
             scai::IndexType weightGradient = 0;
-            KITGPI::Workflow::Workflow<ValueType> workflowInner;
             scai::lama::DenseVector<ValueType> weightingVector;
+            KITGPI::Workflow::Workflow<ValueType> workflowInner;
             scai::lama::CSRSparseMatrix<ValueType> GaussianKernel;
-            scai::IndexType ksize;
+            scai::IndexType PX;
+            scai::IndexType PY;
             
             /* Seismic */
             scai::lama::DenseVector<ValueType> density; //!< Vector storing Density.

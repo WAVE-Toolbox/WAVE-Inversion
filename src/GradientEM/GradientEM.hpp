@@ -57,6 +57,7 @@ namespace KITGPI
             virtual void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd) = 0;
             virtual void calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config, ValueType FCmax) override;
             virtual void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) = 0;
+            virtual void applyMedianFilter(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) = 0;
             
             virtual void setInvertForParameters(std::vector<bool> setInvertForParameters) override;
             
@@ -128,7 +129,9 @@ namespace KITGPI
 
             using Gradient<ValueType>::workflowInner;
             using Gradient<ValueType>::GaussianKernel;
-            using Gradient<ValueType>::ksize;         
+            using Gradient<ValueType>::PX;        
+            using Gradient<ValueType>::PY;
+            
             /* Seismic */
             using Gradient<ValueType>::density; //!< Vector storing Density.
 

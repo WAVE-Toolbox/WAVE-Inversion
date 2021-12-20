@@ -62,42 +62,59 @@ namespace KITGPI
         /*! \brief calculate Gaussian window
         \param vector2D gradient vector
         \param GaussianKernel Gaussian kernel
-        \param ksize size of kernel
+        \param PX size of kernel
         \param modelCoordinates coordinate class object of the model
         \param velocityMean mean velocity of the model
         \param FCmax max frequency
         */
         template <typename ValueType>
-        void calcGaussianKernelFor2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::CSRSparseMatrix<ValueType> &GaussianKernel, IndexType &ksize, IndexType NX, IndexType NY, ValueType DH, ValueType velocityMean, ValueType FCmax)
+        void calcGaussianKernelFor2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::CSRSparseMatrix<ValueType> &GaussianKernel, IndexType &PX, IndexType &PY, IndexType NX, IndexType NY, ValueType DH, ValueType velocityMean, ValueType FCmax, IndexType smoothGradient)
         {
             scai::hmemo::ContextPtr ctx = vector2D.getContextPtr();
 			
 			/* define filter size as fraction of reference velocity wavelength */
             ValueType wavelengthMin = velocityMean / FCmax;
-            ValueType WD_DAMP = 0.25;
-            ksize = round(WD_DAMP * wavelengthMin / DH);
+            ValueType wavelengthFraction = smoothGradient % 10;
+            smoothGradient = (smoothGradient - wavelengthFraction) / 10;
+            ValueType wavelengthFractionX = 1.0 / wavelengthFraction;
+            ValueType wavelengthFractionY = 0;
+            if (smoothGradient == 2) {
+                wavelengthFractionY = 1.0 / wavelengthFraction;
+            }
+            PX = round(wavelengthFractionX * wavelengthMin / DH);
+            PY = round(wavelengthFractionY * wavelengthMin / DH);
 			
-            if (!(ksize % 2)) {
-                ksize += 1;
+            if (!(PX % 2)) {
+                PX += 1;
+            }
+            if (!(PY % 2)) {
+                PY += 1;
             }
     
-            IndexType khalf = ksize / 2;
+            IndexType PXhalf = PX / 2;
+            IndexType PYhalf = PY / 2;
                     
-			ValueType sigma = khalf / 2.0;
-			ValueType sigma2 = 2.0 * sigma * sigma;
+			ValueType sigmaX = PXhalf / 2.0;
+			ValueType sigmaX2 = 2.0 * sigmaX * sigmaX;
+			ValueType sigmaY = PYhalf / 2.0;
+			ValueType sigmaY2 = 2.0 * sigmaY * sigmaY;
+            if (sigmaX2 != 0)
+                sigmaX2 = 1.0 / sigmaX2;
+            if (sigmaY2 != 0)
+                sigmaY2 = 1.0 / sigmaY2;
             
 			/* create filter kernel */
-            scai::lama::DenseVector<ValueType> kernel(ksize*ksize, 0, ctx);
-			for (IndexType ix=-khalf; ix<=khalf; ix++){
-			    for (IndexType iy=-khalf; iy<=khalf; iy++){						      
-			        kernel[(iy+khalf)*ksize+ix+khalf] = exp(-((ix*ix)/sigma2) - ((iy*iy)/sigma2));      
+            scai::lama::DenseVector<ValueType> kernel(PX*PY, 0, ctx);
+			for (IndexType ix=-PXhalf; ix<=PXhalf; ix++){
+			    for (IndexType iy=-PYhalf; iy<=PYhalf; iy++){						      
+			        kernel[(iy+PYhalf)*PX+ix+PXhalf] = exp(-((ix*ix)*sigmaX2)-((iy*iy)*sigmaY2));      
 			    }
 			}
             kernel *= 1 / kernel.sum();
             
 			/* create filter matrix */
             dmemo::DistributionPtr dist = vector2D.getDistributionPtr();
-            dmemo::DistributionPtr distPadded(new scai::dmemo::NoDistribution((NX+ksize-1)*(NY+ksize-1)));
+            dmemo::DistributionPtr distPadded(new scai::dmemo::NoDistribution((NX+PX-1)*(NY+PY-1)));
             GaussianKernel.allocate(dist, distPadded);
             GaussianKernel.setContextPtr(ctx);
             hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
@@ -109,10 +126,10 @@ namespace KITGPI
             for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
                 Y = ownedIndex / NX;
                 X = ownedIndex - NX * Y;
-                for (IndexType ix=-khalf; ix<=khalf; ix++){
-                    for (IndexType iy=-khalf; iy<=khalf; iy++){					 
-                        colIndex=(Y+khalf+iy)*(NX+ksize-1)+X+khalf+ix;
-                        assembly.push(ownedIndex, colIndex, kernel[(iy+khalf)*ksize+ix+khalf]);
+                for (IndexType ix=-PXhalf; ix<=PXhalf; ix++){
+                    for (IndexType iy=-PYhalf; iy<=PYhalf; iy++){					 
+                        colIndex=(Y+PYhalf+iy)*(NX+PX-1)+X+PXhalf+ix;
+                        assembly.push(ownedIndex, colIndex, kernel[(iy+PYhalf)*PX+ix+PXhalf]);
                     }
                 }
             }
@@ -121,40 +138,44 @@ namespace KITGPI
         
         /*! \brief pad a 2D vector
         \param vector2D gradient vector
-        \param ksize size of kernel
+        \param PX size of kernel
         \param modelCoordinates coordinate class object of the model
         */
         template <typename ValueType>
-        void pad2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::DenseVector<ValueType> &vector2Dpadded, IndexType NX, IndexType NY, IndexType ksize)
+        void pad2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::DenseVector<ValueType> &vector2Dpadded, IndexType NX, IndexType NY, IndexType PX, IndexType PY)
         {
             scai::hmemo::ContextPtr ctx = vector2D.getContextPtr();
 			
-            if (!(ksize % 2)) {
-                ksize += 1;
+            if (!(PX % 2)) {
+                PX += 1;
+            }
+            if (!(PY % 2)) {
+                PY += 1;
             }
             
-            IndexType khalf = ksize / 2;
-            scai::lama::DenseVector<ValueType> vector2DTemp((NX+ksize-1)*(NY+ksize-1), 0, ctx);
+            IndexType PXhalf = PX / 2;
+            IndexType PYhalf = PY / 2;
+            scai::lama::DenseVector<ValueType> vector2DTemp((NX+PX-1)*(NY+PY-1), 0, ctx);
             vector2Dpadded = vector2DTemp;
                         
 			/* center */
             for (IndexType iy = 0; iy < NY; iy++) {
                 for (IndexType ix = 0; ix < NX; ix++) {
-                    vector2Dpadded[(khalf+iy)*(NX+ksize-1)+ksize+ix]=vector2D[iy*NX+ix];
+                    vector2Dpadded[(PYhalf+iy)*(NX+PX-1)+PXhalf+ix]=vector2D[iy*NX+ix];
                 }
             }
 			/* left and right */
             for (IndexType iy = 0; iy < NY; iy++) {
-                for (IndexType ix = 0; ix < khalf; ix++) {
-                    vector2Dpadded[(khalf+iy)*(NX+ksize-1)+ix]=vector2D[iy*NX];
-                    vector2Dpadded[(khalf+iy)*(NX+ksize-1)+NX+khalf+ix]=vector2D[iy*NX+NX-1];
+                for (IndexType ix = 0; ix < PXhalf; ix++) {
+                    vector2Dpadded[(PYhalf+iy)*(NX+PX-1)+ix]=vector2D[iy*NX];
+                    vector2Dpadded[(PYhalf+iy)*(NX+PX-1)+NX+PXhalf+ix]=vector2D[iy*NX+NX-1];
                 }
             }
 			/* top and bottom */
-            for (IndexType iy = 0; iy < khalf; iy++) {
-                for (IndexType ix = 0; ix < NX+ksize-1; ix++) {
-                    vector2Dpadded[iy*(NX+ksize-1)+ix]=vector2Dpadded[khalf*(NX+ksize-1)+ix];
-                    vector2Dpadded[(NY+khalf+iy)*(NX+ksize-1)+ix]=vector2Dpadded[(NY+khalf-1)*(NX+ksize-1)+ix];
+            for (IndexType iy = 0; iy < PYhalf; iy++) {
+                for (IndexType ix = 0; ix < NX+PX-1; ix++) {
+                    vector2Dpadded[iy*(NX+PX-1)+ix]=vector2Dpadded[PYhalf*(NX+PX-1)+ix];
+                    vector2Dpadded[(NY+PYhalf+iy)*(NX+PX-1)+ix]=vector2Dpadded[(NY+PYhalf-1)*(NX+PX-1)+ix];
                 }
             }
         }

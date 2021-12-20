@@ -86,6 +86,7 @@ namespace KITGPI
             
             void sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd) override;            
             void smooth(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) override;
+            void applyMedianFilter(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config) override;
             
           private:
             using Gradient<ValueType>::equationType;
@@ -103,7 +104,8 @@ namespace KITGPI
             using Gradient<ValueType>::weightingVector;
             using Gradient<ValueType>::workflowInner;
             using Gradient<ValueType>::GaussianKernel;
-            using Gradient<ValueType>::ksize;
+            using Gradient<ValueType>::PX;
+            using Gradient<ValueType>::PY;
                         
             /* Not required parameters */
         };

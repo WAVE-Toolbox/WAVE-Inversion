@@ -105,35 +105,37 @@ void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama:
  \param uniqueShotInds unique shot indexes 
  */
 template <typename ValueType>
-void KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(KITGPI::Modelparameter::Modelparameter<ValueType> &modelPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, std::vector<scai::IndexType> uniqueShotInds, scai::IndexType boundaryWidth)
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(scai::lama::Vector<ValueType> const &gradientPerShotVector, scai::IndexType NY, scai::IndexType shotInd)
 {
-    auto distBig = porosity.getDistributionPtr();
-    scai::hmemo::ContextPtr ctx = porosity.getContextPtr();
+    auto dist = gradientPerShotVector.getDistributionPtr();
+    scai::hmemo::ContextPtr ctx = gradientPerShotVector.getContextPtr();
 
-    weightingVector.allocate(distBig);
+    scai::lama::DenseVector<ValueType> weightingVector;
+    scai::lama::DenseVector<ValueType> gradientPerShotVectorTemp;
+    weightingVector.allocate(dist);
     weightingVector.setContextPtr(ctx);
+    gradientPerShotVectorTemp.unaryOp(gradientPerShotVector, common::UnaryOp::ABS); 
     if (weightGradient == 0) {
         weightingVector = 1.0;
     } else if (weightGradient == 1) {
         weightingVector = 0.0;
-        auto dist = modelPerShot.getPorosity().getDistributionPtr();
-        IndexType numshots = uniqueShotInds.size();
-        for (IndexType shotInd = 0; shotInd < numshots; shotInd++) {        
-            weightingVector += modelPerShot.getShrinkVector(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(uniqueShotInds[shotInd]), 2*boundaryWidth);
+        IndexType NX = gradientPerShotVectorTemp.size() / NY;
+        for (IndexType ix = 0; ix < NX; ix++) {
+            for (IndexType iy = 0; iy < NY; iy++) {
+                weightingVector[ix] = weightingVector[ix] + gradientPerShotVectorTemp[iy*NX+ix];
+            }
+            for (IndexType iy = 1; iy < NY; iy++) {
+                weightingVector[iy*NX+ix] = weightingVector[ix];
+            }
         }
-        weightingVector = 1.0 / weightingVector; // the weighting of overlapping area
-        Common::replaceInvalid<ValueType>(weightingVector, 0.0);
+        if (weightingVector.maxNorm() != 0)
+            weightingVector *= 1.0 / weightingVector.maxNorm();
     }
-    IO::writeVector(weightingVector, "gradients/weightingVector", 1);
-}
-
-/*! \brief get weightingVector */
-template <typename ValueType>
-scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::getWeightingVector()
-{
+    IO::writeVector(weightingVector, "gradients/weightingVector.shot_" + std::to_string(shotInd+1), 1);
+    
     return weightingVector;
 }
-   
+
 /*! \brief get an inner workflow */
 template <typename ValueType>
 std::vector<bool> KITGPI::Gradient::Gradient<ValueType>::getInvertForParameters()
