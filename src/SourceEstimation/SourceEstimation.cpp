@@ -9,7 +9,7 @@ using namespace scai;
  \param sourceSignalTaper 1D TaperPtr
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration const &config, hmemo::ContextPtr ctx, dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper)
+void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper)
 {
     std::string equationType = config.get<std::string>("equationType"); 
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
@@ -30,7 +30,7 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
     if (config.getAndCatch("minOffsetSrcEst", 0.0) || config.get<bool>("maxOffsetSrcEst"))
         useOffsetMutes = true;
 
-    if (config.get<bool>("useSourceSignalTaper")) {
+    if (config.get<IndexType>("useSourceSignalTaper") == 1) {
         sourceSignalTaper.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
         if (config.get<IndexType>("sourceSignalTaperStart2") == 0 && config.get<IndexType>("sourceSignalTaperEnd2") == 0)
             sourceSignalTaper.calcCosineTaper(config.get<IndexType>("sourceSignalTaperStart1"), config.get<IndexType>("sourceSignalTaperEnd1"), 0);

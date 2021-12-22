@@ -518,7 +518,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
         if (config.get<bool>("useSourceSignalInversion")) {
             sourceEst.applyFilter(sources, shotIndTrue);
-            if (config.get<bool>("useSourceSignalTaper"))
+            if (config.get<IndexType>("useSourceSignalTaper") != 0)
                 sourceSignalTaper.apply(sources.getSeismogramHandler());
         }
         
@@ -611,7 +611,7 @@ void KITGPI::StepLengthSearch<ValueType>::initLogFile(scai::dmemo::CommunicatorP
     if (myRank == MASTERGPI) {
         logFile.open(logFilename);
         logFile << "# Step length log file  \n";
-        logFile << "# Misfit type = " << misfitType << "\n";
+        logFile << "# MisfitType = " << misfitType << "\n";
         logFile << "# Iteration 0 shows misfit of initial model of each workflow stage (only first two columns and last column is meaningful here)\n";
         if (steplengthType == 1) {
             logFile << "# Stage | Iteration";

@@ -11,7 +11,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
 {    
     // transform to lower cases
     misfitType = config.get<std::string>("misfitType");
-    multiMisfitType = config.getAndCatch("multiMisfitType", multiMisfitType);
+    multiMisfitType = config.getAndCatch("multiMisfitType", misfitType);
     std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
     saveMultiMisfits = config.getAndCatch("saveMultiMisfits", false);
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT 
@@ -83,20 +83,23 @@ void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitTypeShotsToFile(scai::dmem
         std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4) + ".misfitType" + logFilename.substr(logFilename.length()-4, 4);
         if (stage == 1 && iteration == 0) {
             outputFile.open(misfitTypeFilename);
-            outputFile << "# Misfit type records during inversion\n"; 
-            outputFile << "# Misfit type = " << misfitType << "\n"; 
-            outputFile << "# Stage | Iteration | misfitTypes\n"; 
+            outputFile << "# MisfitType records during inversion\n"; 
+            outputFile << "# MisfitType = " << misfitType << ", multiMisfitType = "<< multiMisfitType << "\n"; 
+            outputFile << "# Stage | Iteration |";
+            for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+                outputFile << std::setw(7) << shotInd+1 << std::setw(7) << "|";
+            }
+            outputFile << "\n"; 
         } else {                    
             outputFile.open(misfitTypeFilename, std::ios_base::app);
             outputFile << std::scientific;
         }
         outputFile << std::setw(5) << stage << std::setw(10) << iteration;
         for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
-            if (shotInd == 0) {
-                outputFile << std::setw(9) << (int) misfitTypeShots.getValue(shotInd);
-            } else {
+            if (shotInd == 0)
+                outputFile << std::setw(8) << (int) misfitTypeShots.getValue(shotInd);
+            else
                 outputFile << std::setw(4) << (int) misfitTypeShots.getValue(shotInd);
-            }
         }
         outputFile << "\n";
         outputFile.close();
@@ -115,31 +118,42 @@ template <typename ValueType>
 void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitPerShotToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration)
 {      
     int myRank = comm->getRank();  
-    if (saveMultiMisfits && myRank == MASTERGPI) {
+    if (myRank == MASTERGPI) {
         std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::toupper);
         std::ofstream outputFile; 
-        std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4) + ".pershot" + logFilename.substr(logFilename.length()-4, 4);
-        if (stage == 1 && iteration == 0) {
-            outputFile.open(misfitTypeFilename);
-            outputFile << "# Misfit per shot during inversion\n"; 
-            outputFile << "# Misfit type = " << misfitType << "\n"; 
-            outputFile << "# Stage | Iteration | misfits\n"; 
-        } else {                    
-            outputFile.open(misfitTypeFilename, std::ios_base::app);
-            outputFile << std::scientific;
-        }
-        outputFile << std::setw(5) << stage << std::setw(10) << iteration;
-        scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
-        scai::lama::DenseVector<ValueType> misfitPerIt = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes);
-        for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
-            if (shotInd == 0) {
-                outputFile << std::setw(9) << misfitPerIt.getValue(shotInd);
-            } else {
-                outputFile << std::setw(4) << misfitPerIt.getValue(shotInd);
+        for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) { 
+            std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-4) + ".L" + multiMisfitType.substr(iMisfitType+1, 1) + logFilename.substr(logFilename.length()-4, 4);
+            if (stage == 1 && iteration == 0) {
+                outputFile.open(misfitTypeFilename);
+                outputFile << "# Misfit per shot during inversion\n"; 
+                outputFile << "# MisfitType = " << misfitType << ", multiMisfitType = "<< multiMisfitType << ": L"<< multiMisfitType.substr(iMisfitType+1, 1) << "\n"; 
+                outputFile << "# Stage | Iteration |"; 
+                for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+                    outputFile << std::setw(7) << shotInd+1 << std::setw(7) << "|";
+                }
+                outputFile << "\n";
+            } else {                    
+                outputFile.open(misfitTypeFilename, std::ios_base::app);
+                outputFile << std::scientific;
             }
+            outputFile << std::setw(5) << stage << std::setw(10) << iteration;
+            scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();   
+            scai::lama::DenseVector<ValueType> misfitPerIt(misfitTypeShots.size(), 0, ctx);
+            if (numMisfitTypes > 1) {
+                scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
+                misfitPerIt = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType);
+            } else {
+                misfitPerIt = misfitStorage.at(iteration);
+            }
+            for (int shotInd = 0; shotInd < misfitTypeShots.size(); shotInd++) { 
+                if (shotInd == 0)
+                    outputFile << std::setw(18) << misfitPerIt.getValue(shotInd);
+                else
+                    outputFile << std::setw(14) << misfitPerIt.getValue(shotInd);
+            }
+            outputFile << "\n";
+            outputFile.close();
         }
-        outputFile << "\n";
-        outputFile.close();
         std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
     }
 }
@@ -152,20 +166,20 @@ void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitPerShotToFile(scai::dmemo:
 \param iteration inversion iteration
 */
 template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration)
+void KITGPI::Misfit::MisfitL2<ValueType>::appendMultiMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration)
 {      
     int myRank = comm->getRank();  
-    if (saveMultiMisfits && myRank == MASTERGPI) {
+    if (numMisfitTypes > 1 && saveMultiMisfits && myRank == MASTERGPI) {
         std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::toupper);
         std::ofstream outputFile; 
         std::string misfitTypeFilename = logFilename.substr(0, logFilename.length()-3) + multiMisfitType.substr(0, numMisfitTypes+1) + logFilename.substr(logFilename.length()-4, 4);
         if (stage == 1 && iteration == 0) {
             outputFile.open(misfitTypeFilename);
             outputFile << "# Misfit per type during inversion\n"; 
-            outputFile << "# Misfit type = " << misfitType << "\n"; 
-            outputFile << "# Stage | Iteration"; 
+            outputFile << "# MisfitType = " << misfitType << ", multiMisfitType = "<< multiMisfitType << "\n"; 
+            outputFile << "# Stage | Iteration |"; 
             for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) { 
-                outputFile << " | " << std::setw(7) << uniqueMisfitTypes.at(iMisfitType) << std::setw(7);
+                outputFile << std::setw(7) << "L" << uniqueMisfitTypes.at(iMisfitType) << std::setw(6) << "|";
             }
             outputFile << "\n"; 
         } else {                    
@@ -177,11 +191,10 @@ void KITGPI::Misfit::MisfitL2<ValueType>::appendMisfitsToFile(scai::dmemo::Commu
         scai::IndexType misfitStorageL2Size = misfitStorageL2.size();
         for (int iMisfitType = 0; iMisfitType < numMisfitTypes; iMisfitType++) { 
             scai::lama::DenseVector<ValueType> misfitPerIt = misfitStorageL2.at(misfitStorageL2Size - numMisfitTypes + iMisfitType);
-            if (iMisfitType == 0) {
+            if (iMisfitType == 0)
                 outputFile << std::setw(18) << misfitPerIt.sum();
-            } else {
+            else
                 outputFile << std::setw(14) << misfitPerIt.sum();
-            }
         }
         outputFile << "\n";
         outputFile.close(); 

@@ -25,7 +25,7 @@ namespace KITGPI
 
             /*! \brief Create the right misfit with factory method.
              *
-             \param type Misfit type (L2, etc.)
+             \param type MisfitType (L2, etc.)
              */
             static MisfitPtr Create(std::string type);
         };

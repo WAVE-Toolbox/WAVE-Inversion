@@ -74,6 +74,54 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, Index
         data = -data + 1;
 }
 
+/*! \brief Wrapper to calculate a cosine taper using the inverted source
+ \param seismograms Seismogram handler of the inverted source
+ \param lowerCornerFreq Lower corner frequency
+ \param upperCornerFreq Upper corner frequency
+ \param DT DT
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismograms, ValueType lowerCornerFreq, ValueType upperCornerFreq, ValueType DT, scai::hmemo::ContextPtr ctx)
+{
+    bool isSeismic = seismograms.getIsSeismic();
+    Acquisition::Seismogram<ValueType> thisSeismogram;
+    for (scai::IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
+        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
+            thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
+        }
+        if (thisSeismogram.getData().getNumRows()!=0)
+            break;
+    }
+    scai::lama::DenseMatrix<ValueType> tempData = thisSeismogram.getData();
+    scai::lama::DenseVector<ValueType> tempRow;
+    Common::calcEnvelope(tempData);
+    tempData.getRow(tempRow, 0);
+    ValueType maxValue = tempRow.max();
+    IndexType maxIndex = 0;
+    IndexType tStepEnd = tempRow.size();
+    for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+        if (tempRow[tStep] == maxValue) {
+            maxIndex = tStep;
+            break;
+        }
+    }
+    ValueType medFreq = (lowerCornerFreq + upperCornerFreq) / 2;
+    IndexType period = floor(1.0 / medFreq / DT);
+    IndexType iStart1 = maxIndex - period;
+    IndexType iEnd1 = maxIndex - period / 3 * 2;
+    IndexType iStart2 = maxIndex + period / 3 * 2;
+    IndexType iEnd2 = maxIndex + period;
+    if (iStart1 < 0)
+        iStart1 = 0;
+    if (iEnd1 < 0)
+        iEnd1 = 0;
+    SCAI_ASSERT_ERROR(iEnd2 < tStepEnd, "iEnd2 >= tStepEnd");
+    this->init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
+    this->calcCosineTaper(iStart1, iEnd1, iStart2, iEnd2, 0);
+}
+
 /*! \brief Calculate cosine taper which starts with 0 and ends with 1 (slope >= 0)
  * \param result Result vector
  \param iStart Start index of transition zone

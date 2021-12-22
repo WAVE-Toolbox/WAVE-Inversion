@@ -33,8 +33,8 @@ Insert_name = cellMerge({invertParameterType,...
     bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
 
 writefiles=1;
-stage=1;
-useDamping=0; T0damp=15e-9; T1damp=25e-9; 
+stage=2;
+useDamp=0; T0damp=15e-9; T1damp=25e-9; 
 showLegend = 0;
 showResidual = 0;
 showmax=30;
@@ -47,7 +47,7 @@ inversionType = [0 1];
 parameterisation = [0 0];
 exchangeStrategy = [0 0];
 orientation = 'vertical';
-wiggleType='vararea';
+wiggleType='wiggle';
 writeSourceTrue=1;
 source = readSourcesfromConfig(configTrue);
 DT=config.getValue('seismoDT');
@@ -58,7 +58,7 @@ else
     labelTime='Time (ns)';
 end
 [Nshot n]=size(source);
-seismogram=[];seismogramTrue=[];
+seismogramInv=[];seismogramTrue=[];
 dampFactor=2e-2/DT;
 for ishot=1:Nshot
     shotnr=source(ishot,1);
@@ -72,7 +72,7 @@ for ishot=1:Nshot
     sourceInv=readSeismogram(filenameInv,fileFormat);
     T=1*DT:DT:size(sourceInv,2)*DT;
     timeDamping=ones(size(sourceInv));
-    if useDamping==1
+    if useDamp==1
         timeDamping(T<T0damp)=timeDamping(T<T0damp).*exp(dampFactor*(T(T<T0damp)-T0damp));
         timeDamping(T>T1damp)=timeDamping(T>T1damp).*exp(-dampFactor*(T(T>T1damp)-T1damp));
     end
@@ -83,7 +83,7 @@ for ishot=1:Nshot
         sourceTrue=readSeismogram(filenameTrue,fileFormat);
         seismogramTrue=[seismogramTrue;sourceTrue];
     end
-    seismogram=[seismogram;sourceInv];
+    seismogramInv=[seismogramInv;sourceInv];
 end
 filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage) '.' component];
 filenameTrue=['../' writeSourceFilename '.' component];
@@ -97,7 +97,7 @@ textName={'',''};
 legendNameAll = getLegendName(legendType,equationType,...
     inversionType,parameterisation,exchangeStrategy,symblicName);
 lineSettingAll = getLinesettingInv(equationType,inversionType,parameterisation,exchangeStrategy,showMarker); 
-lineSettingAll{2}.Color='k';
+%lineSettingAll{2}.Color='k';
 titleName = '';
 [titleLabelSettingAll] = getTitleLabelSettingAll(showTitle,showXlabel,showYlabel...
     ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType,showText,textName);
@@ -105,12 +105,52 @@ offset.value=[1:Nshot];
 offset.labelName='Source number';
 residualScale=1;
 syntheticDatanameAll={filenameTrue;filenameInv};
-syntheticDataAll = {seismogramTrue;seismogram};
+syntheticDataAll = {seismogramTrue;seismogramInv};
 [imagename] = getImagenameFromfileList(syntheticDatanameAll);
 [h answer] = plotSeismogramData_multi(DT,showmax,...
     syntheticDataAll,imagesave,orientation,lineSettingAll,legendNameAll,offset,...
     titleLabelSettingAll,showLegend,showResidual,normalize,wiggleType...
     ,imageScale,imagename,residualScale);
+ 
+% plot spectra
+FC=config.getValue('CenterFrequencyCPML');
+NT=size(seismogramInv,2); NT2=2*NT-1;
+Fs = 1/DT; f = (0:NT-1)*Fs/(NT*2); t=[0:(NT-1)]*DT;
+for ir=1:Nshot
+    SeismogramTrace = fft(seismogramTrue(ir,:),NT2);
+    SeismogramTrue(ir,:) = SeismogramTrace(1:NT);
+    SeismogramTrace = fft(seismogramInv(ir,:),NT2);
+    SeismogramInv(ir,:) = SeismogramTrace(1:NT);
+end
+SeismogramTrue=mean(SeismogramTrue,1);
+SeismogramInv=mean(SeismogramInv,1);
+maxValue = max(abs(SeismogramTrue));
+fshowIndex = [];
+for it=1:NT
+    if abs(SeismogramTrue(it)) > 0.01*maxValue
+        fshowIndex = [fshowIndex it];
+    end
+end
+flim=[0 f(fshowIndex(end))];
+SeismogramInv=SeismogramInv/max(abs(SeismogramInv))*max(abs(SeismogramTrue));
+figure
+isSeismic = checkEquationType(equationType);
+if isSeismic == 0
+    X0=f*1e-6;
+    flim=flim*1e-6;
+    ylabelName='Frequency (MHz)';
+else
+    ylabelName='Frequency (Hz)';
+end
+plot(X0(1:fshowIndex(end)),abs(SeismogramTrue(1:fshowIndex(end))),lineSettingAll{1}); hold on;
+plot(X0(1:fshowIndex(end)),abs(SeismogramInv(1:fshowIndex(end))),lineSettingAll{2}); hold on;
+xlabel(ylabelName);
+ylabel('Amplitude');
+legend('Source true','Source inv','Location','best');
+legend('boxoff')
+axis([flim 0 maxValue*1.1]);
+ImageBold(gca);
+pause(0.1);
 
 %% write
 if writefiles~=0
@@ -118,7 +158,7 @@ if writefiles~=0
     if answer==0
         return;
     end
-    writeSeismogram(filenameInv,seismogram,fileFormat);
+    writeSeismogram(filenameInv,seismogramInv,fileFormat);
     if writeSourceTrue~=0  
         answer=overwritedlg(filenameTrue,fileFormat);
         if answer==0

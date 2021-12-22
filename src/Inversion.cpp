@@ -903,7 +903,6 @@ int main(int argc, char *argv[])
                 freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq()); 
             
             gradient->calcGaussianKernel(commAll, *model, config, workflow.getUpperCornerFreq());
-            gradientPerShot->calcGaussianKernel(commAll, *model, config, workflow.getUpperCornerFreq());
         }
         
         if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2)) {
@@ -924,8 +923,7 @@ int main(int argc, char *argv[])
             else if (workflowEM.getLowerCornerFreq() == 0.0 && workflowEM.getUpperCornerFreq() != 0.0)
                 freqFilterEM.calc(transFcnFmly, "hp", workflowEM.getFilterOrder(), workflowEM.getUpperCornerFreq());  
             
-            gradientEM->calcGaussianKernel(commAll, *modelEM, configEM, workflowEM.getUpperCornerFreq());  
-            gradientPerShotEM->calcGaussianKernel(commAll, *modelEM, configEM, workflowEM.getUpperCornerFreq());    
+            gradientEM->calcGaussianKernel(commAll, *modelEM, configEM, workflowEM.getUpperCornerFreq());      
         }
         
         /* --------------------------------------- */
@@ -1093,14 +1091,13 @@ int main(int argc, char *argv[])
                             sourceEst.calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
                             
                             sourceEst.estimateSourceSignal(receivers, receiversTrue, shotIndTrue, shotNumber);
-
-                            sourceEst.applyFilter(sources, shotIndTrue);
-                            if (config.get<bool>("useSourceSignalTaper"))
-                                sourceSignalTaper.apply(sources.getSeismogramHandler());
-                        } else {
-                            sourceEst.applyFilter(sources, shotIndTrue);
-                            if (config.get<bool>("useSourceSignalTaper"))
-                                sourceSignalTaper.apply(sources.getSeismogramHandler());
+                        }
+                        sourceEst.applyFilter(sources, shotIndTrue);
+                        if (config.get<IndexType>("useSourceSignalTaper") != 0) {
+                            if (config.get<IndexType>("useSourceSignalTaper") == 2 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
+                                sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
+                            }
+                            sourceSignalTaper.apply(sources.getSeismogramHandler());
                         }
                     }
                     if (config.get<bool>("writeInvertedSource"))
@@ -1419,7 +1416,7 @@ int main(int argc, char *argv[])
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration), dataMisfit->getCrossGradientMisfit(workflow.iteration));
                 dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
                 dataMisfit->appendMisfitPerShotToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
-                dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
+                dataMisfit->appendMultiMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
 
                 /* Check abort criteria */
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
@@ -1587,7 +1584,7 @@ int main(int argc, char *argv[])
 
                     if (config.get<bool>("useSourceSignalInversion")) {
                         sourceEst.applyFilter(sources, shotIndTrue);
-                        if (config.get<bool>("useSourceSignalTaper"))
+                        if (config.get<IndexType>("useSourceSignalTaper") != 0)
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
                     }
 
@@ -1677,7 +1674,7 @@ int main(int argc, char *argv[])
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration + 1, logFilename, dataMisfit->getMisfitSum(workflow.iteration + 1), dataMisfit->getCrossGradientMisfit(workflow.iteration + 1));
                 dataMisfit->appendMisfitTypeShotsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
                 dataMisfit->appendMisfitPerShotToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
-                dataMisfit->appendMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
+                dataMisfit->appendMultiMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
 
                 if (breakLoopType == 0 && breakLoopEM == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     breakLoop = true;
@@ -1839,14 +1836,13 @@ int main(int argc, char *argv[])
                             sourceEstEM.calcOffsetMutes(sourcesEM, receiversEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
                             
                             sourceEstEM.estimateSourceSignal(receiversEM, receiversTrueEM, shotIndTrue, shotNumber);
-
-                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
-                            if (configEM.get<bool>("useSourceSignalTaper"))
-                                sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
-                        } else {
-                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
-                            if (configEM.get<bool>("useSourceSignalTaper"))
-                                sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
+                        }
+                        sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
+                        if (configEM.get<IndexType>("useSourceSignalTaper") != 0) {
+                            if (configEM.get<IndexType>("useSourceSignalTaper") == 2 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
+                                sourceSignalTaperEM.calcCosineTaper(sourcesEM.getSeismogramHandler(), workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq(), configEM.get<ValueType>("DT"), ctx);
+                            }
+                            sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
                         }
                     }
                     if (configEM.get<bool>("writeInvertedSource"))
@@ -2165,7 +2161,7 @@ int main(int argc, char *argv[])
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration), dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration));
                 dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
                 dataMisfitEM->appendMisfitPerShotToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
-                dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
+                dataMisfitEM->appendMultiMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
 
                 /* Check abort criteria */
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration) << "\n");
@@ -2353,7 +2349,7 @@ int main(int argc, char *argv[])
 
                     if (configEM.get<bool>("useSourceSignalInversion")) {
                         sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
-                        if (configEM.get<bool>("useSourceSignalTaper"))
+                        if (configEM.get<IndexType>("useSourceSignalTaper") != 0)
                             sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
                     }
 
@@ -2443,7 +2439,7 @@ int main(int argc, char *argv[])
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration + 1, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration + 1), dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration + 1));
                 dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
                 dataMisfitEM->appendMisfitPerShotToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
-                dataMisfitEM->appendMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
+                dataMisfitEM->appendMultiMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
 
                 if (breakLoopType == 0 && breakLoop == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     breakLoopEM = true;

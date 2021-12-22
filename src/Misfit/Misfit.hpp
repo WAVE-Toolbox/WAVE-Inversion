@@ -44,7 +44,7 @@ namespace KITGPI
             virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots) = 0;
             virtual void appendMisfitTypeShotsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
             virtual void appendMisfitPerShotToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
-            virtual void appendMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
+            virtual void appendMultiMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
             virtual void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot) = 0;
             scai::lama::DenseVector<ValueType> getMisfitTypeShots();
             void setMisfitTypeShots(scai::lama::DenseVector<ValueType> setMisfitTypeShots);
