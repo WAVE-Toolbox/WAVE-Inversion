@@ -670,7 +670,7 @@ If \verb+misfitType+ = L2781, then file \verb+logFilename(1:end-4).misfitType.lo
 \end{verbatim}
 Of course \verb+misfitType+ and \verb+useRandomSource+ are independent. So you can implement the random objective waveform inversion (ROWI) \citep{pan2020random} by setting \verb+misfitType = L2781+, \verb+useRandomSource+ = 1 and \verb+NumShotDomains+ = 1, or implement the ROWI with shot parallelization by setting \verb+misfitType = L2781+, \verb+useRandomSource+ = 1 and \verb+NumShotDomains+ > 1, or set \verb+useRandomSource+ = 1 to implement random source inversion with the same misfit function, or set \verb+misfitType = L2781+ to implement random misfit inversion with all shots (\verb+useRandomSource+ = 0) or sequential shots (\verb+useRandomSource+ = 2).
 
-Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+ = 1. This option is recommended for seismic field data.
+Note that seismograms can be normalized for the calculation of the misfit and the adjoint sources by setting \verb+normalizeTraces+=1. This option is recommended for seismic field data. The parameter \verb+gradientType+ can be used to perform reflection waveform inversion \citep{xu2012inversion}. One can use migration kernel alone ( \verb+gradientType+=1) or tomographic kernel alone (\verb+gradientType+=2) or these two kernels interactively in inversion iteration (\verb+gradientType+=3). If \verb+decomposeType+=0, these kernels are computed using the Born approximation \citep{yao2017reflection}. If \verb+decomposeType+$>$0, Poynting vector method is used for kernel computation \citep{tang2013tomographically}.
 The parameter \verb+DTInversion+ defines the factor of \verb+DT+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second time sample is picked. The highest possible value depends on the wave length.
 The parameter \verb+DHInversion+ defines the factor of \verb+DH+ for the cross-correlation in the gradient calculation. If e.g., it is set to 2, every second model space sample is picked on each direction, consequently, 1/4 or 1/8 memory is called in 2D or 3D waveform inversion. The highest possible value depends on the model resolution you want to obtain.
 
@@ -947,8 +947,8 @@ For faultless function of WAVE-Inversion all tests should execute without failur
 \addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
 \addcontentsline{toc}{chapter}{List of Tables}
 \cleardoublepage
-\bibliography{@CMAKE_SOURCE_DIR@/../doc/guide/WAVE_Inversion_guide.bib}
-% \bibliography{WAVE_Inversion_guide}
+% \bibliography{@CMAKE_SOURCE_DIR@/../doc/guide/WAVE_Inversion_guide.bib}
+\bibliography{WAVE_Inversion_guide}
 \bibliographystyle{apalike}
 
 \appendix

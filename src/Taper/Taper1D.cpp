@@ -110,13 +110,13 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::Sei
     ValueType medFreq = (lowerCornerFreq + upperCornerFreq) / 2;
     IndexType period = floor(1.0 / medFreq / DT);
     IndexType iStart1 = maxIndex - period;
-    IndexType iEnd1 = maxIndex - period / 3 * 2;
-    IndexType iStart2 = maxIndex + period / 3 * 2;
+    IndexType iEnd1 = maxIndex - period / 2;
+    IndexType iStart2 = maxIndex + period / 2;
     IndexType iEnd2 = maxIndex + period;
     if (iStart1 < 0)
         iStart1 = 0;
-    if (iEnd1 < 0)
-        iEnd1 = 0;
+    if (iEnd1 < 10)
+        iEnd1 = 10;
     SCAI_ASSERT_ERROR(iEnd2 < tStepEnd, "iEnd2 >= tStepEnd");
     this->init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
     this->calcCosineTaper(iStart1, iEnd1, iStart2, iEnd2, 0);
