@@ -124,12 +124,14 @@ int main(int argc, char *argv[])
     }
 
     std::string misfitType = config.get<std::string>("misfitType");
+    std::string multiMisfitType = config.getAndCatch("multiMisfitType", misfitType);
     std::string gradname(config.get<std::string>("gradientFilename"));
     std::string logFilename = config.get<std::string>("logFilename");
     ValueType steplengthInit = config.get<ValueType>("steplengthInit");
     std::string optimizationType = config.get<std::string>("optimizationType");
     
     std::string misfitTypeEM = configEM.get<std::string>("misfitType");
+    std::string multiMisfitTypeEM = config.getAndCatch("multiMisfitType", misfitTypeEM);
     std::string gradnameEM(configEM.get<std::string>("gradientFilename"));
     std::string logFilenameEM = configEM.get<std::string>("logFilename");
     ValueType steplengthInitEM = configEM.get<ValueType>("steplengthInit");
@@ -409,9 +411,9 @@ int main(int argc, char *argv[])
     wavefieldPtr wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
     if (inversionType != 0) {
         wavefields->init(ctx, dist, numRelaxationMechanisms);
-        if (gradientType > 1 && decomposeType == 0)
+        if ((gradientType == 2 || gradientType == 3) && decomposeType == 0)
             wavefieldsTemp->init(ctx, dist, numRelaxationMechanisms);
-        if (gradientType > 1 && decomposeType != 0)
+        if ((gradientType == 2 || gradientType == 3) && decomposeType != 0)
             snapType = decomposeType + 3;
     }
 
@@ -419,9 +421,9 @@ int main(int argc, char *argv[])
     wavefieldPtr wavefieldsTempEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
     if (inversionTypeEM != 0) {
         wavefieldsEM->init(ctx, distEM, numRelaxationMechanismsEM);
-        if (gradientTypeEM > 1 && decomposeTypeEM == 0)
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeTypeEM == 0)
             wavefieldsTempEM->init(ctx, distEM, numRelaxationMechanismsEM);
-        if (gradientTypeEM > 1 && decomposeTypeEM != 0)
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeTypeEM != 0)
             snapTypeEM = decomposeTypeEM + 3;
     }
 
@@ -442,7 +444,7 @@ int main(int argc, char *argv[])
                 wavefieldrecord.push_back(wavefieldsInversion);
             }
         }
-        if (gradientType > 1 && decomposeType == 0) {
+        if ((gradientType == 2 || gradientType == 3) && decomposeType == 0) {
             for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                 if (tStep % dtinversion == 0) {
                     wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -460,7 +462,7 @@ int main(int argc, char *argv[])
                 wavefieldrecordEM.push_back(wavefieldsInversionEM);
             }
         }
-        if (gradientTypeEM > 1 && decomposeTypeEM == 0) {
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeTypeEM == 0) {
             for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
                 if (tStep % dtinversionEM == 0) {
                     wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
@@ -969,7 +971,7 @@ int main(int argc, char *argv[])
                 misfitPerIt = 0;
                 
                 IndexType gradientTypePerShot = 0;  
-                if (gradientType > 2) {
+                if (gradientType == 3) {
                     IndexType numSwitch = gradientType - 2;  
                     if ((workflow.iteration / numSwitch) % 2 == 0) {
                         gradientTypePerShot = 1;
@@ -1074,7 +1076,7 @@ int main(int argc, char *argv[])
                             solver->resetCPML();
                             
                             /* Normalize observed and synthetic data */
-                            if (config.get<IndexType>("normalizeTraces") == 3 || dataMisfit->saveMultiMisfits || misfitType.length() > 2) {
+                            if (config.get<IndexType>("normalizeTraces") == 3 || misfitType.compare("l6") == 0 || multiMisfitType.find('6') != std::string::npos) {
                                 ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
                                 if (workflow.getUpperCornerFreq() != 0.0) {
                                     frequencyAGC = (workflow.getLowerCornerFreq() + workflow.getUpperCornerFreq()) / 2;
@@ -1115,7 +1117,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());                    
                     
                     /* Normalize observed and synthetic data */
-                    if (config.get<IndexType>("normalizeTraces") == 3 || dataMisfit->saveMultiMisfits || misfitType.length() > 2) {
+                    if (config.get<IndexType>("normalizeTraces") == 3 || misfitType.compare("l6") == 0 || multiMisfitType.find('6') != std::string::npos) {
                         if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1) {
                             if (!config.get<bool>("useSourceSignalInversion")) {
                                 ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
@@ -1281,7 +1283,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
                     
                     /* Normalize synthetic data */
-                    if (config.get<IndexType>("normalizeTraces") == 3 || dataMisfit->saveMultiMisfits || misfitType.length() > 2) {             
+                    if (config.get<IndexType>("normalizeTraces") == 3 || misfitType.compare("l6") == 0 || multiMisfitType.find('6') != std::string::npos) {             
                         ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
                         if (workflow.getUpperCornerFreq() != 0.0) {
                             frequencyAGC = (workflow.getLowerCornerFreq() + workflow.getUpperCornerFreq()) / 2;
@@ -1624,7 +1626,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1D.apply(receivers.getSeismogramHandler());
                     
                     /* Normalize observed and synthetic data */
-                    if (config.get<IndexType>("normalizeTraces") == 3 || dataMisfit->saveMultiMisfits || misfitType.length() > 2) {
+                    if (config.get<IndexType>("normalizeTraces") == 3 || misfitType.compare("l6") == 0 || multiMisfitType.find('6') != std::string::npos) {
                         // to read inverseAGC matrix.
                         receiversTrue.getSeismogramHandler().read(5, config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), 1); 
                         ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
@@ -1714,7 +1716,7 @@ int main(int argc, char *argv[])
                 misfitPerItEM = 0;
 
                 IndexType gradientTypePerShotEM = 0;  
-                if (gradientTypeEM > 2) {
+                if (gradientTypeEM == 3) {
                     IndexType numSwitch = gradientTypeEM - 2;  
                     if ((workflowEM.iteration / numSwitch) % 2 == 0) {
                         gradientTypePerShotEM = 1;
@@ -1819,7 +1821,7 @@ int main(int argc, char *argv[])
                             solverEM->resetCPML();
                             
                             /* Normalize observed and synthetic data */
-                            if (configEM.get<IndexType>("normalizeTraces") == 3 || dataMisfitEM->saveMultiMisfits || misfitTypeEM.length() > 2) {
+                            if (configEM.get<IndexType>("normalizeTraces") == 3 || misfitTypeEM.compare("l6") == 0 || multiMisfitTypeEM.find('6') != std::string::npos) {
                                 ValueType frequencyAGC = configEM.get<ValueType>("CenterFrequencyCPML");
                                 if (workflowEM.getUpperCornerFreq() != 0.0) {
                                     frequencyAGC = (workflowEM.getLowerCornerFreq() + workflowEM.getUpperCornerFreq()) / 2;
@@ -1860,7 +1862,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1DEM.apply(receiversTrueEM.getSeismogramHandler());
                     
                     /* Normalize observed and synthetic data */
-                    if (configEM.get<IndexType>("normalizeTraces") == 3 || dataMisfitEM->saveMultiMisfits || misfitTypeEM.length() > 2) {
+                    if (configEM.get<IndexType>("normalizeTraces") == 3 || misfitTypeEM.compare("l6") == 0 || multiMisfitTypeEM.find('6') != std::string::npos) {
                         if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1) {
                             if (!configEM.get<bool>("useSourceSignalInversion")) {
                                 ValueType frequencyAGC = configEM.get<ValueType>("CenterFrequencyCPML");
@@ -2026,7 +2028,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());
 
                     /* Normalize observed and synthetic data */
-                    if (configEM.get<IndexType>("normalizeTraces") == 3 || dataMisfitEM->saveMultiMisfits || misfitTypeEM.length() > 2) {             
+                    if (configEM.get<IndexType>("normalizeTraces") == 3 || misfitTypeEM.compare("l6") == 0 || multiMisfitTypeEM.find('6') != std::string::npos) {             
                         ValueType frequencyAGC = configEM.get<ValueType>("CenterFrequencyCPML");
                         if (workflowEM.getUpperCornerFreq() != 0.0) {
                             frequencyAGC = (workflowEM.getLowerCornerFreq() + workflowEM.getUpperCornerFreq()) / 2;
@@ -2156,6 +2158,10 @@ int main(int argc, char *argv[])
                 /* only shot Domain 0 writes output */
                 if (configEM.get<IndexType>("writeGradient") > 0 && commInterShot->getRank() == 0) {
                     gradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), configEM.get<IndexType>("FileFormat"), workflowEM);
+                }
+                if (gradientTypeEM == 4) {
+                    HOST_PRINT(commAll, "\nFinish inverse time migration after stage " << workflowEM.workflowStage + 1 << "\n");
+                    break;
                 }
 
                 SLsearchEM.appendToLogFile(commAll, workflowEM.workflowStage + 1, workflowEM.iteration, logFilenameEM, dataMisfitEM->getMisfitSum(workflowEM.iteration), dataMisfitEM->getCrossGradientMisfit(workflowEM.iteration));
@@ -2389,7 +2395,7 @@ int main(int argc, char *argv[])
                     seismogramTaper1DEM.apply(receiversEM.getSeismogramHandler());
                         
                     /* Normalize observed and synthetic data */
-                    if (configEM.get<IndexType>("normalizeTraces") == 3 || dataMisfitEM->saveMultiMisfits || misfitTypeEM.length() > 2) {
+                    if (configEM.get<IndexType>("normalizeTraces") == 3 || misfitTypeEM.compare("l6") == 0 || multiMisfitTypeEM.find('6') != std::string::npos) {
                         // to read inverseAGC matrix.
                         receiversTrueEM.getSeismogramHandler().read(5, configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), 1);        
                         ValueType frequencyAGC = configEM.get<ValueType>("CenterFrequencyCPML");

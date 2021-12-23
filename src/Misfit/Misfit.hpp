@@ -72,6 +72,7 @@ namespace KITGPI
             std::vector<ValueType> crossGradientMisfitStorage; 
             scai::lama::DenseVector<ValueType> misfitTypeShots; 
             scai::IndexType numMisfitTypes = 6;
+            scai::IndexType gradientType = 0;
             std::vector<scai::IndexType> uniqueMisfitTypes{2, 5, 6, 7, 8, 9};
             scai::lama::DenseVector<ValueType> modelDerivativeX; //!< Vector storing model derivative in x direction.
             scai::lama::DenseVector<ValueType> modelDerivativeY; //!< Vector storing model derivative in y direction.

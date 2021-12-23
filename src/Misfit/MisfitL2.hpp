@@ -61,6 +61,7 @@ namespace KITGPI
             using Misfit<ValueType>::misfitTypeShots; 
             using Misfit<ValueType>::uniqueMisfitTypes;
             using Misfit<ValueType>::numMisfitTypes;
+            using Misfit<ValueType>::gradientType;
         };        
     }
 }
