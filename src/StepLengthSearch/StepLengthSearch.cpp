@@ -420,7 +420,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         KITGPI::Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
         modelCoordinatesBig.init(configBig);
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
-        sources.getAcquisitionSettings(configBig, sourceSettingsBig);
+        ValueType shotIncr = config.getAndCatch("shotIncr", 0);
+        std::vector<IndexType> shotIndIncr;
+        sources.getAcquisitionSettings(configBig, sourceSettingsBig, shotIndIncr, shotIncr);
         Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
     }
     
@@ -483,14 +485,10 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
         }
         
-        if (config.get<IndexType>("useReceiversPerShot") == 1) {
+        if (config.get<IndexType>("useReceiversPerShot") != 0) {
             receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
             receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
             receiversLast.init(config, modelCoordinates, ctx, dist, shotNumber);
-        } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
-            receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
-            receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
-            receiversLast.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
         }
 
         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("FieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);

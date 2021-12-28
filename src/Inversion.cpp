@@ -501,13 +501,15 @@ int main(int argc, char *argv[])
     std::vector<IndexType> uniqueShotIndsEM;
     
     if (inversionType != 0) {
+        ValueType shotIncr = config.getAndCatch("shotIncr", 0);
+        std::vector<IndexType> shotIndIncr;
         if (useStreamConfig) {
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
-            sources.getAcquisitionSettings(configBig, sourceSettingsBig);
+            sources.getAcquisitionSettings(configBig, sourceSettingsBig, shotIndIncr, shotIncr);
             Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
             Acquisition::getSettingsPerShot<ValueType>(sourceSettings, sourceSettingsBig, cutCoordinates);
         } else {
-            sources.getAcquisitionSettings(config, sourceSettings);
+            sources.getAcquisitionSettings(config, sourceSettings, shotIndIncr, shotIncr);
         }
         HOST_PRINT(commAll, "\n================ checkSources " << equationType << " 1 ===============\n");
         CheckParameter::checkSources(sourceSettings, modelCoordinates, commShot);
@@ -515,6 +517,7 @@ int main(int argc, char *argv[])
         Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
         numshots = uniqueShotNos.size();
         SCAI_ASSERT_ERROR(numshots >= numShotDomains, "numshots < numShotDomains");
+        sources.writeShotIndIncr(config, shotIndIncr, uniqueShotNos);
         if (useStreamConfig) {
             numCuts = cutCoordinates.size();
             SCAI_ASSERT_ERROR(numshots == numCuts, "numshots != numCuts"); // check whether model pershot has been applied successfully.
@@ -536,13 +539,15 @@ int main(int argc, char *argv[])
         }
     }
     if (inversionTypeEM != 0) {
+        ValueType shotIncr = config.getAndCatch("shotIncr", 0);
+        std::vector<IndexType> shotIndIncr;
         if (useStreamConfigEM) {
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBigEM;
-            sourcesEM.getAcquisitionSettings(configBigEM, sourceSettingsBigEM);
+            sourcesEM.getAcquisitionSettings(configBigEM, sourceSettingsBigEM, shotIndIncr, shotIncr);
             Acquisition::getCutCoord(cutCoordinatesEM, sourceSettingsBigEM, modelCoordinatesEM, modelCoordinatesBigEM);
             Acquisition::getSettingsPerShot<ValueType>(sourceSettingsEM, sourceSettingsBigEM, cutCoordinatesEM);
         } else {
-            sourcesEM.getAcquisitionSettings(configEM, sourceSettingsEM);
+            sourcesEM.getAcquisitionSettings(configEM, sourceSettingsEM, shotIndIncr, shotIncr);
         }
         HOST_PRINT(commAll, "\n================ checkSources " << equationTypeEM << " 2 ===============\n");
         CheckParameter::checkSources(sourceSettingsEM, modelCoordinatesEM, commShot);
@@ -550,6 +555,7 @@ int main(int argc, char *argv[])
         Acquisition::calcuniqueShotNo(uniqueShotNosEM, sourceSettingsEM);
         numshotsEM = uniqueShotNosEM.size();
         SCAI_ASSERT_ERROR(numshotsEM >= numShotDomainsEM, "numshotsEM < numShotDomainsEM");
+        sourcesEM.writeShotIndIncr(configEM, shotIndIncr, uniqueShotNosEM);
         if (useStreamConfigEM) {
             numCutsEM = cutCoordinatesEM.size();
             SCAI_ASSERT_ERROR(numshotsEM == numCutsEM, "numshotsEM != numCutsEM"); // check whether model pershot has been applied successfully.
@@ -1027,14 +1033,10 @@ int main(int argc, char *argv[])
                         solver->prepareForModelling(*modelPerShot, config.get<ValueType>("DT"));
                     }
 
-                    if (config.get<IndexType>("useReceiversPerShot") == 1) {
+                    if (config.get<IndexType>("useReceiversPerShot") != 0) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber);
-                    } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
-                        receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
-                        receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
-                        adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
@@ -1139,10 +1141,8 @@ int main(int argc, char *argv[])
                     if (workflow.iteration == 0|| shotHistory[shotIndTrue] == 1){
                         receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                         
-                        if (config.get<IndexType>("useReceiversPerShot") == 1) {
+                        if (config.get<IndexType>("useReceiversPerShot") != 0) {
                             receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber);
-                        } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
-                            receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                         }
                         receiversStart.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
@@ -1562,12 +1562,9 @@ int main(int argc, char *argv[])
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
-                    if (config.get<IndexType>("useReceiversPerShot") == 1) {
+                    if (config.get<IndexType>("useReceiversPerShot") != 0) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber);
-                    } else if (config.get<IndexType>("useReceiversPerShot") == 2) {
-                        receivers.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
-                        receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, numshots);
                     }
                     receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
 
@@ -1772,14 +1769,10 @@ int main(int argc, char *argv[])
                         solverEM->prepareForModelling(*modelPerShotEM, configEM.get<ValueType>("DT"));
                     }
 
-                    if (configEM.get<IndexType>("useReceiversPerShot") == 1) {
+                    if (configEM.get<IndexType>("useReceiversPerShot") != 0) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
-                    } else if (configEM.get<IndexType>("useReceiversPerShot") == 2) {
-                        receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
-                        receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
-                        adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
@@ -1884,10 +1877,8 @@ int main(int argc, char *argv[])
                     if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1){
                         receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                         
-                        if (configEM.get<IndexType>("useReceiversPerShot") == 1) {
+                        if (configEM.get<IndexType>("useReceiversPerShot") != 0) {
                             receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
-                        } else if (configEM.get<IndexType>("useReceiversPerShot") == 2) {
-                            receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                         }
                         receiversStartEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                         if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0){
@@ -2331,12 +2322,9 @@ int main(int argc, char *argv[])
                     }
 
                     /* Read field data (or pseudo-observed data, respectively) */
-                    if (configEM.get<IndexType>("useReceiversPerShot") == 1) {
+                    if (configEM.get<IndexType>("useReceiversPerShot") != 0) {
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber);
-                    } else if (configEM.get<IndexType>("useReceiversPerShot") == 2) {
-                        receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
-                        receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, numshotsEM);
                     }
                     receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
 
