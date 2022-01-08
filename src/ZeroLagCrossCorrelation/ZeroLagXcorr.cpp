@@ -19,7 +19,7 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::prepareForInversion(scai::IndexType setGradientType, KITGPI::Configuration::Configuration config)
 {
     gradientType = setGradientType;
-    decomposeType = config.getAndCatch("decomposeType", 0);
+    decomposeWavefieldType = config.getAndCatch("decomposeWavefieldType", 0);
     numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
     if (numRelaxationMechanisms > 0) {
         std::vector<ValueType> relaxationFrequency_in(numRelaxationMechanisms, 0);

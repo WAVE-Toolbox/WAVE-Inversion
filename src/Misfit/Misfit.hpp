@@ -4,6 +4,8 @@
 #include <vector>
 #include <Acquisition/Receivers.hpp>
 #include <Common/Hilbert.hpp>
+#include "../Common/FK.hpp"
+#include <scai/lama/fft.hpp>
 
 namespace KITGPI
 {
@@ -19,8 +21,14 @@ namespace KITGPI
         class Misfit
         {
 
-        public:
+        public:            
+            /* Default constructor and destructor */
+            Misfit(){};
+            ~Misfit(){};
+            //! \brief Misfit pointer
+            typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
 
+            virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, ValueType fmax, ValueType vmin) = 0;
             virtual ValueType calc(KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;
             
             virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;            
@@ -41,7 +49,6 @@ namespace KITGPI
             ValueType getCrossGradientMisfit(int iteration);
             void clearStorage();            
             
-            virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots) = 0;
             virtual void appendMisfitTypeShotsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
             virtual void appendMisfitPerShotToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
             virtual void appendMultiMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration) = 0;
@@ -52,19 +59,15 @@ namespace KITGPI
             void setMisfitSum0Ratio(std::vector<scai::lama::DenseVector<ValueType>> setMisfitSum0Ratio);
             ValueType getMisfitResidualMax(int iteration1, int iteration2);
             
-            //! \brief Misfit pointer
-            typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
             std::string misfitType = "l2";
             std::string multiMisfitType = "l2567891";
             bool saveMultiMisfits = false;
+            KITGPI::FK<ValueType> fkHandler;
+            scai::IndexType nFFT;
             
             KITGPI::Misfit::Misfit<ValueType> &operator=(KITGPI::Misfit::Misfit<ValueType> const &rhs);
                                     
         protected:
-            
-            /* Default constructor and destructor */
-            Misfit(){};
-            ~Misfit(){};
             
             std::vector<scai::lama::DenseVector<ValueType>> misfitStorage;            
             std::vector<scai::lama::DenseVector<ValueType>> misfitStorageL2;          

@@ -402,29 +402,29 @@ int main(int argc, char *argv[])
     /* Wavefields                              */
     /* --------------------------------------- */    
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
-    IndexType decomposeType = config.getAndCatch("decomposeType", 0); 
+    IndexType decomposeWavefieldType = config.getAndCatch("decomposeWavefieldType", 0); 
     IndexType snapType = config.getAndCatch("snapType", 0);
     IndexType gradientTypeEM = configEM.getAndCatch("gradientType", 0); 
-    IndexType decomposeTypeEM = configEM.getAndCatch("decomposeType", 0); 
+    IndexType decomposeWavefieldTypeEM = configEM.getAndCatch("decomposeWavefieldType", 0); 
     IndexType snapTypeEM = configEM.getAndCatch("snapType", 0);
     //Temporary Wavefield for the derivative of the forward wavefields
     wavefieldPtr wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
     if (inversionType != 0) {
         wavefields->init(ctx, dist, numRelaxationMechanisms);
-        if ((gradientType == 2 || gradientType == 3) && decomposeType == 0)
+        if ((gradientType == 2 || gradientType == 3) && decomposeWavefieldType == 0)
             wavefieldsTemp->init(ctx, dist, numRelaxationMechanisms);
-        if ((gradientType == 2 || gradientType == 3) && decomposeType != 0)
-            snapType = decomposeType + 3;
+        if ((gradientType == 2 || gradientType == 3) && decomposeWavefieldType != 0)
+            snapType = decomposeWavefieldType + 3;
     }
 
     //Temporary Wavefield for the derivative of the forward wavefields
     wavefieldPtr wavefieldsTempEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
     if (inversionTypeEM != 0) {
         wavefieldsEM->init(ctx, distEM, numRelaxationMechanismsEM);
-        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeTypeEM == 0)
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeWavefieldTypeEM == 0)
             wavefieldsTempEM->init(ctx, distEM, numRelaxationMechanismsEM);
-        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeTypeEM != 0)
-            snapTypeEM = decomposeTypeEM + 3;
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeWavefieldTypeEM != 0)
+            snapTypeEM = decomposeWavefieldTypeEM + 3;
     }
 
     /* --------------------------------------- */
@@ -444,7 +444,7 @@ int main(int argc, char *argv[])
                 wavefieldrecord.push_back(wavefieldsInversion);
             }
         }
-        if ((gradientType == 2 || gradientType == 3) && decomposeType == 0) {
+        if ((gradientType == 2 || gradientType == 3) && decomposeWavefieldType == 0) {
             for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                 if (tStep % dtinversion == 0) {
                     wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
                 wavefieldrecordEM.push_back(wavefieldsInversionEM);
             }
         }
-        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeTypeEM == 0) {
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeWavefieldTypeEM == 0) {
             for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
                 if (tStep % dtinversionEM == 0) {
                     wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
@@ -984,7 +984,7 @@ int main(int argc, char *argv[])
                     } else {
                         gradientTypePerShot = 2;
                     }            
-                    if (decomposeType == 0 && workflow.iteration % (numSwitch * 2) == 0) {
+                    if (decomposeWavefieldType == 0 && workflow.iteration % (numSwitch * 2) == 0) {
                         model->resetReflectivity();
                     }
                 } else {
@@ -992,7 +992,7 @@ int main(int argc, char *argv[])
                 }
             
                 std::vector<bool> invertForParameters = workflow.getInvertForParameters();
-                if (gradientTypePerShot == 1 && decomposeType == 0) { // the last element of invertForParameters is invertForReflectivity
+                if (gradientTypePerShot == 1 && decomposeWavefieldType == 0) { // the last element of invertForParameters is invertForReflectivity
                     invertForParameters[invertForParameters.size()-1] = true;
 //                     if (!useStreamConfig) {
 //                         model->calcReflectivity(modelCoordinates, *derivatives, config.get<ValueType>("DT"));
@@ -1013,7 +1013,7 @@ int main(int argc, char *argv[])
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfit->init(config, misfitTypeHistory, numshots); // in case of that random misfit function is used
+                dataMisfit->init(config, misfitTypeHistory, numshots, workflow.getUpperCornerFreq(), model->getVmin()); // in case of that random misfit function is used
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
@@ -1060,6 +1060,11 @@ int main(int argc, char *argv[])
                         sources.getSeismogramHandler().filter(freqFilter);
                     
                     /* Source time function inversion */
+                    if (config.get<bool>("useSourceSignalInversion") || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
+                        sourceEst.calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
+                        if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
+                            sourceEst.calcRefTrace(receiversTrue, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
+                    }
                     if (config.get<bool>("useSourceSignalInversion")){
                         if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist->getLocalSize() << " : Source Time Function Inversion\n");
@@ -1091,8 +1096,6 @@ int main(int argc, char *argv[])
                             }
                             receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                             receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
-
-                            sourceEst.calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
                             
                             sourceEst.estimateSourceSignal(receivers, receiversTrue, shotIndTrue, shotNumber);
                         }
@@ -1171,7 +1174,7 @@ int main(int argc, char *argv[])
 
                     wavefields->resetWavefields();
                     ValueType DTinv = 1 / config.get<ValueType>("DT");
-                    if (gradientTypePerShot == 2 && decomposeType == 0) { 
+                    if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) { 
                         HOST_PRINT(commAll, "================ initWholeSpace receivers ===============\n");
                         sourcesReflect.initWholeSpace(config, modelCoordinates, ctx, dist, receivers.getSeismogramTypes());
                     }   
@@ -1185,14 +1188,14 @@ int main(int argc, char *argv[])
 
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                             
-                            if ((gradientTypePerShot == 2 && decomposeType == 0) || decomposeType != 0) { 
+                            if ((gradientTypePerShot == 2 && decomposeWavefieldType == 0) || decomposeWavefieldType != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTemp -= *wavefields;
                                 *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by sourcesReflect
-                                if (gradientTypePerShot == 2 && decomposeType == 0) 
+                                if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeType != 0) 
-                                    wavefields->decompose(decomposeType, *wavefieldsTemp, *derivatives);
+                                if (decomposeWavefieldType != 0) 
+                                    wavefields->decompose(decomposeWavefieldType, *wavefieldsTemp, *derivatives);
                             }
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
@@ -1204,7 +1207,7 @@ int main(int argc, char *argv[])
                         }
                         solver->resetCPML();
                         
-                        if (gradientTypePerShot == 2 && decomposeType == 0) { 
+                        if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = model->getReflectivity();
@@ -1230,14 +1233,14 @@ int main(int argc, char *argv[])
 
                             solver->run(receivers, sources, *modelPerShot, *wavefields, *derivatives, tStep);
                             
-                            if ((gradientTypePerShot == 2 && decomposeType == 0) || decomposeType != 0) { 
+                            if ((gradientTypePerShot == 2 && decomposeWavefieldType == 0) || decomposeWavefieldType != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTemp -= *wavefields;
                                 *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by sourcesReflect
-                                if (gradientTypePerShot == 2 && decomposeType == 0) 
+                                if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeType != 0) 
-                                    wavefields->decompose(decomposeType, *wavefieldsTemp, *derivatives);
+                                if (decomposeWavefieldType != 0) 
+                                    wavefields->decompose(decomposeWavefieldType, *wavefieldsTemp, *derivatives);
                             }
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
@@ -1249,7 +1252,7 @@ int main(int argc, char *argv[])
                         }
                         solver->resetCPML();
                         
-                        if (gradientTypePerShot == 2 && decomposeType == 0) { 
+                        if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShot->getReflectivity();
@@ -1276,7 +1279,8 @@ int main(int argc, char *argv[])
                         model->write("model_crash", config.get<IndexType>("FileFormat"));
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
-
+                    if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
+                        sourceEst.calcRefTrace(receivers, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));                    
                     if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
                     }
@@ -1302,9 +1306,11 @@ int main(int argc, char *argv[])
 
                     /* Calculate adjoint sources */
                     dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue, shotIndTrue);
+                    if (config.getAndCatch("writeAdjointSource", false))
+                        adjointSources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".adjointSource.stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     
                     /* Calculate gradient */
-                    if (gradientTypePerShot == 2 && decomposeType == 0) {
+                    if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Backward\n");
                     } else {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Backward\n");
@@ -1544,7 +1550,7 @@ int main(int argc, char *argv[])
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
                 }
                                                 
-                dataMisfit->init(config, misfitTypeHistory, numshots); // in case of that random misfit function is used
+                dataMisfit->init(config, misfitTypeHistory, numshots, workflow.getUpperCornerFreq(), model->getVmin()); // in case of that random misfit function is used
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
                         shotIndTrue = shotInd;
@@ -1579,6 +1585,11 @@ int main(int argc, char *argv[])
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0) {
                         sources.getSeismogramHandler().filter(freqFilter);
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
+                    }
+                    if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
+                        sourceEst.calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
+                        if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
+                            sourceEst.calcRefTrace(receiversTrue, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
                     }
 
                     if (config.get<bool>("useSourceSignalInversion")) {
@@ -1616,7 +1627,9 @@ int main(int argc, char *argv[])
                         model->write("model_crash", config.get<IndexType>("FileFormat"));
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
-
+                    if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
+                        sourceEst.calcRefTrace(receivers, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
+                    
                     if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
                     }
@@ -1720,7 +1733,7 @@ int main(int argc, char *argv[])
                     } else {
                         gradientTypePerShotEM = 2;
                     }            
-                    if (decomposeTypeEM == 0 && workflow.iteration % (numSwitch * 2) == 0) {
+                    if (decomposeWavefieldTypeEM == 0 && workflow.iteration % (numSwitch * 2) == 0) {
                         modelEM->resetReflectivity();
                     }
                 } else {
@@ -1728,7 +1741,7 @@ int main(int argc, char *argv[])
                 }
             
                 std::vector<bool> invertForParametersEM = workflowEM.getInvertForParameters();
-                if (gradientTypePerShotEM == 1 && decomposeTypeEM == 0) { // the last element of invertForParametersEM is invertForReflectivity
+                if (gradientTypePerShotEM == 1 && decomposeWavefieldTypeEM == 0) { // the last element of invertForParametersEM is invertForReflectivity
                     invertForParametersEM[invertForParametersEM.size()-1] = true;
 //                     if (!useStreamConfigEM) {
 //                         modelEM->calcReflectivity(modelCoordinatesEM, *derivativesEM, configEM.get<ValueType>("DT"));
@@ -1749,7 +1762,7 @@ int main(int argc, char *argv[])
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM); // in case of that random misfit function is used
+                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, workflowEM.getUpperCornerFreq(), modelEM->getVmin()); // in case of that random misfit function is used
                 IndexType localShotInd = 0; 
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
@@ -1796,6 +1809,11 @@ int main(int argc, char *argv[])
                         sourcesEM.getSeismogramHandler().filter(freqFilterEM);
                     
                     /* Source time function inversion */
+                    if (configEM.get<bool>("useSourceSignalInversion") || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
+                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
+                        if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
+                            sourceEstEM.calcRefTrace(receiversTrueEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
+                    }
                     if (configEM.get<bool>("useSourceSignalInversion")){
                         if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << " : Source Time Function Inversion\n");
@@ -1827,8 +1845,6 @@ int main(int argc, char *argv[])
                             }
                             receiversEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
                             receiversTrueEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
-
-                            sourceEstEM.calcOffsetMutes(sourcesEM, receiversEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
                             
                             sourceEstEM.estimateSourceSignal(receiversEM, receiversTrueEM, shotIndTrue, shotNumber);
                         }
@@ -1884,6 +1900,7 @@ int main(int argc, char *argv[])
                         if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0){
                             receiversStartEM.getSeismogramHandler().filter(freqFilterEM);
                         }
+                        
                         if (configEM.get<IndexType>("useSeismogramTaper") > 1) {
                             seismogramTaper2DEM.apply(receiversStartEM.getSeismogramHandler()); 
                         }
@@ -1907,7 +1924,7 @@ int main(int argc, char *argv[])
 
                     wavefieldsEM->resetWavefields();
                     ValueType DTinv = 1 / configEM.get<ValueType>("DT");
-                    if (gradientTypePerShotEM == 2 && decomposeTypeEM == 0) { 
+                    if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) { 
                         HOST_PRINT(commAll, "================ initWholeSpace receivers ===============\n");
                         sourcesReflectEM.initWholeSpace(configEM, modelCoordinatesEM, ctx, distEM, receiversEM.getSeismogramTypes());
                     }
@@ -1921,14 +1938,14 @@ int main(int argc, char *argv[])
                             
                             solverEM->run(receiversEM, sourcesEM, *modelEM, *wavefieldsEM, *derivativesEM, tStep);
                             
-                            if ((gradientTypePerShotEM == 2 && decomposeTypeEM == 0) || decomposeTypeEM != 0) { 
+                            if ((gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) || decomposeWavefieldTypeEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTempEM -= *wavefieldsEM;
                                 *wavefieldsTempEM *= -DTinv; // wavefieldsTempEM will be gathered by sourcesReflectEM
-                                if (gradientTypePerShotEM == 2 && decomposeTypeEM == 0) 
+                                if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeTypeEM != 0) 
-                                    wavefieldsEM->decompose(decomposeTypeEM, *wavefieldsTempEM, *derivativesEM);
+                                if (decomposeWavefieldTypeEM != 0) 
+                                    wavefieldsEM->decompose(decomposeWavefieldTypeEM, *wavefieldsTempEM, *derivativesEM);
                             }
                             if (tStep % dtinversionEM == 0) {
                                 // save wavefieldsEM in std::vector
@@ -1940,7 +1957,7 @@ int main(int argc, char *argv[])
                         }
                         solverEM->resetCPML();
                         
-                        if (gradientTypePerShotEM == 2 && decomposeTypeEM == 0) { 
+                        if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelEM->getReflectivity();
@@ -1966,14 +1983,14 @@ int main(int argc, char *argv[])
 
                             solverEM->run(receiversEM, sourcesEM, *modelPerShotEM, *wavefieldsEM, *derivativesEM, tStep);
                             
-                            if ((gradientTypePerShotEM == 2 && decomposeTypeEM == 0) || decomposeTypeEM != 0) { 
+                            if ((gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) || decomposeWavefieldTypeEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTempEM -= *wavefieldsEM;
                                 *wavefieldsTempEM *= -DTinv; // wavefieldsTempEM will be gathered by sourcesReflectEM
-                                if (gradientTypePerShotEM == 2 && decomposeTypeEM == 0) 
+                                if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeTypeEM != 0) 
-                                    wavefieldsEM->decompose(decomposeTypeEM, *wavefieldsTempEM, *derivativesEM);
+                                if (decomposeWavefieldTypeEM != 0) 
+                                    wavefieldsEM->decompose(decomposeWavefieldTypeEM, *wavefieldsTempEM, *derivativesEM);
                             }
                             if (tStep % dtinversionEM == 0) {
                                 // save wavefieldsEM in std::vector
@@ -1985,7 +2002,7 @@ int main(int argc, char *argv[])
                         }
                         solverEM->resetCPML();
                             
-                        if (gradientTypePerShotEM == 2 && decomposeTypeEM == 0) { 
+                        if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShotEM->getReflectivity();
@@ -2012,7 +2029,9 @@ int main(int argc, char *argv[])
                         modelEM->write("model_crash", configEM.get<IndexType>("FileFormat"));
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output modelEM as model_crash.FILE_EXTENSION!");
                     }
-
+                    if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
+                        sourceEstEM.calcRefTrace(receiversEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
+                    
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
                     }
@@ -2038,9 +2057,11 @@ int main(int argc, char *argv[])
 
                     /* Calculate adjoint sources */
                     dataMisfitEM->calcAdjointSources(adjointSourcesEM, receiversEM, receiversTrueEM, shotIndTrue);
+                    if (configEM.getAndCatch("writeAdjointSource", false))
+                        adjointSourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".adjointSource.stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     
                     /* Calculate gradient */
-                    if (gradientTypePerShotEM == 2 && decomposeType == 0) {
+                    if (gradientTypePerShotEM == 2 && decomposeWavefieldType == 0) {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Backward\n");
                     } else {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Backward\n");
@@ -2304,7 +2325,7 @@ int main(int argc, char *argv[])
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
                 }
                                               
-                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM); // in case of that random misfit function is used  
+                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, workflowEM.getUpperCornerFreq(), modelEM->getVmin()); // in case of that random misfit function is used  
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
                         shotIndTrue = shotInd;
@@ -2340,7 +2361,11 @@ int main(int argc, char *argv[])
                         sourcesEM.getSeismogramHandler().filter(freqFilterEM);
                         receiversTrueEM.getSeismogramHandler().filter(freqFilterEM);
                     }
-
+                    if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
+                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
+                        if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
+                            sourceEstEM.calcRefTrace(receiversTrueEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
+                    }
                     if (configEM.get<bool>("useSourceSignalInversion")) {
                         sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
                         if (configEM.get<IndexType>("useSourceSignalTaper") != 0)
@@ -2376,7 +2401,8 @@ int main(int argc, char *argv[])
                         modelEM->write("model_crash", configEM.get<IndexType>("FileFormat"));
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
-
+                    if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
+                        sourceEstEM.calcRefTrace(receiversEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
                     }

@@ -74,7 +74,7 @@ namespace KITGPI
             int numDimension;
             std::string equationType; 
             
-            scai::IndexType decomposeType = 0;
+            scai::IndexType decomposeWavefieldType = 0;
             scai::IndexType gradientType = 0;
             scai::IndexType numRelaxationMechanisms = 0; //!< Number of relaxation mechanisms
             std::vector<ValueType> relaxationFrequency; 

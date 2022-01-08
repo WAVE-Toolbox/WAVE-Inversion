@@ -57,6 +57,18 @@ namespace KITGPI
             recX += recZ;
             result.unaryOp(recX, common::UnaryOp::SQRT);   
             result *= modelCoordinates.getDH();
+            
+            IndexType NR = receiverIndices.size();
+            lama::DenseVector<ValueType> offsetSign(NR, 0.0);
+            if(recY[NR-1] != recY[0] && abs(recX[NR-1] - recX[0]) / abs(recY[NR-1] - recY[0]) < 1){ // borehole
+                offsetSign = recY - sourceCoords.y;
+            } else { // surface
+                offsetSign = recX - sourceCoords.x;
+            }
+            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+            offsetSign += 0.1; // except for the same depth source and receiver in borehole case.
+            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+            result *= offsetSign;
         }  
         
         /*! \brief calculate Gaussian window

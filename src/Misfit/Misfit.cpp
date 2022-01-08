@@ -226,6 +226,8 @@ KITGPI::Misfit::Misfit<ValueType> &KITGPI::Misfit::Misfit<ValueType>::operator=(
     uniqueMisfitTypes = rhs.uniqueMisfitTypes;
     modelDerivativeX = rhs.modelDerivativeX;
     modelDerivativeY = rhs.modelDerivativeY;
+    fkHandler = rhs.fkHandler;
+    nFFT = rhs.nFFT;
     
     return *this;
 }

@@ -52,7 +52,7 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType;
             using ZeroLagXcorr<ValueType>::gradientType;
-            using ZeroLagXcorr<ValueType>::decomposeType;
+            using ZeroLagXcorr<ValueType>::decomposeWavefieldType;
             
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrSigmaEM;

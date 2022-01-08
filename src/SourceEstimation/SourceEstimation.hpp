@@ -32,18 +32,18 @@ namespace KITGPI
     {
       public:
         explicit SourceEstimation() : useOffsetMutes(false), mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE), readTaper(false), taperName(""){};
+        ~SourceEstimation(){};
 
         void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl, std::string tprName = "");
         void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper);
-
-        ~SourceEstimation(){};
 
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
 
         void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
         
-        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
+        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
+        void calcRefTrace(KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType mainVelocity, ValueType DT);
         
       private:
         ValueType waterLevel;
@@ -54,6 +54,7 @@ namespace KITGPI
 
         bool useOffsetMutes;
         std::vector<scai::lama::DenseVector<ValueType>> mutes;
+        scai::lama::DenseVector<ValueType> offsets;
         bool readTaper;
         std::string taperName;
 

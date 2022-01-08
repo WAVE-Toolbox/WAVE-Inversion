@@ -79,7 +79,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     /*                Backward Modelling                      */
     /* ------------------------------------------------------ */
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
-    IndexType decomposeType = config.getAndCatch("decomposeType", 0); 
+    IndexType decomposeWavefieldType = config.getAndCatch("decomposeWavefieldType", 0); 
     IndexType snapType = config.getAndCatch("snapType", 0);
     if (gradientType == 3) {
         IndexType numSwitch = gradientType - 2; 
@@ -89,8 +89,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
             gradientType = 2;
         }                
     } 
-    if (decomposeType != 0) {
-        snapType = decomposeType + 3;
+    if (decomposeWavefieldType != 0) {
+        snapType = decomposeWavefieldType + 3;
     }  
     
     energyPrecond.resetApproxHessian();
@@ -103,7 +103,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     /* --------------------------------------- */
     std::vector<wavefieldPtr> wavefieldrecordAdjointReflect;  
     Acquisition::Receivers<ValueType> adjointSourcesReflect;                
-    if (gradientType == 2 && decomposeType == 0) { 
+    if (gradientType == 2 && decomposeWavefieldType == 0) { 
         scai::dmemo::DistributionPtr distInversion;
         if (isSeismic) {
             if(equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
@@ -135,18 +135,18 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
 
         solver.run(receivers, adjointSources, model, *wavefields, derivatives, tStep);
 
-        if ((gradientType == 2 && decomposeType == 0) || decomposeType != 0) { 
+        if ((gradientType == 2 && decomposeWavefieldType == 0) || decomposeWavefieldType != 0) { 
             //calculate temporal derivative of wavefield
             *wavefieldsTemp -= *wavefields;
             *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by adjointSourcesReflect
-            if (gradientType == 2 && decomposeType == 0) 
+            if (gradientType == 2 && decomposeWavefieldType == 0) 
                 SourceReceiverReflect->gatherSeismogram(tStep);
-            if (decomposeType != 0) 
-                wavefields->decompose(decomposeType, *wavefieldsTemp, derivatives);
+            if (decomposeWavefieldType != 0) 
+                wavefields->decompose(decomposeWavefieldType, *wavefieldsTemp, derivatives);
             /* --------------------------------------- */
             /*             Convolution                 */
             /* --------------------------------------- */
-            if (gradientType == 2 && decomposeType == 0 && tStep % dtinversion == 0) {
+            if (gradientType == 2 && decomposeWavefieldType == 0 && tStep % dtinversion == 0) {
                 // save wavefields in std::vector
                 *wavefieldrecordAdjointReflect[floor(tStep / dtinversion + 0.5)] = wavefieldTaper2D.applyWavefieldAverage(wavefields);
                 *wavefieldsTemp = wavefieldTaper2D.applyWavefieldRecover(wavefieldrecordReflect[floor(tStep / dtinversion + 0.5)]);
@@ -165,7 +165,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
                 }
             }
         }        
-        if (((gradientType != 2 && decomposeType == 0) || decomposeType != 0) && tStep % dtinversion == 0) {
+        if (((gradientType != 2 && decomposeWavefieldType == 0) || decomposeWavefieldType != 0) && tStep % dtinversion == 0) {
             /* --------------------------------------- */
             /*             Convolution                 */
             /* --------------------------------------- */
@@ -229,7 +229,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
 
     gradientPerShot.normalize();
             
-    if (gradientType == 2 && decomposeType == 0) {
+    if (gradientType == 2 && decomposeWavefieldType == 0) {
         typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));
         *testgradient = gradientPerShot;
         scai::lama::DenseVector<ValueType> reflectivity;

@@ -3,8 +3,8 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface_Stream';
-equationType = 'TMEM';
+observationType = 'Surface';
+equationType = 'Elastic';
 NoiseType = '';
 modelType = 'Inv';
 HPCType = 'HPC';
@@ -33,7 +33,7 @@ Insert_name = cellMerge({invertParameterType,...
     bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
 
 writefiles=1;
-stage=5;
+stage=1;
 useDamp=0; T0damp=15e-9; T1damp=25e-9; 
 showLegend = 0;
 showResidual = 0;
@@ -49,7 +49,8 @@ exchangeStrategy = [0 0];
 orientation = 'vertical';
 wiggleType='wiggle';
 writeSourceTrue=1;
-source = readSourcesfromConfig(configTrue);
+shotIncr=config.getAndCatch('ShotIncr',0);
+source = readSourcesfromConfig(config,shotIncr);
 DT=config.getValue('seismoDT');
 fileFormat=config.getValue('SeismogramFormat');
 if DT > 1e-8 
