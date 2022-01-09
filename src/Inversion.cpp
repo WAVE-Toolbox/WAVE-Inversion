@@ -723,14 +723,14 @@ int main(int argc, char *argv[])
         // calculate source dist
         lama::DenseVector<IndexType> sourcecoords = getsourcecoordinates(sourceSettings, modelCoordinates);
         dmemo::DistributionPtr dist_sources = Acquisition::calcDistribution(sourcecoords, dist);
-        if (config.get<bool>("useSourceSignalInversion"))
+        if (config.get<IndexType>("useSourceSignalInversion") != 0)
             sourceEst.init(config, ctx, dist_sources, sourceSignalTaper);
     }
     if (inversionTypeEM != 0) {
         // calculate source dist
         lama::DenseVector<IndexType> sourcecoordsEM = getsourcecoordinates(sourceSettingsEM, modelCoordinatesEM);
         dmemo::DistributionPtr dist_sourcesEM = Acquisition::calcDistribution(sourcecoordsEM, distEM);
-        if (configEM.get<bool>("useSourceSignalInversion"))
+        if (configEM.get<IndexType>("useSourceSignalInversion") != 0)
             sourceEstEM.init(configEM, ctx, dist_sourcesEM, sourceSignalTaperEM);
     }
     
@@ -1060,12 +1060,17 @@ int main(int argc, char *argv[])
                         sources.getSeismogramHandler().filter(freqFilter);
                     
                     /* Source time function inversion */
-                    if (config.get<bool>("useSourceSignalInversion") || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
-                        sourceEst.calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
-                        if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
-                            sourceEst.calcRefTrace(receiversTrue, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
+                    if (config.get<IndexType>("useSourceSignalTaper") == 2 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
+                        sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
                     }
-                    if (config.get<bool>("useSourceSignalInversion")){
+                    if (config.get<IndexType>("useSourceSignalInversion") != 0 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
+                        sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
+                        if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
+                            sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
+                            sourceEst.setRefTraceToSource(sources, receiversTrue);
+                        }
+                    }
+                    if (config.get<IndexType>("useSourceSignalInversion") != 0){
                         if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist->getLocalSize() << " : Source Time Function Inversion\n");
 
@@ -1101,9 +1106,6 @@ int main(int argc, char *argv[])
                         }
                         sourceEst.applyFilter(sources, shotIndTrue);
                         if (config.get<IndexType>("useSourceSignalTaper") != 0) {
-                            if (config.get<IndexType>("useSourceSignalTaper") == 2 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
-                                sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
-                            }
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
                         }
                     }
@@ -1124,7 +1126,7 @@ int main(int argc, char *argv[])
                     /* Normalize observed and synthetic data */
                     if (config.get<IndexType>("normalizeTraces") == 3 || misfitType.compare("l6") == 0 || multiMisfitType.find('6') != std::string::npos) {
                         if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1) {
-                            if (!config.get<bool>("useSourceSignalInversion")) {
+                            if (!config.get<IndexType>("useSourceSignalInversion") != 0) {
                                 ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
                                 if (workflow.getUpperCornerFreq() != 0.0) {
                                     frequencyAGC = (workflow.getLowerCornerFreq() + workflow.getUpperCornerFreq()) / 2;
@@ -1280,7 +1282,7 @@ int main(int argc, char *argv[])
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
                     if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
-                        sourceEst.calcRefTrace(receivers, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));                    
+                        sourceEst.calcRefTrace(config, receivers, sourceSignalTaper);                    
                     if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
                     }
@@ -1586,13 +1588,15 @@ int main(int argc, char *argv[])
                         sources.getSeismogramHandler().filter(freqFilter);
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
                     }
-                    if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
-                        sourceEst.calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
-                        if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
-                            sourceEst.calcRefTrace(receiversTrue, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
+                    if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
+                        sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
+                        if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
+                            sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
+                            sourceEst.setRefTraceToSource(sources, receiversTrue);
+                        }
                     }
 
-                    if (config.get<bool>("useSourceSignalInversion")) {
+                    if (config.get<IndexType>("useSourceSignalInversion") != 0) {
                         sourceEst.applyFilter(sources, shotIndTrue);
                         if (config.get<IndexType>("useSourceSignalTaper") != 0)
                             sourceSignalTaper.apply(sources.getSeismogramHandler());
@@ -1628,7 +1632,7 @@ int main(int argc, char *argv[])
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
                     if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos)
-                        sourceEst.calcRefTrace(receivers, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
+                        sourceEst.calcRefTrace(config, receivers, sourceSignalTaper);
                     
                     if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
@@ -1809,12 +1813,17 @@ int main(int argc, char *argv[])
                         sourcesEM.getSeismogramHandler().filter(freqFilterEM);
                     
                     /* Source time function inversion */
-                    if (configEM.get<bool>("useSourceSignalInversion") || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
-                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
-                        if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
-                            sourceEstEM.calcRefTrace(receiversTrueEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
+                    if (configEM.get<IndexType>("useSourceSignalTaper") == 2 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
+                        sourceSignalTaperEM.calcCosineTaper(sourcesEM.getSeismogramHandler(), workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq(), configEM.get<ValueType>("DT"), ctx);
                     }
-                    if (configEM.get<bool>("useSourceSignalInversion")){
+                    if (configEM.get<IndexType>("useSourceSignalInversion") != 0 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
+                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
+                        if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
+                            sourceEstEM.calcRefTrace(configEM, receiversTrueEM, sourceSignalTaperEM);
+                            sourceEstEM.setRefTraceToSource(sourcesEM, receiversTrueEM);
+                        }
+                    }
+                    if (configEM.get<IndexType>("useSourceSignalInversion") != 0){
                         if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1) {
                             HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << " : Source Time Function Inversion\n");
 
@@ -1850,9 +1859,6 @@ int main(int argc, char *argv[])
                         }
                         sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
                         if (configEM.get<IndexType>("useSourceSignalTaper") != 0) {
-                            if (configEM.get<IndexType>("useSourceSignalTaper") == 2 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
-                                sourceSignalTaperEM.calcCosineTaper(sourcesEM.getSeismogramHandler(), workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq(), configEM.get<ValueType>("DT"), ctx);
-                            }
                             sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
                         }
                     }
@@ -1873,7 +1879,7 @@ int main(int argc, char *argv[])
                     /* Normalize observed and synthetic data */
                     if (configEM.get<IndexType>("normalizeTraces") == 3 || misfitTypeEM.compare("l6") == 0 || multiMisfitTypeEM.find('6') != std::string::npos) {
                         if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1) {
-                            if (!configEM.get<bool>("useSourceSignalInversion")) {
+                            if (!configEM.get<IndexType>("useSourceSignalInversion") != 0) {
                                 ValueType frequencyAGC = configEM.get<ValueType>("CenterFrequencyCPML");
                                 if (workflowEM.getUpperCornerFreq() != 0.0) {
                                     frequencyAGC = (workflowEM.getLowerCornerFreq() + workflowEM.getUpperCornerFreq()) / 2;
@@ -2030,7 +2036,7 @@ int main(int argc, char *argv[])
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output modelEM as model_crash.FILE_EXTENSION!");
                     }
                     if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
-                        sourceEstEM.calcRefTrace(receiversEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
+                        sourceEstEM.calcRefTrace(configEM, receiversEM, sourceSignalTaperEM);
                     
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
@@ -2361,12 +2367,14 @@ int main(int argc, char *argv[])
                         sourcesEM.getSeismogramHandler().filter(freqFilterEM);
                         receiversTrueEM.getSeismogramHandler().filter(freqFilterEM);
                     }
-                    if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
-                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
-                        if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
-                            sourceEstEM.calcRefTrace(receiversTrueEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
+                    if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
+                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
+                        if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
+                            sourceEstEM.calcRefTrace(configEM, receiversTrueEM, sourceSignalTaperEM);
+                            sourceEstEM.setRefTraceToSource(sourcesEM, receiversTrueEM);
+                        }
                     }
-                    if (configEM.get<bool>("useSourceSignalInversion")) {
+                    if (configEM.get<IndexType>("useSourceSignalInversion") != 0) {
                         sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
                         if (configEM.get<IndexType>("useSourceSignalTaper") != 0)
                             sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
@@ -2402,7 +2410,7 @@ int main(int argc, char *argv[])
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
                     if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos)
-                        sourceEstEM.calcRefTrace(receiversEM, configEM.getAndCatch("mainVelocity", 0.0), configEM.get<ValueType>("DT"));
+                        sourceEstEM.calcRefTrace(configEM, receiversEM, sourceSignalTaperEM);
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                         seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
                     }

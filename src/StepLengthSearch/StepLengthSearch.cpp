@@ -498,10 +498,12 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             sources.getSeismogramHandler().filter(freqFilter);
             receiversTrue.getSeismogramHandler().filter(freqFilter);
         }
-        if (dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 4) {
-            sourceEst.calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
-            if (dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3)
-                sourceEst.calcRefTrace(receiversTrue, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
+        if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 4) {
+            sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
+            if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
+                sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
+                sourceEst.setRefTraceToSource(sources, receiversTrue);
+            }
         }
         
         Taper::Taper2D<ValueType> seismogramTaper2D;
@@ -519,7 +521,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         }
         seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
 
-        if (config.get<bool>("useSourceSignalInversion")) {
+        if (config.get<IndexType>("useSourceSignalInversion") != 0) {
             sourceEst.applyFilter(sources, shotIndTrue);
             if (config.get<IndexType>("useSourceSignalTaper") != 0)
                 sourceSignalTaper.apply(sources.getSeismogramHandler());
@@ -542,7 +544,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
         if (dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3)
-            sourceEst.calcRefTrace(receivers, config.getAndCatch("mainVelocity", 0.0), config.get<ValueType>("DT"));
+            sourceEst.calcRefTrace(config, receivers, sourceSignalTaper);
 
         if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
             seismogramTaper2D.apply(receivers.getSeismogramHandler()); 

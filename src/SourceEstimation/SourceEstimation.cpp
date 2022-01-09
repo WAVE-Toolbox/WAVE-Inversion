@@ -275,9 +275,12 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
  \param NZ Number of grid points in z-direction
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcRefTrace(KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType mainVelocity, ValueType DT)
+void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configuration const &config, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper)
 {
     lama::DenseMatrix<ValueType> data;
+    ValueType mainVelocity = config.getAndCatch("mainVelocity", 0.0);
+    ValueType DT = config.get<ValueType>("DT");
+    SCAI_ASSERT_ERROR(mainVelocity != 0.0, "mainVelocity cannot be zero when calculating the referenced trace!");
     
     bool isSeismic = receivers.getSeismogramHandler().getIsSeismic();
 
@@ -300,13 +303,18 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(KITGPI::Acquisition::Rece
             IndexType icount = 0;
             offsetSign = mutes[iComponent] * offsets;
             offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
-            if (offsetSign.sum() >= 0) {
-                offsetSign += 1;
-            } else {
-                offsetSign -= 1;
+            if (offsetSign.sum() <= 0) {
+                offsetSign *= -1;
             }
+            offsetSign += 1;
             offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
-            offsetUse = offsetSign * offsets; // we use only one side signals
+            offsetUse = mutes[iComponent] * offsets;
+            offsetUse = offsetSign * offsetUse; // we use only one side signals
+            std::cout<< "offsetUse : ";
+            for (int i = 0; i < offsetUse.size(); i++) { 
+                std::cout<< offsetUse.getValue(i) << " ";
+            }
+            std::cout<< std::endl;
             for (IndexType ix = 0; ix < NX; ix++) {
                 if (offsetUse.getValue(ix) != 0) {
                     icount++;
@@ -321,15 +329,51 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(KITGPI::Acquisition::Rece
                         refTrace *= refTrace1.maxNorm() / refTrace.maxNorm();
                     }
                     refTraceSum += refTrace;
+                    std::cout<< "icount = " << icount <<std::endl;
                 }
             }
+            SCAI_ASSERT_ERROR(icount != 0, "No trace selected for calculating the referenced trace!");
             if (icount != 0)
                 refTraceSum *= 1.0 / icount;
+            if (config.get<IndexType>("useSourceSignalTaper") == 2)
+                sourceSignalTaper.apply(refTraceSum);
+            
             if (isSeismic)
                 receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setRefTrace(refTraceSum);
             else
                 receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramTypeEM(iComponent)).setRefTrace(refTraceSum);
         }
+    }
+}
+
+/*! \brief Set the refTrace to a synthetic source
+ \param sources Synthetic source
+ \param shotInd Shot index of source
+ */
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::setRefTraceToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers)
+{
+    //get seismogram that corresponds to source type
+    lama::DenseMatrix<ValueType> seismo;
+    lama::DenseVector<ValueType> refTrace;
+    if (isSeismic) {
+        auto sourceType = Acquisition::SeismogramType(sources.getSeismogramTypes().getValue(0) - 1);
+        seismo = sources.getSeismogramHandler().getSeismogram(sourceType).getData();
+        refTrace = receivers.getSeismogramHandler().getSeismogram(sourceType).getRefTrace();
+    } else {
+        auto sourceType = Acquisition::SeismogramTypeEM(sources.getSeismogramTypes().getValue(0) - 1);
+        seismo = sources.getSeismogramHandler().getSeismogram(sourceType).getData();
+        refTrace = receivers.getSeismogramHandler().getSeismogram(sourceType).getRefTrace();
+    }
+    for (IndexType i = 0; i < seismo.getNumRows(); i++) {
+        seismo.setRow(refTrace, i, common::BinaryOp::COPY);
+    }
+    if (isSeismic) {
+        auto sourceType = Acquisition::SeismogramType(sources.getSeismogramTypes().getValue(0) - 1);
+        sources.getSeismogramHandler().getSeismogram(sourceType).getData() = seismo;
+    } else {
+        auto sourceType = Acquisition::SeismogramTypeEM(sources.getSeismogramTypes().getValue(0) - 1);
+        sources.getSeismogramHandler().getSeismogram(sourceType).getData() = seismo;
     }
 }
 

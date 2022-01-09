@@ -141,13 +141,14 @@ if isSeismic == 0
     flim=flim*1e-6;
     ylabelName='Frequency (MHz)';
 else
+    X0=f;
     ylabelName='Frequency (Hz)';
 end
 plot(X0(1:fshowIndex(end)),abs(SeismogramTrue(1:fshowIndex(end))),lineSettingAll{1}); hold on;
 plot(X0(1:fshowIndex(end)),abs(SeismogramInv(1:fshowIndex(end))),lineSettingAll{2}); hold on;
 xlabel(ylabelName);
 ylabel('Amplitude');
-legend('Source true','Source inv','Location','best');
+legend('Source true','Source inverted','Location','best');
 legend('boxoff')
 axis([flim 0 maxValue*1.1]);
 ImageBold(gca);

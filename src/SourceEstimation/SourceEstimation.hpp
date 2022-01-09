@@ -43,7 +43,8 @@ namespace KITGPI
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
         
         void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
-        void calcRefTrace(KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType mainVelocity, ValueType DT);
+        void calcRefTrace(Configuration::Configuration const &config, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper);
+        void setRefTraceToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers);
         
       private:
         ValueType waterLevel;

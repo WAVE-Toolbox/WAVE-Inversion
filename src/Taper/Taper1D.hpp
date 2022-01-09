@@ -32,10 +32,10 @@ namespace KITGPI
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
             void apply(KITGPI::Gradient::Gradient<ValueType> &grad) const;
             void apply(scai::lama::DenseMatrix<ValueType> &mat) const;
+            void apply(scai::lama::DenseVector<ValueType> &trace) const;
             void read(std::string filename, scai::IndexType fileFormat);
             
             bool getDirection() const;
-            scai::lama::DenseVector<ValueType> getTaper();
 
           private:
             void calcCosineTaperUp(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd);

@@ -222,18 +222,18 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
  \param grad Gradient
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
+void KITGPI::Taper::Taper1D<ValueType>::apply(scai::lama::DenseVector<ValueType> &trace) const
 {
-    grad *= data;
+    trace *= data;
 }
 
 /*! \brief Apply taper to a Gradient
  \param grad Gradient
  */
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> KITGPI::Taper::Taper1D<ValueType>::getTaper()
+void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Gradient::Gradient<ValueType> &grad) const
 {
-    return data;
+    grad *= data;
 }
 
 /*! \brief Read a taper from file

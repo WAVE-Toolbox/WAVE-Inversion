@@ -603,8 +603,8 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2FK(KITGPI::Acquisition::Sei
         scai::lama::DenseMatrix<ComplexValueType> fkObs;
         seismogramSyntemp.normalizeTrace(2);
         seismogramObstemp.normalizeTrace(2);
-        fkHandler.FKTransform(seismogramSyntemp.getData(), fkSyn, seismogramSyn.getOffset()); // we calculate only the offset of seismogramSyn
-        fkHandler.FKTransform(seismogramObstemp.getData(), fkObs, seismogramSyn.getOffset());
+        fkHandler.FKTransform(seismogramSyntemp.getData(), fkSyn, seismogramObs.getOffset()); // we calculate only the offset of seismogramSyn
+        fkHandler.FKTransform(seismogramObstemp.getData(), fkObs, seismogramObs.getOffset());
         fkSyn.binaryOp(fkSyn, common::BinaryOp::SUB, fkObs);
         
         tempL2Norm = 0.5*fkSyn.l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
@@ -636,13 +636,13 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2FK(KITGPI::Acqu
             scai::lama::DenseMatrix<ComplexValueType> fkObs;
             seismogramSyntemp.normalizeTrace(2);
             seismogramObstemp.normalizeTrace(2);
-            fkHandler.FKTransform(seismogramSyntemp.getData(), fkSyn, seismogramSyn.getOffset());
-            fkHandler.FKTransform(seismogramObstemp.getData(), fkObs, seismogramSyn.getOffset());
+            fkHandler.FKTransform(seismogramSyntemp.getData(), fkSyn, seismogramObs.getOffset());
+            fkHandler.FKTransform(seismogramObstemp.getData(), fkObs, seismogramObs.getOffset());
             fkObs.binaryOp(fkSyn, common::BinaryOp::SUB, fkObs);
             if (fkSyn.l2Norm() != 0)
                 fkSyn.scale(1.0 / fkSyn.l2Norm());
             fkSyn.binaryOp(fkSyn, common::BinaryOp::MULT, fkObs);
-            fkHandler.inverseFKTransform(seismogramSyntemp.getData(), fkSyn, seismogramSyn.getOffset());
+            fkHandler.inverseFKTransform(seismogramSyntemp.getData(), fkSyn, seismogramObs.getOffset());
             seismogramSyntemp.getData().scaleRows(tempL2NormSyn);
             
             seismogramAdj = seismogramSyntemp;  
