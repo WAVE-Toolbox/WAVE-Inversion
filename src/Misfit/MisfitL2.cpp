@@ -7,7 +7,7 @@
  \param numshots number of shots 
  */
 template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, ValueType fmax, ValueType vmin)
+void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, ValueType fc, ValueType vmin)
 {    
     // transform to lower cases
     misfitType = config.get<std::string>("misfitType");
@@ -17,8 +17,9 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
     gradientType = config.getAndCatch("gradientType", 0);
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT 
     scai::IndexType NT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-    fkHandler.init(config.get<ValueType>("DT"), NT, fmax, vmin);
+    fkHandler.init(config.get<ValueType>("DT"), NT, fc, vmin);
     nFFT = Common::calcNextPowTwo<ValueType>(NT);
+    writeAdjointSource = config.getAndCatch("writeAdjointSource", false);
     
     scai::lama::DenseVector<ValueType> temp1(numshots, 0, ctx);  
     misfitTypeShots = temp1; // initialize misfitTypeShots to 0 because sumArray will be applied on it when misfitType=l2567892
@@ -469,7 +470,7 @@ template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Convolved(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
+    // Choi et al., 2011
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
@@ -499,13 +500,22 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Convolved(KITGPI::Acquisiti
         
         fSignalSyn.scaleColumns(fTraceObs);
         fSignalObs.scaleColumns(fTraceSyn);
-
-        fSignalSyn.binaryOp(fSignalSyn, common::BinaryOp::SUB, fSignalObs);
         fSignalSyn *= (1.0 / ValueType(nFFT)); // proper fft normalization
+        fSignalObs *= (1.0 / ValueType(nFFT)); // proper fft normalization
 
         scai::lama::ifft<ComplexValueType>(fSignalSyn, 1);
         fSignalSyn.resize(seismogramSyn.getData().getRowDistributionPtr(), seismogramSyn.getData().getColDistributionPtr());
         seismogramSyntemp.getData() = scai::lama::real(fSignalSyn);
+        scai::lama::ifft<ComplexValueType>(fSignalObs, 1);
+        fSignalObs.resize(seismogramObs.getData().getRowDistributionPtr(), seismogramObs.getData().getColDistributionPtr());
+        seismogramObstemp.getData() = scai::lama::real(fSignalObs);
+
+        if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
+            seismogramSyntemp.getData().writeToFile(seismogramSyn.getFilename() + ".conv.mtx");
+            seismogramObstemp.getData().writeToFile(seismogramObs.getFilename() + ".conv.mtx");
+        }
+        
+        seismogramSyntemp -= seismogramObstemp;        
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
         if (isfinite(tempL2Norm)==false) tempL2Norm=0;
@@ -530,7 +540,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Convolved(KITGP
     if (seismogramSyn.getData().getNumRows()!=0) {
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
         Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
-        tempL2NormSyn = 1 / tempL2NormSyn;
+        tempL2NormSyn = 1.0 / tempL2NormSyn;
         if (gradientType != 4) {
             scai::lama::DenseMatrix<ComplexValueType> fSignalSyn;
             scai::lama::DenseMatrix<ComplexValueType> fSignalObs;
@@ -544,7 +554,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Convolved(KITGP
             fSignalObs.resize(seismogramObs.getData().getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
             
             refTrace = seismogramSyn.getRefTrace();
-            std::cout<< "Misfit refTrace.maxNorm() = " << refTrace.maxNorm() <<std::endl;
             fTraceSyn = scai::lama::cast<ComplexValueType>(refTrace);
             fTraceSyn.resize(std::make_shared<scai::dmemo::NoDistribution>(nFFT));
             refTrace = seismogramObs.getRefTrace();
@@ -594,7 +603,7 @@ template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2FK(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
+    // Solano et al., 2014 and Masoni et al., 2014
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
@@ -603,8 +612,21 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2FK(KITGPI::Acquisition::Sei
         scai::lama::DenseMatrix<ComplexValueType> fkObs;
         seismogramSyntemp.normalizeTrace(2);
         seismogramObstemp.normalizeTrace(2);
-        fkHandler.FKTransform(seismogramSyntemp.getData(), fkSyn, seismogramObs.getOffset()); // we calculate only the offset of seismogramSyn
+        fkHandler.FKTransform(seismogramSyntemp.getData(), fkSyn, seismogramObs.getOffset()); // we calculate only the offset of receiversTrue
         fkHandler.FKTransform(seismogramObstemp.getData(), fkObs, seismogramObs.getOffset());
+        
+        if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
+            scai::lama::DenseMatrix<ValueType> writeTemp;
+            writeTemp = scai::lama::real(fkSyn);
+            writeTemp.writeToFile(seismogramSyn.getFilename() + ".fk.real.mtx");
+            writeTemp = scai::lama::imag(fkSyn);
+            writeTemp.writeToFile(seismogramSyn.getFilename() + ".fk.imag.mtx");
+            writeTemp = scai::lama::real(fkObs);
+            writeTemp.writeToFile(seismogramObs.getFilename() + ".fk.real.mtx");
+            writeTemp = scai::lama::imag(fkObs);
+            writeTemp.writeToFile(seismogramObs.getFilename() + ".fk.imag.mtx");
+        }
+        
         fkSyn.binaryOp(fkSyn, common::BinaryOp::SUB, fkObs);
         
         tempL2Norm = 0.5*fkSyn.l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
@@ -630,18 +652,29 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2FK(KITGPI::Acqu
     if (seismogramSyn.getData().getNumRows()!=0) {
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
         Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
-        tempL2NormSyn = 1 / tempL2NormSyn;
+        tempL2NormSyn = 1.0 / tempL2NormSyn;
         if (gradientType != 4) {
             scai::lama::DenseMatrix<ComplexValueType> fkSyn;
             scai::lama::DenseMatrix<ComplexValueType> fkObs;
             seismogramSyntemp.normalizeTrace(2);
             seismogramObstemp.normalizeTrace(2);
             fkHandler.FKTransform(seismogramSyntemp.getData(), fkSyn, seismogramObs.getOffset());
-            fkHandler.FKTransform(seismogramObstemp.getData(), fkObs, seismogramObs.getOffset());
-            fkObs.binaryOp(fkSyn, common::BinaryOp::SUB, fkObs);
-            if (fkSyn.l2Norm() != 0)
-                fkSyn.scale(1.0 / fkSyn.l2Norm());
-            fkSyn.binaryOp(fkSyn, common::BinaryOp::MULT, fkObs);
+            fkHandler.FKTransform(seismogramObstemp.getData(), fkObs, seismogramObs.getOffset()); 
+            IndexType NK = fkObs.getNumRows();
+            IndexType NF = fkObs.getNumColumns();
+            scai::lama::DenseVector<ComplexValueType> kSynN(NK*NF, 0.0);
+            scai::lama::DenseVector<ComplexValueType> kSyn(NK*NF, 0.0);
+            scai::lama::DenseVector<ComplexValueType> kObs(NK*NF, 0.0);
+            Common::reshape<ComplexValueType>(kSyn, fkSyn, 3);
+            Common::reshape<ComplexValueType>(kObs, fkObs, 3);
+            kSynN = kSyn;
+            kSyn.unaryOp(kSyn, common::UnaryOp::ABS); 
+            kObs.unaryOp(kObs, common::UnaryOp::ABS);             
+            kObs = kSyn - kObs;
+            kSyn += waterLevel * kSyn.maxNorm();
+            kSynN /= kSyn;
+            kSyn = kSynN * kObs;
+            Common::reshape<ComplexValueType>(kSyn, fkSyn, 1);
             fkHandler.inverseFKTransform(seismogramSyntemp.getData(), fkSyn, seismogramObs.getOffset());
             seismogramSyntemp.getData().scaleRows(tempL2NormSyn);
             
@@ -678,6 +711,12 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2EnvelopeWeighted(KITGPI::Ac
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         seismogramSyntemp.normalizeTrace(4);
         seismogramObstemp.normalizeTrace(4);
+        
+        if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
+            seismogramSyntemp.getData().writeToFile(seismogramSyn.getFilename() + ".envw.mtx");
+            seismogramObstemp.getData().writeToFile(seismogramObs.getFilename() + ".envw.mtx");
+        }
+        
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -704,7 +743,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         scai::lama::DenseMatrix<ValueType> tempDataSynEnvelope = seismogramSyntemp.getData();
         scai::lama::DenseVector<ValueType> dataTrace; 
-        ValueType waterLevel = 1e-3;
         Common::calcEnvelope(tempDataSynEnvelope);
         for (int i=0; i<tempDataSynEnvelope.getNumRows(); i++) {
             tempDataSynEnvelope.getRow(dataTrace, i);   
@@ -766,13 +804,19 @@ template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2AGC(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
+    // Köhn et al., 2021
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
     if (seismogramSyn.getData().getNumRows()!=0) {
         seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());   
-        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());    
+        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());  
+        
+        if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
+            seismogramSyntemp.getData().writeToFile(seismogramSyn.getFilename() + ".AGC.mtx");
+            seismogramObstemp.getData().writeToFile(seismogramObs.getFilename() + ".AGC.mtx");
+        }
+        
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
@@ -835,13 +879,19 @@ template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Normalized(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
+    // Bozdag et al., 2011
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         seismogramSyntemp.normalizeTrace(2);
         seismogramObstemp.normalizeTrace(2);
+        
+        if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
+            seismogramSyntemp.getData().writeToFile(seismogramSyn.getFilename() + ".norm.mtx");
+            seismogramObstemp.getData().writeToFile(seismogramObs.getFilename() + ".norm.mtx");
+        }
+        
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -868,7 +918,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
         Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
-        tempL2NormSyn = 1 / tempL2NormSyn;
+        tempL2NormSyn = 1.0 / tempL2NormSyn;
         if (gradientType != 4) {
             /*      // Groos 2013 and IFOS2D
             seismogramAdj = seismogramSyn;
@@ -876,8 +926,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
             scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();
             scai::lama::DenseVector<ValueType> tempL2NormObs = seismogramObstemp.getTraceL2norm();
             scai::lama::DenseVector<ValueType> sumSynMultObs = seismogramAdj.getTraceSum();
-            tempL2NormSyn = 1 / tempL2NormSyn;
-            tempL2NormObs = 1 / tempL2NormObs;     
+            tempL2NormSyn = 1.0 / tempL2NormSyn;
+            tempL2NormObs = 1.0 / tempL2NormObs;     
             tempL2NormObs *= tempL2NormSyn;
             tempL2NormObs *= tempL2NormSyn;
             tempL2NormObs *= sumSynMultObs;
@@ -921,13 +971,19 @@ template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Envelope(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
-
+    // Bozdag et al., 2011
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
         Common::calcEnvelope(seismogramSyntemp.getData());
         Common::calcEnvelope(seismogramObstemp.getData());
+        
+        if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
+            seismogramSyntemp.getData().writeToFile(seismogramSyn.getFilename() + ".env.mtx");
+            seismogramObstemp.getData().writeToFile(seismogramObs.getFilename() + ".env.mtx");
+        }
+        
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -957,7 +1013,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
             scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();
             scai::lama::DenseMatrix<ValueType> tempDataObs = seismogramObstemp.getData();
             scai::lama::DenseVector<ValueType> dataTrace; 
-            ValueType waterLevel = 1e-3;
             Common::calcEnvelope(tempDataSyn);
             Common::calcEnvelope(tempDataObs);
             tempDataObs.binaryOp(tempDataSyn, scai::common::BinaryOp::SUB, tempDataObs);
@@ -1015,10 +1070,16 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2InstantaneousPhase(KITGPI::
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        Common::calcInstantaneousPhaseResidual(seismogramSyntemp.getData(), seismogramObstemp.getData(), seismogramSyntemp.getData());
-//         scai::IndexType phaseType = 1;
-//         Common::calcInstantaneousPhase(seismogramSyntemp.getData(), phaseType);
-//         Common::calcInstantaneousPhase(seismogramObstemp.getData(), phaseType);
+//         Common::calcInstantaneousPhaseResidual(seismogramSyntemp.getData(), seismogramObstemp.getData(), seismogramSyntemp.getData());
+        scai::IndexType phaseType = 1;
+        Common::calcInstantaneousPhase(seismogramSyntemp.getData(), phaseType);
+        Common::calcInstantaneousPhase(seismogramObstemp.getData(), phaseType);
+        
+        if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
+            seismogramSyntemp.getData().writeToFile(seismogramSyn.getFilename() + ".phase.mtx");
+            seismogramObstemp.getData().writeToFile(seismogramObs.getFilename() + ".phase.mtx");
+        }
+        
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
@@ -1049,7 +1110,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
             scai::lama::DenseMatrix<ValueType> instantaneousPhaseSyn = seismogramSyntemp.getData();
             scai::lama::DenseMatrix<ValueType> instantaneousPhaseObs = seismogramObstemp.getData();
             scai::lama::DenseVector<ValueType> dataTrace; 
-            ValueType waterLevel = 1e-3;
             Common::calcEnvelope(envelopeSyn);
             envelopeSyn.binaryOp(envelopeSyn, scai::common::BinaryOp::MULT, envelopeSyn);
             for (int i=0; i<envelopeSyn.getNumRows(); i++) {

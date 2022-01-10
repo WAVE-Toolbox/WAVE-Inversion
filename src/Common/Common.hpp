@@ -45,6 +45,17 @@ namespace KITGPI
 
             recX = RecCoordinates;
             
+            IndexType NR = receiverIndices.size();
+            lama::DenseVector<ValueType> offsetSign(NR, 0.0);
+            if(abs(recX[NR-1] - recX[0]) < abs(recY[NR-1] - recY[0])){ // borehole
+                offsetSign = recY - sourceCoords.y;
+            } else { // surface
+                offsetSign = recX - sourceCoords.x;
+            }
+            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+            offsetSign += 0.1; // except for the same depth source and receiver in borehole case.
+            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+            
             recX -= ValueType(sourceCoords.x);
             recY -= ValueType(sourceCoords.y);
             recZ -= ValueType(sourceCoords.z);
@@ -56,18 +67,7 @@ namespace KITGPI
             recX += recY;
             recX += recZ;
             result.unaryOp(recX, common::UnaryOp::SQRT);   
-            result *= modelCoordinates.getDH();
-            
-            IndexType NR = receiverIndices.size();
-            lama::DenseVector<ValueType> offsetSign(NR, 0.0);
-            if(recY[NR-1] != recY[0] && abs(recX[NR-1] - recX[0]) / abs(recY[NR-1] - recY[0]) < 1){ // borehole
-                offsetSign = recY - sourceCoords.y;
-            } else { // surface
-                offsetSign = recX - sourceCoords.x;
-            }
-            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
-            offsetSign += 0.1; // except for the same depth source and receiver in borehole case.
-            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+            result *= modelCoordinates.getDH();            
             result *= offsetSign;
         }  
         
@@ -188,6 +188,46 @@ namespace KITGPI
                 for (IndexType ix = 0; ix < NX+PX-1; ix++) {
                     vector2Dpadded[iy*(NX+PX-1)+ix]=vector2Dpadded[PYhalf*(NX+PX-1)+ix];
                     vector2Dpadded[(NY+PYhalf+iy)*(NX+PX-1)+ix]=vector2Dpadded[(NY+PYhalf-1)*(NX+PX-1)+ix];
+                }
+            }
+        }
+        
+        /*! \brief reshape vector and matrix
+        \param vector2D vector
+        \param matrix2D matrix
+        \param reshapeType 1,2,3,4
+        */
+        template <typename ReturnType>
+        void reshape(scai::lama::DenseVector<ReturnType> &vector2D, scai::lama::DenseMatrix<ReturnType> &matrix2D, IndexType reshapeType)
+        {
+            scai::lama::DenseVector<ReturnType> tempVec;
+            IndexType NX = matrix2D.getNumRows();
+            IndexType NY = matrix2D.getNumColumns();
+            if (reshapeType == 1) { // vector to matrix col
+                lama::DenseVector<IndexType> coordinates = scai::lama::linearDenseVector<IndexType>(NX, 0, 1);
+                for (int i = 0; i < NY; i++) {
+                    tempVec.gatherInto(vector2D, coordinates, common::BinaryOp::COPY);
+                    matrix2D.setColumn(tempVec, i, common::BinaryOp::COPY);
+                    coordinates += NX;
+                }
+            } else if (reshapeType == 2) { // vector to matrix row
+                lama::DenseVector<IndexType> coordinates = scai::lama::linearDenseVector<IndexType>(NY, 0, 1);
+                for (int i = 0; i < NX; i++) {
+                    tempVec.gatherInto(vector2D, coordinates, common::BinaryOp::COPY);
+                    matrix2D.setRow(tempVec, i, common::BinaryOp::COPY);
+                    coordinates += NY;
+                }
+            } else if (reshapeType == 3) { // matrix col to vector
+                matrix2D.getColumn(vector2D, 0);
+                for (int i = 1; i < NY; i++) {
+                    matrix2D.getColumn(tempVec, i);
+                    vector2D.cat(vector2D, tempVec);
+                }
+            } else if (reshapeType == 4) { // matrix row to vector
+                matrix2D.getRow(vector2D, 0);
+                for (int i = 1; i < NX; i++) {
+                    matrix2D.getRow(tempVec, i);
+                    vector2D.cat(vector2D, tempVec);
                 }
             }
         }

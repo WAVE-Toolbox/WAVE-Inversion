@@ -25,7 +25,7 @@ namespace KITGPI
 
             typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
             
-            void init(ValueType dt, scai::IndexType nt, ValueType fmax, ValueType vmin);
+            void init(ValueType dt, scai::IndexType nt, ValueType fc, ValueType vmin);
 
             void FKTransform(scai::lama::DenseMatrix<ValueType> const signal, scai::lama::DenseMatrix<ComplexValueType> &fk, scai::lama::DenseVector<ValueType> const offset) const;
             void inverseFKTransform(scai::lama::DenseMatrix<ValueType> &signal, scai::lama::DenseMatrix<ComplexValueType> const fk, scai::lama::DenseVector<ValueType> const offset) const;

@@ -310,11 +310,7 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
             offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
             offsetUse = mutes[iComponent] * offsets;
             offsetUse = offsetSign * offsetUse; // we use only one side signals
-            std::cout<< "offsetUse : ";
-            for (int i = 0; i < offsetUse.size(); i++) { 
-                std::cout<< offsetUse.getValue(i) << " ";
-            }
-            std::cout<< std::endl;
+            
             for (IndexType ix = 0; ix < NX; ix++) {
                 if (offsetUse.getValue(ix) != 0) {
                     icount++;
@@ -329,7 +325,6 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
                         refTrace *= refTrace1.maxNorm() / refTrace.maxNorm();
                     }
                     refTraceSum += refTrace;
-                    std::cout<< "icount = " << icount <<std::endl;
                 }
             }
             SCAI_ASSERT_ERROR(icount != 0, "No trace selected for calculating the referenced trace!");
@@ -338,10 +333,13 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
             if (config.get<IndexType>("useSourceSignalTaper") == 2)
                 sourceSignalTaper.apply(refTraceSum);
             
-            if (isSeismic)
+            if (isSeismic) {
                 receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setRefTrace(refTraceSum);
-            else
+                receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setOffset(offsets);
+            } else {
                 receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramTypeEM(iComponent)).setRefTrace(refTraceSum);
+                receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramTypeEM(iComponent)).setOffset(offsets);
+            }
         }
     }
 }

@@ -1013,7 +1013,7 @@ int main(int argc, char *argv[])
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfit->init(config, misfitTypeHistory, numshots, workflow.getUpperCornerFreq(), model->getVmin()); // in case of that random misfit function is used
+                dataMisfit->init(config, misfitTypeHistory, numshots, config.get<ValueType>("CenterFrequencyCPML"), model->getVmin()); // in case of that random misfit function is used
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
@@ -1143,7 +1143,7 @@ int main(int argc, char *argv[])
                     }
                     receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                     
-                    if (workflow.iteration == 0|| shotHistory[shotIndTrue] == 1){
+                    if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1){
                         receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                         
                         if (config.get<IndexType>("useReceiversPerShot") != 0) {
@@ -1552,7 +1552,7 @@ int main(int argc, char *argv[])
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
                 }
                                                 
-                dataMisfit->init(config, misfitTypeHistory, numshots, workflow.getUpperCornerFreq(), model->getVmin()); // in case of that random misfit function is used
+                dataMisfit->init(config, misfitTypeHistory, numshots, config.get<ValueType>("CenterFrequencyCPML"), model->getVmin()); // in case of that random misfit function is used
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
                         shotIndTrue = shotInd;
@@ -1766,7 +1766,7 @@ int main(int argc, char *argv[])
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, workflowEM.getUpperCornerFreq(), modelEM->getVmin()); // in case of that random misfit function is used
+                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, configEM.get<ValueType>("CenterFrequencyCPML"), modelEM->getVmin()); // in case of that random misfit function is used
                 IndexType localShotInd = 0; 
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
@@ -2331,7 +2331,7 @@ int main(int argc, char *argv[])
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
                 }
                                               
-                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, workflowEM.getUpperCornerFreq(), modelEM->getVmin()); // in case of that random misfit function is used  
+                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, configEM.get<ValueType>("CenterFrequencyCPML"), modelEM->getVmin()); // in case of that random misfit function is used  
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
                         shotIndTrue = shotInd;
