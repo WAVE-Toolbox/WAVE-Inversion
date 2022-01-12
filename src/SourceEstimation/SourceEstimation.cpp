@@ -297,7 +297,7 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
             lama::DenseVector<ValueType> rowTemp(NT, 0.0);
             lama::DenseVector<ValueType> refTrace(NT, 0.0);
             lama::DenseVector<ValueType> refTraceSum(NT, 0.0);
-            lama::DenseVector<ValueType> refTrace1;
+//             lama::DenseVector<ValueType> refTrace1;
             lama::DenseVector<ValueType> offsetSign;
             lama::DenseVector<ValueType> offsetUse;
             IndexType icount = 0;
@@ -319,11 +319,11 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
                     for (IndexType it = tCut; it < NT; it++) {
                         refTrace.setValue(it-tCut, rowTemp.getValue(it));
                     }
-                    if (icount == 1) {
-                        refTrace1 = refTrace;
-                    } else {
-                        refTrace *= refTrace1.maxNorm() / refTrace.maxNorm();
-                    }
+//                     if (icount == 1) {
+//                         refTrace1 = refTrace;
+//                     } else {
+//                         refTrace *= refTrace1.maxNorm() / refTrace.maxNorm();
+//                     }
                     refTraceSum += refTrace;
                 }
             }

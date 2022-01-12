@@ -403,6 +403,9 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition
             this->calcAdjointSeismogramL2(seismogramAdj, seismogramSyn, seismogramObs);
             break;
         } 
+        if (writeAdjointSource && seismogramObs.getData().getNumRows()!=0) {
+            seismogramAdj.getData().writeToFile(seismogramObs.getFilename() + ".adjointSource.mtx");
+        }
         adjointSources.getSeismogramHandler().getSeismogram(seismogramAdj.getTraceType()) = seismogramAdj;
     } 
 }

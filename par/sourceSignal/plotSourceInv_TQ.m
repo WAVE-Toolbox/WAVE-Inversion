@@ -3,8 +3,8 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface';
-equationType = 'Elastic';
+observationType = 'Surface_Stream';
+equationType = 'TMEM';
 NoiseType = '';
 modelType = 'Inv';
 HPCType = 'HPC';
@@ -19,10 +19,10 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 0; copy_true_start = 0;
+copy_inv = 1; copy_true_start = 0;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
-invertParameterType = 'EpsilonEMSigmaEM';
+invertParameterType = 'EpsilonEMSigmaEM_Field';
 bandPass = 'BP550MHz';
 NoisedB = '';
 NoisedB = cellMerge({NoiseType,NoisedB},0);
@@ -33,7 +33,7 @@ Insert_name = cellMerge({invertParameterType,...
     bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
 
 writefiles=1;
-stage=1;
+stage=5;
 useDamp=0; T0damp=15e-9; T1damp=25e-9; 
 showLegend = 0;
 showResidual = 0;

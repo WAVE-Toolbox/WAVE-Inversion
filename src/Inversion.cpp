@@ -1308,8 +1308,6 @@ int main(int argc, char *argv[])
 
                     /* Calculate adjoint sources */
                     dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue, shotIndTrue);
-                    if (config.getAndCatch("writeAdjointSource", false))
-                        adjointSources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".adjointSource.stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     
                     /* Calculate gradient */
                     if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) {
@@ -2063,8 +2061,6 @@ int main(int argc, char *argv[])
 
                     /* Calculate adjoint sources */
                     dataMisfitEM->calcAdjointSources(adjointSourcesEM, receiversEM, receiversTrueEM, shotIndTrue);
-                    if (configEM.getAndCatch("writeAdjointSource", false))
-                        adjointSourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".adjointSource.stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     
                     /* Calculate gradient */
                     if (gradientTypePerShotEM == 2 && decomposeWavefieldType == 0) {
