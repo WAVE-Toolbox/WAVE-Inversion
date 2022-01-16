@@ -77,24 +77,24 @@ namespace KITGPI
         \param PX size of kernel
         \param modelCoordinates coordinate class object of the model
         \param velocityMean mean velocity of the model
-        \param FCmax max frequency
+        \param FCmain main frequency
         */
         template <typename ValueType>
-        void calcGaussianKernelFor2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::CSRSparseMatrix<ValueType> &GaussianKernel, IndexType &PX, IndexType &PY, IndexType NX, IndexType NY, ValueType DH, ValueType velocityMean, ValueType FCmax, IndexType smoothGradient)
+        void calcGaussianKernelFor2DVector(scai::lama::DenseVector<ValueType> const vector2D, scai::lama::CSRSparseMatrix<ValueType> &GaussianKernel, IndexType &PX, IndexType &PY, IndexType NX, IndexType NY, ValueType DH, ValueType velocityMean, ValueType FCmain, IndexType smoothGradient)
         {
             scai::hmemo::ContextPtr ctx = vector2D.getContextPtr();
 			
 			/* define filter size as fraction of reference velocity wavelength */
-            ValueType wavelengthMin = velocityMean / FCmax;
-            ValueType wavelengthFraction = smoothGradient % 10;
-            smoothGradient = (smoothGradient - wavelengthFraction) / 10;
-            ValueType wavelengthFractionX = 1.0 / wavelengthFraction;
-            ValueType wavelengthFractionY = 0;
+            ValueType wavelengthMean = velocityMean / FCmain;
+            ValueType wavelengthMulti = smoothGradient % 10;
+            smoothGradient = (smoothGradient - wavelengthMulti) / 10;
+            ValueType wavelengthMultiX = wavelengthMulti;
+            ValueType wavelengthMultiY = 0;
             if (smoothGradient == 2) {
-                wavelengthFractionY = 1.0 / wavelengthFraction;
+                wavelengthMultiY = wavelengthMulti;
             }
-            PX = round(wavelengthFractionX * wavelengthMin / DH);
-            PY = round(wavelengthFractionY * wavelengthMin / DH);
+            PX = round(wavelengthMultiX * wavelengthMean / DH);
+            PY = round(wavelengthMultiY * wavelengthMean / DH);
 			
             if (!(PX % 2)) {
                 PX += 1;
@@ -102,7 +102,7 @@ namespace KITGPI
             if (!(PY % 2)) {
                 PY += 1;
             }
-    
+//             std::cout<< "PX = " << PX << " PY = " << PY << std::endl;
             IndexType PXhalf = PX / 2;
             IndexType PYhalf = PY / 2;
                     

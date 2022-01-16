@@ -23,7 +23,7 @@ namespace KITGPI
             MisfitL2(){}; // set default misfitType for step length search.
             ~MisfitL2(){};
             
-            void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, ValueType fc, ValueType vmin);
+            void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, scai::IndexType useRTM_in, ValueType vmin);
             void appendMisfitTypeShotsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration);
             void appendMisfitPerShotToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration);
             void appendMultiMisfitsToFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, scai::IndexType stage, scai::IndexType iteration);
@@ -71,7 +71,7 @@ namespace KITGPI
             using Misfit<ValueType>::misfitTypeShots; 
             using Misfit<ValueType>::uniqueMisfitTypes;
             using Misfit<ValueType>::numMisfitTypes;
-            using Misfit<ValueType>::gradientType;
+            using Misfit<ValueType>::useRTM;
             using Misfit<ValueType>::writeAdjointSource;
         };        
     }

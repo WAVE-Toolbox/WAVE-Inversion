@@ -58,7 +58,7 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType; 
             
-            using ZeroLagXcorr<ValueType>::decomposeWavefieldType;
+            using ZeroLagXcorr<ValueType>::decomposition;
             using ZeroLagXcorr<ValueType>::gradientType;
 
             /* Seismic */

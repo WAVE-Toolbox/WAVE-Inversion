@@ -734,6 +734,23 @@ void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::Communica
     }
 }
 
+/*! \brief Append the run time to log-file
+ \param comm Communicator
+ \param run_t Run time
+ */
+template <typename ValueType>
+void KITGPI::StepLengthSearch<ValueType>::appendRunTimeToLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, double run_t)
+{
+    int myRank = comm->getRank();
+    if (myRank == MASTERGPI) {
+        std::string filename(logFilename);
+        logFile.open(filename, std::ios_base::app);
+        logFile << std::scientific;
+        logFile << "\n# Total runtime of WAVE-Inversion in second : " << run_t;
+        logFile.close();
+    }
+}
+
 /*! \brief Get optimum steplength
  *
  *

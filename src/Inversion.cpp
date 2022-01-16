@@ -402,29 +402,29 @@ int main(int argc, char *argv[])
     /* Wavefields                              */
     /* --------------------------------------- */    
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
-    IndexType decomposeWavefieldType = config.getAndCatch("decomposeWavefieldType", 0); 
+    IndexType decomposition = config.getAndCatch("decomposeWavefieldType", 0); 
     IndexType snapType = config.getAndCatch("snapType", 0);
     IndexType gradientTypeEM = configEM.getAndCatch("gradientType", 0); 
-    IndexType decomposeWavefieldTypeEM = configEM.getAndCatch("decomposeWavefieldType", 0); 
+    IndexType decompositionEM = configEM.getAndCatch("decomposeWavefieldType", 0); 
     IndexType snapTypeEM = configEM.getAndCatch("snapType", 0);
     //Temporary Wavefield for the derivative of the forward wavefields
     wavefieldPtr wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
     if (inversionType != 0) {
         wavefields->init(ctx, dist, numRelaxationMechanisms);
-        if ((gradientType == 2 || gradientType == 3) && decomposeWavefieldType == 0)
+        if ((gradientType == 2 || gradientType == 3) && decomposition == 0)
             wavefieldsTemp->init(ctx, dist, numRelaxationMechanisms);
-        if ((gradientType == 2 || gradientType == 3) && decomposeWavefieldType != 0)
-            snapType = decomposeWavefieldType + 3;
+        if ((gradientType == 2 || gradientType == 3) && decomposition != 0)
+            snapType = decomposition + 3;
     }
 
     //Temporary Wavefield for the derivative of the forward wavefields
     wavefieldPtr wavefieldsTempEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
     if (inversionTypeEM != 0) {
         wavefieldsEM->init(ctx, distEM, numRelaxationMechanismsEM);
-        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeWavefieldTypeEM == 0)
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decompositionEM == 0)
             wavefieldsTempEM->init(ctx, distEM, numRelaxationMechanismsEM);
-        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeWavefieldTypeEM != 0)
-            snapTypeEM = decomposeWavefieldTypeEM + 3;
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decompositionEM != 0)
+            snapTypeEM = decompositionEM + 3;
     }
 
     /* --------------------------------------- */
@@ -444,7 +444,7 @@ int main(int argc, char *argv[])
                 wavefieldrecord.push_back(wavefieldsInversion);
             }
         }
-        if ((gradientType == 2 || gradientType == 3) && decomposeWavefieldType == 0) {
+        if ((gradientType == 2 || gradientType == 3) && decomposition == 0) {
             for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
                 if (tStep % dtinversion == 0) {
                     wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
                 wavefieldrecordEM.push_back(wavefieldsInversionEM);
             }
         }
-        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decomposeWavefieldTypeEM == 0) {
+        if ((gradientTypeEM == 2 || gradientTypeEM == 3) && decompositionEM == 0) {
             for (IndexType tStep = 0; tStep < tStepEndEM; tStep++) {
                 if (tStep % dtinversionEM == 0) {
                     wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
@@ -775,6 +775,8 @@ int main(int argc, char *argv[])
         gradientPerShot->prepareForInversion(config);  
         stabilizingFunctionalGradient->prepareForInversion(config);
         crossGradientDerivative->prepareForInversion(config);     
+            
+        gradient->calcGaussianKernel(commAll, *model, config);
     }
     if (inversionTypeEM != 0) {
         if (!useStreamConfigEM) {
@@ -790,7 +792,9 @@ int main(int argc, char *argv[])
         gradientEM->prepareForInversion(configEM);
         gradientPerShotEM->prepareForInversion(configEM);  
         stabilizingFunctionalGradientEM->prepareForInversion(configEM); 
-        crossGradientDerivativeEM->prepareForInversion(configEM);     
+        crossGradientDerivativeEM->prepareForInversion(configEM);  
+        
+        gradientEM->calcGaussianKernel(commAll, *modelEM, configEM);     
     }
     
     /* --------------------------------------- */
@@ -889,8 +893,11 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     IndexType stageCount = 0;
     for (workflow.workflowStage = 0; workflow.workflowStage < workflow.maxStage; workflow.workflowStage++) {
+        workflowEM.workflowStage = workflow.workflowStage;
         bool breakLoopLast = breakLoop;
         bool breakLoopLastEM = breakLoopEM;
+        IndexType useRTM = 0; 
+        IndexType useRTMEM = 0; 
         if (inversionType != 0 && (breakLoop == false || breakLoopType == 2)) {
             if (exchangeStrategy == 4 || exchangeStrategy == 6)
                 breakLoopEM = true;
@@ -909,12 +916,9 @@ int main(int argc, char *argv[])
                 freqFilter.calc(transFcnFmly, "lp", workflow.getFilterOrder(), workflow.getLowerCornerFreq());
             else if (workflow.getLowerCornerFreq() == 0.0 && workflow.getUpperCornerFreq() != 0.0)
                 freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq()); 
-            
-            gradient->calcGaussianKernel(commAll, *model, config, workflow.getUpperCornerFreq());
         }
         
         if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2)) {
-            workflowEM.workflowStage = workflow.workflowStage;
     
             HOST_PRINT(commAll, "\nChange workflow stage " << equationTypeEM << " 2\n");
             workflowEM.changeStage(configEM, *dataMisfitEM, steplengthInitEM);
@@ -929,9 +933,7 @@ int main(int argc, char *argv[])
             else if (workflowEM.getLowerCornerFreq() != 0.0 && workflowEM.getUpperCornerFreq() == 0.0)
                 freqFilterEM.calc(transFcnFmly, "lp", workflowEM.getFilterOrder(), workflowEM.getLowerCornerFreq());
             else if (workflowEM.getLowerCornerFreq() == 0.0 && workflowEM.getUpperCornerFreq() != 0.0)
-                freqFilterEM.calc(transFcnFmly, "hp", workflowEM.getFilterOrder(), workflowEM.getUpperCornerFreq());  
-            
-            gradientEM->calcGaussianKernel(commAll, *modelEM, configEM, workflowEM.getUpperCornerFreq());      
+                freqFilterEM.calc(transFcnFmly, "hp", workflowEM.getFilterOrder(), workflowEM.getUpperCornerFreq());                  
         }
         
         /* --------------------------------------- */
@@ -944,11 +946,13 @@ int main(int argc, char *argv[])
         IndexType shotNumber;
         IndexType shotIndTrue = 0;            
         for (workflow.iteration = 0; workflow.iteration < maxiterations; workflow.iteration++) {
-
+            workflowEM.iteration = workflow.iteration;
             /* --------------------------------------- */
             /*        Start the first inversion        */
             /* --------------------------------------- */            
-            if (inversionType != 0 && (breakLoop == false || breakLoopType == 2)) {
+            if (inversionType != 0 && (breakLoop == false || breakLoopType == 2 || useRTM != 0)) {
+                if (useRTM != 0)
+                    HOST_PRINT(commAll, "\nStart inverse time migration after stage " << workflow.workflowStage + 1 << " in "<< equationType << " 1");
                 if (exchangeStrategy == 3 || exchangeStrategy == 5)
                     breakLoopEM = true;
                 // Begin of one seismic model update 
@@ -976,23 +980,23 @@ int main(int argc, char *argv[])
                 crossGradientDerivative->resetGradient();
                 misfitPerIt = 0;
                 
-                IndexType gradientTypePerShot = 0;  
+                IndexType gradientTypePerIt = 0; 
                 if (gradientType == 3) {
                     IndexType numSwitch = gradientType - 2;  
                     if ((workflow.iteration / numSwitch) % 2 == 0) {
-                        gradientTypePerShot = 1;
+                        gradientTypePerIt = 1;
                     } else {
-                        gradientTypePerShot = 2;
+                        gradientTypePerIt = 2;
                     }            
-                    if (decomposeWavefieldType == 0 && workflow.iteration % (numSwitch * 2) == 0) {
+                    if (decomposition == 0 && workflow.iteration % (numSwitch * 2) == 0) {
                         model->resetReflectivity();
                     }
                 } else {
-                    gradientTypePerShot = gradientType;
+                    gradientTypePerIt = gradientType;
                 }
             
                 std::vector<bool> invertForParameters = workflow.getInvertForParameters();
-                if (gradientTypePerShot == 1 && decomposeWavefieldType == 0) { // the last element of invertForParameters is invertForReflectivity
+                if (gradientTypePerIt == 1 && decomposition == 0) { // the last element of invertForParameters is invertForReflectivity
                     invertForParameters[invertForParameters.size()-1] = true;
 //                     if (!useStreamConfig) {
 //                         model->calcReflectivity(modelCoordinates, *derivatives, config.get<ValueType>("DT"));
@@ -1013,7 +1017,7 @@ int main(int argc, char *argv[])
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflow.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcount << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfit->init(config, misfitTypeHistory, numshots, config.get<ValueType>("CenterFrequencyCPML"), model->getVmin()); // in case of that random misfit function is used
+                dataMisfit->init(config, misfitTypeHistory, numshots, useRTM, model->getVmin()); // in case of that random misfit function is used
                 IndexType localShotInd = 0;     
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
@@ -1175,8 +1179,8 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start time stepping with " << tStepEnd << " time steps\n");
 
                     wavefields->resetWavefields();
-                    ValueType DTinv = 1 / config.get<ValueType>("DT");
-                    if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) { 
+                    ValueType DTinv = 1.0 / config.get<ValueType>("DT");
+                    if (gradientTypePerIt == 2 && decomposition == 0) { 
                         HOST_PRINT(commAll, "================ initWholeSpace receivers ===============\n");
                         sourcesReflect.initWholeSpace(config, modelCoordinates, ctx, dist, receivers.getSeismogramTypes());
                     }   
@@ -1190,14 +1194,14 @@ int main(int argc, char *argv[])
 
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                             
-                            if ((gradientTypePerShot == 2 && decomposeWavefieldType == 0) || decomposeWavefieldType != 0) { 
+                            if ((gradientTypePerIt == 2 && decomposition == 0) || decomposeWavefieldType != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTemp -= *wavefields;
                                 *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by sourcesReflect
-                                if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) 
+                                if (gradientTypePerIt == 2 && decomposition == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeWavefieldType != 0) 
-                                    wavefields->decompose(decomposeWavefieldType, *wavefieldsTemp, *derivatives);
+                                if (decomposition != 0) 
+                                    wavefields->decompose(decomposition, *wavefieldsTemp, *derivatives);
                             }
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
@@ -1209,7 +1213,7 @@ int main(int argc, char *argv[])
                         }
                         solver->resetCPML();
                         
-                        if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) { 
+                        if (gradientTypePerIt == 2 && decomposition == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = model->getReflectivity();
@@ -1235,14 +1239,14 @@ int main(int argc, char *argv[])
 
                             solver->run(receivers, sources, *modelPerShot, *wavefields, *derivatives, tStep);
                             
-                            if ((gradientTypePerShot == 2 && decomposeWavefieldType == 0) || decomposeWavefieldType != 0) { 
+                            if ((gradientTypePerIt == 2 && decomposition == 0) || decomposeWavefieldType != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTemp -= *wavefields;
                                 *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by sourcesReflect
-                                if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) 
+                                if (gradientTypePerIt == 2 && decomposition == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeWavefieldType != 0) 
-                                    wavefields->decompose(decomposeWavefieldType, *wavefieldsTemp, *derivatives);
+                                if (decomposition != 0) 
+                                    wavefields->decompose(decomposition, *wavefieldsTemp, *derivatives);
                             }
                             if (tStep % dtinversion == 0) {
                                 // save wavefields in std::vector
@@ -1254,7 +1258,7 @@ int main(int argc, char *argv[])
                         }
                         solver->resetCPML();
                         
-                        if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) { 
+                        if (gradientTypePerIt == 2 && decomposition == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShot->getReflectivity();
@@ -1310,7 +1314,7 @@ int main(int argc, char *argv[])
                     dataMisfit->calcAdjointSources(adjointSources, receivers, receiversTrue, shotIndTrue);
                     
                     /* Calculate gradient */
-                    if (gradientTypePerShot == 2 && decomposeWavefieldType == 0) {
+                    if (gradientTypePerIt == 2 && decomposition == 0) {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Reflection Backward\n");
                     } else {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Backward\n");
@@ -1418,7 +1422,15 @@ int main(int argc, char *argv[])
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
                 if (config.get<IndexType>("writeGradient") > 0 && commInterShot->getRank() == 0) {
-                    gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
+                    if (useRTM == 0) {
+                        gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), config.get<IndexType>("FileFormat"), workflow);
+                    } else {
+                        gradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(maxiterations + 1), config.get<IndexType>("FileFormat"), workflow);
+                    }
+                }
+                if (useRTM == 1) {
+                    HOST_PRINT(commAll, "\nFinish inverse time migration after stage " << workflow.workflowStage + 1 << " in " << equationType << " 1 \n");
+                    break;
                 }
                 
                 SLsearch.appendToLogFile(commAll, workflow.workflowStage + 1, workflow.iteration, logFilename, dataMisfit->getMisfitSum(workflow.iteration), dataMisfit->getCrossGradientMisfit(workflow.iteration));
@@ -1455,9 +1467,11 @@ int main(int argc, char *argv[])
                         if (exchangeStrategy == 3 || exchangeStrategy == 5) {
                             breakLoopEM = false;
                             workflow.iteration = 0;
+                        } else if (gradientType == 4) {
+                            useRTM = 1;
                         } else {
                             break;
-                        }                            
+                        }                       
                     }           
                 } 
 
@@ -1550,7 +1564,7 @@ int main(int argc, char *argv[])
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
                 }
                                                 
-                dataMisfit->init(config, misfitTypeHistory, numshots, config.get<ValueType>("CenterFrequencyCPML"), model->getVmin()); // in case of that random misfit function is used
+                dataMisfit->init(config, misfitTypeHistory, numshots, useRTM, model->getVmin()); // in case of that random misfit function is used
                 for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd++) {
                     if (config.getAndCatch("useRandomSource", 0) == 0) {  
                         shotIndTrue = shotInd;
@@ -1695,14 +1709,19 @@ int main(int argc, char *argv[])
                     breakLoopEM = false;
                     workflow.iteration = 0;
                 }                 
+                if (gradientType == 4) {
+                    useRTM = 1;
+                    workflow.iteration--;
+                }     
             } // end extra Seismic forward modelling
             
             /* --------------------------------------- */
             /*        Start the second inversion       */
             /* --------------------------------------- */            
-            if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2)) {
+            if (inversionTypeEM != 0 && (breakLoopEM == false || breakLoopType == 2 || useRTMEM != 0)) {
+                if (useRTMEM != 0)    
+                    HOST_PRINT(commAll, "\nStart inverse time migration after stage " << workflowEM.workflowStage + 1 << " in "<< equationTypeEM << " 2");
                 // Begin of one EM model update 
-                workflowEM.iteration = workflow.iteration;
                 HOST_PRINT(commAll, "\n=================================================");
                 HOST_PRINT(commAll, "\n=========== Workflow stage " << workflowEM.workflowStage + 1 << " of " << workflowEM.maxStage << " ===============");
                 HOST_PRINT(commAll, "\n============     Iteration " << workflowEM.iteration + 1 << "       ==============");
@@ -1727,23 +1746,23 @@ int main(int argc, char *argv[])
                 crossGradientDerivativeEM->resetGradient();
                 misfitPerItEM = 0;
 
-                IndexType gradientTypePerShotEM = 0;  
+                IndexType gradientTypePerItEM = 0;  
                 if (gradientTypeEM == 3) {
                     IndexType numSwitch = gradientTypeEM - 2;  
                     if ((workflowEM.iteration / numSwitch) % 2 == 0) {
-                        gradientTypePerShotEM = 1;
+                        gradientTypePerItEM = 1;
                     } else {
-                        gradientTypePerShotEM = 2;
+                        gradientTypePerItEM = 2;
                     }            
-                    if (decomposeWavefieldTypeEM == 0 && workflow.iteration % (numSwitch * 2) == 0) {
+                    if (decompositionEM == 0 && workflow.iteration % (numSwitch * 2) == 0) {
                         modelEM->resetReflectivity();
                     }
                 } else {
-                    gradientTypePerShotEM = gradientTypeEM;
+                    gradientTypePerItEM = gradientTypeEM;
                 }
             
                 std::vector<bool> invertForParametersEM = workflowEM.getInvertForParameters();
-                if (gradientTypePerShotEM == 1 && decomposeWavefieldTypeEM == 0) { // the last element of invertForParametersEM is invertForReflectivity
+                if (gradientTypePerItEM == 1 && decompositionEM == 0) { // the last element of invertForParametersEM is invertForReflectivity
                     invertForParametersEM[invertForParametersEM.size()-1] = true;
 //                     if (!useStreamConfigEM) {
 //                         modelEM->calcReflectivity(modelCoordinatesEM, *derivativesEM, configEM.get<ValueType>("DT"));
@@ -1764,7 +1783,7 @@ int main(int argc, char *argv[])
                     end_t = common::Walltime::get();
                     HOST_PRINT(commAll, "Finished initializing a random shot sequence: " << workflowEM.iteration + 1 << " of " << maxiterations << " (maxcount = " << maxcountEM << ") in " << end_t - start_t << " sec.\n");
                 }
-                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, configEM.get<ValueType>("CenterFrequencyCPML"), modelEM->getVmin()); // in case of that random misfit function is used
+                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, useRTMEM, modelEM->getVmin()); // in case of that random misfit function is used
                 IndexType localShotInd = 0; 
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
@@ -1927,8 +1946,10 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start time stepping with " << tStepEndEM << " time steps\n");
 
                     wavefieldsEM->resetWavefields();
-                    ValueType DTinv = 1 / configEM.get<ValueType>("DT");
-                    if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) { 
+                    ValueType DTinv = 1.0 / configEM.get<ValueType>("DT");
+                    lama::DenseVector<ValueType> compensation;
+                    wavefieldPtr wavefieldsInversionEM = Wavefields::Factory<ValueType>::Create(dimensionEM, equationTypeEM);
+                    if (gradientTypePerItEM == 2 && decompositionEM == 0) { 
                         HOST_PRINT(commAll, "================ initWholeSpace receivers ===============\n");
                         sourcesReflectEM.initWholeSpace(configEM, modelCoordinatesEM, ctx, distEM, receiversEM.getSeismogramTypes());
                     }
@@ -1942,18 +1963,25 @@ int main(int argc, char *argv[])
                             
                             solverEM->run(receiversEM, sourcesEM, *modelEM, *wavefieldsEM, *derivativesEM, tStep);
                             
-                            if ((gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) || decomposeWavefieldTypeEM != 0) { 
+                            if ((gradientTypePerItEM == 2 && decompositionEM == 0) || decomposeWavefieldTypeEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTempEM -= *wavefieldsEM;
                                 *wavefieldsTempEM *= -DTinv; // wavefieldsTempEM will be gathered by sourcesReflectEM
-                                if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) 
+                                if (gradientTypePerItEM == 2 && decompositionEM == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeWavefieldTypeEM != 0) 
-                                    wavefieldsEM->decompose(decomposeWavefieldTypeEM, *wavefieldsTempEM, *derivativesEM);
+                                if (decompositionEM != 0) 
+                                    wavefieldsEM->decompose(decompositionEM, *wavefieldsTempEM, *derivativesEM);
                             }
                             if (tStep % dtinversionEM == 0) {
                                 // save wavefieldsEM in std::vector
-                                *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
+                                if (config.getAndCatch("compensation", 0)) {
+                                    compensation = modelEM->getCompensation(configEM.get<ValueType>("DT"), tStep);
+                                    *wavefieldsInversionEM = *wavefieldsEM;
+                                    *wavefieldsInversionEM *= compensation;
+                                    *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsInversionEM);
+                                } else {
+                                    *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
+                                }
                             }                            
                             if (workflowEM.workflowStage == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
                                 wavefieldsEM->write(snapTypeEM, configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
@@ -1961,7 +1989,7 @@ int main(int argc, char *argv[])
                         }
                         solverEM->resetCPML();
                         
-                        if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) { 
+                        if (gradientTypePerItEM == 2 && decompositionEM == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelEM->getReflectivity();
@@ -1987,18 +2015,25 @@ int main(int argc, char *argv[])
 
                             solverEM->run(receiversEM, sourcesEM, *modelPerShotEM, *wavefieldsEM, *derivativesEM, tStep);
                             
-                            if ((gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) || decomposeWavefieldTypeEM != 0) { 
+                            if ((gradientTypePerItEM == 2 && decompositionEM == 0) || decomposeWavefieldTypeEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTempEM -= *wavefieldsEM;
                                 *wavefieldsTempEM *= -DTinv; // wavefieldsTempEM will be gathered by sourcesReflectEM
-                                if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) 
+                                if (gradientTypePerItEM == 2 && decompositionEM == 0) 
                                     SourceReceiverReflect->gatherSeismogram(tStep);
-                                if (decomposeWavefieldTypeEM != 0) 
-                                    wavefieldsEM->decompose(decomposeWavefieldTypeEM, *wavefieldsTempEM, *derivativesEM);
+                                if (decompositionEM != 0) 
+                                    wavefieldsEM->decompose(decompositionEM, *wavefieldsTempEM, *derivativesEM);
                             }
                             if (tStep % dtinversionEM == 0) {
                                 // save wavefieldsEM in std::vector
-                                *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
+                                if (config.getAndCatch("compensation", 0)) {
+                                    compensation = modelPerShotEM->getCompensation(configEM.get<ValueType>("DT"), tStep);
+                                    *wavefieldsInversionEM = *wavefieldsEM;
+                                    *wavefieldsInversionEM *= compensation;
+                                    *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsInversionEM);
+                                } else {
+                                    *wavefieldrecordEM[floor(tStep / dtinversionEM + 0.5)] = wavefieldTaper2DEM.applyWavefieldAverage(wavefieldsEM);
+                                }
                             }                            
                             if (workflowEM.workflowStage == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
                                 wavefieldsEM->write(snapTypeEM, configEM.get<std::string>("WavefieldFileName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".source", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
@@ -2006,7 +2041,7 @@ int main(int argc, char *argv[])
                         }
                         solverEM->resetCPML();
                             
-                        if (gradientTypePerShotEM == 2 && decomposeWavefieldTypeEM == 0) { 
+                        if (gradientTypePerItEM == 2 && decompositionEM == 0) { 
                             HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShotEM->getReflectivity();
@@ -2063,7 +2098,7 @@ int main(int argc, char *argv[])
                     dataMisfitEM->calcAdjointSources(adjointSourcesEM, receiversEM, receiversTrueEM, shotIndTrue);
                     
                     /* Calculate gradient */
-                    if (gradientTypePerShotEM == 2 && decomposeWavefieldType == 0) {
+                    if (gradientTypePerItEM == 2 && decomposition == 0) {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Reflection Backward\n");
                     } else {
                         HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start Backward\n");
@@ -2171,10 +2206,14 @@ int main(int argc, char *argv[])
                 /* Output of gradient */
                 /* only shot Domain 0 writes output */
                 if (configEM.get<IndexType>("writeGradient") > 0 && commInterShot->getRank() == 0) {
-                    gradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), configEM.get<IndexType>("FileFormat"), workflowEM);
+                    if (useRTMEM == 0) {
+                        gradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), configEM.get<IndexType>("FileFormat"), workflowEM);
+                    } else {
+                        gradientEM->write(gradnameEM + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(maxiterations + 1), configEM.get<IndexType>("FileFormat"), workflowEM);                        
+                    }
                 }
-                if (gradientTypeEM == 4) {
-                    HOST_PRINT(commAll, "\nFinish inverse time migration after stage " << workflowEM.workflowStage + 1 << "\n");
+                if (useRTMEM == 1) {
+                    HOST_PRINT(commAll, "\nFinish inverse time migration after stage " << workflowEM.workflowStage + 1 << " in " << equationTypeEM << " 2 \n");
                     break;
                 }
 
@@ -2208,16 +2247,29 @@ int main(int argc, char *argv[])
                         } 
                     }   
                     if (breakLoopType == 1) {
-                        break;  
+                        if (gradientTypeEM == 4) {
+                            useRTMEM = 1;
+                        } else {
+                            break;
+                        }       
                     } else if (breakLoopType == 2) {
                         if (breakLoop == true) {
-                            break; 
+                            if (gradientTypeEM == 4) {
+                                useRTMEM = 1;
+                            } else {
+                                break;
+                            }       
                         } else {
                             breakLoopEM = false;
                         }
                     } else if (breakLoopType == 0) {
+                        if (gradientTypeEM == 4) {
+                            useRTMEM = 1;
+                        }
                         if (breakLoop == true) {
-                            break;
+                            if (gradientTypeEM != 4) {
+                                break;
+                            }    
                         } else {
                             if (inversionType > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) {
                                 if (inversionType == 3) {
@@ -2327,7 +2379,7 @@ int main(int argc, char *argv[])
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
                 }
                                               
-                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, configEM.get<ValueType>("CenterFrequencyCPML"), modelEM->getVmin()); // in case of that random misfit function is used  
+                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, useRTMEM, modelEM->getVmin()); // in case of that random misfit function is used  
                 for (IndexType shotInd = shotDistEM->lb(); shotInd < shotDistEM->ub(); shotInd++) {
                     if (configEM.getAndCatch("useRandomSource", 0) == 0) {  
                         shotIndTrue = shotInd;
@@ -2468,6 +2520,10 @@ int main(int argc, char *argv[])
                 if (breakLoopType == 0 && breakLoop == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     breakLoopEM = true;
                 }
+                if (gradientTypeEM == 4) {
+                    useRTMEM = 1;
+                    workflow.iteration--;
+                }       
             } // end extra EM forward modelling
         } // end of loop over iterations 
     
@@ -2534,6 +2590,10 @@ int main(int argc, char *argv[])
     } // end of loop over workflow stages 
     
     globalEnd_t = common::Walltime::get();
+    if (inversionType != 0)
+        SLsearch.appendRunTimeToLogFile(commAll, logFilename, globalEnd_t - globalStart_t);
+    if (inversionTypeEM != 0)
+        SLsearchEM.appendRunTimeToLogFile(commAll, logFilenameEM, globalEnd_t - globalStart_t);
     HOST_PRINT(commAll, "\nTotal runtime of WAVE-Inversion: " << globalEnd_t - globalStart_t << " sec.\nWAVE-Inversion finished!\n\n");
     return 0;
 }

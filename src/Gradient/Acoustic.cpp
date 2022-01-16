@@ -490,10 +490,10 @@ void KITGPI::Gradient::Acoustic<ValueType>::sumGradientPerShot(KITGPI::Modelpara
 /*! \brief calculate Gaussian kernel
 \param model model
 \param modelCoordinates coordinate class object of the model
-\param FCmax max frequency
+\param FCmain main frequency
 */
 template <typename ValueType>
-void KITGPI::Gradient::Acoustic<ValueType>::calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config, ValueType FCmax)
+void KITGPI::Gradient::Acoustic<ValueType>::calcGaussianKernel(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Configuration::Configuration config)
 {
     scai::IndexType smoothGradient = config.getAndCatch("smoothGradient", 0);
     if (smoothGradient != 0) {
@@ -505,7 +505,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::calcGaussianKernel(scai::dmemo::Comm
         velocity = model.getVelocityP();
         ValueType velocityMean = velocity.sum() / velocity.size(); 
         
-        KITGPI::Common::calcGaussianKernelFor2DVector(porosity, GaussianKernel, PX, PY, NX, NY, DH, velocityMean, FCmax, smoothGradient);
+        KITGPI::Common::calcGaussianKernelFor2DVector(porosity, GaussianKernel, PX, PY, NX, NY, DH, velocityMean, config.get<ValueType>("CenterFrequencyCPML"), smoothGradient);
         
         double end_t = common::Walltime::get();
         HOST_PRINT(commAll, "\nCalculate Gaussian kernel with matrix size = " << (NX+PX-1)*(NY+PY-1) << " x " << (NX+PX-1)*(NY+PY-1) << " and kernel size = " << PX << " x " << PY << " (" << PX*DH << " m x " << PY*DH << " m) in " << end_t - start_t << " sec.\n");

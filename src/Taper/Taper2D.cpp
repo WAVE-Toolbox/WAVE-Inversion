@@ -20,13 +20,9 @@ void KITGPI::Taper::Taper2D<ValueType>::init(dmemo::DistributionPtr rowDist, dme
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms)
 {
-    bool isSeismic = seismograms.getIsSeismic();
     for (IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
-        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
-            init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
-        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
-            lama::DenseMatrix<ValueType> const &seismoA = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent)).getData();
             init(seismoA.getRowDistributionPtr(), seismoA.getColDistributionPtr(), seismoA.getContextPtr());
         }
     }
@@ -38,13 +34,9 @@ void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHand
 template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
 {
-    bool isSeismic = seismograms.getIsSeismic();
     for (IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
-        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
-            apply(thisSeismogram);
-        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
-            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
             apply(thisSeismogram);
         }
     }

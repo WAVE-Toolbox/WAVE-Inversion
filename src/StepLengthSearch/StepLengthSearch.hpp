@@ -47,6 +47,7 @@ namespace KITGPI
         
         void initLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, std::string misfitType, scai::IndexType setSteplengthType, scai::IndexType setInvertNumber, scai::IndexType setSaveCrossGradientMisfit);
         void appendToLogFile(scai::dmemo::CommunicatorPtr comm, scai::IndexType workflowStage, scai::IndexType iteration, std::string logFilename, ValueType misfitSum, ValueType crossGradientMisfit);
+        void appendRunTimeToLogFile(scai::dmemo::CommunicatorPtr comm, std::string logFilename, double run_t);
 
         ValueType const &getSteplength();
         void init();

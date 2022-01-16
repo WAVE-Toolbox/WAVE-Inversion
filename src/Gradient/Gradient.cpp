@@ -131,7 +131,7 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcWe
         if (weightingVector.maxNorm() != 0)
             weightingVector *= 1.0 / weightingVector.maxNorm();
     }
-    IO::writeVector(weightingVector, "gradients/weightingVector.shot_" + std::to_string(shotInd+1), 1);
+//     IO::writeVector(weightingVector, "gradients/weightingVector.shot_" + std::to_string(shotInd+1), 1);
     
     return weightingVector;
 }

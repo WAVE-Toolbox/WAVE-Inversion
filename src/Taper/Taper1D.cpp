@@ -83,13 +83,10 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, Index
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismograms, ValueType lowerCornerFreq, ValueType upperCornerFreq, ValueType DT, scai::hmemo::ContextPtr ctx)
 {
-    bool isSeismic = seismograms.getIsSeismic();
     Acquisition::Seismogram<ValueType> thisSeismogram;
     for (scai::IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
-        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
-        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
-            thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
         }
         if (thisSeismogram.getData().getNumRows()!=0)
             break;
@@ -184,13 +181,9 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaperDown(lama::DenseVector<Va
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const
 {
-    bool isSeismic = seismograms.getIsSeismic();
     for (scai::IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
-        if (isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
-            apply(thisSeismogram);
-        } else if (!isSeismic && seismograms.getNumTracesGlobal(Acquisition::SeismogramTypeEM(iComponent)) != 0) {
-            Acquisition::Seismogram<ValueType> &thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramTypeEM(iComponent));
             apply(thisSeismogram);
         }
     }

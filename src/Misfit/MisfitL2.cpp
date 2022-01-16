@@ -7,17 +7,17 @@
  \param numshots number of shots 
  */
 template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, ValueType fc, ValueType vmin)
+void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, scai::IndexType useRTM_in, ValueType vmin)
 {    
     // transform to lower cases
     misfitType = config.get<std::string>("misfitType");
     multiMisfitType = config.getAndCatch("multiMisfitType", misfitType);
     std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
     saveMultiMisfits = config.getAndCatch("saveMultiMisfits", false);
-    gradientType = config.getAndCatch("gradientType", 0);
+    useRTM = useRTM_in;
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT 
     scai::IndexType NT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-    fkHandler.init(config.get<ValueType>("DT"), NT, fc, vmin);
+    fkHandler.init(config.get<ValueType>("DT"), NT, config.get<ValueType>("CenterFrequencyCPML"), vmin);
     nFFT = Common::calcNextPowTwo<ValueType>(NT);
     writeAdjointSource = config.getAndCatch("writeAdjointSource", false);
     
@@ -446,7 +446,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2(KITGPI::Acquis
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
 
     if (seismogramSyn.getData().getNumRows()!=0) {
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             seismogramAdj = seismogramSyn;
             seismogramAdj -= seismogramObs; 
         } else {
@@ -544,7 +544,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Convolved(KITGP
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
         Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
         tempL2NormSyn = 1.0 / tempL2NormSyn;
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             scai::lama::DenseMatrix<ComplexValueType> fSignalSyn;
             scai::lama::DenseMatrix<ComplexValueType> fSignalObs;
             scai::lama::DenseVector<ComplexValueType> fTraceSyn;
@@ -656,7 +656,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2FK(KITGPI::Acqu
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
         Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
         tempL2NormSyn = 1.0 / tempL2NormSyn;
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             scai::lama::DenseMatrix<ComplexValueType> fkSyn;
             scai::lama::DenseMatrix<ComplexValueType> fkObs;
             seismogramSyntemp.normalizeTrace(2);
@@ -756,7 +756,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
             }
             tempDataSynEnvelope.setRow(dataTrace, i, scai::common::BinaryOp::COPY);               
         }
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             seismogramAdj = seismogramSyntemp;
             scai::lama::DenseMatrix<ValueType> tempDataSyn;
             scai::lama::DenseMatrix<ValueType> tempDataSynRatio;
@@ -844,7 +844,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2AGC(KITGPI::Acq
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;    
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             seismogramAdj = seismogramSyntemp;
             seismogramAdj *= seismogramObstemp;
             scai::lama::DenseMatrix<ValueType> sumSynMultObs = seismogramAdj.getAGCSum();
@@ -922,7 +922,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
         scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
         Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
         tempL2NormSyn = 1.0 / tempL2NormSyn;
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             /*      // Groos 2013 and IFOS2D
             seismogramAdj = seismogramSyn;
             seismogramAdj *= seismogramObs;
@@ -1011,7 +1011,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             seismogramAdj = seismogramSyntemp;
             scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();
             scai::lama::DenseMatrix<ValueType> tempDataObs = seismogramObstemp.getData();
@@ -1107,7 +1107,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     if (seismogramSyntemp.getData().getNumRows()!=0) {
-        if (gradientType != 4) {
+        if (useRTM == 0) {
             seismogramAdj = seismogramSyntemp;
             scai::lama::DenseMatrix<ValueType> envelopeSyn = seismogramSyntemp.getData();
             scai::lama::DenseMatrix<ValueType> instantaneousPhaseSyn = seismogramSyntemp.getData();

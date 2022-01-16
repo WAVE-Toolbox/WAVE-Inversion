@@ -23,7 +23,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::init(scai::hmemo::Cont
     type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->initWavefield(xcorrSigmaEM, ctx, dist);
-        if (gradientType != 0 && decomposeWavefieldType != 0) {
+        if (gradientType != 0 && decomposition != 0) {
             this->initWavefield(xcorrSigmaEMSuRu, ctx, dist);
             this->initWavefield(xcorrSigmaEMSdRd, ctx, dist);
             this->initWavefield(xcorrSigmaEMSuRd, ctx, dist);
@@ -32,7 +32,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::init(scai::hmemo::Cont
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->initWavefield(xcorrEpsilonEM, ctx, dist);
-        if (gradientType != 0 && decomposeWavefieldType != 0) {
+        if (gradientType != 0 && decomposition != 0) {
             this->initWavefield(xcorrEpsilonEMSuRu, ctx, dist);
             this->initWavefield(xcorrEpsilonEMSdRd, ctx, dist);
             this->initWavefield(xcorrEpsilonEMSuRd, ctx, dist);
@@ -60,12 +60,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string file
 {
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename, t);
-        if (decomposeWavefieldType == 0) {
+        if (decomposition == 0) {
             this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, t);
-        } else if (gradientType == 1 && decomposeWavefieldType == 1) {
+        } else if (gradientType == 1 && decomposition == 1) {
             this->writeWavefield(xcorrSigmaEMSdRu, "xcorrSigmaEM.SdRu", filename, t);
             this->writeWavefield(xcorrSigmaEMSuRd, "xcorrSigmaEM.SuRd", filename, t);
-        } else if (gradientType == 2 && decomposeWavefieldType == 1) {
+        } else if (gradientType == 2 && decomposition == 1) {
             this->writeWavefield(xcorrSigmaEMSuRu, "xcorrSigmaEM.SuRu", filename, t);
             this->writeWavefield(xcorrSigmaEMSdRd, "xcorrSigmaEM.SdRd", filename, t);
         }
@@ -73,12 +73,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string file
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
     {
         this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename, t);
-        if (decomposeWavefieldType == 0) {
+        if (decomposition == 0) {
             this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename, t);
-        } else if (gradientType == 1 && decomposeWavefieldType == 1) {
+        } else if (gradientType == 1 && decomposition == 1) {
             this->writeWavefield(xcorrEpsilonEMSdRu, "xcorrEpsilonEM.SdRu", filename, t);
             this->writeWavefield(xcorrEpsilonEMSuRd, "xcorrEpsilonEM.SuRd", filename, t);
-        } else if (gradientType == 2 && decomposeWavefieldType == 1) {
+        } else if (gradientType == 2 && decomposition == 1) {
             this->writeWavefield(xcorrEpsilonEMSuRu, "xcorrEpsilonEM.SuRu", filename, t);
             this->writeWavefield(xcorrEpsilonEMSdRd, "xcorrEpsilonEM.SdRd", filename, t);
         }
@@ -92,7 +92,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Wor
 {
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->resetWavefield(xcorrSigmaEM);
-        if (gradientType != 0 && decomposeWavefieldType != 0) {
+        if (gradientType != 0 && decomposition != 0) {
             this->resetWavefield(xcorrSigmaEMSuRu);
             this->resetWavefield(xcorrSigmaEMSdRd);
             this->resetWavefield(xcorrSigmaEMSuRd);
@@ -101,7 +101,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Wor
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->resetWavefield(xcorrEpsilonEM);
-        if (gradientType != 0 && decomposeWavefieldType != 0) {
+        if (gradientType != 0 && decomposition != 0) {
             this->resetWavefield(xcorrEpsilonEMSuRu);
             this->resetWavefield(xcorrEpsilonEMSdRd);
             this->resetWavefield(xcorrEpsilonEMSuRd);
@@ -124,12 +124,12 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        if (gradientType == 0 || decomposeWavefieldType == 0) {   
+        if (gradientType == 0 || decomposition == 0) {   
             // Born kernel or FWI kernel
             xcorrSigmaEMstep = adjointWavefield.getRefEZ();
             xcorrSigmaEMstep *= forwardWavefield.getRefEZ();
             xcorrSigmaEM += xcorrSigmaEMstep;           
-        } else if (gradientType == 1 && decomposeWavefieldType == 1) {    
+        } else if (gradientType == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields
             xcorrSigmaEMstep = adjointWavefield.getRefEZdown();
             xcorrSigmaEMstep *= forwardWavefield.getRefEZdown();
@@ -138,7 +138,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wav
             xcorrSigmaEMstep *= forwardWavefield.getRefEZup();
             xcorrSigmaEMSuRd += xcorrSigmaEMstep;      
             xcorrSigmaEM = xcorrSigmaEMSdRu + xcorrSigmaEMSuRd;    
-        } else if (gradientType == 2 && decomposeWavefieldType == 1) {    
+        } else if (gradientType == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
             xcorrSigmaEMstep = adjointWavefield.getRefEZdown();
             xcorrSigmaEMstep *= forwardWavefield.getRefEZup();
@@ -150,12 +150,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wav
         }
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        if (gradientType == 0 || decomposeWavefieldType == 0) {   
+        if (gradientType == 0 || decomposition == 0) {   
             // Born kernel or FWI kernel
             xcorrEpsilonEMstep = adjointWavefield.getRefEZ();
             xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZ();
             xcorrEpsilonEM += xcorrEpsilonEMstep;
-        } else if (gradientType == 1 && decomposeWavefieldType == 1) {    
+        } else if (gradientType == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields   
             xcorrEpsilonEMstep = adjointWavefield.getRefEZdown();
             xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZdown();
@@ -164,7 +164,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wav
             xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZup();
             xcorrEpsilonEMSuRd += xcorrEpsilonEMstep;      
             xcorrEpsilonEM = xcorrEpsilonEMSdRu + xcorrEpsilonEMSuRd;   
-        } else if (gradientType == 2 && decomposeWavefieldType == 1) {    
+        } else if (gradientType == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
             xcorrEpsilonEMstep = adjointWavefield.getRefEZdown();
             xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZup();

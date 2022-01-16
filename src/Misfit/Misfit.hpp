@@ -29,7 +29,7 @@ namespace KITGPI
             //! \brief Misfit pointer
             typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
 
-            virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, ValueType fc, ValueType vmin) = 0;
+            virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, scai::IndexType useRTM_in, ValueType vmin) = 0;
             virtual ValueType calc(KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;
             
             virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;            
@@ -76,7 +76,7 @@ namespace KITGPI
             std::vector<ValueType> crossGradientMisfitStorage; 
             scai::lama::DenseVector<ValueType> misfitTypeShots; 
             scai::IndexType numMisfitTypes = 6;
-            scai::IndexType gradientType = 0;
+            scai::IndexType useRTM = 0;
             std::vector<scai::IndexType> uniqueMisfitTypes{2, 5, 6, 7, 8, 9};
             scai::lama::DenseVector<ValueType> modelDerivativeX; //!< Vector storing model derivative in x direction.
             scai::lama::DenseVector<ValueType> modelDerivativeY; //!< Vector storing model derivative in y direction.

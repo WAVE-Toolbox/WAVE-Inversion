@@ -3,7 +3,7 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface_Stream';
+observationType = 'Surface_StreamBig';
 equationType = 'TMEM';
 NoiseType = '';
 modelType = 'Inv';
@@ -19,10 +19,10 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 1; copy_true_start = 0;
+copy_inv = 0; copy_true_start = 0;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
-invertParameterType = 'EpsilonEMSigmaEM_Field';
+invertParameterType = 'EpsilonEMSigmaEM';
 bandPass = 'BP550MHz';
 NoisedB = '';
 NoisedB = cellMerge({NoiseType,NoisedB},0);
@@ -33,7 +33,12 @@ Insert_name = cellMerge({invertParameterType,...
     bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
 
 writefiles=1;
-stage=5;
+writeAdjointSource=0;
+writeSourceTrue=1;
+filenamein = ['../' config.getString('logFilename')];
+[lastStage lastIt]= getMisfitIt(filenamein,2);
+stage=lastStage; iteration=lastIt;
+stage=1; iteration=1;
 useDamp=0; T0damp=15e-9; T1damp=25e-9; 
 showLegend = 0;
 showResidual = 0;
@@ -48,7 +53,6 @@ parameterisation = [0 0];
 exchangeStrategy = [0 0];
 orientation = 'vertical';
 wiggleType='wiggle';
-writeSourceTrue=1;
 shotIncr=config.getAndCatch('ShotIncr',0);
 source = readSourcesfromConfig(config,shotIncr);
 DT=config.getValue('seismoDT');
@@ -68,9 +72,24 @@ for ishot=1:Nshot
     
     %% Read seismogram
     sourceSeismogramFilename=config.getString('sourceSeismogramFilename');
-    filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage)...
-        '.shot_' num2str(shotnr) '.' component];
+    seismogramFilename=config.getString('SeismogramFilename');
+    writeSourceFilename=configTrue.getString('writeSourceFilename');
+    fieldSeisName=config.getString('fieldSeisName');
+    if writeAdjointSource==0
+        filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage)...
+            '.shot_' num2str(shotnr) '.' component];
+        filenameTrue=['../' writeSourceFilename '.shot_' num2str(shotnr) '.' component];
+    else
+        filenameInv=['../' seismogramFilename '.stage_' num2str(stage)...
+            '.It_' num2str(iteration) '.shot_' num2str(shotnr) '.' component...
+            '.refTrace'];
+        filenameTrue=['../' fieldSeisName '.stage_' num2str(stage) '.shot_' ...
+            num2str(shotnr) '.' component '.refTrace'];
+    end
     sourceInv=readSeismogram(filenameInv,fileFormat);
+    if size(sourceInv,2)==1
+        sourceInv=sourceInv';
+    end
     T=1*DT:DT:size(sourceInv,2)*DT;
     timeDamping=ones(size(sourceInv));
     if useDamp==1
@@ -78,16 +97,24 @@ for ishot=1:Nshot
         timeDamping(T>T1damp)=timeDamping(T>T1damp).*exp(-dampFactor*(T(T>T1damp)-T1damp));
     end
     sourceInv=sourceInv.*timeDamping;
-    writeSourceFilename=configTrue.getString('writeSourceFilename');
+    seismogramInv=[seismogramInv;sourceInv];
+    
     if writeSourceTrue~=0        
-        filenameTrue=['../' writeSourceFilename '.shot_' num2str(shotnr)];
         sourceTrue=readSeismogram(filenameTrue,fileFormat);
+        if size(sourceTrue,2)==1
+            sourceTrue=sourceTrue';
+        end
         seismogramTrue=[seismogramTrue;sourceTrue];
     end
-    seismogramInv=[seismogramInv;sourceInv];
 end
-filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage) '.' component];
-filenameTrue=['../' writeSourceFilename '.' component];
+if writeAdjointSource==0
+    filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage) '.' component];
+    filenameTrue=['../' writeSourceFilename '.' component];
+else
+    filenameInv=['../' seismogramFilename '.stage_' num2str(stage)...
+            '.It_' num2str(iteration) '.' component '.refTrace'];
+    filenameTrue=['../' fieldSeisName '.stage_' num2str(stage) '.' component '.refTrace'];
+end
 
 %% plot
 imageScale=1.2;
@@ -103,7 +130,7 @@ titleName = '';
 [titleLabelSettingAll] = getTitleLabelSettingAll(showTitle,showXlabel,showYlabel...
     ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType,showText,textName);
 offset.value=[1:Nshot];
-offset.labelName='Source number';
+offset.labelName='Shot number';
 residualScale=1;
 syntheticDatanameAll={filenameTrue;filenameInv};
 syntheticDataAll = {seismogramTrue;seismogramInv};
@@ -148,7 +175,11 @@ plot(X0(1:fshowIndex(end)),abs(SeismogramTrue(1:fshowIndex(end))),lineSettingAll
 plot(X0(1:fshowIndex(end)),abs(SeismogramInv(1:fshowIndex(end))),lineSettingAll{2}); hold on;
 xlabel(ylabelName);
 ylabel('Amplitude');
-legend('Source true','Source inverted','Location','best');
+if writeAdjointSource==0
+    legend('Source true','Source inverted','Location','best');
+else
+    legend('Reference trace true','Reference trace inverted','Location','best');
+end
 legend('boxoff')
 axis([flim 0 maxValue*1.1]);
 ImageBold(gca);
