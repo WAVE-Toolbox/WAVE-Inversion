@@ -812,8 +812,10 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2AGC(KITGPI::Acquisition::Se
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;
     ValueType tempL2Norm = 0;    
     if (seismogramSyn.getData().getNumRows()!=0) {
-        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());   
-        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());  
+        seismogramSyntemp.normalizeTrace(2);   
+        seismogramObstemp.normalizeTrace(2);       
+        seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC()); 
+        seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC()); 
         
         if (writeAdjointSource && !seismogramObs.getFilename().empty()) {
             seismogramSyntemp.getData().writeToFile(seismogramSyn.getFilename() + ".AGC.mtx");
@@ -844,26 +846,23 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2AGC(KITGPI::Acq
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;    
     if (seismogramSyntemp.getData().getNumRows()!=0) {
+        scai::lama::DenseVector<ValueType> tempL2NormSyn = seismogramSyntemp.getTraceL2norm();        
+        Common::searchAndReplace<ValueType>(tempL2NormSyn, 0.0, 1.0, 5);
+        tempL2NormSyn = 1.0 / tempL2NormSyn;
         if (useRTM == 0) {
-            seismogramAdj = seismogramSyntemp;
-            seismogramAdj *= seismogramObstemp;
-            scai::lama::DenseMatrix<ValueType> sumSynMultObs = seismogramAdj.getAGCSum();
-            sumSynMultObs.binaryOp(sumSynMultObs, scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC()); 
-            sumSynMultObs.binaryOp(sumSynMultObs, scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC()); 
-            seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());   
-            seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, sumSynMultObs);       
-            seismogramSyntemp.getData().binaryOp(seismogramSyntemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());  
-            seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());     
-            seismogramObstemp.getData().binaryOp(seismogramObstemp.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC());  
+            seismogramSyntemp.normalizeTrace(2);   
+            seismogramObstemp.normalizeTrace(2);     
             
-            seismogramAdj = seismogramSyntemp - seismogramObstemp; 
+            seismogramAdj = seismogramSyntemp - seismogramObstemp;  
+            seismogramAdj.getData().binaryOp(seismogramAdj.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC());        
+            seismogramAdj.getData().scaleRows(tempL2NormSyn);
         } else {
-            seismogramAdj = seismogramObs;
+            seismogramAdj = seismogramObs;  
+            seismogramAdj.normalizeTrace(2); 
             seismogramAdj.getData().binaryOp(seismogramAdj.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC()); 
-            seismogramAdj.getData().binaryOp(seismogramAdj.getData(), scai::common::BinaryOp::MULT, seismogramSyn.getInverseAGC()); 
         }
         if (seismogramAdj.getData().maxNorm() !=0)
-            seismogramAdj.getData().scale(seismogramObs.getData().maxNorm()/seismogramAdj.getData().maxNorm());
+            seismogramAdj.getData().scale(seismogramObstemp.getData().maxNorm()/seismogramAdj.getData().maxNorm());
                 
         bool isSeismic = seismogramSyn.getIsSeismic();
         if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
@@ -955,7 +954,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Normalized(KITG
             seismogramAdj.getData().scaleRows(tempL2NormSyn);  
         }
         if (seismogramAdj.getData().maxNorm() !=0)
-            seismogramAdj.getData().scale(seismogramObs.getData().maxNorm()/seismogramAdj.getData().maxNorm());
+            seismogramAdj.getData().scale(1.0/seismogramAdj.getData().maxNorm());
         
         bool isSeismic = seismogramSyn.getIsSeismic();
         if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {

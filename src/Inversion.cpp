@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
     }
 
     std::string misfitType = config.get<std::string>("misfitType");
+    std::transform(misfitType.begin(), misfitType.end(), misfitType.begin(), ::tolower);
     std::string multiMisfitType = config.getAndCatch("multiMisfitType", misfitType);
     std::string gradname(config.get<std::string>("gradientFilename"));
     std::string logFilename = config.get<std::string>("logFilename");
@@ -131,6 +132,7 @@ int main(int argc, char *argv[])
     std::string optimizationType = config.get<std::string>("optimizationType");
     
     std::string misfitTypeEM = configEM.get<std::string>("misfitType");
+    std::transform(misfitTypeEM.begin(), misfitTypeEM.end(), misfitTypeEM.begin(), ::tolower);
     std::string multiMisfitTypeEM = config.getAndCatch("multiMisfitType", misfitTypeEM);
     std::string gradnameEM(configEM.get<std::string>("gradientFilename"));
     std::string logFilenameEM = configEM.get<std::string>("logFilename");
@@ -402,10 +404,10 @@ int main(int argc, char *argv[])
     /* Wavefields                              */
     /* --------------------------------------- */    
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
-    IndexType decomposition = config.getAndCatch("decomposeWavefieldType", 0); 
+    IndexType decomposition = config.getAndCatch("decomposition", 0); 
     IndexType snapType = config.getAndCatch("snapType", 0);
     IndexType gradientTypeEM = configEM.getAndCatch("gradientType", 0); 
-    IndexType decompositionEM = configEM.getAndCatch("decomposeWavefieldType", 0); 
+    IndexType decompositionEM = configEM.getAndCatch("decomposition", 0); 
     IndexType snapTypeEM = configEM.getAndCatch("snapType", 0);
     //Temporary Wavefield for the derivative of the forward wavefields
     wavefieldPtr wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
@@ -1194,7 +1196,7 @@ int main(int argc, char *argv[])
 
                             solver->run(receivers, sources, *model, *wavefields, *derivatives, tStep);
                             
-                            if ((gradientTypePerIt == 2 && decomposition == 0) || decomposeWavefieldType != 0) { 
+                            if ((gradientTypePerIt == 2 && decomposition == 0) || decomposition != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTemp -= *wavefields;
                                 *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by sourcesReflect
@@ -1239,7 +1241,7 @@ int main(int argc, char *argv[])
 
                             solver->run(receivers, sources, *modelPerShot, *wavefields, *derivatives, tStep);
                             
-                            if ((gradientTypePerIt == 2 && decomposition == 0) || decomposeWavefieldType != 0) { 
+                            if ((gradientTypePerIt == 2 && decomposition == 0) || decomposition != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTemp -= *wavefields;
                                 *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by sourcesReflect
@@ -1963,7 +1965,7 @@ int main(int argc, char *argv[])
                             
                             solverEM->run(receiversEM, sourcesEM, *modelEM, *wavefieldsEM, *derivativesEM, tStep);
                             
-                            if ((gradientTypePerItEM == 2 && decompositionEM == 0) || decomposeWavefieldTypeEM != 0) { 
+                            if ((gradientTypePerItEM == 2 && decompositionEM == 0) || decompositionEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTempEM -= *wavefieldsEM;
                                 *wavefieldsTempEM *= -DTinv; // wavefieldsTempEM will be gathered by sourcesReflectEM
@@ -2015,7 +2017,7 @@ int main(int argc, char *argv[])
 
                             solverEM->run(receiversEM, sourcesEM, *modelPerShotEM, *wavefieldsEM, *derivativesEM, tStep);
                             
-                            if ((gradientTypePerItEM == 2 && decompositionEM == 0) || decomposeWavefieldTypeEM != 0) { 
+                            if ((gradientTypePerItEM == 2 && decompositionEM == 0) || decompositionEM != 0) { 
                                 //calculate temporal derivative of wavefield
                                 *wavefieldsTempEM -= *wavefieldsEM;
                                 *wavefieldsTempEM *= -DTinv; // wavefieldsTempEM will be gathered by sourcesReflectEM

@@ -79,7 +79,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     /*                Backward Modelling                      */
     /* ------------------------------------------------------ */
     IndexType gradientType = config.getAndCatch("gradientType", 0); 
-    IndexType decomposition = config.getAndCatch("decomposeWavefieldType", 0); 
+    IndexType decomposition = config.getAndCatch("decomposition", 0); 
     IndexType snapType = config.getAndCatch("snapType", 0);
     if (gradientType == 3) {
         IndexType numSwitch = gradientType - 2; 
@@ -141,7 +141,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         if (config.getAndCatch("compensation", 0))
             *wavefields *= compensation;
                 
-        if ((gradientType == 2 && decomposition == 0) || decomposeWavefieldType != 0) { 
+        if ((gradientType == 2 && decomposition == 0) || decomposition != 0) { 
             //calculate temporal derivative of wavefield
             *wavefieldsTemp -= *wavefields;
             *wavefieldsTemp *= -DTinv; // wavefieldsTemp will be gathered by adjointSourcesReflect
@@ -171,7 +171,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
                 }
             }
         }        
-        if (((gradientType != 2 && decomposition == 0) || decomposeWavefieldType != 0) && tStep % dtinversion == 0) {
+        if (((gradientType != 2 && decomposition == 0) || decomposition != 0) && tStep % dtinversion == 0) {
             /* --------------------------------------- */
             /*             Convolution                 */
             /* --------------------------------------- */
