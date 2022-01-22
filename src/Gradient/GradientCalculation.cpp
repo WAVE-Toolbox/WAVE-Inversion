@@ -47,6 +47,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     IndexType dtinversion = config.get<IndexType>("DTInversion");    
     ValueType DTinv = 1.0 / config.get<ValueType>("DT");
+    double start_t_shot, end_t_shot; /* For timing */
+    start_t_shot = common::Walltime::get();
 
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
@@ -234,6 +236,9 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     gradientPerShot *= mask;
 
     gradientPerShot.normalize();
+    
+    end_t_shot = common::Walltime::get();
+    HOST_PRINT(commShot, "Shot number " << shotNumber << ": Finish gradient calculation in " << end_t_shot - start_t_shot << " sec.\n");
             
     if (gradientType == 2 && decomposition == 0) {
         typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));
@@ -284,6 +289,9 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         gradientPerShot *= mask;
         gradientPerShot.normalize(); 
         gradientPerShot += *testgradient;
+        
+        end_t_shot = common::Walltime::get();
+        HOST_PRINT(commShot, "Shot number " << shotNumber << ": Finish tomographic gradient calculation in " << end_t_shot - start_t_shot << " sec.\n");
     }
     
     if (config.get<IndexType>("writeGradientPerShot"))

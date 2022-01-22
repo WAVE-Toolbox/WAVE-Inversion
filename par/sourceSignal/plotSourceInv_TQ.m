@@ -3,7 +3,7 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface_StreamBig';
+observationType = 'Surface_Stream';
 equationType = 'TMEM';
 NoiseType = '';
 modelType = 'Inv';
@@ -38,7 +38,7 @@ writeSourceTrue=1;
 filenamein = ['../' config.getString('logFilename')];
 [lastStage lastIt]= getMisfitIt(filenamein,2);
 stage=lastStage; iteration=lastIt;
-stage=1; iteration=1;
+%stage=1; iteration=1;
 useDamp=0; T0damp=15e-9; T1damp=25e-9; 
 showLegend = 0;
 showResidual = 0;

@@ -532,7 +532,7 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(scai::dmemo::Communica
         scai::IndexType NY = config.get<IndexType>("NY");
         scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
     
-        double start_t = common::Walltime::get();
+        HOST_PRINT(commAll, "\nApply median filter to gradient\n");
         scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
         
         if (workflowInner.getInvertForEpsilonEM())
@@ -545,8 +545,6 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(scai::dmemo::Communica
             KITGPI::Common::applyMedianFilterTo2DVector(saturation, NX, NY, spatialLength);
         if (workflowInner.getInvertForReflectivity())
             KITGPI::Common::applyMedianFilterTo2DVector(reflectivity, NX, NY, spatialLength);
-        double end_t = common::Walltime::get();
-        HOST_PRINT(commAll, "\nApply median filter to gradient in " << end_t - start_t << " sec.\n");
     }
 }
 

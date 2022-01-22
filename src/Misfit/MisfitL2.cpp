@@ -862,7 +862,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2AGC(KITGPI::Acq
             seismogramAdj.getData().binaryOp(seismogramAdj.getData(), scai::common::BinaryOp::MULT, seismogramObs.getInverseAGC()); 
         }
         if (seismogramAdj.getData().maxNorm() !=0)
-            seismogramAdj.getData().scale(seismogramObstemp.getData().maxNorm()/seismogramAdj.getData().maxNorm());
+            seismogramAdj.getData().scale(1.0/seismogramAdj.getData().maxNorm());
                 
         bool isSeismic = seismogramSyn.getIsSeismic();
         if ((isSeismic && seismogramSyn.getTraceType() == Acquisition::SeismogramType::P) || (!isSeismic && seismogramSyn.getTraceTypeEM() != Acquisition::SeismogramTypeEM::HZ)) {
