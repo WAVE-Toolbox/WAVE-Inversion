@@ -606,6 +606,7 @@ template <typename ValueType>
 ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2FK(KITGPI::Acquisition::Seismogram<ValueType> const &seismogramSyn, KITGPI::Acquisition::Seismogram<ValueType> const &seismogramObs)
 {    
     SCAI_ASSERT_ERROR(seismogramSyn.getTraceType() == seismogramObs.getTraceType(), "Seismogram types differ!");
+
     // Solano et al., 2014 and Masoni et al., 2014
     KITGPI::Acquisition::Seismogram<ValueType> seismogramSyntemp = seismogramSyn;
     KITGPI::Acquisition::Seismogram<ValueType> seismogramObstemp = seismogramObs;

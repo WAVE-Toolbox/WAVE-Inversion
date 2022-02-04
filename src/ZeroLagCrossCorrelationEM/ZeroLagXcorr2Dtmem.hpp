@@ -29,11 +29,13 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr2Dtmem(){};
 
-            explicit ZeroLagXcorr2Dtmem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            explicit ZeroLagXcorr2Dtmem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config);
 
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep) override;
+            void sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT) override;
             
             int getNumDimension() const;
             std::string getEquationType() const;
@@ -43,15 +45,19 @@ namespace KITGPI
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) override;
 
             void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
           private:
               
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType;
-            using ZeroLagXcorr<ValueType>::gradientType;
+            using ZeroLagXcorr<ValueType>::gradientKernel;
+            using ZeroLagXcorr<ValueType>::gradientDomain;
             using ZeroLagXcorr<ValueType>::decomposition;
+            using ZeroLagXcorr<ValueType>::dtinversion;
+            using ZeroLagXcorr<ValueType>::dhinversion;
+             
             
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrSigmaEM;
@@ -66,6 +72,8 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
             using ZeroLagXcorr<ValueType>::xcorrSigmaEMstep;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep;
+            using ZeroLagXcorr<ValueType>::EZforward;
+            using ZeroLagXcorr<ValueType>::EZadjoint;
             
             /* non required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;

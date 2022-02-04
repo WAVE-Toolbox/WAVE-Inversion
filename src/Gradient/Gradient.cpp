@@ -102,7 +102,6 @@ void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama:
  \param modelCoordinates coordinate class object of the pershot
  \param modelCoordinatesBig coordinate class object of the big model
  \param cutCoordinate cut coordinate 
- \param uniqueShotInds unique shot indexes 
  */
 template <typename ValueType>
 scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(scai::lama::Vector<ValueType> const &gradientPerShotVector, scai::IndexType NY, scai::IndexType shotInd)

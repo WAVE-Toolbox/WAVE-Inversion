@@ -12,13 +12,14 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::resetWavefield(scai::lama::D
 }
 
 /*! \brief prepare for inversion
- \param setGradientType setGradientType
+ \param setGradientKernel setGradientKernel
  \param config Configuration
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::prepareForInversion(scai::IndexType setGradientType, KITGPI::Configuration::Configuration config)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::prepareForInversion(scai::IndexType setGradientKernel, KITGPI::Configuration::Configuration config)
 {
-    gradientType = setGradientType;
+    gradientKernel = setGradientKernel;
+    gradientDomain = config.getAndCatch("gradientDomain", 0);
     decomposition = config.getAndCatch("decomposition", 0);
     numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
     if (numRelaxationMechanisms > 0) {

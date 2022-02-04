@@ -10,20 +10,20 @@ using namespace scai;
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::ZeroLagXcorr2Dacoustic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     equationType="acoustic"; 
     numDimension=2;
-    init(ctx, dist, workflow);
+    init(ctx, dist, workflow, config);
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->initWavefield(xcorrRho, ctx, dist);
-        if (gradientType != 0 && decomposition != 0) {
+        if (gradientKernel != 0 && decomposition != 0) {
             this->initWavefield(xcorrRhoSuRu, ctx, dist);
             this->initWavefield(xcorrRhoSdRd, ctx, dist);
             this->initWavefield(xcorrRhoSuRd, ctx, dist);
@@ -32,7 +32,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::init(scai::hmemo::
     }
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->initWavefield(xcorrLambda, ctx, dist);
-        if (gradientType != 0 && decomposition != 0) {
+        if (gradientKernel != 0 && decomposition != 0) {
             this->initWavefield(xcorrLambdaSuRu, ctx, dist);
             this->initWavefield(xcorrLambdaSdRd, ctx, dist);
             this->initWavefield(xcorrLambdaSuRd, ctx, dist);
@@ -62,10 +62,10 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string 
         this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
         if (decomposition == 0) {
             this->writeWavefield(xcorrRhostep, "xcorrRho.step", filename, t);
-        } else if (gradientType == 1 && decomposition == 1) {
+        } else if (gradientKernel == 1 && decomposition == 1) {
             this->writeWavefield(xcorrRhoSdRu, "xcorrRho.SdRu", filename, t);
             this->writeWavefield(xcorrRhoSuRd, "xcorrRho.SuRd", filename, t);
-        } else if (gradientType == 2 && decomposition == 1) {
+        } else if (gradientKernel == 2 && decomposition == 1) {
             this->writeWavefield(xcorrRhoSuRu, "xcorrRho.SuRu", filename, t);
             this->writeWavefield(xcorrRhoSdRd, "xcorrRho.SdRd", filename, t);
         }
@@ -74,10 +74,10 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string 
         this->writeWavefield(xcorrLambda, "xcorrLambda", filename, t);
         if (decomposition == 0) {
             this->writeWavefield(xcorrLambdastep, "xcorrLambda.step", filename, t);
-        } else if (gradientType == 1 && decomposition == 1) {
+        } else if (gradientKernel == 1 && decomposition == 1) {
             this->writeWavefield(xcorrLambdaSdRu, "xcorrLambda.SdRu", filename, t);
             this->writeWavefield(xcorrLambdaSuRd, "xcorrLambda.SuRd", filename, t);
-        } else if (gradientType == 2 && decomposition == 1) {
+        } else if (gradientKernel == 2 && decomposition == 1) {
             this->writeWavefield(xcorrLambdaSuRu, "xcorrLambda.SuRu", filename, t);
             this->writeWavefield(xcorrLambdaSdRd, "xcorrLambda.SdRd", filename, t);
         }
@@ -91,7 +91,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr(KITGPI:
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->resetWavefield(xcorrRho);
-        if (gradientType != 0 && decomposition != 0) {
+        if (gradientKernel != 0 && decomposition != 0) {
             this->resetWavefield(xcorrRhoSuRu);
             this->resetWavefield(xcorrRhoSdRd);
             this->resetWavefield(xcorrRhoSuRd);
@@ -100,7 +100,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr(KITGPI:
     }
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->resetWavefield(xcorrLambda);
-        if (gradientType != 0 && decomposition != 0) {
+        if (gradientKernel != 0 && decomposition != 0) {
             this->resetWavefield(xcorrLambdaSuRu);
             this->resetWavefield(xcorrLambdaSdRd);
             this->resetWavefield(xcorrLambdaSuRd);
@@ -124,12 +124,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        if (gradientType == 0 || decomposition == 0) {   
+        if (gradientKernel == 0 || decomposition == 0) {   
             // Born kernel or FWI kernel
             xcorrLambdastep = adjointWavefield.getRefP();
             xcorrLambdastep *= forwardWavefieldDerivative.getRefP();
             xcorrLambda += xcorrLambdastep;
-        } else if (gradientType == 1 && decomposition == 1) {    
+        } else if (gradientKernel == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields   
             xcorrLambdastep = adjointWavefield.getRefPdown();
             xcorrLambdastep *= forwardWavefieldDerivative.getRefPdown();
@@ -138,7 +138,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
             xcorrLambdastep *= forwardWavefieldDerivative.getRefPup();
             xcorrLambdaSuRd += xcorrLambdastep;  
             xcorrLambda = xcorrLambdaSdRu + xcorrLambdaSuRd;
-        } else if (gradientType == 2 && decomposition == 1) {    
+        } else if (gradientKernel == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
             xcorrLambdastep = adjointWavefield.getRefPdown();
             xcorrLambdastep *= forwardWavefieldDerivative.getRefPup();
@@ -150,7 +150,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
         }
     }
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        if (gradientType == 0 || decomposition == 0) { 
+        if (gradientKernel == 0 || decomposition == 0) { 
             // Born kernel or FWI kernel
             xcorrRhostep = forwardWavefieldDerivative.getRefVX();
             xcorrRhostep *= adjointWavefield.getRefVX();
@@ -158,7 +158,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
             xcorrRhostep = forwardWavefieldDerivative.getRefVY();
             xcorrRhostep *= adjointWavefield.getRefVY();
             xcorrRho += xcorrRhostep;
-        } else if (gradientType == 1 && decomposition == 1) {    
+        } else if (gradientKernel == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields   
             xcorrRhostep = forwardWavefieldDerivative.getRefVXdown();
             xcorrRhostep *= adjointWavefield.getRefVXdown();
@@ -173,7 +173,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
             xcorrRhostep *= adjointWavefield.getRefVYup();
             xcorrRhoSuRd += xcorrRhostep;  
             xcorrRho = xcorrRhoSdRu + xcorrRhoSuRd;
-        } else if (gradientType == 2 && decomposition == 1) {    
+        } else if (gradientKernel == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
             xcorrRhostep = forwardWavefieldDerivative.getRefVXdown();
             xcorrRhostep *= adjointWavefield.getRefVXup();
@@ -190,6 +190,20 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields:
             xcorrRho = xcorrRhoSdRd + xcorrRhoSuRu;
         }
     }
+}
+
+/*! \brief Gather wavefields in the time domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep)
+{
+}
+
+/*! \brief Sum wavefields in the frequency domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT)
+{
 }
 
 /*! \brief Get numDimension (2)

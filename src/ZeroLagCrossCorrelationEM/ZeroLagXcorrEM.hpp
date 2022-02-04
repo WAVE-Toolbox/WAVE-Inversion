@@ -29,6 +29,8 @@ namespace KITGPI
             virtual void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep) = 0;
+            virtual void sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT) = 0;
 
             virtual int getNumDimension() const = 0;
             virtual std::string getEquationType() const = 0;
@@ -37,7 +39,7 @@ namespace KITGPI
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
 
             //! \brief Initialization
-            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) = 0;
 
             virtual void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
             
@@ -59,7 +61,11 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::equationType; 
             
             using ZeroLagXcorr<ValueType>::decomposition;
-            using ZeroLagXcorr<ValueType>::gradientType;
+            using ZeroLagXcorr<ValueType>::gradientKernel;
+            using ZeroLagXcorr<ValueType>::gradientDomain;
+            using ZeroLagXcorr<ValueType>::dtinversion;
+            using ZeroLagXcorr<ValueType>::dhinversion;
+             
 
             /* Seismic */
             using ZeroLagXcorr<ValueType>::xcorrMuA; //!< correlated Wavefields for the Mu gradient

@@ -40,11 +40,11 @@ void KITGPI::FK<ValueType>::calcFKOperatorL(scai::lama::DenseVector<ValueType> o
     auto distNX = std::make_shared<scai::dmemo::NoDistribution>(NX);
     L.clear();
     L.allocate(distNK, distNX);
-    ComplexValueType i(0.0, 1.0); 
+    ComplexValueType j(0.0, 1.0); 
     scai::lama::DenseVector<ComplexValueType> temp;
     for (int ix = 0; ix < NX; ix++) {
         temp = scai::lama::cast<ComplexValueType>(kVec);
-        temp *= i * 2.0 * M_PI * offset.getValue(ix);
+        temp *= j * 2.0 * M_PI * offset.getValue(ix);
         temp.unaryOp(temp, common::UnaryOp::EXP);
         L.setColumn(temp, ix, common::BinaryOp::COPY);
     }
@@ -65,11 +65,11 @@ void KITGPI::FK<ValueType>::calcFKOperatorLinv(scai::lama::DenseVector<ValueType
     auto distNX = std::make_shared<scai::dmemo::NoDistribution>(NX);
     Linv.clear();
     Linv.allocate(distNX, distNK);
-    ComplexValueType i(0.0, 1.0); 
+    ComplexValueType j(0.0, 1.0); 
     scai::lama::DenseVector<ComplexValueType> temp;
     for (int ix = 0; ix < NX; ix++) {
         temp = scai::lama::cast<ComplexValueType>(kVec);
-        temp *= -i * 2.0 * M_PI * offset.getValue(ix);
+        temp *= -j * 2.0 * M_PI * offset.getValue(ix);
         temp.unaryOp(temp, common::UnaryOp::EXP);
         Linv.setRow(temp, ix, common::BinaryOp::COPY);
     }

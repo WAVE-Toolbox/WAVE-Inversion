@@ -29,18 +29,20 @@ namespace KITGPI
             //! Default destructor
             ~ZeroLagXcorr3Dviscoelastic(){};
 
-            explicit ZeroLagXcorr3Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow);
+            explicit ZeroLagXcorr3Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config);
 
             void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 
             void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep) override;
+            void sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT) override;
 
             int getNumDimension() const;
             std::string getEquationType() const;
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
-            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) override;
 
             void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
 

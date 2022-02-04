@@ -10,16 +10,16 @@ using namespace scai;
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::ZeroLagXcorr2Demem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::ZeroLagXcorr2Demem(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     equationType="emem"; 
     numDimension=2;
-    init(ctx, dist, workflow);
+    init(ctx, dist, workflow, config);
 }
 
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
@@ -85,7 +85,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::update(Wavefields::Wav
         temp = adjointWavefield.getRefEY();
         temp *= forwardWavefield.getRefEY();
         xcorrSigmaEM += temp;
-        if (gradientType != 0) {           
+        if (gradientKernel != 0) {           
         }
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
@@ -95,9 +95,23 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::update(Wavefields::Wav
         temp = adjointWavefield.getRefEY();
         temp *= forwardWavefieldDerivative.getRefEY();
         xcorrEpsilonEM += temp;
-        if (gradientType != 0) {     
+        if (gradientKernel != 0) {     
         }
     }
+}
+
+/*! \brief Gather wavefields in the time domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep)
+{
+}
+
+/*! \brief Sum wavefields in the frequency domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT)
+{
 }
 
 /*! \brief Get numDimension (2)

@@ -40,6 +40,8 @@ namespace KITGPI
             virtual void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep) = 0;
+            virtual void sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT) = 0;
 
             virtual int getNumDimension() const = 0;
             virtual std::string getEquationType() const = 0;
@@ -48,10 +50,10 @@ namespace KITGPI
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
 
             //! \brief Initialization
-            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
+            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) = 0;
 
             virtual void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
-            void prepareForInversion(scai::IndexType setGradientType, KITGPI::Configuration::Configuration config);
+            void prepareForInversion(scai::IndexType setGradientKernel, KITGPI::Configuration::Configuration config);
 
             /* Seismic */
             virtual scai::lama::DenseVector<ValueType> const &getXcorrRho() const = 0;
@@ -74,11 +76,14 @@ namespace KITGPI
             int numDimension;
             std::string equationType; 
             
+            scai::IndexType dtinversion = 1;
+            scai::IndexType dhinversion = 1;
             scai::IndexType decomposition = 0;
-            scai::IndexType gradientType = 0;
+            scai::IndexType gradientKernel = 0;
+            scai::IndexType gradientDomain = 0;
             scai::IndexType numRelaxationMechanisms = 0; //!< Number of relaxation mechanisms
             std::vector<ValueType> relaxationFrequency; 
-
+            
             /* Seismic */
             scai::lama::DenseVector<ValueType> xcorrMuA; //!< correlated Wavefields for the Mu gradient
             scai::lama::DenseVector<ValueType> xcorrMuB; //!< correlated Wavefields for the Mu gradient
@@ -103,6 +108,7 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEM; //!< correlated Wavefields for the rEpsilonSigma gradient
             scai::lama::DenseVector<ValueType> xcorrSigmaEMstep; //!< correlated Wavefields for the sigma gradient
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMstep; //!< correlated Wavefields for the epsilon gradient
+            scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEMstep; //!< correlated Wavefields for the rEpsilonSigma gradient
             scai::lama::DenseVector<ValueType> xcorrSigmaEMSuRu;
             scai::lama::DenseVector<ValueType> xcorrSigmaEMSdRd;
             scai::lama::DenseVector<ValueType> xcorrSigmaEMSuRd;
@@ -111,7 +117,8 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRd;
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSuRd;
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRu;
-            scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEMstep; //!< correlated Wavefields for the rEpsilonSigma gradient
+            scai::lama::DenseMatrix<ValueType> EZforward;
+            scai::lama::DenseMatrix<ValueType> EZadjoint;
         };
     }
 }

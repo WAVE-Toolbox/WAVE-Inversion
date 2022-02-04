@@ -17,7 +17,7 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
     
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
-    if (config.get<IndexType>("useSeismogramTaper") != 0 && config.get<IndexType>("useSeismogramTaper") != 2) {
+    if (config.get<IndexType>("useSeismogramTaper") != 0 && config.get<IndexType>("useSeismogramTaper") != 2 && config.get<IndexType>("useSeismogramTaper") != 5) {
         if (config.get<IndexType>("useSeismogramTaper") == 4) {        
             init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"), config.get<std::string>("seismogramTaperName") + ".SrcEst");
         } else {     
@@ -183,9 +183,6 @@ void KITGPI::SourceEstimation<ValueType>::addComponents(lama::DenseVector<Comple
  \param sources Sources
  \param receivers Receivers
  \param maxOffset Offset threshold
- \param NX Number of grid points in x-direction
- \param NY Number of grid points in y-direction
- \param NZ Number of grid points in z-direction
  */
 template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates)
@@ -196,49 +193,50 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
     lama::DenseVector<IndexType> receiverIndexVec;
     IndexType sourceIndex(0);
 
-    bool sourceIndexSet(false);
-
     // get index of source position
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         if (sources.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             sourceIndexVec = sources.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates();
 
-            if (sourceIndexVec.size() > 1 || (sourceIndexSet && sourceIndexVec.getValue(0) != sourceIndex))
-                COMMON_THROWEXCEPTION("offset not defined for more than one source position");
-
-            sourceIndex = sourceIndexVec.getValue(0);
+            if (sourceIndexVec.size() > 1) {
+                useOffsetMutes = false;
+            } else {
+                sourceIndex = sourceIndexVec.getValue(0);
+            }
         }
     }
 
     // get indices of receiver position and calc mutes
-    for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
-        if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
-            receiverIndexVec = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates();
-            
-            Common::calcOffsets(offsets, sourceIndex, receiverIndexVec, modelCoordinates);
-            
-            offsetsSign = offsets;
-            offsetsSign.unaryOp(offsetsSign, common::UnaryOp::ABS);
-            offsetsTemp = offsetsSign;
-            if (maxOffset != 0) {
-                offsetsSign /= -maxOffset;
-                offsetsSign.unaryOp(offsetsSign, common::UnaryOp::CEIL);
-                offsetsSign.unaryOp(offsetsSign, common::UnaryOp::SIGN);
-                offsetsSign += 1.0; // offsetsSign = 1,1,1,...,1,0,...,0,0,0
-            } else {
-                offsetsSign = 1.0;
-            }
-            if (minOffset != 0) {
-                offsetsTemp /= -minOffset;
-                offsetsTemp.unaryOp(offsetsTemp, common::UnaryOp::CEIL);
-                offsetsTemp.unaryOp(offsetsTemp, common::UnaryOp::SIGN);
-                offsetsTemp *= -1.0; // offsetsSign = 0,0,0,...,0,1,...,1,1,1
-                offsetsSign *= offsetsTemp;
-            }
+    if (sourceIndexVec.size() == 1) {
+        for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+            if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+                receiverIndexVec = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).get1DCoordinates();
+                
+                Common::calcOffsets(offsets, sourceIndex, receiverIndexVec, modelCoordinates);
+                
+                offsetsSign = offsets;
+                offsetsSign.unaryOp(offsetsSign, common::UnaryOp::ABS);
+                offsetsTemp = offsetsSign;
+                if (maxOffset != 0) {
+                    offsetsSign /= -maxOffset;
+                    offsetsSign.unaryOp(offsetsSign, common::UnaryOp::CEIL);
+                    offsetsSign.unaryOp(offsetsSign, common::UnaryOp::SIGN);
+                    offsetsSign += 1.0; // offsetsSign = 1,1,1,...,1,0,...,0,0,0
+                } else {
+                    offsetsSign = 1.0;
+                }
+                if (minOffset != 0) {
+                    offsetsTemp /= -minOffset;
+                    offsetsTemp.unaryOp(offsetsTemp, common::UnaryOp::CEIL);
+                    offsetsTemp.unaryOp(offsetsTemp, common::UnaryOp::SIGN);
+                    offsetsTemp *= -1.0; // offsetsSign = 0,0,0,...,0,1,...,1,1,1
+                    offsetsSign *= offsetsTemp;
+                }
 
-            mutes[iComponent] = offsetsSign;
-            
-            receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setOffset(offsets);
+                mutes[iComponent] = offsetsSign;
+                
+                receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setOffset(offsets);
+            }
         }
     }
 }
@@ -247,9 +245,6 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
  \param sources Sources
  \param receivers Receivers
  \param maxOffset Offset threshold
- \param NX Number of grid points in x-direction
- \param NY Number of grid points in y-direction
- \param NZ Number of grid points in z-direction
  */
 template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configuration const &config, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper)
@@ -264,7 +259,7 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
         if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             data = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
             
-            IndexType NX = data.getNumRows();
+            IndexType NR = data.getNumRows();
             IndexType NT = data.getNumColumns();
             lama::DenseVector<ValueType> rowTemp(NT, 0.0);
             lama::DenseVector<ValueType> refTrace(NT, 0.0);
@@ -272,24 +267,31 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
             lama::DenseVector<ValueType> offsetSign;
             lama::DenseVector<ValueType> offsetUse;
             IndexType icount = 0;
-            offsetSign = mutes[iComponent] * offsets;
-            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
-            if (offsetSign.sum() <= 0) {
-                offsetSign *= -1;
-            }
-            offsetSign += 1;
-            offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
-            offsetUse = mutes[iComponent] * offsets;
-            offsetUse = offsetSign * offsetUse; // we use only one side signals
-            
-            for (IndexType ix = 0; ix < NX; ix++) {
-                if (offsetUse.getValue(ix) != 0) {
-                    icount++;
-                    data.getRow(rowTemp, ix);
-                    IndexType tCut = static_cast<IndexType>(std::abs(offsetUse.getValue(ix)) / mainVelocity / DT + 0.5);
-                    for (IndexType it = tCut; it < NT; it++) {
-                        refTrace.setValue(it-tCut, rowTemp.getValue(it));
+            if (offsets.size() != 0) {
+                offsetSign = mutes[iComponent] * offsets;
+                offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+                if (offsetSign.sum() <= 0) {
+                    offsetSign *= -1;
+                }
+                offsetSign += 1;
+                offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+                offsetUse = mutes[iComponent] * offsets;
+                offsetUse = offsetSign * offsetUse; // we use only one side signals
+                for (IndexType ir = 0; ir < NR; ir++) {
+                    if (offsetUse.getValue(ir) != 0) {
+                        icount++;
+                        data.getRow(rowTemp, ir);
+                        IndexType tCut = static_cast<IndexType>(std::abs(offsetUse.getValue(ir)) / mainVelocity / DT + 0.5);
+                        for (IndexType it = tCut; it < NT; it++) {
+                            refTrace.setValue(it-tCut, rowTemp.getValue(it));
+                        }
+                        refTraceSum += refTrace;
                     }
+                }
+            } else {
+                for (IndexType ir = 0; ir < NR; ir++) {
+                    icount++;
+                    data.getRow(refTrace, ir);
                     refTraceSum += refTrace;
                 }
             }
@@ -300,7 +302,9 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTrace(Configuration::Configurat
                 sourceSignalTaper.apply(refTraceSum);
             
             receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setRefTrace(refTraceSum);
-            receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setOffset(offsets);
+            if (offsets.size() != 0) {
+                receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setOffset(offsets);
+            }
         }
     }
 }

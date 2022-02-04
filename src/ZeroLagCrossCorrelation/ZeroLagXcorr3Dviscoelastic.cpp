@@ -18,15 +18,15 @@ scai::hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueTy
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::ZeroLagXcorr3Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::ZeroLagXcorr3Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     equationType="viscoelastic"; 
     numDimension=3;
-    init(ctx, dist, workflow);
+    init(ctx, dist, workflow, config);
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
@@ -165,6 +165,20 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::update(Wavefie
         temp1 *= adjointWavefield.getRefVZ();
         xcorrRho += temp1;
     }
+}
+
+/*! \brief Gather wavefields in the time domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep)
+{
+}
+
+/*! \brief Sum wavefields in the frequency domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT)
+{
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<float>;

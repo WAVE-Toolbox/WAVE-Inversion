@@ -10,15 +10,15 @@ using namespace scai;
  \param dist Distribution
  */
 template <typename ValueType>
-KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::ZeroLagXcorr2Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::ZeroLagXcorr2Dviscoelastic(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     equationType="viscoelastic"; 
     numDimension=2;
-    init(ctx, dist, workflow);
+    init(ctx, dist, workflow, config);
 }
 
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config)
 {
     type = equationType+std::to_string(numDimension)+"D";
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
@@ -129,6 +129,20 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::update(Wavefie
         temp1 *= adjointWavefield.getRefVY();
         xcorrRho += temp1;
     }
+}
+
+/*! \brief Gather wavefields in the time domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep)
+{
+}
+
+/*! \brief Sum wavefields in the frequency domain
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT)
+{
 }
 
 /*! \brief Get numDimension (2)

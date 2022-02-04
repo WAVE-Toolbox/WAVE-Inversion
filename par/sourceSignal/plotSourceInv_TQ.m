@@ -19,11 +19,11 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 0; copy_true_start = 0;
+copy_inv = 1; copy_true_start = 1;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
 invertParameterType = 'EpsilonEMSigmaEM';
-bandPass = 'BP550MHz';
+bandPass = 'BP530MHz';
 NoisedB = '';
 NoisedB = cellMerge({NoiseType,NoisedB},0);
 sourceType = '';
@@ -54,7 +54,8 @@ exchangeStrategy = [0 0];
 orientation = 'vertical';
 wiggleType='wiggle';
 shotIncr=config.getAndCatch('ShotIncr',0);
-source = readSourcesfromConfig(config,shotIncr);
+[source sourceEncode]=readSourcesfromConfig(config,shotIncr);
+useSourceEncode=config.getAndCatch('useSourceEncode',0);
 DT=config.getValue('seismoDT');
 fileFormat=config.getValue('SeismogramFormat');
 if DT > 1e-8 
@@ -62,11 +63,19 @@ if DT > 1e-8
 else
     labelTime='Time (ns)';
 end
-[Nshot n]=size(source);
+if useSourceEncode==0
+    [Nshot n]=size(source);
+else
+    [Nshot n]=size(sourceEncode);
+end
 seismogramInv=[];seismogramTrue=[];
 dampFactor=2e-2/DT;
 for ishot=1:Nshot
-    shotnr=source(ishot,1);
+    if useSourceEncode==0
+        shotnr=source(ishot,1);
+    else
+        shotnr=sourceEncode(ishot,1);
+    end
     SOURCE_TYPE=source(ishot,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
     component = getSeismogramComponent(equationType,SOURCE_TYPE);
     
