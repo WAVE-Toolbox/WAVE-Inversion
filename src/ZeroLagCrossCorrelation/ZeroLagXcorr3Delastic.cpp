@@ -181,5 +181,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::sumWavefields(KITGP
 {
 }
 
+/*! \brief Recover ZeroLagXcorr to original size
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<ValueType>::applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+}
+
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<float>;
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Delastic<double>;

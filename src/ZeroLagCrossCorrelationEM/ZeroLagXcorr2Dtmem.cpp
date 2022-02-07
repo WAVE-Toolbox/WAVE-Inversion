@@ -24,31 +24,41 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::init(scai::hmemo::Cont
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->initWavefield(xcorrSigmaEM, ctx, dist);
         if (gradientKernel != 0 && decomposition != 0) {
-            this->initWavefield(xcorrSigmaEMSuRu, ctx, dist);
-            this->initWavefield(xcorrSigmaEMSdRd, ctx, dist);
             this->initWavefield(xcorrSigmaEMSuRd, ctx, dist);
             this->initWavefield(xcorrSigmaEMSdRu, ctx, dist);
+            this->initWavefield(xcorrSigmaEMSuRu, ctx, dist);
+            this->initWavefield(xcorrSigmaEMSdRd, ctx, dist);
         }
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->initWavefield(xcorrEpsilonEM, ctx, dist);
         if (gradientKernel != 0 && decomposition != 0) {
-            this->initWavefield(xcorrEpsilonEMSuRu, ctx, dist);
-            this->initWavefield(xcorrEpsilonEMSdRd, ctx, dist);
             this->initWavefield(xcorrEpsilonEMSuRd, ctx, dist);
             this->initWavefield(xcorrEpsilonEMSdRu, ctx, dist);
+            this->initWavefield(xcorrEpsilonEMSuRu, ctx, dist);
+            this->initWavefield(xcorrEpsilonEMSdRd, ctx, dist);
         }
     }
     gradientDomain = config.getAndCatch("gradientDomain", 0);
     if (gradientDomain == 1) {
         IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
         dtinversion = config.get<IndexType>("DTInversion"); 
-        IndexType NT = tStepEnd / dtinversion;
+        IndexType NT = floor(ValueType(tStepEnd) / dtinversion + 0.5);
+        dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(NT));
         EZforward.setContextPtr(ctx);
         EZadjoint.setContextPtr(ctx);
-        dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(NT));
         EZforward.allocate(dist, no_dist_NT);
         EZadjoint.allocate(dist, no_dist_NT);
+        if (gradientKernel != 0 && decomposition != 0) {
+            EZupforward.setContextPtr(ctx);
+            EZupadjoint.setContextPtr(ctx);
+            EZdownforward.setContextPtr(ctx);
+            EZdownadjoint.setContextPtr(ctx);
+            EZupforward.allocate(dist, no_dist_NT);
+            EZupadjoint.allocate(dist, no_dist_NT);
+            EZdownforward.allocate(dist, no_dist_NT);
+            EZdownadjoint.allocate(dist, no_dist_NT);
+        }
     }
 }
 
@@ -197,8 +207,15 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wav
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep)
 {
-    EZforward.setColumn(forwardWavefield.getRefEZ(), tStep / dtinversion, common::BinaryOp::COPY);
-    EZadjoint.setColumn(adjointWavefield.getRefEZ(), tStep / dtinversion, common::BinaryOp::COPY);
+    if (gradientKernel == 0 || decomposition == 0) {   
+        EZforward.setColumn(forwardWavefield.getRefEZ(), tStep / dtinversion, common::BinaryOp::COPY);
+        EZadjoint.setColumn(adjointWavefield.getRefEZ(), tStep / dtinversion, common::BinaryOp::COPY);
+    } else if (gradientKernel != 0 && decomposition != 0) {   
+        EZupforward.setColumn(forwardWavefield.getRefEZup(), tStep / dtinversion, common::BinaryOp::COPY);
+        EZupadjoint.setColumn(adjointWavefield.getRefEZup(), tStep / dtinversion, common::BinaryOp::COPY);
+        EZdownforward.setColumn(forwardWavefield.getRefEZdown(), tStep / dtinversion, common::BinaryOp::COPY);
+        EZdownadjoint.setColumn(adjointWavefield.getRefEZdown(), tStep / dtinversion, common::BinaryOp::COPY);
+    }
 }
 
 /*! \brief Sum wavefields in the frequency domain
@@ -215,33 +232,48 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(KITGPI::
     scai::IndexType NT = EZforward.getNumColumns();
     scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(NT - 1);
 
-    fEZforward = scai::lama::cast<ComplexValueType>(EZforward);
-    fEZforward.resize(EZforward.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
-    fEZadjoint = scai::lama::cast<ComplexValueType>(EZadjoint);
-    fEZadjoint.resize(EZadjoint.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
+    if (gradientKernel == 0 || decomposition == 0) {  
+        fEZforward = scai::lama::cast<ComplexValueType>(EZforward);
+        fEZforward.resize(EZforward.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
+        fEZadjoint = scai::lama::cast<ComplexValueType>(EZadjoint);
+        fEZadjoint.resize(EZadjoint.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
 
-    scai::lama::fft<ComplexValueType>(fEZforward, 1);
-    scai::lama::fft<ComplexValueType>(fEZadjoint, 1);
-    fEZadjoint.conj();
-    
+        scai::lama::fft<ComplexValueType>(fEZforward, 1);
+        scai::lama::fft<ComplexValueType>(fEZadjoint, 1);
+        fEZadjoint.conj();
+        
+        if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+            fEZ.binaryOp(fEZforward, common::BinaryOp::MULT, fEZadjoint);
+            fEZ.reduce(temp, 0, common::BinaryOp::ADD, common::UnaryOp::COPY);
+            xcorrSigmaEM = scai::lama::real(temp);
+        }
+        if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+            ValueType df = 1 / (nFFT * dtinversion * DT);
+            scai::lama::DenseVector<ValueType> fPos = scai::lama::linearDenseVector<ValueType>(nFFT / 2 + 1, 0.0, df);
+            scai::lama::DenseVector<ValueType> fNeg = scai::lama::linearDenseVector<ValueType>(nFFT / 2 - 1, -(nFFT / 2 - 1) * df, df);
+            scai::lama::DenseVector<ValueType> frequencyVector;
+            ComplexValueType j(0.0, 1.0); 
+            frequencyVector.cat(fPos, fNeg);
+            temp = scai::lama::cast<ComplexValueType>(frequencyVector);
+            temp *= j;
+            fEZ.binaryOp(fEZforward, common::BinaryOp::MULT, fEZadjoint);
+            fEZ.scaleColumns(temp);
+            fEZ.reduce(temp, 0, common::BinaryOp::ADD, common::UnaryOp::COPY);
+            xcorrEpsilonEM = scai::lama::real(temp);
+        }
+    }
+}
+
+/*! \brief Recover ZeroLagXcorr to original size
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        fEZ.binaryOp(fEZforward, common::BinaryOp::MULT, fEZadjoint);
-        fEZ.reduce(temp, 0, common::BinaryOp::ADD, common::UnaryOp::COPY);
-        xcorrSigmaEM = scai::lama::real(temp);
+        xcorrSigmaEM = lhs * xcorrSigmaEM;
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-        ValueType df = 1 / (nFFT * DT);
-        scai::lama::DenseVector<ValueType> fPos = scai::lama::linearDenseVector<ValueType>(nFFT / 2 + 1, 0.0, df);
-        scai::lama::DenseVector<ValueType> fNeg = scai::lama::linearDenseVector<ValueType>(nFFT / 2 - 1, -(nFFT / 2 - 1) * df, df);
-        scai::lama::DenseVector<ValueType> frequencyVector;
-        ComplexValueType j(0.0, 1.0); 
-        frequencyVector.cat(fPos, fNeg);
-        temp = scai::lama::cast<ComplexValueType>(frequencyVector);
-        temp *= j;
-        fEZ.binaryOp(fEZforward, common::BinaryOp::MULT, fEZadjoint);
-        fEZ.scaleColumns(temp);
-        fEZ.reduce(temp, 0, common::BinaryOp::ADD, common::UnaryOp::COPY);
-        xcorrEpsilonEM = scai::lama::real(temp);
+        xcorrEpsilonEM = lhs * xcorrEpsilonEM;
     }
 }
 

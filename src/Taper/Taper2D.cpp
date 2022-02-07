@@ -444,23 +444,12 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
  \param ctx Context
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, dmemo::DistributionPtr distInversion, dmemo::DistributionPtr dist, hmemo::ContextPtr ctx)
+void KITGPI::Taper::Taper2D<ValueType>::initAverageMatrix(KITGPI::Configuration::Configuration config, dmemo::DistributionPtr distInversion, dmemo::DistributionPtr dist, hmemo::ContextPtr ctx)
 {
-    wavefieldAverageMatrix = lama::zero<SparseFormat>(distInversion, dist);
-    wavefieldAverageMatrix.setContextPtr(ctx);
-    wavefieldRecoverMatrix = lama::zero<SparseFormat>(dist, distInversion);
-    wavefieldRecoverMatrix.setContextPtr(ctx);
-    
-    std::string dimension = config.get<std::string>("dimension");
-    std::string equationType = config.get<std::string>("equationType");
-    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);   
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
-    
-    scai::IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
-    wavefieldsInversion = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-    wavefields = KITGPI::Wavefields::Factory<ValueType>::Create(dimension, equationType);
-    wavefieldsInversion->init(ctx, distInversion, numRelaxationMechanisms);
-    wavefields->init(ctx, dist, numRelaxationMechanisms);
+    averageMatrix = lama::zero<SparseFormat>(distInversion, dist);
+    averageMatrix.setContextPtr(ctx);
+    recoverMatrix = lama::zero<SparseFormat>(dist, distInversion);
+    recoverMatrix.setContextPtr(ctx);
 }
 
 /*! \brief calculate a matrix for averaging inversion
@@ -468,7 +457,7 @@ void KITGPI::Taper::Taper2D<ValueType>::initWavefieldAverageMatrix(KITGPI::Confi
  * \param modelCoordinatesInversion coordinates of the averaged model
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::calcWavefieldAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion)
+void KITGPI::Taper::Taper2D<ValueType>::calcAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion)
 {
     // this function is only valid for grid partitioning with useVariableGrid=0
     ValueType averageValue;
@@ -485,7 +474,7 @@ void KITGPI::Taper::Taper2D<ValueType>::calcWavefieldAverageMatrix(KITGPI::Acqui
         averageValue=1/(pow(DHInversion,2));
     }
     
-    dmemo::DistributionPtr distInversion(wavefieldAverageMatrix.getRowDistributionPtr());
+    dmemo::DistributionPtr distInversion(averageMatrix.getRowDistributionPtr());
     hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
     distInversion->getOwnedIndexes(ownedIndexes);
 
@@ -512,30 +501,26 @@ void KITGPI::Taper::Taper2D<ValueType>::calcWavefieldAverageMatrix(KITGPI::Acqui
         }
     }
 
-    wavefieldAverageMatrix.fillFromAssembly(assemblyAverage);
-    wavefieldRecoverMatrix.fillFromAssembly(assemblyRecover);
-//     wavefieldAverageMatrix.writeToFile("model/wavefieldAverageMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + "_" + std::to_string(averageValue) + ".mtx");
-//     wavefieldRecoverMatrix.writeToFile("model/wavefieldRecoverMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + ".mtx");
+    averageMatrix.fillFromAssembly(assemblyAverage);
+    recoverMatrix.fillFromAssembly(assemblyRecover);
+//     averageMatrix.writeToFile("model/averageMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + "_" + std::to_string(averageValue) + ".mtx");
+//     recoverMatrix.writeToFile("model/recoverMatrix_" + std::to_string(NX) + "_" + std::to_string(NY) + "_" + std::to_string(NZ) + ".mtx");
 }
 
-/*! \brief Apply model recover to a wavefield
- \param modelParameter model parameter
+/*! \brief Get averageMatrix
  */
 template <typename ValueType>
-KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldRecover(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr)
+scai::lama::Matrix<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::getAverageMatrix()
 {
-    wavefields->applyTransform(wavefieldRecoverMatrix, *wavefieldPtr);
-    return *wavefields;
+    return averageMatrix;
 }
 
-/*! \brief Apply model transform to a wavefield
- \param modelParameter model parameter
+/*! \brief Get recoverMatrix
  */
 template <typename ValueType>
-KITGPI::Wavefields::Wavefields<ValueType> &KITGPI::Taper::Taper2D<ValueType>::applyWavefieldAverage(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr)
+scai::lama::Matrix<ValueType> const &KITGPI::Taper::Taper2D<ValueType>::getRecoverMatrix()
 {
-    wavefieldsInversion->applyTransform(wavefieldAverageMatrix, *wavefieldPtr);
-    return *wavefieldsInversion;
+    return recoverMatrix;
 }
 
 template class KITGPI::Taper::Taper2D<double>;

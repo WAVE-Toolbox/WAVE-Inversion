@@ -36,6 +36,7 @@ namespace KITGPI
             void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             void gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep) override;
             void sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT) override;
+            void applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             
             int getNumDimension() const;
             std::string getEquationType() const;
@@ -74,6 +75,10 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep;
             using ZeroLagXcorr<ValueType>::EZforward;
             using ZeroLagXcorr<ValueType>::EZadjoint;
+            using ZeroLagXcorr<ValueType>::EZupforward;
+            using ZeroLagXcorr<ValueType>::EZupadjoint;
+            using ZeroLagXcorr<ValueType>::EZdownforward;
+            using ZeroLagXcorr<ValueType>::EZdownadjoint;
             
             /* non required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;

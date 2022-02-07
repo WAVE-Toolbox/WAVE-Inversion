@@ -6,7 +6,6 @@
 #include <Acquisition/SeismogramHandler.hpp>
 #include <Configuration/Configuration.hpp>
 #include <Modelparameter/Modelparameter.hpp>
-#include <Wavefields/WavefieldsFactory.hpp>
 
 namespace KITGPI
 {
@@ -46,24 +45,22 @@ namespace KITGPI
             void exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Modelparameter::Modelparameter<ValueType> &modelEM, KITGPI::Configuration::Configuration config);
             void exchangeModelparameters(KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Modelparameter::Modelparameter<ValueType> &model2, KITGPI::Configuration::Configuration config1, KITGPI::Configuration::Configuration config2);
             
-            void initWavefieldAverageMatrix(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx);
-            void calcWavefieldAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion);
-            KITGPI::Wavefields::Wavefields<ValueType> &applyWavefieldAverage(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr);
-            KITGPI::Wavefields::Wavefields<ValueType> &applyWavefieldRecover(typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr &wavefieldPtr);
+            void initAverageMatrix(KITGPI::Configuration::Configuration config, scai::dmemo::DistributionPtr distInversion, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx);
+            void calcAverageMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinatesInversion);
+            scai::lama::Matrix<ValueType> const &getAverageMatrix();
+            scai::lama::Matrix<ValueType> const &getRecoverMatrix();
+            
+            typedef scai::lama::CSRSparseMatrix<ValueType> SparseFormat; //!< Define sparse format as CSRSparseMatrix
+            SparseFormat averageMatrix;
+            SparseFormat recoverMatrix;
             
           private:
             scai::lama::DenseMatrix<ValueType> data;
-            typedef scai::lama::CSRSparseMatrix<ValueType> SparseFormat; //!< Define sparse format as CSRSparseMatrix
             SparseFormat modelTransformMatrixToEM;
             SparseFormat modelTransformMatrixToSeismic;
-            SparseFormat wavefieldAverageMatrix;
-            SparseFormat wavefieldRecoverMatrix;
             scai::lama::DenseVector<ValueType> modelParameterTransform;
             scai::lama::DenseVector<ValueType> modelParameterTransformEM;
             
-            typedef typename KITGPI::Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
-            wavefieldPtr wavefieldsInversion;
-            wavefieldPtr wavefields;
         };
     }
 }

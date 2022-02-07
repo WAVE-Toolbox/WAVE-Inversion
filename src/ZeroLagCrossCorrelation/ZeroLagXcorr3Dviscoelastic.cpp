@@ -181,5 +181,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::sumWavefields(
 {
 }
 
+/*! \brief Recover ZeroLagXcorr to original size
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<ValueType>::applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+}
+
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<float>;
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorr3Dviscoelastic<double>;

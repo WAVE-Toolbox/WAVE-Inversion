@@ -30,12 +30,13 @@ namespace KITGPI
             EnergyPreconditioning(){};
             ~EnergyPreconditioning(){};
 
-            void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config);
+            void init(scai::dmemo::DistributionPtr distInversion, KITGPI::Configuration::Configuration config);
             void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldAdjoint, ValueType DT); //!< Integrate squared wavefields 
             
             void resetApproxHessian();
             
             void apply(KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, scai::IndexType shotNumber, scai::IndexType fileFormat);
+            void applyTransform(scai::lama::Matrix<ValueType> const &lhs);
             
         private:
             scai::lama::DenseVector<ValueType> approxHessian;            // approximation of the diagonal of the inverse of the Hessian 

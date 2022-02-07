@@ -105,6 +105,13 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::sumWavefields(KITGPI::Wo
 {
 }
 
+/*! \brief Recover ZeroLagXcorr to original size
+ */
+template <typename ValueType>
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+}
+
 /*! \brief Get numDimension (2)
  */
 template <typename ValueType>
