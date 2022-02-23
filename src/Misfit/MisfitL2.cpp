@@ -7,7 +7,7 @@
  \param numshots number of shots 
  */
 template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, scai::IndexType useRTM_in, ValueType vmin)
+void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, scai::IndexType useRTM_in, ValueType vmin_in, scai::IndexType &seedtime)
 {    
     // transform to lower cases
     misfitType = config.get<std::string>("misfitType");
@@ -17,7 +17,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
     useRTM = useRTM_in;
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT 
     scai::IndexType NT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
-    fkHandler.init(config.get<ValueType>("DT"), NT, config.get<ValueType>("CenterFrequencyCPML"), vmin);
+    fkHandler.init(config.get<ValueType>("DT"), NT, config.get<ValueType>("CenterFrequencyCPML"), vmin_in);
     nFFT = Common::calcNextPowTwo<ValueType>(NT);
     writeAdjointSource = config.getAndCatch("writeAdjointSource", false);
     
@@ -58,7 +58,8 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
     if (misfitType.length() > 2 && misfitType.substr(numMisfitTypes+1, 1).compare("1") == 0) {
         scai::IndexType randMisfitTypeInd;
         scai::IndexType maxiterations = config.get<scai::IndexType>("maxIterations");
-        std::srand((int)time(0));
+        std::srand(seedtime);
+        seedtime++;
         scai::IndexType maxcount = maxiterations * numshots / uniqueMisfitTypes.size() * 1.2;
         for (int shotInd = 0; shotInd < numshots; shotInd++) {         
             randMisfitTypeInd = std::rand() % uniqueMisfitTypes.size();
@@ -208,12 +209,9 @@ void KITGPI::Misfit::MisfitL2<ValueType>::appendMultiMisfitsToFile(scai::dmemo::
     }
 }
 
-/*! \brief Append to misfits-file
+/*! \brief sumShotDomain
 *
 \param comm Communicator
-\param logFilename Name of log-file
-\param stage inversion stage
-\param iteration inversion iteration
 */
 template <typename ValueType>
 void KITGPI::Misfit::MisfitL2<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
@@ -226,15 +224,71 @@ void KITGPI::Misfit::MisfitL2<ValueType>::sumShotDomain(scai::dmemo::Communicato
         if (misfitType.length() > 2 && misfitType.substr(numMisfitTypes+1, 1).compare("2") == 0) {
             commInterShot->sumArray(misfitTypeShots.getLocalValues()); 
         }
-//         std::cout<< "misfitTypeShots sumArray : ";
-//         for (int i = 0; i < misfitTypeShots.size(); i++) { 
-//             std::cout<< misfitTypeShots.getValue(i) << " ";
-//         }
-//         std::cout<< std::endl;
     }
 }
-/*! \brief Return the L2-norm of seismograms stored in the given receiver objects (note: the misfit is summed over all components, i.e. vx,vy,vz,p)
+
+/*! \brief Calculate the adjoint sources
  *
+ \param adjointSources Receiver object which stores the adjoint sources (in- and output)
+ \param receiversSyn Receiver object which stores the synthetic data 
+ \param receiversObs Receiver object which stores the observed data 
+ */
+template <typename ValueType>
+void KITGPI::Misfit::MisfitL2<ValueType>::calcMisfitAndAdjointSources(scai::dmemo::CommunicatorPtr commShot, scai::lama::DenseVector<ValueType> &misfitPerIt, KITGPI::Acquisition::Receivers<ValueType> &adjointSourcesEncode, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, std::string filenameSyn, std::string filenameObs, ValueType vmin, scai::IndexType &seedtime)
+{      
+    IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
+    if (useSourceEncode != 0) {
+        double start_t_shot, end_t_shot; /* For timing */
+        start_t_shot = common::Walltime::get();
+        
+        std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings;  
+        Acquisition::Sources<ValueType> sources;
+        ValueType shotIncr = 0; 
+        sources.getAcquisitionSettings(config, shotIncr); // to get numshots
+        sourceSettings = sources.getSourceSettings();
+        std::vector<scai::IndexType> uniqueShotNos;
+        Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
+        IndexType numshotsIncr = sourceSettingsEncode.size();
+        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
+        std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsTemp;
+        KITGPI::Acquisition::Receivers<ValueType> receiversSyn;
+        KITGPI::Acquisition::Receivers<ValueType> receiversObs;
+        KITGPI::Acquisition::Receivers<ValueType> adjointSources;
+        std::string misfitType = config.get<std::string>("misfitType");
+        KITGPI::Misfit::MisfitL2<ValueType> dataMisfit;
+        std::vector<IndexType> misfitTypeHistory(misfitType.length() - 2, 0);
+        dataMisfit.init(config, misfitTypeHistory, numshotsIncr, useRTM, vmin, seedtime);
+        ValueType misfitSum = 0;
+        for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
+            if (std::abs(sourceSettingsEncode[shotInd].sourceNo) == shotNumberEncode) {
+                IndexType shotNumber = uniqueShotNos[sourceSettingsEncode[shotInd].row]; 
+                
+                if (config.get<IndexType>("useReceiversPerShot") != 0) {
+                    receiversSyn.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsTemp);
+                    receiversObs.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsTemp);
+                    adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsTemp);
+                }
+                
+                receiversSyn.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), filenameSyn  + ".shot_" + std::to_string(shotNumber), 1);
+                receiversObs.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), filenameObs  + ".shot_" + std::to_string(shotNumber), 1);
+                
+                /* Calculate misfit of one shot */
+                misfitSum += dataMisfit.calc(receiversSyn, receiversObs, shotInd);
+                /* Calculate adjoint sources */
+                dataMisfit.calcAdjointSources(adjointSources, receiversSyn, receiversObs, shotInd);
+                
+                adjointSources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), filenameObs + ".adjointSource" + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+            }
+        }
+        misfitPerIt.setValue(shotIndTrue, misfitSum);
+        adjointSourcesEncode.encode(config, filenameObs + ".adjointSource", shotNumberEncode, sourceSettingsEncode);
+        
+        end_t_shot = common::Walltime::get();
+        HOST_PRINT(commShot, "Shot number " << shotNumberEncode << ": Finish calculating encoded misfit and adjoint sources in " << end_t_shot - start_t_shot << " sec.\n");
+    }
+}
+
+/*! \brief Return the L2-norm of seismograms stored in the given receiver objects (note: the misfit is summed over all components, i.e. vx,vy,vz,p)
  *
  \param receiversSyn Receiver object which stores the synthetic data 
  \param receiversObs Receiver object which stores the observed data 
@@ -356,7 +410,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
 
 /*! \brief Calculate the adjoint sources
  *
- *
  \param adjointSources Receiver object which stores the adjoint sources (in- and output)
  \param receiversSyn Receiver object which stores the synthetic data 
  \param receiversObs Receiver object which stores the observed data 
@@ -403,9 +456,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSources(KITGPI::Acquisition
             this->calcAdjointSeismogramL2(seismogramAdj, seismogramSyn, seismogramObs);
             break;
         } 
-        if (writeAdjointSource && seismogramObs.getData().getNumRows()!=0) {
-            seismogramAdj.getData().writeToFile(seismogramObs.getFilename() + ".adjointSource.mtx");
-        }
         adjointSources.getSeismogramHandler().getSeismogram(seismogramAdj.getTraceType()) = seismogramAdj;
     } 
 }

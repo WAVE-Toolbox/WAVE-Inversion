@@ -7,7 +7,7 @@
  \param config Configuration
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo::DistributionPtr distInversion, KITGPI::Configuration::Configuration config)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config)
 {    
     useEnergyPreconditioning = config.get<scai::IndexType>("useEnergyPreconditioning");  
     saveApproxHessian = config.get<bool>("saveApproxHessian");  
@@ -20,13 +20,13 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);
     isSeismic = Common::checkEquationType<ValueType>(equationType);
     
-    approxHessian.setSameValue(distInversion, 0);
+    approxHessian.setSameValue(dist, 0);
     if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
-        approxHessianAdjoint.setSameValue(distInversion, 0);
+        approxHessianAdjoint.setSameValue(dist, 0);
 
-    wavefieldX.setSameValue(distInversion, 0);
-    wavefieldY.setSameValue(distInversion, 0);
-    wavefieldZ.setSameValue(distInversion, 0);
+    wavefieldX.setSameValue(dist, 0);
+    wavefieldY.setSameValue(dist, 0);
+    wavefieldZ.setSameValue(dist, 0);
 }
 
 /*! \brief Calculate the approximation of the diagonal of the inverse of the Hessian for one shot

@@ -68,7 +68,7 @@ template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType>::writeWavefield(scai::lama::DenseVector<ValueType> &vector, std::string vectorName, std::string filename, IndexType t)
 {
     std::string fileName = filename + "." + vectorName + "." + std::to_string(static_cast<long long>(t)) + ".mtx";
-    std::cout << "snapshot for Timestep " << t << " has been written to: " << fileName << std::endl;
+//     std::cout << "snapshot for Timestep " << t << " has been written to: " << fileName << std::endl;
 
     vector.writeToFile(fileName);
 }

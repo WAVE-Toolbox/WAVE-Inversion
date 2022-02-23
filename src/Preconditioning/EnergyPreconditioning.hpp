@@ -30,7 +30,7 @@ namespace KITGPI
             EnergyPreconditioning(){};
             ~EnergyPreconditioning(){};
 
-            void init(scai::dmemo::DistributionPtr distInversion, KITGPI::Configuration::Configuration config);
+            void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config);
             void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldAdjoint, ValueType DT); //!< Integrate squared wavefields 
             
             void resetApproxHessian();

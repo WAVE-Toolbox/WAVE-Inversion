@@ -2,6 +2,7 @@
 
 #include <scai/lama.hpp>
 #include <scai/lama/DenseVector.hpp>
+#include <scai/common/Walltime.hpp>
 
 #include <Configuration/Configuration.hpp>
 #include <Wavefields/WavefieldsFactory.hpp>
@@ -41,7 +42,7 @@ namespace KITGPI
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
             virtual void gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep) = 0;
-            virtual void sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT) = 0;
+            virtual void sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sinFC, ValueType DT, scai::IndexType shotNumber) = 0;
             virtual void applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual int getNumDimension() const = 0;
@@ -118,12 +119,12 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRd;
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSuRd;
             scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRu;
+            scai::lama::DenseMatrix<ValueType> EXforward;
+            scai::lama::DenseMatrix<ValueType> EXadjoint;
+            scai::lama::DenseMatrix<ValueType> EYforward;
+            scai::lama::DenseMatrix<ValueType> EYadjoint;
             scai::lama::DenseMatrix<ValueType> EZforward;
             scai::lama::DenseMatrix<ValueType> EZadjoint;
-            scai::lama::DenseMatrix<ValueType> EZupforward;
-            scai::lama::DenseMatrix<ValueType> EZupadjoint;
-            scai::lama::DenseMatrix<ValueType> EZdownforward;
-            scai::lama::DenseMatrix<ValueType> EZdownadjoint;
         };
     }
 }

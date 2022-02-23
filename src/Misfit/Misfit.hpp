@@ -29,10 +29,12 @@ namespace KITGPI
             //! \brief Misfit pointer
             typedef std::shared_ptr<Misfit<ValueType>> MisfitPtr;
 
-            virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, scai::IndexType useRTM_in, ValueType vmin) = 0;
+            virtual void init(KITGPI::Configuration::Configuration config, std::vector<scai::IndexType> misfitTypeHistory, scai::IndexType numshots, scai::IndexType useRTM_in, ValueType vmin_in, scai::IndexType &seedtime) = 0;
             virtual ValueType calc(KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;
             
-            virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;            
+            virtual void calcAdjointSources(KITGPI::Acquisition::Receivers<ValueType> &adjointSources, KITGPI::Acquisition::Receivers<ValueType> const &receiversSyn, KITGPI::Acquisition::Receivers<ValueType> const &receiversObs, scai::IndexType shotInd) = 0;  
+            
+            virtual void calcMisfitAndAdjointSources(scai::dmemo::CommunicatorPtr commShot, scai::lama::DenseVector<ValueType> &misfitPerIt, KITGPI::Acquisition::Receivers<ValueType> &adjointSourcesEncode, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, std::string filenameSyn, std::string filenameObs, ValueType vmin, scai::IndexType &seedtime) = 0;            
             
             void calcReflectSources(KITGPI::Acquisition::Receivers<ValueType> &sourcesReflect, scai::lama::DenseVector<ValueType> reflectivity);  
             

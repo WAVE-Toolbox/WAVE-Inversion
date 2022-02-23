@@ -404,7 +404,7 @@ template <typename ValueType>
 void KITGPI::Gradient::SH<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
 {
     /*reduction between shot domains.
-    each shot domain may have a different distribution of (gradient) vectors. This happens if geographer is used (different result for dist on each shot domain even for homogenous architecture) or on heterogenous architecture. In this case even the number of processes on each domain can vary. Therfore it is necessary that only one process per shot domain communicates all data.
+    each shot domain may have a different distribution of (gradient) vectors. This happens if geographer is used (different result for dist on each shot domain even for homogenous architecture) or on heterogenous architecture. In this case even the number of processes on each domain can vary. Therefore it is necessary that only one process per shot domain communicates all data.
     */
     
     //get information from distributed vector
@@ -498,7 +498,7 @@ void KITGPI::Gradient::SH<ValueType>::smooth(scai::dmemo::CommunicatorPtr commAl
         scai::IndexType NY = config.get<IndexType>("NY");
         scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
         if (smoothGradient != 0) {
-            HOST_PRINT(commAll, "\nApply Gaussian filter to gradient\n");
+            HOST_PRINT(commAll, "Apply Gaussian filter to gradient\n");
             scai::lama::DenseVector<ValueType> vector2Dpadded;
             if (workflowInner.getInvertForVs()) {
                 KITGPI::Common::pad2DVector(velocityS, vector2Dpadded, NX, NY, PX, PY); 
@@ -534,7 +534,7 @@ void KITGPI::Gradient::SH<ValueType>::applyMedianFilter(scai::dmemo::Communicato
         scai::IndexType NY = config.get<IndexType>("NY");
         scai::IndexType NX = porosity.size() / NY; // NX is different in stream configuration
     
-        HOST_PRINT(commAll, "\nApply median filter to gradient\n");
+        HOST_PRINT(commAll, "Apply median filter to gradient\n");
         scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
         
         if (workflowInner.getInvertForVs())

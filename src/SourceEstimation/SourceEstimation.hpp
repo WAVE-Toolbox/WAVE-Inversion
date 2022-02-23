@@ -39,17 +39,22 @@ namespace KITGPI
 
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
 
-        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr);
+        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNumber);
         void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
+        
+        void estimateSourceSignalEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, std::string filenameSyn, std::string filenameObs);
+        void applyFilterEncode(KITGPI::Acquisition::Sources<ValueType> &sourcesEncode, IndexType shotIndTrue, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode) const;
         
         void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
         void calcRefTrace(Configuration::Configuration const &config, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper);
         void setRefTraceToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers);
+        void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
         
       private:
         ValueType waterLevel;
         scai::IndexType nFFT; // filter length
         bool isSeismic;
+        scai::IndexType useRandomSource;
 
         scai::lama::DenseMatrix<ComplexValueType> filter;
 

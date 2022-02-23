@@ -101,7 +101,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::gatherWavefields(Wavefie
 /*! \brief Sum wavefields in the frequency domain
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sinFC, ValueType DT, scai::IndexType shotNumber)
 {
 }
 
@@ -110,6 +110,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::sumWavefields(KITGPI::Wo
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dsh<ValueType>::applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    if (workflow.getInvertForVs() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
+        xcorrMuC = lhs * xcorrMuC;
+    }
+    if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {       
+        xcorrRho = lhs * xcorrRho;
+    }
 }
 
 /*! \brief Get numDimension (2)

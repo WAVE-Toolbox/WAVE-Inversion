@@ -14,6 +14,7 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
     std::string equationType = config.get<std::string>("equationType"); 
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
     isSeismic = Common::checkEquationType<ValueType>(equationType);
+    useRandomSource = config.getAndCatch("useRandomSource", 0);
     
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
@@ -64,19 +65,65 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNr)
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNumber)
 {
     lama::DenseVector<ComplexValueType> filterTmp1(filter.getColDistributionPtr(), 0.0);
     lama::DenseVector<ComplexValueType> filterTmp2(filter.getColDistributionPtr(), 0.0);
 
-    addComponents(filterTmp1, receivers, receivers, shotNr);
+    addComponents(filterTmp1, receivers, receivers, shotNumber);
 //     filterTmp1 += waterLevel * receivers.getSeismogramHandler().getNumTracesTotal();
     filterTmp1 += waterLevel * filterTmp1.maxNorm();
     filterTmp1.unaryOp(filterTmp1, common::UnaryOp::RECIPROCAL);
-    addComponents(filterTmp2, receivers, receiversTrue, shotNr);
+    addComponents(filterTmp2, receivers, receiversTrue, shotNumber);
     filterTmp1 *= filterTmp2;
     
     filter.setRow(filterTmp1, shotInd, common::BinaryOp::COPY);
+}
+
+/*! \brief Calculate the Wiener filter
+ \param receivers Synthetic receivers
+ \param receiversTrue Observed receivers
+ \param shotNumber Shot number of source
+ */
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignalEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, std::string filenameSyn, std::string filenameObs)
+{
+    IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
+    SCAI_ASSERT_ERROR(config.get<scai::IndexType>("useSourceSignalTaper") == 0, "useSourceSignalTaper != 0"); 
+    if (useSourceEncode != 0) {
+        double start_t_shot, end_t_shot; /* For timing */
+        start_t_shot = common::Walltime::get();
+        
+        std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings;  
+        Acquisition::Sources<ValueType> sources;
+        ValueType shotIncr = 0; 
+        sources.getAcquisitionSettings(config, shotIncr); // to get numshots
+        sourceSettings = sources.getSourceSettings();
+        std::vector<scai::IndexType> uniqueShotNos;
+        Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
+        IndexType numshotsIncr = sourceSettingsEncode.size();
+        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
+        std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsTemp;
+        KITGPI::Acquisition::Receivers<ValueType> receiversSyn;
+        KITGPI::Acquisition::Receivers<ValueType> receiversObs;
+        for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
+            if (std::abs(sourceSettingsEncode[shotInd].sourceNo) == shotNumberEncode) {
+                IndexType shotNumber = uniqueShotNos[sourceSettingsEncode[shotInd].row]; 
+                
+                if (config.get<IndexType>("useReceiversPerShot") != 0) {
+                    receiversSyn.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsTemp);
+                    receiversObs.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsTemp);
+                }
+                
+                receiversSyn.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), filenameSyn  + ".shot_" + std::to_string(shotNumber), 1);
+                receiversObs.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), filenameObs  + ".shot_" + std::to_string(shotNumber), 1);
+                
+                estimateSourceSignal(receiversSyn, receiversObs, shotInd, shotNumber);
+            }
+        }
+        end_t_shot = common::Walltime::get();
+        HOST_PRINT(commShot, "Shot number " << shotNumberEncode << ": Estimate encoded source signals in " << end_t_shot - start_t_shot << " sec.\n");
+    }
 }
 
 /*! \brief Apply the Wiener filter to a synthetic source
@@ -102,6 +149,7 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     lama::DenseVector<ComplexValueType> filterTmp;
     filter.getRow(filterTmp, shotInd);
     seismoTrans.scaleColumns(filterTmp);
+    SCAI_ASSERT_ERROR(filterTmp.l2Norm() != 0, "filterTmp.l2Norm() == 0 when shotInd = " + std::to_string(shotInd));
 
     lama::ifft<ComplexValueType>(seismoTrans, 1);
     seismoTrans *= 1.0 / nFFT;
@@ -111,6 +159,54 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     seismo = lama::real(seismoTrans);
     
     sources.getSeismogramHandler().getSeismogram(sourceType).getData() = seismo;
+}
+
+/*! \brief Apply the Wiener filter to a synthetic source
+ \param sources Synthetic source
+ \param shotInd Shot index of source
+ */
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::applyFilterEncode(KITGPI::Acquisition::Sources<ValueType> &sourcesEncode, IndexType shotIndTrue, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode) const
+{
+    IndexType numshotsIncr = sourceSettingsEncode.size();
+    if (numshotsIncr != 0) {        
+        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
+        
+        //get seismogram that corresponds to source type
+        lama::DenseMatrix<ValueType> seismo;
+        auto sourceType = Acquisition::SeismogramType(sourcesEncode.getSeismogramTypes().getValue(0) - 1);
+        seismo = sourcesEncode.getSeismogramHandler().getSeismogram(sourceType).getData();
+        lama::DenseMatrix<ComplexValueType> seismoTrans;
+        seismoTrans = lama::cast<ComplexValueType>(seismo);
+
+        // scale to power of two
+        seismoTrans.resize(seismo.getRowDistributionPtr(), filter.getColDistributionPtr());
+
+        // apply filter in frequency domain
+        lama::fft<ComplexValueType>(seismoTrans, 1);
+
+        lama::DenseVector<ComplexValueType> filterTmp;
+        lama::DenseVector<ComplexValueType> signalTmp;
+        IndexType countEncode = 0;
+        for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
+            if (std::abs(sourceSettingsEncode[shotInd].sourceNo) == shotNumberEncode) {  
+                filter.getRow(filterTmp, shotInd);
+                seismoTrans.getRow(signalTmp, countEncode);
+                signalTmp *= filterTmp;
+                seismoTrans.setRow(signalTmp, countEncode, common::BinaryOp::COPY);
+                countEncode++;
+            }
+        }
+
+        lama::ifft<ComplexValueType>(seismoTrans, 1);
+        seismoTrans *= 1.0 / nFFT;
+
+        // return to time domain
+        seismoTrans.resize(seismo.getRowDistributionPtr(), seismo.getColDistributionPtr());
+        seismo = lama::real(seismoTrans);
+        
+        sourcesEncode.getSeismogramHandler().getSeismogram(sourceType).getData() = seismo;
+    }
 }
 
 /*! \brief Correlate the rows of two matrices.
@@ -328,6 +424,23 @@ void KITGPI::SourceEstimation<ValueType>::setRefTraceToSource(KITGPI::Acquisitio
     }
     
     sources.getSeismogramHandler().getSeismogram(sourceType).getData() = seismo;
+}
+
+/*! \brief sumShotDomain
+*
+\param comm Communicator
+*/
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
+{      
+    if (useRandomSource != 0) {
+        lama::DenseVector<ComplexValueType> filterTmp;
+        for (IndexType i=0; i<filter.getNumColumns(); i++) {
+            filter.getColumn(filterTmp, i);
+            commInterShot->sumArray(filterTmp.getLocalValues()); 
+            filter.setColumn(filterTmp, i, common::BinaryOp::COPY);  
+        }
+    }
 }
 
 template class KITGPI::SourceEstimation<double>;

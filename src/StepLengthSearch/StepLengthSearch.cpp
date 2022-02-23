@@ -20,7 +20,7 @@ using scai::IndexType;
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, KITGPI::Misfit::Misfit<ValueType> &currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper)
+void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, KITGPI::Misfit::Misfit<ValueType> &currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> sourceSignalTaper)
 {
     scaledGradient.printInvertForParameters(commAll);
     if (steplengthType == 0) {
@@ -48,7 +48,7 @@ void KITGPI::StepLengthSearch<ValueType>::run(scai::dmemo::CommunicatorPtr commA
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, KITGPI::Misfit::Misfit<ValueType> &currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper)
+void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, KITGPI::Misfit::Misfit<ValueType> &currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> sourceSignalTaper)
 {
     double start_t, end_t; /* For timing */
 
@@ -155,7 +155,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
  \param currentMisfit Current misfit
  */
 template <typename ValueType>
-void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, KITGPI::Misfit::Misfit<ValueType> &currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper)
+void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, ValueType steplengthInit, KITGPI::Misfit::Misfit<ValueType> &currentMisfit, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> sourceSignalTaper)
 {
     double start_t, end_t; /* For timing */
 
@@ -369,7 +369,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::parabolicFit(scai::lama::DenseVec
  \param steplength Steplength
  */
 template <typename ValueType>
-ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> const &sourceSignalTaper)
+ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::CommunicatorPtr commAll, KITGPI::ForwardSolver::ForwardSolver<ValueType> &solver, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> &derivatives, KITGPI::Acquisition::Sources<ValueType> sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Wavefields::Wavefields<ValueType> &wavefields, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Gradient::Gradient<ValueType> &scaledGradient, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType steplength, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Filter::Filter<ValueType> const &freqFilter, KITGPI::SourceEstimation<ValueType> sourceEst, KITGPI::Taper::Taper1D<ValueType> sourceSignalTaper)
 {
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
@@ -516,10 +516,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
         if (useSourceEncode == 0) {
             receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
+            receiversLast.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), 1);
         } else {
-            receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode, 1);
+            receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode);
+            receiversLast.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration), shotNumber, sourceSettingsEncode);
         }
-        receiversLast.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), 1);
 
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0) {
             sources.getSeismogramHandler().filter(freqFilter);
@@ -528,6 +529,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 4) {
             sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
             if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
+                if (config.get<IndexType>("useSourceSignalTaper") == 2) {
+                    sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
+                }
                 sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
                 sourceEst.setRefTraceToSource(sources, receiversTrue);
             }
@@ -549,9 +553,17 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());
 
         if (config.get<IndexType>("useSourceSignalInversion") != 0) {
-            sourceEst.applyFilter(sources, shotIndTrue);
-            if (config.get<IndexType>("useSourceSignalTaper") != 0)
+            if (useSourceEncode == 0) {
+                sourceEst.applyFilter(sources, shotIndTrue);
+            } else {
+                sourceEst.applyFilterEncode(sources, shotIndTrue, sourceSettingsEncode);
+            }
+            if (config.get<IndexType>("useSourceSignalTaper") != 0) {
+                if (config.get<IndexType>("useSourceSignalTaper") == 2) {
+                    sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
+                }
                 sourceSignalTaper.apply(sources.getSeismogramHandler());
+            }
         }
 
         wavefields.resetWavefields();
@@ -572,8 +584,10 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             testmodel->write("model_crash", config.get<IndexType>("FileFormat"));
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
-        if (dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3)
+        if (dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
+            sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
             sourceEst.calcRefTrace(config, receivers, sourceSignalTaper);
+        }
 
         if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {                                                   
             seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
@@ -593,6 +607,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         }
         receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
         receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
+        receivers.decode(config, config.get<std::string>("SeismogramFilename") + ".stepLengthSearch", shotNumber, sourceSettingsEncode);
+        receivers.encode(config, config.get<std::string>("SeismogramFilename") + ".stepLengthSearch", shotNumber, sourceSettingsEncode);
 
         misfitTest.setValue(shotIndTrue, dataMisfit.calc(receivers, receiversTrue, shotIndTrue));
         
@@ -684,49 +700,47 @@ template <typename ValueType>
 void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::CommunicatorPtr comm, IndexType workflowStage, scai::IndexType iteration, std::string logFilename, ValueType misfitSum, ValueType crossGradientMisfit)
 {
     int myRank = comm->getRank();
-    if (steplengthType == 1) {
-        if (myRank == MASTERGPI) {
-            if (iteration == 0) {
-                std::string filename(logFilename);
-                logFile.open(filename, std::ios_base::app);
-                logFile << std::scientific;
-                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration;
-                for (int i = 0; i < invertNumber; i++) {
-                    logFile << std::setw(24) << 0;                
-                }
-                logFile << std::setw(21) << steplengthGuess;
-                for (int i = 0; i < invertNumber; i++) {
-                    logFile << std::setw(17) << 0;                    
-                }
-                if (saveCrossGradientMisfit) {
-                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
-                } else {
-                    logFile << std::setw(22) << misfitSum << "\n";
-                }
-                logFile.close();
-            } else {
-                std::string filename(logFilename);
-                logFile.open(filename, std::ios_base::app);
-                logFile << std::scientific;
-                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration;
-                for (int i = 0; i < invertNumber; i++) {
-                    ValueType steplengthLine1 = steplengthLine.getValue(i);
-                    logFile << std::setw(24) << steplengthLine1;                
-                }
-                logFile << std::setw(21) << steplengthGuess;
-                for (int i = 0; i < invertNumber; i++) {
-                    ValueType misfitLine1 = misfitLine.getValue(i);
-                    logFile << std::setw(17) << misfitLine1;                    
-                }
-                if (saveCrossGradientMisfit) {
-                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
-                } else {
-                    logFile << std::setw(22) << misfitSum << "\n";
-                }
-                logFile.close();
+    if (myRank == MASTERGPI && steplengthType == 1) {
+        if (iteration == 0) {
+            std::string filename(logFilename);
+            logFile.open(filename, std::ios_base::app);
+            logFile << std::scientific;
+            logFile << std::setw(5) << workflowStage << std::setw(11) << iteration;
+            for (int i = 0; i < invertNumber; i++) {
+                logFile << std::setw(24) << 0;                
             }
+            logFile << std::setw(21) << steplengthGuess;
+            for (int i = 0; i < invertNumber; i++) {
+                logFile << std::setw(17) << 0;                    
+            }
+            if (saveCrossGradientMisfit) {
+                logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
+            } else {
+                logFile << std::setw(22) << misfitSum << "\n";
+            }
+            logFile.close();
+        } else {
+            std::string filename(logFilename);
+            logFile.open(filename, std::ios_base::app);
+            logFile << std::scientific;
+            logFile << std::setw(5) << workflowStage << std::setw(11) << iteration;
+            for (int i = 0; i < invertNumber; i++) {
+                ValueType steplengthLine1 = steplengthLine.getValue(i);
+                logFile << std::setw(24) << steplengthLine1;                
+            }
+            logFile << std::setw(21) << steplengthGuess;
+            for (int i = 0; i < invertNumber; i++) {
+                ValueType misfitLine1 = misfitLine.getValue(i);
+                logFile << std::setw(17) << misfitLine1;                    
+            }
+            if (saveCrossGradientMisfit) {
+                logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
+            } else {
+                logFile << std::setw(22) << misfitSum << "\n";
+            }
+            logFile.close();
         }
-    } else if (steplengthType == 2) {
+    } else if (myRank == MASTERGPI && steplengthType == 2) {
         /* The following temporaries are only necessary because of a problem with LAMA: e.g. steplengthParabola.getValue(0).getValue<ValueType>() produces an error */
         ValueType steplengthParabola0 = steplengthParabola.getValue(0);
         ValueType steplengthParabola1 = steplengthParabola.getValue(1);
@@ -735,30 +749,28 @@ void KITGPI::StepLengthSearch<ValueType>::appendToLogFile(scai::dmemo::Communica
         ValueType misfitParabola1 = misfitParabola.getValue(1);
         ValueType misfitParabola2 = misfitParabola.getValue(2);
 
-        if (myRank == MASTERGPI) {
-            if (iteration == 0) {
-                std::string filename(logFilename);
-                logFile.open(filename, std::ios_base::app);
-                logFile << std::scientific;
-                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << 0 << std::setw(17) << 0 << std::setw(30) << 0 << std::setw(22) << 0 << std::setw(22) << 0 << std::setw(19) << 0 << std::setw(17) << 0 << std::setw(17) << 0;
-                if (saveCrossGradientMisfit) {
-                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
-                } else {
-                    logFile << std::setw(22) << misfitSum << "\n";
-                }
-                logFile.close();
+        if (iteration == 0) {
+            std::string filename(logFilename);
+            logFile.open(filename, std::ios_base::app);
+            logFile << std::scientific;
+            logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << 0 << std::setw(17) << 0 << std::setw(30) << 0 << std::setw(22) << 0 << std::setw(22) << 0 << std::setw(19) << 0 << std::setw(17) << 0 << std::setw(17) << 0;
+            if (saveCrossGradientMisfit) {
+                logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
             } else {
-                std::string filename(logFilename);
-                logFile.open(filename, std::ios_base::app);
-                logFile << std::scientific;
-                logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << steplengthOptimum << std::setw(17) << stepCalcCount << std::setw(30) << steplengthParabola0 << std::setw(22) << steplengthParabola1 << std::setw(22) << steplengthParabola2 << std::setw(19) << misfitParabola0 << std::setw(17) << misfitParabola1 << std::setw(17) << misfitParabola2;
-                if (saveCrossGradientMisfit) {
-                    logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
-                } else {
-                    logFile << std::setw(22) << misfitSum << "\n";
-                }
-                logFile.close();
+                logFile << std::setw(22) << misfitSum << "\n";
             }
+            logFile.close();
+        } else {
+            std::string filename(logFilename);
+            logFile.open(filename, std::ios_base::app);
+            logFile << std::scientific;
+            logFile << std::setw(5) << workflowStage << std::setw(11) << iteration << std::setw(22) << steplengthOptimum << std::setw(17) << stepCalcCount << std::setw(30) << steplengthParabola0 << std::setw(22) << steplengthParabola1 << std::setw(22) << steplengthParabola2 << std::setw(19) << misfitParabola0 << std::setw(17) << misfitParabola1 << std::setw(17) << misfitParabola2;
+            if (saveCrossGradientMisfit) {
+                logFile << std::setw(22) << misfitSum << std::setw(22) << crossGradientMisfit << "\n";
+            } else {
+                logFile << std::setw(22) << misfitSum << "\n";
+            }
+            logFile.close();
         }
     }
 }

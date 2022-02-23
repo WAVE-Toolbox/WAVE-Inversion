@@ -40,25 +40,16 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::init(scai::hmemo::Cont
         }
     }
     gradientDomain = config.getAndCatch("gradientDomain", 0);
-    if (gradientDomain == 1) {
+    if (gradientDomain != 0) {
         IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
         dtinversion = config.get<IndexType>("DTInversion"); 
         IndexType NT = floor(ValueType(tStepEnd) / dtinversion + 0.5);
+        NT = floor(ValueType(NT) / 2 + 0.5); // half recording time.
         dmemo::DistributionPtr no_dist_NT(new scai::dmemo::NoDistribution(NT));
         EZforward.setContextPtr(ctx);
         EZadjoint.setContextPtr(ctx);
         EZforward.allocate(dist, no_dist_NT);
         EZadjoint.allocate(dist, no_dist_NT);
-        if (gradientKernel != 0 && decomposition != 0) {
-            EZupforward.setContextPtr(ctx);
-            EZupadjoint.setContextPtr(ctx);
-            EZdownforward.setContextPtr(ctx);
-            EZdownadjoint.setContextPtr(ctx);
-            EZupforward.allocate(dist, no_dist_NT);
-            EZupadjoint.allocate(dist, no_dist_NT);
-            EZdownforward.allocate(dist, no_dist_NT);
-            EZdownadjoint.allocate(dist, no_dist_NT);
-        }
     }
 }
 
@@ -129,7 +120,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Wor
             this->resetWavefield(xcorrEpsilonEMSdRu);
         }
     }
-    if (gradientDomain == 1) {
+    if (gradientDomain != 0) {
         EZforward.scale(0.0);
         EZadjoint.scale(0.0);
     }
@@ -207,60 +198,117 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wav
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep)
 {
+    scai::IndexType NT = EZforward.getNumColumns(); // half recording time.
     if (gradientKernel == 0 || decomposition == 0) {   
-        EZforward.setColumn(forwardWavefield.getRefEZ(), tStep / dtinversion, common::BinaryOp::COPY);
-        EZadjoint.setColumn(adjointWavefield.getRefEZ(), tStep / dtinversion, common::BinaryOp::COPY);
-    } else if (gradientKernel != 0 && decomposition != 0) {   
-        EZupforward.setColumn(forwardWavefield.getRefEZup(), tStep / dtinversion, common::BinaryOp::COPY);
-        EZupadjoint.setColumn(adjointWavefield.getRefEZup(), tStep / dtinversion, common::BinaryOp::COPY);
-        EZdownforward.setColumn(forwardWavefield.getRefEZdown(), tStep / dtinversion, common::BinaryOp::COPY);
-        EZdownadjoint.setColumn(adjointWavefield.getRefEZdown(), tStep / dtinversion, common::BinaryOp::COPY);
-    }
+        if (tStep / dtinversion >= NT) {
+            EZforward.setColumn(forwardWavefield.getRefEZ(), tStep / dtinversion - NT, common::BinaryOp::COPY);
+        } else {
+            EZadjoint.setColumn(adjointWavefield.getRefEZ(), tStep / dtinversion, common::BinaryOp::COPY);
+        }
+    } 
 }
 
 /*! \brief Sum wavefields in the frequency domain
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(KITGPI::Workflow::Workflow<ValueType> const &workflow, ValueType DT)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sinFC, ValueType DT, scai::IndexType shotNumber)
 {
+    double start_t_shot, end_t_shot; /* For timing */
+    start_t_shot = common::Walltime::get();
+    
     typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
     scai::lama::DenseMatrix<ComplexValueType> fEZforward;
     scai::lama::DenseMatrix<ComplexValueType> fEZadjoint;
     scai::lama::DenseMatrix<ComplexValueType> fEZ;
     scai::lama::DenseVector<ComplexValueType> temp;
+    scai::lama::DenseVector<ValueType> fc12Ind;
+    IndexType nfc12 = 0;
     
-    scai::IndexType NT = EZforward.getNumColumns();
+    scai::IndexType NT = EZforward.getNumColumns(); // half recording time.
+    scai::IndexType NF = sinFC.size();
     scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(NT - 1);
-
+    ValueType df = 0.5 / (nFFT * dtinversion * DT);
+    scai::lama::DenseVector<ValueType> frequencyVector = sinFC;
+    ComplexValueType j(0.0, 1.0); 
+    if (snapType > 0) {
+        if (NF <= 1) {
+            ValueType fc1 = workflow.getLowerCornerFreq();
+            ValueType fc2 = workflow.getUpperCornerFreq();
+            IndexType fc1Ind = ceil(fc1 / df);
+            IndexType fc2Ind = ceil(fc2 / df);
+            nfc12 = (fc2Ind-fc1Ind+1)/2;
+            fc12Ind = lama::linearDenseVector<ValueType>(nfc12, fc1Ind, 1);
+        } else {
+            sinFC /= (2*df);
+            fc12Ind = scai::lama::ceil(sinFC);
+            nfc12 = fc12Ind.size();
+        }
+    }
+    
     if (gradientKernel == 0 || decomposition == 0) {  
-        fEZforward = scai::lama::cast<ComplexValueType>(EZforward);
-        fEZforward.resize(EZforward.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
-        fEZadjoint = scai::lama::cast<ComplexValueType>(EZadjoint);
-        fEZadjoint.resize(EZadjoint.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
+        if (gradientDomain == 1 || NF <= 1) { // FFT for all frequency samples
+            fEZforward = scai::lama::cast<ComplexValueType>(EZforward);
+            fEZadjoint = scai::lama::cast<ComplexValueType>(EZadjoint);
+            fEZforward.resize(EZforward.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
+            fEZadjoint.resize(EZadjoint.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
 
-        scai::lama::fft<ComplexValueType>(fEZforward, 1);
-        scai::lama::fft<ComplexValueType>(fEZadjoint, 1);
+            scai::lama::fft<ComplexValueType>(fEZforward, 1);
+            scai::lama::fft<ComplexValueType>(fEZadjoint, 1);
+            scai::lama::DenseVector<ValueType> fPos = scai::lama::linearDenseVector<ValueType>(nFFT / 2 + 1, 0.0, 2*df);
+            scai::lama::DenseVector<ValueType> fNeg = scai::lama::linearDenseVector<ValueType>(nFFT / 2 - 1, -(nFFT / 2 - 1) * 2*df, 2*df);
+            frequencyVector.cat(fPos, fNeg);
+        } else if (gradientDomain == 2 && NF > 1) { // DFT for special frequency samples.
+            scai::lama::DenseMatrix<ComplexValueType> L;
+            auto distNF = std::make_shared<scai::dmemo::NoDistribution>(NF);
+            auto distNT = std::make_shared<scai::dmemo::NoDistribution>(NT);
+            L.allocate(distNT, distNF);
+            for (int tStep = 0; tStep < NT; tStep++) {
+                temp = scai::lama::cast<ComplexValueType>(frequencyVector);
+                temp *= -j * 2.0 * M_PI * tStep * DT;
+                temp.unaryOp(temp, common::UnaryOp::EXP);
+                L.setRow(temp, tStep, common::BinaryOp::COPY);
+            }
+            fEZ = scai::lama::cast<ComplexValueType>(EZforward);
+            fEZforward = fEZ * L; // NR * NT * NT * NF = NR * NF
+            fEZ = scai::lama::cast<ComplexValueType>(EZadjoint);
+            fEZadjoint = fEZ * L;
+        }            
         fEZadjoint.conj();
-        
         if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
             fEZ.binaryOp(fEZforward, common::BinaryOp::MULT, fEZadjoint);
-            fEZ.reduce(temp, 0, common::BinaryOp::ADD, common::UnaryOp::COPY);
-            xcorrSigmaEM = scai::lama::real(temp);
+            for (IndexType jf = 0; jf < nfc12; jf++) {
+                fEZ.getColumn(temp, fc12Ind[jf]);
+                xcorrSigmaEMstep = scai::lama::real(temp);
+                if (xcorrSigmaEMstep.maxNorm() != 0)
+                    xcorrSigmaEMstep *= 1.0 / xcorrSigmaEMstep.maxNorm();
+                if (snapType > 0) {
+                    this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, 2*fc12Ind[jf]);
+                }
+                xcorrSigmaEM += xcorrSigmaEMstep;
+            }
         }
         if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
-            ValueType df = 1 / (nFFT * dtinversion * DT);
-            scai::lama::DenseVector<ValueType> fPos = scai::lama::linearDenseVector<ValueType>(nFFT / 2 + 1, 0.0, df);
-            scai::lama::DenseVector<ValueType> fNeg = scai::lama::linearDenseVector<ValueType>(nFFT / 2 - 1, -(nFFT / 2 - 1) * df, df);
-            scai::lama::DenseVector<ValueType> frequencyVector;
-            ComplexValueType j(0.0, 1.0); 
-            frequencyVector.cat(fPos, fNeg);
             temp = scai::lama::cast<ComplexValueType>(frequencyVector);
             temp *= j;
             fEZ.binaryOp(fEZforward, common::BinaryOp::MULT, fEZadjoint);
             fEZ.scaleColumns(temp);
-            fEZ.reduce(temp, 0, common::BinaryOp::ADD, common::UnaryOp::COPY);
-            xcorrEpsilonEM = scai::lama::real(temp);
+            for (IndexType jf = 0; jf < nfc12; jf++) {
+                fEZ.getColumn(temp, fc12Ind[jf]);
+                xcorrEpsilonEMstep = scai::lama::real(temp);
+                if (xcorrEpsilonEMstep.maxNorm() != 0)
+                    xcorrEpsilonEMstep *= 1.0 / xcorrEpsilonEMstep.maxNorm();
+                if (snapType > 0) {
+                    this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename, 2*fc12Ind[jf]);
+                }
+                xcorrEpsilonEM += xcorrEpsilonEMstep;
+            }
         }
+    }
+    end_t_shot = common::Walltime::get();
+    if (gradientDomain == 1 || NF <= 1) {
+        HOST_PRINT(commShot, "Shot number " << shotNumber << ": Finish sum wavefields (FFT) in " << end_t_shot - start_t_shot << " sec.\n");
+    } else if (gradientDomain == 2 && NF > 1) {
+        HOST_PRINT(commShot, "Shot number " << shotNumber << ": Finish sum wavefields (DFT) in " << end_t_shot - start_t_shot << " sec.\n");
     }
 }
 

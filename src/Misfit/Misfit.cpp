@@ -74,6 +74,7 @@ ValueType KITGPI::Misfit::Misfit<ValueType>::getMisfitResidualMax(int iteration1
 template <typename ValueType>
 ValueType KITGPI::Misfit::Misfit<ValueType>::getMisfitSum(int iteration)
 {
+    SCAI_ASSERT_ERROR(this->misfitStorage.at(iteration).sum() != 0, "misfit == 0!");
     return this->misfitStorage.at(iteration).sum();
 }
 
