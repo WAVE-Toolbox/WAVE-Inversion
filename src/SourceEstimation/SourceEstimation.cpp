@@ -430,18 +430,18 @@ void KITGPI::SourceEstimation<ValueType>::setRefTraceToSource(KITGPI::Acquisitio
 *
 \param comm Communicator
 */
-template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
-{      
-    if (useRandomSource != 0) {
-        lama::DenseVector<ComplexValueType> filterTmp;
-        for (IndexType i=0; i<filter.getNumColumns(); i++) {
-            filter.getColumn(filterTmp, i);
-            commInterShot->sumArray(filterTmp.getLocalValues()); 
-            filter.setColumn(filterTmp, i, common::BinaryOp::COPY);  
-        }
-    }
-}
+// template <typename ValueType>
+// void KITGPI::SourceEstimation<ValueType>::sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot)
+// {      
+//     if (useRandomSource != 0) {
+//         lama::DenseVector<ComplexValueType> filterTmp;
+//         for (IndexType i=0; i<filter.getNumColumns(); i++) {
+//             filter.getColumn(filterTmp, i);
+//             commInterShot->sumArray(filterTmp.getLocalValues()); 
+//             filter.setColumn(filterTmp, i, common::BinaryOp::COPY);  
+//         }
+//     }
+// }
 
 template class KITGPI::SourceEstimation<double>;
 template class KITGPI::SourceEstimation<float>;

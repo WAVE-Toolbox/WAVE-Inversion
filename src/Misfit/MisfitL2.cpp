@@ -404,6 +404,8 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calc(KITGPI::Acquisition::Receive
             }
         }
     }
+//     std::cout << "shotInd = "<< shotInd+1 <<" misfitSum = "<< misfitSum <<std::endl;
+    SCAI_ASSERT_ERROR(isfinite(misfitSum/count/misfitTypeShots.size()), "Misfit of shotInd = " + std::to_string(shotInd + 1) + " is " + std::to_string(misfitSum/count/misfitTypeShots.size()));
     
     return misfitSum/count/misfitTypeShots.size(); 
 }
@@ -478,7 +480,9 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2(KITGPI::Acquisition::Seism
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
+    }
+    if (tempL2Norm > 0.01) {
+        std::cout << "tempL2Norm = "<< tempL2Norm <<" syn = "<< seismogramSyntemp.getData().l2Norm() << " obs = "<< seismogramObstemp.getData().l2Norm() << " "<< seismogramSyntemp.getData().getNumColumns()<< " "<< seismogramSyntemp.getData().getNumRows() << std::endl;
     }
     
     return tempL2Norm;    
@@ -571,7 +575,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Convolved(KITGPI::Acquisiti
         seismogramSyntemp -= seismogramObstemp;        
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
     return tempL2Norm;    
@@ -684,7 +687,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2FK(KITGPI::Acquisition::Sei
         fkSyn.binaryOp(fkSyn, common::BinaryOp::SUB, fkObs);
         
         tempL2Norm = 0.5*fkSyn.l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
     return tempL2Norm;    
@@ -774,7 +776,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2EnvelopeWeighted(KITGPI::Ac
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
     return tempL2Norm;   
@@ -876,7 +877,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2AGC(KITGPI::Acquisition::Se
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows();  
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
     return tempL2Norm;    
@@ -948,7 +948,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Normalized(KITGPI::Acquisit
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
     return tempL2Norm;   
@@ -1040,7 +1039,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2Envelope(KITGPI::Acquisitio
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
     return tempL2Norm;   
@@ -1136,7 +1134,6 @@ ValueType KITGPI::Misfit::MisfitL2<ValueType>::calcL2InstantaneousPhase(KITGPI::
         seismogramSyntemp -= seismogramObstemp;
         
         tempL2Norm = 0.5*seismogramSyntemp.getData().l2Norm() / seismogramSyntemp.getData().getNumColumns() / seismogramSyntemp.getData().getNumRows(); 
-        if (isfinite(tempL2Norm)==false) tempL2Norm=0;
     }
     
     return tempL2Norm;   

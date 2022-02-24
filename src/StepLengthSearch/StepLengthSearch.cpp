@@ -498,7 +498,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         if (!useStreamConfig) {
             CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodel, modelCoordinates, shotNumber);
         } else {
-            HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshots << "\n");
+            HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Switch to model subset\n");
             testmodel->getModelPerShot(*testmodelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotIndTrue));    
             testmodelPerShot->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
             solver.prepareForModelling(*testmodelPerShot, config.get<ValueType>("DT"));
@@ -506,7 +506,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodelPerShot, modelCoordinates, shotNumber);
         }
 
-        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start Test Forward\n");
+        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Start Test Forward\n");
         
         if (config.get<IndexType>("useReceiversPerShot") != 0) {
             receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);

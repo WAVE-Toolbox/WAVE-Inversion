@@ -48,7 +48,7 @@ namespace KITGPI
         void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
         void calcRefTrace(Configuration::Configuration const &config, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper);
         void setRefTraceToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers);
-        void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
+//         void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
         
       private:
         ValueType waterLevel;

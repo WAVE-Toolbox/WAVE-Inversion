@@ -981,7 +981,7 @@ int main(int argc, char *argv[])
                 
                 sources.calcUniqueShotInds(commAll, config, shotHistory, maxcount, seedtime);
                 std::vector<IndexType> uniqueShotInds = sources.getUniqueShotInds();
-                Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
+                Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration, config.getAndCatch("useRandomSource", 0));
                 dataMisfit->init(config, misfitTypeHistory, numshots, useRTM, model->getVmin(), seedtime); // in case of that random misfit function is used
                 if (useSourceEncode != 0) {
                     sources.calcSourceSettingsEncode(config, seedtime, workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
@@ -1050,14 +1050,14 @@ int main(int argc, char *argv[])
                     if (!useStreamConfig) {
                         CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *model, modelCoordinates, shotNumber);
                     } else {
-                        HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshots << "\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Switch to model subset\n");
                         model->getModelPerShot(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotIndTrue)); 
                         modelPerShot->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
                         solver->prepareForModelling(*modelPerShot, config.get<ValueType>("DT"));
                         
                         CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *modelPerShot, modelCoordinates, shotNumber);
                     }
-                    HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist->getLocalSize() << ": started\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "), local shot " << localShotInd << " of " << shotDist->getLocalSize() << ": Started\n");
                         
                     if (config.get<IndexType>("useReceiversPerShot") != 0) {
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
@@ -1094,8 +1094,8 @@ int main(int argc, char *argv[])
                         }
                     }
                     if (config.get<IndexType>("useSourceSignalInversion") != 0){
-                        if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1 || useSourceEncode != 0) {
-                            HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDist->getLocalSize() << ": Source Time Function Inversion\n");
+                        if (workflow.iteration == 0 || shotHistory[shotIndTrue] != 0 || useSourceEncode != 0) {
+                            HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "), local shot " << localShotInd << " of " << shotDist->getLocalSize() << ": Source Time Function Inversion\n");
 
                             wavefields->resetWavefields();
 
@@ -1166,7 +1166,7 @@ int main(int argc, char *argv[])
                     /* Normalize observed and synthetic data */
                     if (config.get<IndexType>("normalizeTraces") == 3 || misfitType.compare("l6") == 0 || multiMisfitType.find('6') != std::string::npos) {
                         if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1) {
-                            if (!config.get<IndexType>("useSourceSignalInversion") != 0) {
+                            if (config.get<IndexType>("useSourceSignalInversion") == 0) {
                                 ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
                                 if (workflow.getUpperCornerFreq() != 0.0) {
                                     frequencyAGC = (workflow.getLowerCornerFreq() + workflow.getUpperCornerFreq()) / 2;
@@ -1223,7 +1223,7 @@ int main(int argc, char *argv[])
                     /* --------------------------------------- */
                     /*        Forward modelling 1              */
                     /* --------------------------------------- */
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start time stepping with " << tStepEnd << " time steps\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Start time stepping with " << tStepEnd << " time steps\n");
 
                     ValueType DTinv = 1.0 / config.get<ValueType>("DT");
                     if (gradientKernelPerIt == 2 && decomposition == 0) { 
@@ -1261,7 +1261,7 @@ int main(int argc, char *argv[])
                         solver->resetCPML();
                         
                         if (gradientKernelPerIt == 2 && decomposition == 0) { 
-                            HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start reflection forward \n");
+                            HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Start reflection forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = model->getReflectivity();
                             dataMisfit->calcReflectSources(sourcesReflect, reflectivity);
@@ -1306,7 +1306,7 @@ int main(int argc, char *argv[])
                         solver->resetCPML();
                         
                         if (gradientKernelPerIt == 2 && decomposition == 0) { 
-                            HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start reflection forward \n");
+                            HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Start reflection forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShot->getReflectivity();
                             dataMisfit->calcReflectSources(sourcesReflect, reflectivity);
@@ -1358,7 +1358,7 @@ int main(int argc, char *argv[])
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), filenameSyn + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     
                     if (useSourceEncode == 0) {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Calculate misfit and adjoint sources\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Calculate misfit and adjoint sources\n");
                         /* Calculate misfit of one shot */
                         misfitPerIt.setValue(shotIndTrue, dataMisfit->calc(receivers, receiversTrue, shotIndTrue));
                         /* Calculate adjoint sources */
@@ -1366,7 +1366,7 @@ int main(int argc, char *argv[])
                         if (config.getAndCatch("writeAdjointSource", false))
                             adjointSources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), filenameObs + ".adjointSource" + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     } else {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Calculate encode misfit and adjoint sources\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Calculate encode misfit and adjoint sources\n");
                         /* Calculate misfit and write adjoint sources */
                         dataMisfit->calcMisfitAndAdjointSources(commShot, misfitPerIt, adjointSources, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, filenameSyn, filenameObs, model->getVmin(), seedtime);
                     }
@@ -1374,9 +1374,9 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     end_t_shot = common::Walltime::get();
                     if (gradientKernelPerIt == 2 && decomposition == 0) {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start reflection backward in " << end_t_shot - start_t_shot << " sec.\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Start reflection backward in " << end_t_shot - start_t_shot << " sec.\n");
                     } else {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Start backward in " << end_t_shot - start_t_shot << " sec.\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Start backward in " << end_t_shot - start_t_shot << " sec.\n");
                     }
                     if (!useStreamConfig) {
                         gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, workflow, wavefieldTaper2D, wavefieldrecordReflect, *dataMisfit);
@@ -1391,7 +1391,7 @@ int main(int argc, char *argv[])
                     }
 
                     end_t_shot = common::Walltime::get();
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Finished in " << end_t_shot - start_t_shot << " sec.\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
                 } //end of loop over shots
            
@@ -1401,7 +1401,6 @@ int main(int argc, char *argv[])
                 misfitPerIt = 0;
                 gradient->sumShotDomain(commInterShot); 
                 gradient->smooth(commAll, config);
-                sourceEst.sumShotDomain(commInterShot);
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationType << " 1 =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
@@ -1498,14 +1497,15 @@ int main(int argc, char *argv[])
                 dataMisfit->appendMisfitPerShotToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
                 dataMisfit->appendMultiMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration);
 
-                /* Check abort criteria */
-                HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");
-                
+                HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration << ": " << dataMisfit->getMisfitSum(workflow.iteration) << "\n");                
                 /* --------------------------------------- */
                 /* Check abort criteria for two inversions */
                 /* --------------------------------------- */              
                 HOST_PRINT(commAll, "\n========== Check abort criteria " << equationType << " 1 ==========\n"); 
-                breakLoop = abortCriterion.check(commAll, *dataMisfit, config, steplengthInit, workflow, breakLoopEM, breakLoopType);
+                breakLoop = abortCriterion.check(commAll, *dataMisfit, steplengthInit, workflow, breakLoopEM, breakLoopType);
+                if (config.getAndCatch("useRandomSource", 0) != 0) {
+                    breakLoop = false;
+                }
                 // We set a new break condition so that two inversions can change stage simultaneously in joint inversion
                 if (breakLoop == true) {                 
                     if (inversionType > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) { 
@@ -1624,12 +1624,12 @@ int main(int argc, char *argv[])
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
                 }
                        
-                sources.calcUniqueShotInds(commAll, config, shotHistory, maxcount, seedtime);
+//                 sources.calcUniqueShotInds(commAll, config, shotHistory, maxcount, seedtime);
                 std::vector<IndexType> uniqueShotInds = sources.getUniqueShotInds();
                 Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
                 dataMisfit->init(config, misfitTypeHistory, numshots, useRTM, model->getVmin(), seedtime); // in case of that random misfit function is used
                 if (useSourceEncode != 0) {
-                    sources.calcSourceSettingsEncode(config, seedtime, workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
+//                     sources.calcSourceSettingsEncode(config, seedtime, workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
                     sourceSettingsEncode = sources.getSourceSettingsEncode();
                     Acquisition::calcuniqueShotNo(uniqueShotNosEncode, sourceSettingsEncode);
                     sources.writeSourceEncode(commAll, config, config.get<std::string>("SourceFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1));
@@ -1649,7 +1649,7 @@ int main(int argc, char *argv[])
                     sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
 
                     if (useStreamConfig) {
-                        HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshots << "\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Switch to model subset\n");
                         model->getModelPerShot(*modelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotIndTrue)); 
                         modelPerShot->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
                         solver->prepareForModelling(*modelPerShot, config.get<ValueType>("DT"));
@@ -1666,7 +1666,7 @@ int main(int argc, char *argv[])
                         receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode);
                     }
 
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Additional forward run with " << tStepEnd << " time steps\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Additional forward run with " << tStepEnd << " time steps\n");
 
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0) {
                         sources.getSeismogramHandler().filter(freqFilter);
@@ -1760,7 +1760,7 @@ int main(int argc, char *argv[])
                     misfitPerIt.setValue(shotIndTrue, dataMisfit->calc(receivers, receiversTrue, shotIndTrue));
 
                     end_t_shot = common::Walltime::get();
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshots << ": Finished additional forward run\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Finished additional forward run\n");
 
                 } //end of loop over Seismic shots      
                 commInterShot->sumArray(misfitPerIt.getLocalValues());          
@@ -1793,6 +1793,8 @@ int main(int argc, char *argv[])
                 dataMisfit->appendMisfitPerShotToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
                 dataMisfit->appendMultiMisfitsToFile(commAll, logFilename, workflow.workflowStage + 1, workflow.iteration + 1);
 
+                HOST_PRINT(commAll, "\nMisfit after stage " << workflow.workflowStage + 1 << ", iteration " << workflow.iteration + 1 << ": " << dataMisfit->getMisfitSum(workflow.iteration + 1) << "\n");  
+                
                 if (breakLoopType == 0 && breakLoopEM == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     breakLoop = true;
                     breakLoopEM = false;
@@ -1825,7 +1827,7 @@ int main(int argc, char *argv[])
                 
                 sourcesEM.calcUniqueShotInds(commAll, configEM, shotHistoryEM, maxcountEM, seedtime);
                 std::vector<IndexType> uniqueShotInds = sourcesEM.getUniqueShotInds();
-                Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotInds, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0));
+                Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotInds, workflowEM.workflowStage + 1, workflowEM.iteration, configEM.getAndCatch("useRandomSource", 0));
                 dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, useRTMEM, modelEM->getVmin(), seedtime); // in case of that random misfit function is used
                 if (useSourceEncodeEM != 0) {
                     sourcesEM.calcSourceSettingsEncode(config, seedtime, workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq());
@@ -1897,12 +1899,12 @@ int main(int argc, char *argv[])
                     }                    
                     sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
 
-                    HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << ": started\n");                        
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "), local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << ": Started\n");                        
 
                     if (!useStreamConfigEM) {
                         CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(configEM, sourceSettingsShot, *modelEM, modelCoordinatesEM, shotNumber);
                     } else {
-                        HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshotsEM << "\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Switch to model subset\n");
                         modelEM->getModelPerShot(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM.at(shotIndTrue)); 
                         modelPerShotEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot); 
                         solverEM->prepareForModelling(*modelPerShotEM, configEM.get<ValueType>("DT"));
@@ -1945,8 +1947,8 @@ int main(int argc, char *argv[])
                         }
                     }
                     if (configEM.get<IndexType>("useSourceSignalInversion") != 0){
-                        if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1 || useSourceEncodeEM != 0) {
-                            HOST_PRINT(commShot, "Shot number " << shotNumber << ", local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << ": Source Time Function Inversion\n");
+                        if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] != 0 || useSourceEncodeEM != 0) {
+                            HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "), local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << ": Source Time Function Inversion\n");
 
                             wavefieldsEM->resetWavefields();
 
@@ -2016,7 +2018,7 @@ int main(int argc, char *argv[])
                     /* Normalize observed and synthetic data */
                     if (configEM.get<IndexType>("normalizeTraces") == 3 || misfitTypeEM.compare("l6") == 0 || multiMisfitTypeEM.find('6') != std::string::npos) {
                         if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1) {
-                            if (!configEM.get<IndexType>("useSourceSignalInversion") != 0) {
+                            if (configEM.get<IndexType>("useSourceSignalInversion") == 0) {
                                 ValueType frequencyAGC = configEM.get<ValueType>("CenterFrequencyCPML");
                                 if (workflowEM.getUpperCornerFreq() != 0.0) {
                                     frequencyAGC = (workflowEM.getLowerCornerFreq() + workflowEM.getUpperCornerFreq()) / 2;
@@ -2073,7 +2075,7 @@ int main(int argc, char *argv[])
                     /* --------------------------------------- */
                     /*        Forward modelling 1              */
                     /* --------------------------------------- */
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start time stepping with " << tStepEndEM << " time steps\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Start time stepping with " << tStepEndEM << " time steps\n");
 
                     ValueType DTinv = 1.0 / configEM.get<ValueType>("DT");
                     lama::DenseVector<ValueType> compensation;
@@ -2120,7 +2122,7 @@ int main(int argc, char *argv[])
                         solverEM->resetCPML();
                         
                         if (gradientKernelPerItEM == 2 && decompositionEM == 0) { 
-                            HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start reflection forward \n");
+                            HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Start reflection forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelEM->getReflectivity();
                             dataMisfitEM->calcReflectSources(sourcesReflectEM, reflectivity);
@@ -2172,7 +2174,7 @@ int main(int argc, char *argv[])
                         solverEM->resetCPML();
                             
                         if (gradientKernelPerItEM == 2 && decompositionEM == 0) { 
-                            HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start reflection forward \n");
+                            HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Start reflection forward \n");
                             scai::lama::DenseVector<ValueType> reflectivity;
                             reflectivity = modelPerShotEM->getReflectivity();
                             dataMisfitEM->calcReflectSources(sourcesReflectEM, reflectivity);
@@ -2225,7 +2227,7 @@ int main(int argc, char *argv[])
                     receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), filenameSyn + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                     
                     if (useSourceEncodeEM == 0) {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Calculate misfit and adjoint sources\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Calculate misfit and adjoint sources\n");
                         /* Calculate misfit of one shot */
                         misfitPerItEM.setValue(shotIndTrue, dataMisfitEM->calc(receiversEM, receiversTrueEM, shotIndTrue));
                         /* Calculate adjoint sources */
@@ -2233,7 +2235,7 @@ int main(int argc, char *argv[])
                         if (config.getAndCatch("writeAdjointSource", false))
                             adjointSourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), filenameObs + ".adjointSource" + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                     } else {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Calculate encode misfit and adjoint sources\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Calculate encode misfit and adjoint sources\n");
                         /* Calculate misfit and write adjoint sources */
                         dataMisfitEM->calcMisfitAndAdjointSources(commShot, misfitPerItEM, adjointSourcesEM, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, filenameSyn, filenameObs, modelEM->getVmin(), seedtime);
                     }
@@ -2241,9 +2243,9 @@ int main(int argc, char *argv[])
                     /* Calculate gradient */
                     end_t_shot = common::Walltime::get();
                     if (gradientKernelPerItEM == 2 && decomposition == 0) {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start reflection backward in " << end_t_shot - start_t_shot << " sec.\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Start reflection backward in " << end_t_shot - start_t_shot << " sec.\n");
                     } else {
-                        HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Start backward in " << end_t_shot - start_t_shot << " sec.\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Start backward in " << end_t_shot - start_t_shot << " sec.\n");
                     }
                     if (!useStreamConfigEM) {
                         gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM, *dataMisfitEM);
@@ -2258,7 +2260,7 @@ int main(int argc, char *argv[])
                     }
 
                     end_t_shot = common::Walltime::get();
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Finished in " << end_t_shot - start_t_shot << " sec.\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
                 } //end of loop over shots
                 
@@ -2268,7 +2270,6 @@ int main(int argc, char *argv[])
                 misfitPerItEM = 0;                
                 gradientEM->sumShotDomain(commInterShot); 
                 gradientEM->smooth(commAll, configEM); 
-                sourceEstEM.sumShotDomain(commInterShot);
 
                 HOST_PRINT(commAll, "\n======== Finished loop over shots " << equationTypeEM << " 2 =========");
                 HOST_PRINT(commAll, "\n=================================================\n");
@@ -2365,13 +2366,15 @@ int main(int argc, char *argv[])
                 dataMisfitEM->appendMisfitPerShotToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
                 dataMisfitEM->appendMultiMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration);
 
-                /* Check abort criteria */
                 HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration) << "\n");
                 /* --------------------------------------- */
                 /* Check abort criteria for two inversions */
                 /* --------------------------------------- */   
                 HOST_PRINT(commAll, "\n========== Check abort criteria " << equationTypeEM << " 2 ==========\n"); 
-                breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, configEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
+                breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
+                if (configEM.getAndCatch("useRandomSource", 0) != 0) {
+                    breakLoopEM = false;
+                }
                 // We set a new break condition so that two inversions can change stage simultaneously in joint inversion
                 if (breakLoopEM == true) {   
                     if (inversionTypeEM > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) {
@@ -2522,12 +2525,12 @@ int main(int argc, char *argv[])
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
                 }
                 
-                sourcesEM.calcUniqueShotInds(commAll, configEM, shotHistoryEM, maxcountEM, seedtime);
+//                 sourcesEM.calcUniqueShotInds(commAll, configEM, shotHistoryEM, maxcountEM, seedtime);
                 std::vector<IndexType> uniqueShotInds = sourcesEM.getUniqueShotInds();
                 Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotInds, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0)); 
-                dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, useRTMEM, modelEM->getVmin(), seedtime); // in case of that random misfit function is used  
+//                 dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, useRTMEM, modelEM->getVmin(), seedtime); // in case of that random misfit function is used  
                 if (useSourceEncodeEM != 0) {
-                    sourcesEM.calcSourceSettingsEncode(config, seedtime, workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq());
+//                     sourcesEM.calcSourceSettingsEncode(config, seedtime, workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq());
                     sourceSettingsEncodeEM = sourcesEM.getSourceSettingsEncode();
                     Acquisition::calcuniqueShotNo(uniqueShotNosEncodeEM, sourceSettingsEncodeEM);
                     sourcesEM.writeSourceEncode(commAll, configEM, configEM.get<std::string>("SourceFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1));
@@ -2547,7 +2550,7 @@ int main(int argc, char *argv[])
                     sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
 
                     if (useStreamConfigEM) {
-                        HOST_PRINT(commShot, "Switch to model shot: " << shotIndTrue + 1 << " of " << numshotsEM << "\n");
+                        HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Switch to model subset\n");
                         modelEM->getModelPerShot(*modelPerShotEM, modelCoordinatesEM, modelCoordinatesBigEM, cutCoordinatesEM.at(shotIndTrue)); 
                         modelPerShotEM->prepareForModelling(modelCoordinatesEM, ctx, distEM, commShot); 
                         solverEM->prepareForModelling(*modelPerShotEM, configEM.get<ValueType>("DT"));
@@ -2564,7 +2567,7 @@ int main(int argc, char *argv[])
                         receiversTrueEM.encode(configEM, configEM.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncodeEM);
                     }
 
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Additional forward run with " << tStepEnd << " time steps\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Additional forward run with " << tStepEnd << " time steps\n");
 
                     if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0) {
                         sourcesEM.getSeismogramHandler().filter(freqFilterEM);
@@ -2593,6 +2596,8 @@ int main(int argc, char *argv[])
                             sourceSignalTaperEM.apply(sourcesEM.getSeismogramHandler());
                         }
                     }
+                    if (configEM.get<bool>("writeInvertedSource") && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1))
+                        sourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber) + ".test", modelCoordinatesEM);
 
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1 && configEM.get<IndexType>("useSeismogramTaper") != 5) {     
                         seismogramTaper2DEM.init(receiversTrueEM.getSeismogramHandler());
@@ -2656,7 +2661,7 @@ int main(int argc, char *argv[])
                     misfitPerItEM.setValue(shotIndTrue, dataMisfitEM->calc(receiversEM, receiversTrueEM, shotIndTrue));
 
                     end_t_shot = common::Walltime::get();
-                    HOST_PRINT(commShot, "Shot " << shotIndTrue + 1 << " of " << numshotsEM << ": Finished additional forward run\n");
+                    HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Finished additional forward run\n");
 
                 } //end of loop over EM shots
                 commInterShot->sumArray(misfitPerItEM.getLocalValues());
@@ -2688,6 +2693,8 @@ int main(int argc, char *argv[])
                 dataMisfitEM->appendMisfitTypeShotsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
                 dataMisfitEM->appendMisfitPerShotToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
                 dataMisfitEM->appendMultiMisfitsToFile(commAll, logFilenameEM, workflowEM.workflowStage + 1, workflowEM.iteration + 1);
+                
+                HOST_PRINT(commAll, "\nMisfit after stage " << workflowEM.workflowStage + 1 << ", iteration " << workflowEM.iteration + 1 << ": " << dataMisfitEM->getMisfitSum(workflowEM.iteration + 1) << "\n");
 
                 if (breakLoopType == 0 && breakLoop == true && (exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     breakLoopEM = true;
