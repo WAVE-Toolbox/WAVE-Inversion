@@ -494,11 +494,13 @@ int main(int argc, char *argv[])
     std::vector<IndexType> uniqueShotNos;
     std::vector<IndexType> uniqueShotNosEncode;
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
+    IndexType useRandomSource = config.getAndCatch("useRandomSource", 0);
     IndexType numshots = 1;
     IndexType numCuts = 1;
     std::vector<IndexType> uniqueShotNosEM;
     std::vector<IndexType> uniqueShotNosEncodeEM;
     IndexType useSourceEncodeEM = configEM.getAndCatch("useSourceEncode", 0);
+    IndexType useRandomSourceEM = configEM.getAndCatch("useRandomSource", 0);
     IndexType numshotsEM = 1;
     IndexType numCutsEM = 1;
     
@@ -536,7 +538,7 @@ int main(int argc, char *argv[])
             SCAI_ASSERT_ERROR(numshots == numCuts, "numshots != numCuts"); // check whether model pershot has been applied successfully.
             Acquisition::writeCutCoordToFile(config.get<std::string>("cutCoordinatesFilename"), cutCoordinates, uniqueShotNos);        
         }
-        if (config.getAndCatch("useRandomSource", 0) != 0) {  
+        if (useRandomSource != 0) {  
             shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
             maxcount = ceil((ValueType)maxiterations * numShotDomains / numshots * 1.2);
         } else {
@@ -575,7 +577,7 @@ int main(int argc, char *argv[])
             SCAI_ASSERT_ERROR(numshotsEM == numCutsEM, "numshotsEM != numCutsEM"); // check whether model pershot has been applied successfully.
             Acquisition::writeCutCoordToFile(configEM.get<std::string>("cutCoordinatesFilename"), cutCoordinatesEM, uniqueShotNosEM);        
         }    
-        if (configEM.getAndCatch("useRandomSource", 0) != 0) {  
+        if (useRandomSourceEM != 0) {  
             shotDistEM = dmemo::blockDistribution(numShotDomainsEM, commInterShot);
             maxcountEM = ceil((ValueType)maxiterations * numShotDomainsEM / numshotsEM * 1.2);
         } else {
@@ -981,7 +983,7 @@ int main(int argc, char *argv[])
                 
                 sources.calcUniqueShotInds(commAll, config, shotHistory, maxcount, seedtime);
                 std::vector<IndexType> uniqueShotInds = sources.getUniqueShotInds();
-                Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration, config.getAndCatch("useRandomSource", 0));
+                Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration, useRandomSource);
                 dataMisfit->init(config, misfitTypeHistory, numshots, useRTM, model->getVmin(), seedtime); // in case of that random misfit function is used
                 if (useSourceEncode != 0) {
                     sources.calcSourceSettingsEncode(config, seedtime, workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
@@ -1069,7 +1071,7 @@ int main(int argc, char *argv[])
                     if (useSourceEncode == 0) {
                         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
                     } else {
-                        receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode);
+                        receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode, 1);
                     }
                                         
                     if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
@@ -1084,13 +1086,22 @@ int main(int argc, char *argv[])
                     std::string filenameObs = config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration);
                     
                     if (config.get<IndexType>("useSourceSignalInversion") != 0 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
-                        sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
+                        if (useSourceEncode == 0) {
+                            sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinates);
+                        } else {
+                            sourceEst.calcOffsetMutesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
+                        }
                         if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
                             if (config.get<IndexType>("useSourceSignalTaper") == 2) {
                                 sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
                             }
-                            sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
-                            sourceEst.setRefTraceToSource(sources, receiversTrue);
+                            if (useSourceEncode == 0) {
+                                sourceEst.calcRefTraces(config, shotIndTrue, receiversTrue, sourceSignalTaper);
+                            } else {
+                                receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
+                                sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
+                            }
+                            sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue);
                         }
                     }
                     if (config.get<IndexType>("useSourceSignalInversion") != 0){
@@ -1128,15 +1139,15 @@ int main(int argc, char *argv[])
                             if (useSourceEncode == 0) {
                                 sourceEst.estimateSourceSignal(receivers, receiversTrue, shotIndTrue, shotNumber);
                             } else {
-                                receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode);
-                                receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode);
-                                sourceEst.estimateSourceSignalEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, filenameSyn, filenameObs);
+                                receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode, 0);
+                                receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
+                                sourceEst.estimateSourceSignalEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, receiversTrue);
                             }
                         }
                         if (useSourceEncode == 0) {
-                            sourceEst.applyFilter(sources, shotIndTrue);
+                            sourceEst.applyFilter(sources, shotIndTrue, sourceSettings);
                         } else {
-                            sourceEst.applyFilterEncode(sources, shotIndTrue, sourceSettingsEncode);
+                            sourceEst.applyFilter(sources, shotIndTrue, sourceSettingsEncode);
                         }
                         
                         if (config.get<IndexType>("useSourceSignalTaper") != 0) {
@@ -1186,7 +1197,7 @@ int main(int argc, char *argv[])
                     if (useSourceEncode == 0 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
                         receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates); 
                     } else if (useSourceEncode != 0) {
-                        receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode);
+                        receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 1);
                         receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), filenameObs + ".shot_" + std::to_string(shotNumber), modelCoordinates); 
                     }
                     
@@ -1197,7 +1208,7 @@ int main(int argc, char *argv[])
                         if (useSourceEncode == 0) {
                             receiversStart.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                         } else {
-                            receiversStart.encode(config, config.get<std::string>("SeismogramFilename"), shotNumber, sourceSettingsEncode);
+                            receiversStart.encode(config, config.get<std::string>("SeismogramFilename"), shotNumber, sourceSettingsEncode, 1);
                         }
                         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
                             receiversStart.getSeismogramHandler().filter(freqFilter);
@@ -1216,7 +1227,7 @@ int main(int argc, char *argv[])
                         }
                         receiversStart.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                         
-                        receiversStart.decode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1), shotNumber, sourceSettingsEncode);
+                        receiversStart.decode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1), shotNumber, sourceSettingsEncode, 1);
                         receiversStart.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     }
                     
@@ -1332,9 +1343,13 @@ int main(int argc, char *argv[])
                         model->write("model_crash", config.get<IndexType>("FileFormat"));
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
-                    if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
-                        sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);                 
-                        sourceEst.calcRefTrace(config, receivers, sourceSignalTaper);                      
+                    if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) { 
+                        if (useSourceEncode == 0) {               
+                            sourceEst.calcRefTraces(config, shotIndTrue, receivers, sourceSignalTaper);    
+                        } else {
+                            receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode, 0);
+                            sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
+                        }                 
                     }
                     if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {                                                   
                         seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
@@ -1352,8 +1367,8 @@ int main(int argc, char *argv[])
                     }
                     receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                                   
-                    receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode);
-                    receivers.encode(config, filenameSyn, shotNumber, sourceSettingsEncode);
+                    receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode, 1);
+                    receivers.encode(config, filenameSyn, shotNumber, sourceSettingsEncode, 0);
                     receivers.writeReceiverMark(useSourceEncode, config.get<std::string>("ReceiverFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber));
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), filenameSyn + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                     
@@ -1368,7 +1383,7 @@ int main(int argc, char *argv[])
                     } else {
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Calculate encode misfit and adjoint sources\n");
                         /* Calculate misfit and write adjoint sources */
-                        dataMisfit->calcMisfitAndAdjointSources(commShot, misfitPerIt, adjointSources, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, filenameSyn, filenameObs, model->getVmin(), seedtime);
+                        dataMisfit->calcMisfitAndAdjointSources(commShot, misfitPerIt, adjointSources, receivers, receiversTrue, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, model->getVmin(), seedtime);
                     }
                     
                     /* Calculate gradient */
@@ -1503,7 +1518,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */              
                 HOST_PRINT(commAll, "\n========== Check abort criteria " << equationType << " 1 ==========\n"); 
                 breakLoop = abortCriterion.check(commAll, *dataMisfit, steplengthInit, workflow, breakLoopEM, breakLoopType);
-                if (config.getAndCatch("useRandomSource", 0) != 0) {
+                if (useSourceEncode != 0 || useRandomSource != 0) {
                     breakLoop = false;
                 }
                 // We set a new break condition so that two inversions can change stage simultaneously in joint inversion
@@ -1624,12 +1639,10 @@ int main(int argc, char *argv[])
                     solver->prepareForModelling(*model, config.get<ValueType>("DT"));
                 }
                        
-//                 sources.calcUniqueShotInds(commAll, config, shotHistory, maxcount, seedtime);
                 std::vector<IndexType> uniqueShotInds = sources.getUniqueShotInds();
-                Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration + 1, config.getAndCatch("useRandomSource", 0));
-                dataMisfit->init(config, misfitTypeHistory, numshots, useRTM, model->getVmin(), seedtime); // in case of that random misfit function is used
+                Acquisition::writeRandomShotNosToFile(commAll, logFilename, uniqueShotNos, uniqueShotInds, workflow.workflowStage + 1, workflow.iteration + 1, useRandomSource);
+//                 dataMisfit->init(config, misfitTypeHistory, numshots, useRTM, model->getVmin(), seedtime); // in case of that random misfit function is used
                 if (useSourceEncode != 0) {
-//                     sources.calcSourceSettingsEncode(config, seedtime, workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq());
                     sourceSettingsEncode = sources.getSourceSettingsEncode();
                     Acquisition::calcuniqueShotNo(uniqueShotNosEncode, sourceSettingsEncode);
                     sources.writeSourceEncode(commAll, config, config.get<std::string>("SourceFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1));
@@ -1663,7 +1676,7 @@ int main(int argc, char *argv[])
                     if (useSourceEncode == 0) {
                         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
                     } else {
-                        receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode);
+                        receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode, 1);
                     }
 
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Additional forward run with " << tStepEnd << " time steps\n");
@@ -1672,22 +1685,35 @@ int main(int argc, char *argv[])
                         sources.getSeismogramHandler().filter(freqFilter);
                         receiversTrue.getSeismogramHandler().filter(freqFilter);
                     }
+                    
+                    std::string filenameSyn = config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1);
+                    std::string filenameObs = config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1);
+                    
                     if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
-                        sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
+                        if (useSourceEncode == 0) {
+                            sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinates);
+                        } else {
+                            sourceEst.calcOffsetMutesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
+                        }
                         if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
                             if (config.get<IndexType>("useSourceSignalTaper") == 2) {
                                 sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
                             }
-                            sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
-                            sourceEst.setRefTraceToSource(sources, receiversTrue);
+                            if (useSourceEncode == 0) {
+                                sourceEst.calcRefTraces(config, shotIndTrue, receiversTrue, sourceSignalTaper);
+                            } else {
+                                receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
+                                sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
+                            }
+                            sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue);
                         }
                     }
 
                     if (config.get<IndexType>("useSourceSignalInversion") != 0) {
                         if (useSourceEncode == 0) {
-                            sourceEst.applyFilter(sources, shotIndTrue);
+                            sourceEst.applyFilter(sources, shotIndTrue, sourceSettings);
                         } else {
-                            sourceEst.applyFilterEncode(sources, shotIndTrue, sourceSettingsEncode);
+                            sourceEst.applyFilter(sources, shotIndTrue, sourceSettingsEncode);
                         }
                         if (config.get<IndexType>("useSourceSignalTaper") != 0) {
                             if (config.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -1728,8 +1754,12 @@ int main(int argc, char *argv[])
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
                     if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
-                        sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
-                        sourceEst.calcRefTrace(config, receivers, sourceSignalTaper);
+                        if (useSourceEncode == 0) {               
+                            sourceEst.calcRefTraces(config, shotIndTrue, receivers, sourceSignalTaper);    
+                        } else {
+                            receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode, 0);
+                            sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
+                        }   
                     }
                     
                     if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {                                                   
@@ -1751,8 +1781,8 @@ int main(int argc, char *argv[])
                     receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                     receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                         
-                    receivers.decode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), shotNumber, sourceSettingsEncode);
-                    receivers.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), shotNumber, sourceSettingsEncode);
+                    receivers.decode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), shotNumber, sourceSettingsEncode, 1);
+                    receivers.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), shotNumber, sourceSettingsEncode, 0);
                     receivers.writeReceiverMark(useSourceEncode, config.get<std::string>("ReceiverFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber));
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
                 
@@ -1827,7 +1857,7 @@ int main(int argc, char *argv[])
                 
                 sourcesEM.calcUniqueShotInds(commAll, configEM, shotHistoryEM, maxcountEM, seedtime);
                 std::vector<IndexType> uniqueShotInds = sourcesEM.getUniqueShotInds();
-                Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotInds, workflowEM.workflowStage + 1, workflowEM.iteration, configEM.getAndCatch("useRandomSource", 0));
+                Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotInds, workflowEM.workflowStage + 1, workflowEM.iteration, useRandomSourceEM);
                 dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, useRTMEM, modelEM->getVmin(), seedtime); // in case of that random misfit function is used
                 if (useSourceEncodeEM != 0) {
                     sourcesEM.calcSourceSettingsEncode(config, seedtime, workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq());
@@ -1922,7 +1952,7 @@ int main(int argc, char *argv[])
                     if (useSourceEncodeEM == 0) {
                         receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
                     } else {
-                        receiversTrueEM.encode(configEM, configEM.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncodeEM);
+                        receiversTrueEM.encode(configEM, configEM.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncodeEM, 1);
                     }
                                         
                     if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0){
@@ -1937,13 +1967,22 @@ int main(int argc, char *argv[])
                     std::string filenameObs = config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration);
                     
                     if (configEM.get<IndexType>("useSourceSignalInversion") != 0 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
-                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
+                        if (useSourceEncode == 0) {
+                            sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinatesEM);
+                        } else {
+                            sourceEstEM.calcOffsetMutesEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM);
+                        }
                         if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
                             if (configEM.get<IndexType>("useSourceSignalTaper") == 2) {
                                 sourceSignalTaperEM.calcCosineTaper(sourcesEM.getSeismogramHandler(), workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq(), configEM.get<ValueType>("DT"), ctx);
                             }
-                            sourceEstEM.calcRefTrace(configEM, receiversTrueEM, sourceSignalTaperEM);
-                            sourceEstEM.setRefTraceToSource(sourcesEM, receiversTrueEM);
+                            if (useSourceEncode == 0) {
+                                sourceEstEM.calcRefTraces(configEM, shotIndTrue, receiversTrueEM, sourceSignalTaperEM);
+                            } else {
+                                receiversTrueEM.decode(configEM, filenameObs, shotNumber, sourceSettingsEncodeEM, 0);
+                                sourceEstEM.calcRefTracesEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM, sourceSignalTaperEM);
+                            }
+                            sourceEstEM.setRefTracesToSource(sourcesEM, receiversTrueEM, sourceSettingsEncodeEM, shotIndTrue);
                         }
                     }
                     if (configEM.get<IndexType>("useSourceSignalInversion") != 0){
@@ -1981,15 +2020,15 @@ int main(int argc, char *argv[])
                             if (useSourceEncodeEM == 0) {
                                 sourceEstEM.estimateSourceSignal(receiversEM, receiversTrueEM, shotIndTrue, shotNumber);
                             } else {
-                                receiversEM.decode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM);
-                                receiversTrueEM.decode(configEM, filenameObs, shotNumber, sourceSettingsEncodeEM);
-                                sourceEstEM.estimateSourceSignalEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, filenameSyn, filenameObs);
+                                receiversEM.decode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM, 0);
+                                receiversTrueEM.decode(configEM, filenameObs, shotNumber, sourceSettingsEncodeEM, 0);
+                                sourceEstEM.estimateSourceSignalEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversEM, receiversTrueEM);
                             }
                         }
                         if (useSourceEncodeEM == 0) {
-                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
+                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue, sourceSettingsEM);
                         } else {
-                            sourceEstEM.applyFilterEncode(sourcesEM, shotIndTrue, sourceSettingsEncodeEM);
+                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue, sourceSettingsEncodeEM);
                         }
                         if (configEM.get<IndexType>("useSourceSignalTaper") != 0) {
                             if (configEM.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -2038,7 +2077,7 @@ int main(int argc, char *argv[])
                     if (useSourceEncodeEM == 0 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
                         receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM); 
                     } else if (useSourceEncodeEM != 0) { 
-                        receiversTrueEM.decode(configEM, filenameObs, shotNumber, sourceSettingsEncodeEM);
+                        receiversTrueEM.decode(configEM, filenameObs, shotNumber, sourceSettingsEncodeEM, 1);
                         receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), filenameObs + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                     }
                     
@@ -2049,7 +2088,7 @@ int main(int argc, char *argv[])
                         if (useSourceEncodeEM == 0) {
                             receiversStartEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                         } else {
-                            receiversStartEM.encode(configEM, configEM.get<std::string>("SeismogramFilename"), shotNumber, sourceSettingsEncodeEM);
+                            receiversStartEM.encode(configEM, configEM.get<std::string>("SeismogramFilename"), shotNumber, sourceSettingsEncodeEM, 1);
                         }
                         if (workflowEM.getLowerCornerFreq() != 0.0 || workflowEM.getUpperCornerFreq() != 0.0){
                             receiversStartEM.getSeismogramHandler().filter(freqFilterEM);
@@ -2068,7 +2107,7 @@ int main(int argc, char *argv[])
                             receiversStartEM.getSeismogramHandler().calcInverseAGC();
                         }
                         receiversStartEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
-                        receiversStartEM.decode(configEM, configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1), shotNumber, sourceSettingsEncodeEM);
+                        receiversStartEM.decode(configEM, configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1), shotNumber, sourceSettingsEncodeEM, 1);
                         receiversStartEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                     }
                     
@@ -2201,8 +2240,12 @@ int main(int argc, char *argv[])
                     COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output modelEM as model_crash.FILE_EXTENSION!");
                     }
                     if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
-                        sourceEstEM.calcRefTrace(configEM, receiversTrueEM, sourceSignalTaperEM);
-                        sourceEstEM.calcRefTrace(configEM, receiversEM, sourceSignalTaperEM);
+                        if (useSourceEncode == 0) {
+                            sourceEstEM.calcRefTraces(configEM, shotIndTrue, receiversEM, sourceSignalTaperEM);  
+                        } else {
+                            receiversEM.decode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM, 0);
+                            sourceEstEM.calcRefTracesEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversEM, sourceSignalTaperEM);
+                        }   
                     }
                     
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1 && configEM.get<IndexType>("useSeismogramTaper") != 5) {                                                   
@@ -2221,8 +2264,8 @@ int main(int argc, char *argv[])
                     }
                     receiversEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
                                     
-                    receiversEM.decode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM);
-                    receiversEM.encode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM);
+                    receiversEM.decode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM, 1);
+                    receiversEM.encode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM, 0);
                     receiversEM.writeReceiverMark(useSourceEncodeEM, configEM.get<std::string>("ReceiverFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration) + ".shot_" + std::to_string(shotNumber));
                     receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), filenameSyn + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                     
@@ -2237,7 +2280,7 @@ int main(int argc, char *argv[])
                     } else {
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Calculate encode misfit and adjoint sources\n");
                         /* Calculate misfit and write adjoint sources */
-                        dataMisfitEM->calcMisfitAndAdjointSources(commShot, misfitPerItEM, adjointSourcesEM, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, filenameSyn, filenameObs, modelEM->getVmin(), seedtime);
+                        dataMisfitEM->calcMisfitAndAdjointSources(commShot, misfitPerItEM, adjointSourcesEM, receiversEM, receiversTrueEM, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, modelEM->getVmin(), seedtime);
                     }
                         
                     /* Calculate gradient */
@@ -2372,7 +2415,7 @@ int main(int argc, char *argv[])
                 /* --------------------------------------- */   
                 HOST_PRINT(commAll, "\n========== Check abort criteria " << equationTypeEM << " 2 ==========\n"); 
                 breakLoopEM = abortCriterionEM.check(commAll, *dataMisfitEM, steplengthInitEM, workflowEM, breakLoop, breakLoopType);
-                if (configEM.getAndCatch("useRandomSource", 0) != 0) {
+                if (useSourceEncodeEM != 0 || useRandomSourceEM != 0) {
                     breakLoopEM = false;
                 }
                 // We set a new break condition so that two inversions can change stage simultaneously in joint inversion
@@ -2525,12 +2568,10 @@ int main(int argc, char *argv[])
                     solverEM->prepareForModelling(*modelEM, configEM.get<ValueType>("DT"));
                 }
                 
-//                 sourcesEM.calcUniqueShotInds(commAll, configEM, shotHistoryEM, maxcountEM, seedtime);
                 std::vector<IndexType> uniqueShotInds = sourcesEM.getUniqueShotInds();
-                Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotInds, workflowEM.workflowStage + 1, workflowEM.iteration + 1, configEM.getAndCatch("useRandomSource", 0)); 
+                Acquisition::writeRandomShotNosToFile(commAll, logFilenameEM, uniqueShotNosEM, uniqueShotInds, workflowEM.workflowStage + 1, workflowEM.iteration + 1, useRandomSourceEM); 
 //                 dataMisfitEM->init(configEM, misfitTypeHistoryEM, numshotsEM, useRTMEM, modelEM->getVmin(), seedtime); // in case of that random misfit function is used  
                 if (useSourceEncodeEM != 0) {
-//                     sourcesEM.calcSourceSettingsEncode(config, seedtime, workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq());
                     sourceSettingsEncodeEM = sourcesEM.getSourceSettingsEncode();
                     Acquisition::calcuniqueShotNo(uniqueShotNosEncodeEM, sourceSettingsEncodeEM);
                     sourcesEM.writeSourceEncode(commAll, configEM, configEM.get<std::string>("SourceFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1));
@@ -2564,7 +2605,7 @@ int main(int argc, char *argv[])
                     if (useSourceEncodeEM == 0) {
                         receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
                     } else {
-                        receiversTrueEM.encode(configEM, configEM.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncodeEM);
+                        receiversTrueEM.encode(configEM, configEM.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncodeEM, 1);
                     }
 
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Additional forward run with " << tStepEnd << " time steps\n");
@@ -2573,21 +2614,34 @@ int main(int argc, char *argv[])
                         sourcesEM.getSeismogramHandler().filter(freqFilterEM);
                         receiversTrueEM.getSeismogramHandler().filter(freqFilterEM);
                     }
+                    
+                    std::string filenameSyn = configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1);
+                    std::string filenameObs = configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1);
+                    
                     if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos || misfitTypeEM.compare("l4") == 0 || multiMisfitTypeEM.find('4') != std::string::npos) {
-                        sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), modelCoordinatesEM);
+                        if (useSourceEncode == 0) {
+                            sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinatesEM);
+                        } else {
+                            sourceEstEM.calcOffsetMutesEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM);
+                        }
                         if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
                             if (configEM.get<IndexType>("useSourceSignalTaper") == 2) {
                                 sourceSignalTaperEM.calcCosineTaper(sourcesEM.getSeismogramHandler(), workflowEM.getLowerCornerFreq(), workflowEM.getUpperCornerFreq(), configEM.get<ValueType>("DT"), ctx);
                             }
-                            sourceEstEM.calcRefTrace(configEM, receiversTrueEM, sourceSignalTaperEM);
-                            sourceEstEM.setRefTraceToSource(sourcesEM, receiversTrueEM);
+                            if (useSourceEncode == 0) {
+                                sourceEstEM.calcRefTraces(configEM, shotIndTrue, receiversTrueEM, sourceSignalTaperEM);
+                            } else {
+                                receiversTrueEM.decode(configEM, filenameObs, shotNumber, sourceSettingsEncodeEM, 0);
+                                sourceEstEM.calcRefTracesEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM, sourceSignalTaperEM);
+                            }
+                            sourceEstEM.setRefTracesToSource(sourcesEM, receiversTrueEM, sourceSettingsEncodeEM, shotIndTrue);
                         }
                     }
                     if (configEM.get<IndexType>("useSourceSignalInversion") != 0) {
                         if (useSourceEncodeEM == 0) {
-                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue);
+                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue, sourceSettingsEM);
                         } else {
-                            sourceEstEM.applyFilterEncode(sourcesEM, shotIndTrue, sourceSettingsEncodeEM);
+                            sourceEstEM.applyFilter(sourcesEM, shotIndTrue, sourceSettingsEncodeEM);
                         }
                         if (configEM.get<IndexType>("useSourceSignalTaper") != 0) {
                             if (configEM.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -2630,8 +2684,12 @@ int main(int argc, char *argv[])
                         COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
                     }
                     if (misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
-                        sourceEstEM.calcRefTrace(configEM, receiversTrueEM, sourceSignalTaperEM);
-                        sourceEstEM.calcRefTrace(configEM, receiversEM, sourceSignalTaperEM);
+                        if (useSourceEncode == 0) {
+                            sourceEstEM.calcRefTraces(configEM, shotIndTrue, receiversEM, sourceSignalTaperEM);  
+                        } else {
+                            receiversEM.decode(configEM, filenameSyn, shotNumber, sourceSettingsEncodeEM, 0);
+                            sourceEstEM.calcRefTracesEncode(commShot, shotIndTrue, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversEM, sourceSignalTaperEM);
+                        }   
                     }
                     if (configEM.get<IndexType>("useSeismogramTaper") > 1 && configEM.get<IndexType>("useSeismogramTaper") != 5) {                                                   
                         seismogramTaper2DEM.apply(receiversEM.getSeismogramHandler()); 
@@ -2652,8 +2710,8 @@ int main(int argc, char *argv[])
                     receiversEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
                     receiversTrueEM.getSeismogramHandler().normalize(configEM.get<IndexType>("normalizeTraces"));
 
-                    receiversEM.decode(configEM, configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), shotNumber, sourceSettingsEncodeEM);
-                    receiversEM.encode(configEM, configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), shotNumber, sourceSettingsEncodeEM);
+                    receiversEM.decode(configEM, configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), shotNumber, sourceSettingsEncodeEM, 1);
+                    receiversEM.encode(configEM, configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), shotNumber, sourceSettingsEncodeEM, 0);
                     receiversEM.writeReceiverMark(useSourceEncodeEM, configEM.get<std::string>("ReceiverFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber));
                     receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinatesEM);
                 

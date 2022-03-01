@@ -518,23 +518,26 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
             receiversLast.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), 1);
         } else {
-            receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode);
-            receiversLast.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration), shotNumber, sourceSettingsEncode);
+            receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode, 1);
+            receiversLast.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration), shotNumber, sourceSettingsEncode, 1);
         }
 
         if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0) {
             sources.getSeismogramHandler().filter(freqFilter);
             receiversTrue.getSeismogramHandler().filter(freqFilter);
         }
-        if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 4) {
-            sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), modelCoordinates);
-            if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
-                if (config.get<IndexType>("useSourceSignalTaper") == 2) {
-                    sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
-                }
-                sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
-                sourceEst.setRefTraceToSource(sources, receiversTrue);
+                
+        if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
+            if (config.get<IndexType>("useSourceSignalTaper") == 2) {
+                sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
             }
+            if (useSourceEncode == 0) {
+                sourceEst.calcRefTraces(config, shotIndTrue, receiversTrue, sourceSignalTaper);
+            } else {
+                receiversTrue.decode(config, "", shotNumber, sourceSettingsEncode, 0);
+                sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
+            }
+            sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue);
         }
         
         Taper::Taper2D<ValueType> seismogramTaper2D;
@@ -554,9 +557,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
         if (config.get<IndexType>("useSourceSignalInversion") != 0) {
             if (useSourceEncode == 0) {
-                sourceEst.applyFilter(sources, shotIndTrue);
+                sourceEst.applyFilter(sources, shotIndTrue, sourceSettings);
             } else {
-                sourceEst.applyFilterEncode(sources, shotIndTrue, sourceSettingsEncode);
+                sourceEst.applyFilter(sources, shotIndTrue, sourceSettingsEncode);
             }
             if (config.get<IndexType>("useSourceSignalTaper") != 0) {
                 if (config.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -585,8 +588,12 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
         if (dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
-            sourceEst.calcRefTrace(config, receiversTrue, sourceSignalTaper);
-            sourceEst.calcRefTrace(config, receivers, sourceSignalTaper);
+            if (useSourceEncode == 0) {
+                sourceEst.calcRefTraces(config, shotIndTrue, receivers, sourceSignalTaper);
+            } else {
+                receivers.decode(config, "", shotNumber, sourceSettingsEncode, 0);
+                sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
+            }
         }
 
         if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {                                                   
@@ -607,10 +614,18 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         }
         receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
         receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
-        receivers.decode(config, config.get<std::string>("SeismogramFilename") + ".stepLengthSearch", shotNumber, sourceSettingsEncode);
-        receivers.encode(config, config.get<std::string>("SeismogramFilename") + ".stepLengthSearch", shotNumber, sourceSettingsEncode);
+        receivers.decode(config, "", shotNumber, sourceSettingsEncode, 0);
+        receivers.encode(config, "", shotNumber, sourceSettingsEncode, 0);
 
-        misfitTest.setValue(shotIndTrue, dataMisfit.calc(receivers, receiversTrue, shotIndTrue));
+        if (useSourceEncode == 0) {
+            /* Calculate misfit of one shot */
+            misfitTest.setValue(shotIndTrue, dataMisfit.calc(receivers, receiversTrue, shotIndTrue));
+        } else {
+            /* Calculate misfit and write adjoint sources */
+            KITGPI::Acquisition::Receivers<ValueType> adjointSources;
+            IndexType seedtime = 0;
+            dataMisfit.calcMisfitAndAdjointSources(commShot, misfitTest, adjointSources, receivers, receiversTrue, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, testmodel->getVmin(), seedtime);
+        }
         
         if (steplengthType == 1) {    
             KITGPI::Acquisition::Seismogram<ValueType> seismogramSyn;

@@ -213,9 +213,9 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     if (gradientDomain != 0) {
         /* Cross correlation in the frequency domain */
         if (gradientKernel == 2 && decomposition == 0) {
-            ZeroLagXcorr->sumWavefields(commShot, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", config.getAndCatch("snapType", 0), workflow, sources.getSinFC(), config.get<ValueType>("DT"), shotNumber);
+            ZeroLagXcorr->sumWavefields(commShot, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", config.getAndCatch("snapType", 0), workflow, sources.getSinFC(shotNumber - 10001), config.get<ValueType>("DT"), shotNumber);
         } else if ((gradientKernel != 2 && decomposition == 0) || decomposition != 0) {
-            ZeroLagXcorr->sumWavefields(commShot, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), config.getAndCatch("snapType", 0), workflow, sources.getSinFC(), config.get<ValueType>("DT"), shotNumber);
+            ZeroLagXcorr->sumWavefields(commShot, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), config.getAndCatch("snapType", 0), workflow, sources.getSinFC(shotNumber - 10001), config.get<ValueType>("DT"), shotNumber);
         }
     }
     ZeroLagXcorr->applyTransform(wavefieldTaper2D.getRecoverMatrix(), workflow);
@@ -305,7 +305,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         /* ---------------------------------- */ 
         if (gradientDomain != 0) {
             /* Cross correlation in the frequency domain */
-            ZeroLagXcorr->sumWavefields(commShot, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect", config.getAndCatch("snapType", 0), workflow, sources.getSinFC(), config.get<ValueType>("DT"), shotNumber);
+            ZeroLagXcorr->sumWavefields(commShot, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect", config.getAndCatch("snapType", 0), workflow, sources.getSinFC(shotNumber - 10001), config.get<ValueType>("DT"), shotNumber);
         }  
         ZeroLagXcorr->applyTransform(wavefieldTaper2D.getRecoverMatrix(), workflow); 
         gradientPerShot.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);

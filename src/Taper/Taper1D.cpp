@@ -88,7 +88,7 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::Sei
         if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
             thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
         }
-        if (thisSeismogram.getData().getNumRows()!=0)
+        if (thisSeismogram.getData().getNumRows() != 0)
             break;
     }
     scai::lama::DenseMatrix<ValueType> tempData = thisSeismogram.getData();

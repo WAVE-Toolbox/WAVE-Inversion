@@ -242,7 +242,7 @@ template <typename ValueType>
 void KITGPI::Misfit::Misfit<ValueType>::calcReflectSources(KITGPI::Acquisition::Receivers<ValueType> &sourcesReflect, scai::lama::DenseVector<ValueType> reflectivity)
 {
     for (int i=0; i<KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; i++) {
-        if (sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramType>(i)).getData().getNumRows()!=0) {
+        if (sourcesReflect.getSeismogramHandler().getSeismogram(static_cast<Acquisition::SeismogramType>(i)).getData().getNumRows() != 0) {
             if (static_cast<Acquisition::SeismogramTypeEM>(i) == Acquisition::SeismogramTypeEM::HZ) {
                 reflectivity *= -1;        
             }

@@ -31,7 +31,7 @@ namespace KITGPI
     class SourceEstimation
     {
       public:
-        explicit SourceEstimation() : useOffsetMutes(false), mutes(Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE), readTaper(false), taperName(""){};
+        explicit SourceEstimation() : useOffsetMutes(false), readTaper(false), taperName(""){};
         ~SourceEstimation(){};
 
         void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl, std::string tprName = "");
@@ -39,32 +39,33 @@ namespace KITGPI
 
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
 
-        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> &receivers, KITGPI::Acquisition::Receivers<ValueType> &receiversTrue, IndexType shotInd, IndexType shotNumber);
-        void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sources, scai::IndexType shotInd) const;
+        void estimateSourceSignal(KITGPI::Acquisition::Receivers<ValueType> const &receivers, KITGPI::Acquisition::Receivers<ValueType> const &receiversTrue, scai::IndexType shotInd, scai::IndexType shotNumber);
+        void applyFilter(KITGPI::Acquisition::Sources<ValueType> &sourcesEncode, IndexType shotIndTrue, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode) const;
         
-        void estimateSourceSignalEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, std::string filenameSyn, std::string filenameObs);
-        void applyFilterEncode(KITGPI::Acquisition::Sources<ValueType> &sourcesEncode, IndexType shotIndTrue, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode) const;
+        void estimateSourceSignalEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> const &receivers, KITGPI::Acquisition::Receivers<ValueType> const &receiversTrue);
         
-        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
-        void calcRefTrace(Configuration::Configuration const &config, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper);
-        void setRefTraceToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers);
-//         void sumShotDomain(scai::dmemo::CommunicatorPtr commInterShot);
+        void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, scai::IndexType shotInd, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
+        void calcRefTraces(Configuration::Configuration const &config, scai::IndexType shotInd, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper);
+        void setRefTracesToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, scai::IndexType shotIndTrue);
+        void calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode);
+        void calcRefTracesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode, Taper::Taper1D<ValueType> const &sourceSignalTaper);
         
       private:
         ValueType waterLevel;
         scai::IndexType nFFT; // filter length
         bool isSeismic;
-        scai::IndexType useRandomSource;
+        scai::IndexType useSourceEncode;
 
         scai::lama::DenseMatrix<ComplexValueType> filter;
 
         bool useOffsetMutes;
         std::vector<scai::lama::DenseVector<ValueType>> mutes;
-        scai::lama::DenseVector<ValueType> offsets;
+        std::vector<scai::lama::DenseVector<ValueType>> offsets;
+        std::vector<scai::lama::DenseMatrix<ValueType>> refTraces;
         bool readTaper;
         std::string taperName;
 
-        void matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B, scai::IndexType iComponent);
-        void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB, scai::IndexType shotNumber);
+        void matCorr(scai::lama::DenseVector<ComplexValueType> &prod, scai::lama::DenseMatrix<ValueType> const &A, scai::lama::DenseMatrix<ValueType> const &B, scai::IndexType shotInd);
+        void addComponents(scai::lama::DenseVector<ComplexValueType> &sum, KITGPI::Acquisition::Receivers<ValueType> const &receiversA, KITGPI::Acquisition::Receivers<ValueType> const &receiversB, scai::IndexType shotInd, scai::IndexType shotNumber);
     };
 }

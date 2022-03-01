@@ -230,19 +230,18 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
     ValueType df = 0.5 / (nFFT * dtinversion * DT);
     scai::lama::DenseVector<ValueType> frequencyVector = sinFC;
     ComplexValueType j(0.0, 1.0); 
-    if (snapType > 0) {
-        if (NF <= 1) {
-            ValueType fc1 = workflow.getLowerCornerFreq();
-            ValueType fc2 = workflow.getUpperCornerFreq();
-            IndexType fc1Ind = ceil(fc1 / df);
-            IndexType fc2Ind = ceil(fc2 / df);
-            nfc12 = (fc2Ind-fc1Ind+1)/2;
-            fc12Ind = lama::linearDenseVector<ValueType>(nfc12, fc1Ind, 1);
-        } else {
-            sinFC /= (2*df);
-            fc12Ind = scai::lama::ceil(sinFC);
-            nfc12 = fc12Ind.size();
-        }
+    if (NF <= 1) {
+        ValueType fc1 = workflow.getLowerCornerFreq();
+        ValueType fc2 = workflow.getUpperCornerFreq();
+        IndexType fc1Ind = ceil(fc1 / df);
+        IndexType fc2Ind = ceil(fc2 / df);
+        nfc12 = (fc2Ind-fc1Ind+1)/2;
+        fc12Ind = lama::linearDenseVector<ValueType>(nfc12, fc1Ind, 1);
+    } else {
+        sinFC /= (2*df);
+        sinFC += 0.5;
+        fc12Ind = scai::lama::floor(sinFC);
+        nfc12 = fc12Ind.size();
     }
     
     if (gradientKernel == 0 || decomposition == 0) {  
