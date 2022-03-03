@@ -229,13 +229,14 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
     scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(NT - 1);
     ValueType df = 0.5 / (nFFT * dtinversion * DT);
     scai::lama::DenseVector<ValueType> frequencyVector = sinFC;
+    scai::lama::DenseVector<ValueType> weightingFreq = workflow.getWeightingFreq();
     ComplexValueType j(0.0, 1.0); 
     if (NF <= 1) {
         ValueType fc1 = workflow.getLowerCornerFreq();
         ValueType fc2 = workflow.getUpperCornerFreq();
         IndexType fc1Ind = ceil(fc1 / df);
         IndexType fc2Ind = ceil(fc2 / df);
-        nfc12 = (fc2Ind-fc1Ind+1)/2;
+        nfc12 = ceil(ValueType(fc2Ind-fc1Ind+1)/2);
         fc12Ind = lama::linearDenseVector<ValueType>(nfc12, fc1Ind, 1);
     } else {
         sinFC /= (2*df);
@@ -280,6 +281,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
                 xcorrSigmaEMstep = scai::lama::real(temp);
                 if (xcorrSigmaEMstep.maxNorm() != 0)
                     xcorrSigmaEMstep *= 1.0 / xcorrSigmaEMstep.maxNorm();
+                xcorrSigmaEMstep *= weightingFreq[fc12Ind[jf]];
                 if (snapType > 0) {
                     this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, 2*fc12Ind[jf]);
                 }
@@ -296,6 +298,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
                 xcorrEpsilonEMstep = scai::lama::real(temp);
                 if (xcorrEpsilonEMstep.maxNorm() != 0)
                     xcorrEpsilonEMstep *= 1.0 / xcorrEpsilonEMstep.maxNorm();
+                xcorrEpsilonEMstep *= weightingFreq[fc12Ind[jf]];
                 if (snapType > 0) {
                     this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename, 2*fc12Ind[jf]);
                 }

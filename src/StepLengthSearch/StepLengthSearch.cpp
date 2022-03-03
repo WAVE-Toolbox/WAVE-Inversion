@@ -419,9 +419,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         modelCoordinatesBig.init(configBig);
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
         ValueType shotIncr = config.getAndCatch("shotIncr", 0);
-        sources.getAcquisitionSettings(configBig, shotIncr);
+        sources.getAcquisitionSettings(config, shotIncr);
         sourceSettingsBig = sources.getSourceSettings(); 
-        Acquisition::getCutCoord(cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
+        Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
     }
     
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
@@ -449,7 +449,6 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     testmodel->prepareForInversion(config, commShot);
     
     typename KITGPI::Modelparameter::Modelparameter<ValueType>::ModelparameterPtr testmodelPerShot(KITGPI::Modelparameter::Factory<ValueType>::Create(equationType));
-    testmodelPerShot->init(config, ctx, dist, modelCoordinates);  // init is necessary for modelPerShot to allocate distribution.
     
     typename KITGPI::Gradient::Gradient<ValueType>::GradientPtr testgradient(KITGPI::Gradient::Factory<ValueType>::Create(equationType));
     *testgradient = scaledGradient;
@@ -499,7 +498,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             CheckParameter::checkNumericalArtefactsAndInstabilities<ValueType>(config, sourceSettingsShot, *testmodel, modelCoordinates, shotNumber);
         } else {
             HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << commInterShot->getRank() << ", index " << shotIndTrue + 1 << " of " << numshots << "): Switch to model subset\n");
-            testmodel->getModelPerShot(*testmodelPerShot, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotIndTrue));    
+            IndexType shotIndPerShot = shotIndTrue;
+            if (useSourceEncode == 3) {
+                Acquisition::getuniqueShotInd(shotIndPerShot, sourceSettingsEncode, shotNumber);
+            }
+            testmodel->getModelPerShot(*testmodelPerShot, dist, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotIndPerShot));    
             testmodelPerShot->prepareForModelling(modelCoordinates, ctx, dist, commShot); 
             solver.prepareForModelling(*testmodelPerShot, config.get<ValueType>("DT"));
             
@@ -535,9 +538,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
                 sourceEst.calcRefTraces(config, shotIndTrue, receiversTrue, sourceSignalTaper);
             } else {
                 receiversTrue.decode(config, "", shotNumber, sourceSettingsEncode, 0);
-                sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
+                sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
             }
-            sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue);
+            sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue, shotNumber);
         }
         
         Taper::Taper2D<ValueType> seismogramTaper2D;
@@ -557,9 +560,9 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
 
         if (config.get<IndexType>("useSourceSignalInversion") != 0) {
             if (useSourceEncode == 0) {
-                sourceEst.applyFilter(sources, shotIndTrue, sourceSettings);
+                sourceEst.applyFilter(sources, shotNumber, sourceSettings);
             } else {
-                sourceEst.applyFilter(sources, shotIndTrue, sourceSettingsEncode);
+                sourceEst.applyFilter(sources, shotNumber, sourceSettingsEncode);
             }
             if (config.get<IndexType>("useSourceSignalTaper") != 0) {
                 if (config.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -592,7 +595,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
                 sourceEst.calcRefTraces(config, shotIndTrue, receivers, sourceSignalTaper);
             } else {
                 receivers.decode(config, "", shotNumber, sourceSettingsEncode, 0);
-                sourceEst.calcRefTracesEncode(commShot, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
+                sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
             }
         }
 
@@ -624,7 +627,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             /* Calculate misfit and write adjoint sources */
             KITGPI::Acquisition::Receivers<ValueType> adjointSources;
             IndexType seedtime = 0;
-            dataMisfit.calcMisfitAndAdjointSources(commShot, misfitTest, adjointSources, receivers, receiversTrue, shotIndTrue, config, modelCoordinates, ctx, dist, sourceSettingsEncode, testmodel->getVmin(), seedtime);
+            dataMisfit.calcMisfitAndAdjointSources(commShot, misfitTest, adjointSources, receivers, receiversTrue, shotIndTrue, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, testmodel->getVmin(), seedtime);
         }
         
         if (steplengthType == 1) {    

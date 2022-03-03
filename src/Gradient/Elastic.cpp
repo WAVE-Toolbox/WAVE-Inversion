@@ -484,19 +484,19 @@ void KITGPI::Gradient::Elastic<ValueType>::sumShotDomain(scai::dmemo::Communicat
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::Elastic<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd)
+void KITGPI::Gradient::Elastic<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D cutCoordinate)
 {
     auto distBig = density.getDistributionPtr();
     auto dist = gradientPerShot.getDensity().getDistributionPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
+    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinate);
     recoverMatrix.assignTranspose(recoverMatrix);
     
     scai::lama::DenseVector<ValueType> temp;
     scai::lama::DenseVector<ValueType> weightingVector;
     scai::IndexType NY = modelCoordinates.getNY();
     
-    weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getVelocityP(), NY, shotInd);  
+    weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getVelocityP(), NY);  
     temp = weightingVector * gradientPerShot.getVelocityP();  
     temp = recoverMatrix * temp;
     velocityP += temp; 

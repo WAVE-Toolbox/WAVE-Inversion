@@ -435,12 +435,12 @@ void KITGPI::Gradient::EMEM<ValueType>::sumShotDomain(scai::dmemo::CommunicatorP
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, std::vector<Acquisition::coordinate3D> cutCoordinates, scai::IndexType shotInd)
+void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparameter::Modelparameter<ValueType> &model, KITGPI::Gradient::Gradient<ValueType> &gradientPerShot, Acquisition::Coordinates<ValueType> const &modelCoordinates, Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, Acquisition::coordinate3D cutCoordinate)
 {
     auto distBig = dielectricPermittivity.getDistributionPtr();
     auto dist = gradientPerShot.getDielectricPermittivity().getDistributionPtr();
 
-    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinates.at(shotInd));
+    scai::lama::CSRSparseMatrix<ValueType> recoverMatrix = model.getShrinkMatrix(dist, distBig, modelCoordinates, modelCoordinatesBig, cutCoordinate);
     recoverMatrix.assignTranspose(recoverMatrix);
         
     scai::lama::DenseVector<ValueType> temp;
@@ -448,35 +448,35 @@ void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparamete
     scai::IndexType NY = modelCoordinates.getNY();
     
     if (workflowInner.getInvertForEpsilonEM()) {
-        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getDielectricPermittivity(), NY, shotInd);
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getDielectricPermittivity(), NY);
         temp = weightingVector * gradientPerShot.getDielectricPermittivity();  
         temp = recoverMatrix * temp;
         dielectricPermittivity += temp; 
     }
   
     if (workflowInner.getInvertForSigmaEM()) {
-        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getElectricConductivity(), NY, shotInd);
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getElectricConductivity(), NY);
         temp = weightingVector * gradientPerShot.getElectricConductivity();  
         temp = recoverMatrix * temp;
         electricConductivity += temp; 
     }
         
     if (workflowInner.getInvertForPorosity()) {
-        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getPorosity(), NY, shotInd);
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getPorosity(), NY);
         temp = weightingVector * gradientPerShot.getPorosity();  
         temp = recoverMatrix * temp;
         porosity += temp; 
     }
         
     if (workflowInner.getInvertForSaturation()) {
-        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getSaturation(), NY, shotInd);
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getSaturation(), NY);
         temp = weightingVector * gradientPerShot.getSaturation();  
         temp = recoverMatrix * temp;
         saturation += temp; 
     }
         
     if (workflowInner.getInvertForReflectivity()) {
-        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getReflectivity(), NY, shotInd);
+        weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getReflectivity(), NY);
         temp = weightingVector * gradientPerShot.getReflectivity();  
         temp = recoverMatrix * temp;
         reflectivity += temp; 

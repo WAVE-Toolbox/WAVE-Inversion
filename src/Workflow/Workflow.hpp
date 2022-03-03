@@ -54,6 +54,7 @@ namespace KITGPI
             ValueType getUpperCornerFreq() const;
             ValueType getTimeDampingFactor() const;
             scai::IndexType getSkipCount() const;
+            scai::lama::DenseVector<ValueType> getWeightingFreq() const;
             
             KITGPI::Workflow::Workflow<ValueType> &operator=(KITGPI::Workflow::Workflow<ValueType> const &rhs);
             
@@ -81,7 +82,9 @@ namespace KITGPI
             scai::IndexType filterOrder;
             ValueType lowerCornerFreq;
             ValueType upperCornerFreq;
-            ValueType timeDampingFactor;            
+            ValueType timeDampingFactor; 
+            scai::lama::DenseVector<ValueType> weightingFreq; 
+            scai::lama::DenseVector<ValueType> frequencyVector;           
         };
     }
 }

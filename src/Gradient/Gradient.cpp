@@ -104,7 +104,7 @@ void KITGPI::Gradient::Gradient<ValueType>::allocateParameterisation(scai::lama:
  \param cutCoordinate cut coordinate 
  */
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(scai::lama::Vector<ValueType> const &gradientPerShotVector, scai::IndexType NY, scai::IndexType shotInd)
+scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcWeightingVector(scai::lama::Vector<ValueType> const &gradientPerShotVector, scai::IndexType NY)
 {
     auto dist = gradientPerShotVector.getDistributionPtr();
     scai::hmemo::ContextPtr ctx = gradientPerShotVector.getContextPtr();
@@ -130,7 +130,6 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::Gradient<ValueType>::calcWe
         if (weightingVector.maxNorm() != 0)
             weightingVector *= 1.0 / weightingVector.maxNorm();
     }
-//     IO::writeVector(weightingVector, "gradients/weightingVector.shot_" + std::to_string(shotInd+1), 1);
     
     return weightingVector;
 }

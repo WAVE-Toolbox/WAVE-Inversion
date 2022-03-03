@@ -18,7 +18,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::init(KITGPI::Configuration::Configurat
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT 
     scai::IndexType NT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     fkHandler.init(config.get<ValueType>("DT"), NT, config.get<ValueType>("CenterFrequencyCPML"), vmin_in);
-    nFFT = Common::calcNextPowTwo<ValueType>(NT);
+    nFFT = Common::calcNextPowTwo<ValueType>(NT - 1);
     writeAdjointSource = config.getAndCatch("writeAdjointSource", false);
     
     scai::lama::DenseVector<ValueType> temp1(numshots, 0, ctx);  
@@ -234,7 +234,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::sumShotDomain(scai::dmemo::Communicato
  \param receiversObs Receiver object which stores the observed data 
  */
 template <typename ValueType>
-void KITGPI::Misfit::MisfitL2<ValueType>::calcMisfitAndAdjointSources(scai::dmemo::CommunicatorPtr commShot, scai::lama::DenseVector<ValueType> &misfitPerIt, KITGPI::Acquisition::Receivers<ValueType> &adjointSourcesEncode, KITGPI::Acquisition::Receivers<ValueType> const &receivers, KITGPI::Acquisition::Receivers<ValueType> const &receiversTrue, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, ValueType vmin, scai::IndexType &seedtime)
+void KITGPI::Misfit::MisfitL2<ValueType>::calcMisfitAndAdjointSources(scai::dmemo::CommunicatorPtr commShot, scai::lama::DenseVector<ValueType> &misfitPerIt, KITGPI::Acquisition::Receivers<ValueType> &adjointSourcesEncode, KITGPI::Acquisition::Receivers<ValueType> const &receivers, KITGPI::Acquisition::Receivers<ValueType> const &receiversTrue, scai::IndexType shotIndTrue, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, ValueType vmin, scai::IndexType &seedtime)
 {      
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
     if (useSourceEncode != 0) {
@@ -252,7 +252,6 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcMisfitAndAdjointSources(scai::dmem
         }
                 
         IndexType numshotsIncr = sourceSettingsEncode.size();
-        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
         KITGPI::Acquisition::Receivers<ValueType> receiversSyn;
         KITGPI::Acquisition::Receivers<ValueType> receiversObs;
         KITGPI::Acquisition::Receivers<ValueType> adjointSources;
@@ -864,7 +863,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2EnvelopeWeighte
         tempDataSynEnvelope.binaryOp(tempDataSynEnvelope, scai::common::BinaryOp::MULT, tempDataSynEnvelope);
         tempDataSyn = seismogramAdj.getData();
         Hilbert::HilbertFFT<ValueType> hilbertHandler;
-        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns() - 1);  
         hilbertHandler.setCoefficientLength(hLength);
         hilbertHandler.calcHilbertCoefficient();
         hilbertHandler.hilbert(tempDataSyn);
@@ -1116,7 +1115,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2Envelope(KITGPI
         
         tempDataSyn = seismogramAdj.getData();    
         Hilbert::HilbertFFT<ValueType> hilbertHandler;
-        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns() - 1);  
         hilbertHandler.setCoefficientLength(hLength);
         hilbertHandler.calcHilbertCoefficient();
         hilbertHandler.hilbert(tempDataSyn);
@@ -1214,7 +1213,7 @@ void KITGPI::Misfit::MisfitL2<ValueType>::calcAdjointSeismogramL2InstantaneousPh
         
         scai::lama::DenseMatrix<ValueType> tempDataSyn = seismogramSyntemp.getData();    
         Hilbert::HilbertFFT<ValueType> hilbertHandler;
-        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns());  
+        IndexType hLength = Common::calcNextPowTwo<ValueType>(tempDataSyn.getNumColumns() - 1);  
         hilbertHandler.setCoefficientLength(hLength);
         hilbertHandler.calcHilbertCoefficient();
         hilbertHandler.hilbert(tempDataSyn);

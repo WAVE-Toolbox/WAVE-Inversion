@@ -103,7 +103,7 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignal(KITGPI::Acquisiti
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::estimateSourceSignalEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> const &receivers, KITGPI::Acquisition::Receivers<ValueType> const &receiversTrue)
+void KITGPI::SourceEstimation<ValueType>::estimateSourceSignalEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> const &receivers, KITGPI::Acquisition::Receivers<ValueType> const &receiversTrue)
 {
     SCAI_ASSERT_ERROR(config.get<scai::IndexType>("useSourceSignalTaper") == 0, "useSourceSignalTaper != 0"); 
     if (useSourceEncode != 0) {
@@ -118,7 +118,6 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignalEncode(scai::dmemo
         std::vector<scai::IndexType> uniqueShotNos;
         Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
         IndexType numshotsIncr = sourceSettingsEncode.size();
-        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
         KITGPI::Acquisition::Receivers<ValueType> receiversSyn;
         KITGPI::Acquisition::Receivers<ValueType> receiversObs;
         IndexType countDecode = 0;
@@ -146,13 +145,11 @@ void KITGPI::SourceEstimation<ValueType>::estimateSourceSignalEncode(scai::dmemo
  \param shotInd Shot index of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sourcesEncode, IndexType shotIndTrue, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode) const
+void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sources<ValueType> &sourcesEncode, IndexType shotNumberEncode, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode) const
 {
     IndexType numshotsIncr = sourceSettingsEncode.size();    
-    SCAI_ASSERT_ERROR(numshotsIncr != 0, "numshotsIncr == 0 when shotIndTrue = " + std::to_string(shotIndTrue));
-    
-    IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
-    
+    SCAI_ASSERT_ERROR(numshotsIncr != 0, "numshotsIncr == 0 when shotNumberEncode = " + std::to_string(shotNumberEncode));
+        
     //get seismogram that corresponds to source type
     lama::DenseMatrix<ValueType> seismo;
     auto sourceType = Acquisition::SeismogramType(sourcesEncode.getSeismogramTypes().getValue(0) - 1);
@@ -394,7 +391,7 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTraces(Configuration::Configura
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode)
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode)
 {
     if (useSourceEncode != 0) {
         double start_t_shot, end_t_shot; /* For timing */
@@ -404,12 +401,20 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::Com
         Acquisition::Sources<ValueType> sources;
         ValueType shotIncr = 0; 
         sources.getAcquisitionSettings(config, shotIncr); // to get numshots
-        sourceSettings = sources.getSourceSettings();
+        bool useStreamConfig = config.getAndCatch<bool>("useStreamConfig", false);
+        if (useStreamConfig) {
+            std::vector<Acquisition::coordinate3D> cutCoordinates;
+            std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
+            sourceSettingsBig = sources.getSourceSettings(); 
+            Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
+            Acquisition::getSettingsPerShot(sourceSettings, sourceSettingsBig, cutCoordinates);
+        } else {
+            sourceSettings = sources.getSourceSettings(); 
+        }
         std::vector<scai::IndexType> uniqueShotNos;
         Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
         IndexType numshotsIncr = sourceSettingsEncode.size();
-        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
-        std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsTemp;
+        std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncodeTemp; // to control the useSourceEncode
         KITGPI::Acquisition::Receivers<ValueType> receivers;
                 
         for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
@@ -420,10 +425,10 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::Com
                 sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
                 
                 if (config.get<IndexType>("useReceiversPerShot") != 0) {
-                    receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsTemp);
+                    receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncodeTemp);
                 }
                 
-                calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotInd, modelCoordinates);
+                calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotInd, modelCoordinates);                                              
             }
         }
         for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
@@ -442,14 +447,13 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::Com
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcRefTracesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotIndTrue, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode, Taper::Taper1D<ValueType> const &sourceSignalTaper)
+void KITGPI::SourceEstimation<ValueType>::calcRefTracesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode, Taper::Taper1D<ValueType> const &sourceSignalTaper)
 {
     if (useSourceEncode != 0) {
         double start_t_shot, end_t_shot; /* For timing */
         start_t_shot = common::Walltime::get();
                 
         IndexType numshotsIncr = sourceSettingsEncode.size();
-        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially.
         KITGPI::Acquisition::Receivers<ValueType> receivers;
         IndexType countDecode = 0;
         for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
@@ -479,7 +483,7 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTracesEncode(scai::dmemo::Commu
  \param shotInd Shot index of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::setRefTracesToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, scai::IndexType shotIndTrue)
+void KITGPI::SourceEstimation<ValueType>::setRefTracesToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, scai::IndexType shotIndTrue, scai::IndexType shotNumberEncode)
 {
     //get seismogram that corresponds to source type
     auto sourceType = Acquisition::SeismogramType(sources.getSeismogramTypes().getValue(0) - 1);
@@ -494,7 +498,6 @@ void KITGPI::SourceEstimation<ValueType>::setRefTracesToSource(KITGPI::Acquisiti
         data.setRow(refTrace, 0, common::BinaryOp::COPY);
     } else {
         IndexType numshotsIncr = sourceSettingsEncode.size();
-        IndexType shotNumberEncode = std::abs(sourceSettingsEncode[shotIndTrue].sourceNo); // the first numShotDomains shots are defined sequentially. 
         IndexType count = 0;
         for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
             if (std::abs(sourceSettingsEncode[shotInd].sourceNo) == shotNumberEncode) {

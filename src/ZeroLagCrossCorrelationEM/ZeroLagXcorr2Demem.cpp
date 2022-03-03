@@ -164,7 +164,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Demem<ValueType>::sumWavefields(scai::dm
         ValueType fc2 = workflow.getUpperCornerFreq();
         IndexType fc1Ind = ceil(fc1 / df);
         IndexType fc2Ind = ceil(fc2 / df);
-        nfc12 = (fc2Ind-fc1Ind+1)/2;
+        nfc12 = ceil(ValueType(fc2Ind-fc1Ind+1)/2);
         fc12Ind = lama::linearDenseVector<ValueType>(nfc12, fc1Ind, 1);
     } else {
         sinFC /= (2*df);

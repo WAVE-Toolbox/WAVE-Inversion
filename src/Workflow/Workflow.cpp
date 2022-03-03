@@ -46,6 +46,27 @@ void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::C
     
     dataMisfit.clearStorage();
     steplengthInit = config.get<ValueType>("steplengthInit");  
+    
+    IndexType gradientDomain = config.getAndCatch("gradientDomain", 0);
+    if (gradientDomain != 0) {
+        IndexType NT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
+        scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(NT - 1);
+        ValueType df = 1 / (nFFT * config.get<ValueType>("DT"));
+        IndexType fc1Ind = ceil(lowerCornerFreq / df);
+        IndexType fc2Ind = ceil(upperCornerFreq / df);
+        if (fc1Ind == 0)
+            fc1Ind = 2; // ensure steady-state wavefields.
+        if (fc1Ind % 2 == 1)
+            fc1Ind += 1; // ensure steady-state wavefields.
+        IndexType nfc12 = ceil(ValueType(fc2Ind-fc1Ind+1)/2);
+        ValueType average = (1.0 + 1.0 / maxStage) / 2;
+        ValueType start = 1.0 - ValueType(workflowStage) / maxStage;
+        ValueType step = (average - start) / (nfc12 - 1);
+        scai::lama::DenseVector<ValueType> weighting2 = lama::linearDenseVector<ValueType>(nfc12, start, 2*step);
+        scai::lama::DenseVector<ValueType> weighting1(fc1Ind/2, 0);
+        weightingFreq.cat(weighting1, weighting2);
+        frequencyVector = scai::lama::linearDenseVector<ValueType>(weightingFreq.size(), 0.0, 2*df);
+    }
 }
 
 /*! \brief Read parameters from workflow file
@@ -126,6 +147,18 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");
     HOST_PRINT(comm, "upperCornerFreq = " << upperCornerFreq << "\n");
     HOST_PRINT(comm, "timeDampingFactor = " << timeDampingFactor << "\n");
+    if (weightingFreq.size() != 0) {
+        HOST_PRINT(comm, "frequencyVector =");
+        for (int i=0; i<frequencyVector.size(); i++) {
+            HOST_PRINT(comm, " " << frequencyVector[i]);
+        }
+        HOST_PRINT(comm, "\n");
+        HOST_PRINT(comm, "weightingFreq =");
+        for (int i=0; i<weightingFreq.size(); i++) {
+            HOST_PRINT(comm, " " << weightingFreq[i]);
+        }
+        HOST_PRINT(comm, "\n");
+    }
 }
 
 /*! \brief Return copy of invertForVp
@@ -299,6 +332,14 @@ template <typename ValueType>
 scai::IndexType KITGPI::Workflow::Workflow<ValueType>::getSkipCount() const
 {
     return skipCount;
+}
+
+/*! \brief Return copy of weightingFreq
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Workflow::Workflow<ValueType>::getWeightingFreq() const
+{
+    return weightingFreq;
 }
 
 /*! \brief Overloading = Operation

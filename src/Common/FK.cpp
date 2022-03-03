@@ -12,7 +12,7 @@ void KITGPI::FK<ValueType>::init(ValueType dt, scai::IndexType nt, ValueType fc,
     SCAI_ASSERT_ERROR(nt != 0, "Can't initialize fk with nt = 0")
     SCAI_ASSERT_ERROR(fc != 0.0, "Can't initialize fk with fc = 0.0")
     SCAI_ASSERT_ERROR(vmin != 0.0, "Can't initialize fk with vmin = 0.0")
-    scai::IndexType len = Common::calcNextPowTwo<ValueType>(nt);
+    scai::IndexType len = Common::calcNextPowTwo<ValueType>(nt - 1);
     ValueType df = 1.0 / (len * dt);
     ValueType fNyquist = 1.0 / (2.0 * dt);
     long nFreq = fNyquist / df;
