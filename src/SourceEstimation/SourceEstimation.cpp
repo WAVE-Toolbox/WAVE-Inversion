@@ -156,7 +156,6 @@ void KITGPI::SourceEstimation<ValueType>::applyFilter(KITGPI::Acquisition::Sourc
     seismo = sourcesEncode.getSeismogramHandler().getSeismogram(sourceType).getData();
     lama::DenseMatrix<ComplexValueType> seismoTrans;
     seismoTrans = lama::cast<ComplexValueType>(seismo);
-
     // scale to power of two
     seismoTrans.resize(seismo.getRowDistributionPtr(), filter.getColDistributionPtr());
 

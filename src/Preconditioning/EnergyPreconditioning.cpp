@@ -9,24 +9,26 @@
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config)
 {    
-    useEnergyPreconditioning = config.get<scai::IndexType>("useEnergyPreconditioning");  
-    saveApproxHessian = config.get<bool>("saveApproxHessian");  
-    approxHessianName = config.get<std::string>("approxHessianName");  
-    epsilonHessian = config.get<ValueType>("epsilonHessian");
-    
-    dimension = config.get<std::string>("dimension");
-    equationType = config.get<std::string>("equationType");
-    std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);
-    std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);
-    isSeismic = Common::checkEquationType<ValueType>(equationType);
-    
-    approxHessian.setSameValue(dist, 0);
-    if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
-        approxHessianAdjoint.setSameValue(dist, 0);
+    useEnergyPreconditioning = config.get<scai::IndexType>("useEnergyPreconditioning"); 
+    if (useEnergyPreconditioning != 0) {
+        saveApproxHessian = config.get<bool>("saveApproxHessian");  
+        approxHessianName = config.get<std::string>("approxHessianName");  
+        epsilonHessian = config.get<ValueType>("epsilonHessian");
+        
+        dimension = config.get<std::string>("dimension");
+        equationType = config.get<std::string>("equationType");
+        std::transform(dimension.begin(), dimension.end(), dimension.begin(), ::tolower);
+        std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);
+        isSeismic = Common::checkEquationType<ValueType>(equationType);
+        
+        approxHessian.setSameValue(dist, 0);
+        if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
+            approxHessianAdjoint.setSameValue(dist, 0);
 
-    wavefieldX.setSameValue(dist, 0);
-    wavefieldY.setSameValue(dist, 0);
-    wavefieldZ.setSameValue(dist, 0);
+        wavefieldX.setSameValue(dist, 0);
+        wavefieldY.setSameValue(dist, 0);
+        wavefieldZ.setSameValue(dist, 0);
+    }
 }
 
 /*! \brief Calculate the approximation of the diagonal of the inverse of the Hessian for one shot
@@ -36,57 +38,49 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::init(scai::dmemo
  \param DT temporal sampling interval
  */
 template <typename ValueType>
-void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldAdjoint, ValueType DT)
+void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT, bool isAdjoint)
 {
-    if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3 && isSeismic) {               
+    if (isSeismic && ((!isAdjoint && (useEnergyPreconditioning == 1 || useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)) || (isAdjoint && (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)))) {               
         if(equationType.compare("sh") != 0 && equationType.compare("viscosh") != 0){
             wavefieldX = wavefield.getRefVX();
             wavefieldX *= wavefieldX;
             wavefieldX *= DT;
-            approxHessian += wavefieldX;  
-            if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldX = wavefieldAdjoint.getRefVX();
-                wavefieldX *= wavefieldX;
-                wavefieldX *= DT;
+            if (!isAdjoint) {
+                approxHessian += wavefieldX;  
+            } else {
                 approxHessianAdjoint += wavefieldX; 
-            }      
+            }
         }
             
         if(equationType.compare("sh") != 0 && equationType.compare("viscosh") != 0){
             wavefieldY = wavefield.getRefVY();
             wavefieldY *= wavefieldY;
             wavefieldY *= DT;
-            approxHessian += wavefieldY;   
-            if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldY = wavefieldAdjoint.getRefVY();
-                wavefieldY *= wavefieldY;
-                wavefieldY *= DT;
-                approxHessianAdjoint += wavefieldY;
-            }             
+            if (!isAdjoint) {
+                approxHessian += wavefieldY;  
+            } else {
+                approxHessianAdjoint += wavefieldY; 
+            }      
         }
         
         if(dimension.compare("3d") == 0 || equationType.compare("sh") == 0 || equationType.compare("viscosh") == 0){
             wavefieldZ = wavefield.getRefVZ();
             wavefieldZ *= wavefieldZ;
             wavefieldZ *= DT;
-            approxHessian += wavefieldZ;  
-            if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldZ = wavefieldAdjoint.getRefVZ();
-                wavefieldZ *= wavefieldZ;
-                wavefieldZ *= DT;
+            if (!isAdjoint) {
+                approxHessian += wavefieldZ;  
+            } else {
                 approxHessianAdjoint += wavefieldZ; 
-            }                   
+            }
         }    
-    } else if (useEnergyPreconditioning != 0 && useEnergyPreconditioning != 3 && !isSeismic) {            
+    } else if (!isSeismic && ((!isAdjoint && (useEnergyPreconditioning == 1 || useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)) || (isAdjoint && (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)))) {   
         if(equationType.compare("tmem") != 0 && equationType.compare("viscotmem") != 0){
             wavefieldX = wavefield.getRefEX();
             wavefieldX *= wavefieldX;
             wavefieldX *= DT;
-            approxHessian += wavefieldX;  
-            if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldX = wavefieldAdjoint.getRefEX();
-                wavefieldX *= wavefieldX;
-                wavefieldX *= DT;
+            if (!isAdjoint) {
+                approxHessian += wavefieldX;  
+            } else {
                 approxHessianAdjoint += wavefieldX; 
             }
         }
@@ -95,26 +89,22 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::intSquaredWavefi
             wavefieldY = wavefield.getRefEY();
             wavefieldY *= wavefieldY;
             wavefieldY *= DT;
-            approxHessian += wavefieldY;
-            if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldY = wavefieldAdjoint.getRefEY();
-                wavefieldY *= wavefieldY;
-                wavefieldY *= DT;
-                approxHessianAdjoint += wavefieldY;
-            }        
+            if (!isAdjoint) {
+                approxHessian += wavefieldY;  
+            } else {
+                approxHessianAdjoint += wavefieldY; 
+            }
         }
         
         if(dimension.compare("3d") == 0 || equationType.compare("tmem") == 0 || equationType.compare("viscotmem") == 0){
             wavefieldZ = wavefield.getRefEZ();
             wavefieldZ *= wavefieldZ;
             wavefieldZ *= DT;
-            approxHessian += wavefieldZ;    
-            if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4) {
-                wavefieldZ = wavefieldAdjoint.getRefEZ();
-                wavefieldZ *= wavefieldZ;
-                wavefieldZ *= DT;
+            if (!isAdjoint) {
+                approxHessian += wavefieldZ;  
+            } else {
                 approxHessianAdjoint += wavefieldZ; 
-            }            
+            }          
         } 
     }
 }
@@ -159,9 +149,11 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::apply(KITGPI::Gr
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::resetApproxHessian()
 {
-    approxHessian.setSameValue(wavefieldX.getDistributionPtr(), 0); // does not change size/distribution
-    if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
-        approxHessianAdjoint.setSameValue(wavefieldX.getDistributionPtr(), 0);
+    if (useEnergyPreconditioning != 0) {
+        approxHessian.setSameValue(wavefieldX.getDistributionPtr(), 0); // does not change size/distribution
+        if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
+            approxHessianAdjoint.setSameValue(wavefieldX.getDistributionPtr(), 0);
+    }
 }
 
 /*! \brief Transform approxHessian
@@ -170,9 +162,11 @@ void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::resetApproxHessi
 template <typename ValueType>
 void KITGPI::Preconditioning::EnergyPreconditioning<ValueType>::applyTransform(scai::lama::Matrix<ValueType> const &lhs)
 {
-    approxHessian = lhs * approxHessian;   // change size/distribution
-    if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
-        approxHessianAdjoint = lhs * approxHessianAdjoint; 
+    if (useEnergyPreconditioning != 0) {
+        approxHessian = lhs * approxHessian;   // change size/distribution
+        if (useEnergyPreconditioning == 2 || useEnergyPreconditioning == 4)
+            approxHessianAdjoint = lhs * approxHessianAdjoint; 
+    }
 }
 
 template class KITGPI::Preconditioning::EnergyPreconditioning<double>;

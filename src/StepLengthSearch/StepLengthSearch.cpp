@@ -626,8 +626,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         } else {
             /* Calculate misfit and write adjoint sources */
             KITGPI::Acquisition::Receivers<ValueType> adjointSources;
-            IndexType seedtime = 0;
-            dataMisfit.calcMisfitAndAdjointSources(commShot, misfitTest, adjointSources, receivers, receiversTrue, shotIndTrue, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, testmodel->getVmin(), seedtime);
+            IndexType seedtimeTemp;
+            dataMisfit.calcMisfitAndAdjointSources(commShot, misfitTest, adjointSources, receivers, receiversTrue, shotIndTrue, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, testmodel->getVmin(), seedtimeTemp);
         }
         
         if (steplengthType == 1) {    

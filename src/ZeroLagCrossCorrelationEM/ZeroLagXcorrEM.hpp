@@ -29,8 +29,8 @@ namespace KITGPI
             virtual void resetXcorr(KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual void update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
-            virtual void gatherWavefields(Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep) = 0;
-            virtual void sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sinFC, ValueType DT, scai::IndexType shotNumber) = 0;
+            virtual void gatherWavefields(Wavefields::Wavefields<ValueType> &wavefields, scai::lama::DenseVector<ValueType> sourceFC, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::IndexType tStep, ValueType DT, bool isAdjoint) = 0;
+            virtual void sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sourceFC, ValueType DT, scai::IndexType shotNumber) = 0;
             virtual void applyTransform(scai::lama::Matrix<ValueType> const &lhs, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
 
             virtual int getNumDimension() const = 0;
@@ -40,7 +40,7 @@ namespace KITGPI
             virtual scai::hmemo::ContextPtr getContextPtr() = 0;
 
             //! \brief Initialization
-            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config) = 0;
+            virtual void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config, scai::IndexType numShotPerSuperShot) = 0;
 
             virtual void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) = 0;
             
@@ -64,8 +64,8 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::decomposition;
             using ZeroLagXcorr<ValueType>::gradientKernel;
             using ZeroLagXcorr<ValueType>::gradientDomain;
-            using ZeroLagXcorr<ValueType>::dtinversion;
-            using ZeroLagXcorr<ValueType>::dhinversion;
+            using ZeroLagXcorr<ValueType>::useSourceEncode;
+            using ZeroLagXcorr<ValueType>::NT;
              
 
             /* Seismic */

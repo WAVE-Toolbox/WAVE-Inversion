@@ -31,7 +31,7 @@ namespace KITGPI
             ~EnergyPreconditioning(){};
 
             void init(scai::dmemo::DistributionPtr dist, KITGPI::Configuration::Configuration config);
-            void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, KITGPI::Wavefields::Wavefields<ValueType> &wavefieldAdjoint, ValueType DT); //!< Integrate squared wavefields 
+            void intSquaredWavefields(KITGPI::Wavefields::Wavefields<ValueType> &wavefield, ValueType DT, bool isAdjoint = false); //!< Integrate squared wavefields 
             
             void resetApproxHessian();
             
@@ -50,7 +50,7 @@ namespace KITGPI
             std::string dimension; 
             std::string equationType;
             ValueType epsilonHessian;     
-            bool isSeismic;
+            bool isSeismic = true;
         };
     }
 }

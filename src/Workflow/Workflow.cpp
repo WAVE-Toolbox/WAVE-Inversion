@@ -47,25 +47,51 @@ void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::C
     dataMisfit.clearStorage();
     steplengthInit = config.get<ValueType>("steplengthInit");  
     
+    IndexType dtinversion = config.get<IndexType>("DTInversion"); 
+    if (dtinversion == 1 || upperCornerFreq == 0.0) {
+        skipDT = 1;
+    } else {
+        ValueType dtMax = 1.0 / (upperCornerFreq * 5);
+        skipDT = floor(dtMax / config.get<ValueType>("DT")); // Nyquist sampling step
+    }
+        
+    IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
     IndexType gradientDomain = config.getAndCatch("gradientDomain", 0);
     if (gradientDomain != 0) {
         IndexType NT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
         scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(NT - 1);
         ValueType df = 1 / (nFFT * config.get<ValueType>("DT"));
         IndexType fc1Ind = ceil(lowerCornerFreq / df);
-        IndexType fc2Ind = ceil(upperCornerFreq / df);
-        if (fc1Ind == 0)
-            fc1Ind = 2; // ensure steady-state wavefields.
-        if (fc1Ind % 2 == 1)
-            fc1Ind += 1; // ensure steady-state wavefields.
-        IndexType nfc12 = ceil(ValueType(fc2Ind-fc1Ind+1)/2);
-        ValueType average = (1.0 + 1.0 / maxStage) / 2;
-        ValueType start = 1.0 - ValueType(workflowStage) / maxStage;
-        ValueType step = (average - start) / (nfc12 - 1);
-        scai::lama::DenseVector<ValueType> weighting2 = lama::linearDenseVector<ValueType>(nfc12, start, 2*step);
-        scai::lama::DenseVector<ValueType> weighting1(fc1Ind/2, 0);
-        weightingFreq.cat(weighting1, weighting2);
-        frequencyVector = scai::lama::linearDenseVector<ValueType>(weightingFreq.size(), 0.0, 2*df);
+        IndexType fc2Ind = ceil(upperCornerFreq / df);  
+        if (useSourceEncode == 0) {
+            fc1Ind = ceil((ValueType)fc1Ind / 2); // to cover all effective frequencies
+            fc2Ind *= 2; // to cover all effective frequencies
+            if (fc1Ind == 0)
+                fc1Ind = 1;
+            IndexType nfc12 = ceil(ValueType(fc2Ind-fc1Ind+1));  
+            frequencyVector = scai::lama::linearDenseVector<ValueType>(nfc12, fc1Ind*df, df);
+            scai::lama::DenseVector<ValueType> temp = scai::lama::linearDenseVector<ValueType>(fc1Ind, 0, df);
+            frequencyVector.cat(temp, frequencyVector);
+            weightingFreq = lama::linearDenseVector<ValueType>(nfc12, 1, 0);
+            temp = scai::lama::linearDenseVector<ValueType>(fc1Ind, 0, 0);
+            weightingFreq.cat(temp, weightingFreq);
+        } else {
+            if (fc1Ind == 0)
+                fc1Ind = 2; // ensure steady-state wavefields.
+            if (fc1Ind % 2 == 1)
+                fc1Ind += 1; // ensure steady-state wavefields.
+            IndexType nfc12 = ceil(ValueType(fc2Ind-fc1Ind+1)/2);  
+            frequencyVector = scai::lama::linearDenseVector<ValueType>(nfc12, fc1Ind*df, 2*df);
+            scai::lama::DenseVector<ValueType> temp = scai::lama::linearDenseVector<ValueType>(fc1Ind/2, 0, 2*df);
+            frequencyVector.cat(temp, frequencyVector);
+            ValueType average = (1.0 + 1.0 / maxStage) / 2;
+            ValueType start = 1.0 - ValueType(workflowStage) / maxStage;    
+            ValueType step = (average - start) / (nfc12 - 1);
+            weightingFreq = lama::linearDenseVector<ValueType>(nfc12, start, 2*step);
+            weightingFreq = 1;
+            temp = scai::lama::linearDenseVector<ValueType>(fc1Ind/2, 0, 0);
+            weightingFreq.cat(temp, weightingFreq);
+        }
     }
 }
 
@@ -340,6 +366,14 @@ template <typename ValueType>
 scai::lama::DenseVector<ValueType> KITGPI::Workflow::Workflow<ValueType>::getWeightingFreq() const
 {
     return weightingFreq;
+}
+
+/*! \brief Return copy of frequencyVector
+ */
+template <typename ValueType>
+scai::lama::DenseVector<ValueType> KITGPI::Workflow::Workflow<ValueType>::getFrequencyVec() const
+{
+    return frequencyVector;
 }
 
 /*! \brief Overloading = Operation

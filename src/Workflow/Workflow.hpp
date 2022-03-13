@@ -55,6 +55,7 @@ namespace KITGPI
             ValueType getTimeDampingFactor() const;
             scai::IndexType getSkipCount() const;
             scai::lama::DenseVector<ValueType> getWeightingFreq() const;
+            scai::lama::DenseVector<ValueType> getFrequencyVec() const;
             
             KITGPI::Workflow::Workflow<ValueType> &operator=(KITGPI::Workflow::Workflow<ValueType> const &rhs);
             
@@ -62,6 +63,7 @@ namespace KITGPI
             scai::IndexType workflowStage;
             scai::IndexType iteration;
             scai::IndexType skipCount;
+            scai::IndexType skipDT;
             bool isSeismic;
 
         private:
