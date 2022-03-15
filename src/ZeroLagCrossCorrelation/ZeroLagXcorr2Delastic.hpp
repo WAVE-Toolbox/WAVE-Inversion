@@ -49,8 +49,16 @@ namespace KITGPI
 
           private:
               
+            typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
+            
             using ZeroLagXcorr<ValueType>::numDimension;
-            using ZeroLagXcorr<ValueType>::equationType; 
+            using ZeroLagXcorr<ValueType>::equationType;
+            using ZeroLagXcorr<ValueType>::gradientKernel;
+            using ZeroLagXcorr<ValueType>::gradientDomain;
+            using ZeroLagXcorr<ValueType>::normalizeGradient;
+            using ZeroLagXcorr<ValueType>::useSourceEncode;
+            using ZeroLagXcorr<ValueType>::decomposition;
+            using ZeroLagXcorr<ValueType>::NT;  
               
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrRho;
@@ -58,6 +66,26 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrMuB;
             using ZeroLagXcorr<ValueType>::xcorrMuC;
             using ZeroLagXcorr<ValueType>::xcorrLambda;
+            using ZeroLagXcorr<ValueType>::VXforward;
+            using ZeroLagXcorr<ValueType>::VXadjoint;
+            using ZeroLagXcorr<ValueType>::VYforward;
+            using ZeroLagXcorr<ValueType>::VYadjoint;
+            using ZeroLagXcorr<ValueType>::Sxxforward;
+            using ZeroLagXcorr<ValueType>::Sxxadjoint;
+            using ZeroLagXcorr<ValueType>::Syyforward;
+            using ZeroLagXcorr<ValueType>::Syyadjoint;
+            using ZeroLagXcorr<ValueType>::Sxyforward;
+            using ZeroLagXcorr<ValueType>::Sxyadjoint;
+            using ZeroLagXcorr<ValueType>::fVXforward;
+            using ZeroLagXcorr<ValueType>::fVXadjoint;
+            using ZeroLagXcorr<ValueType>::fVYforward;
+            using ZeroLagXcorr<ValueType>::fVYadjoint;
+            using ZeroLagXcorr<ValueType>::fSxxforward;
+            using ZeroLagXcorr<ValueType>::fSxxadjoint;
+            using ZeroLagXcorr<ValueType>::fSyyforward;
+            using ZeroLagXcorr<ValueType>::fSyyadjoint;
+            using ZeroLagXcorr<ValueType>::fSxyforward;
+            using ZeroLagXcorr<ValueType>::fSxyadjoint;
 
             std::string type;
         };

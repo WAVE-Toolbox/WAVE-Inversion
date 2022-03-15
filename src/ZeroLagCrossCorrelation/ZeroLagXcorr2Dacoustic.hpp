@@ -66,8 +66,6 @@ namespace KITGPI
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrRho;
             using ZeroLagXcorr<ValueType>::xcorrLambda;
-            using ZeroLagXcorr<ValueType>::xcorrRhostep;
-            using ZeroLagXcorr<ValueType>::xcorrLambdastep;
             using ZeroLagXcorr<ValueType>::xcorrRhoSuRu;
             using ZeroLagXcorr<ValueType>::xcorrRhoSdRd;
             using ZeroLagXcorr<ValueType>::xcorrRhoSuRd;

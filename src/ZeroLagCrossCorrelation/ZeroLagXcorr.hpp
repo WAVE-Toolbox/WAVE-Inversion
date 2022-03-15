@@ -95,8 +95,6 @@ namespace KITGPI
 
             scai::lama::DenseVector<ValueType> xcorrRho;    //!< correlated Wavefields for the rho gradient
             scai::lama::DenseVector<ValueType> xcorrLambda; //!< correlated Wavefields for the lambda gradient
-            scai::lama::DenseVector<ValueType> xcorrRhostep; 
-            scai::lama::DenseVector<ValueType> xcorrLambdastep;
             scai::lama::DenseVector<ValueType> xcorrRhoSuRu; 
             scai::lama::DenseVector<ValueType> xcorrRhoSdRd; 
             scai::lama::DenseVector<ValueType> xcorrRhoSuRd;
@@ -105,14 +103,43 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> xcorrLambdaSdRd;
             scai::lama::DenseVector<ValueType> xcorrLambdaSuRd;
             scai::lama::DenseVector<ValueType> xcorrLambdaSdRu;
+            scai::lama::DenseMatrix<ValueType> VXforward;
+            scai::lama::DenseMatrix<ValueType> VXadjoint;
+            scai::lama::DenseMatrix<ValueType> VYforward;
+            scai::lama::DenseMatrix<ValueType> VYadjoint;
+            scai::lama::DenseMatrix<ValueType> VZforward;
+            scai::lama::DenseMatrix<ValueType> VZadjoint;
+            scai::lama::DenseMatrix<ValueType> Sxxforward;
+            scai::lama::DenseMatrix<ValueType> Sxxadjoint;
+            scai::lama::DenseMatrix<ValueType> Syyforward;
+            scai::lama::DenseMatrix<ValueType> Syyadjoint;
+            scai::lama::DenseMatrix<ValueType> Sxyforward;
+            scai::lama::DenseMatrix<ValueType> Sxyadjoint;
+            scai::lama::DenseMatrix<ValueType> Sxzforward;
+            scai::lama::DenseMatrix<ValueType> Sxzadjoint;
+            scai::lama::DenseMatrix<ValueType> Syzforward;
+            scai::lama::DenseMatrix<ValueType> Syzadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fVXforward;
+            scai::lama::DenseMatrix<ComplexValueType> fVXadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fVYforward;
+            scai::lama::DenseMatrix<ComplexValueType> fVYadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fVZforward;
+            scai::lama::DenseMatrix<ComplexValueType> fVZadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fSxxforward;
+            scai::lama::DenseMatrix<ComplexValueType> fSxxadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fSyyforward;
+            scai::lama::DenseMatrix<ComplexValueType> fSyyadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fSxyforward;
+            scai::lama::DenseMatrix<ComplexValueType> fSxyadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fSxzforward;
+            scai::lama::DenseMatrix<ComplexValueType> fSxzadjoint;
+            scai::lama::DenseMatrix<ComplexValueType> fSyzforward;
+            scai::lama::DenseMatrix<ComplexValueType> fSyzadjoint;
             
             /* EM */
             scai::lama::DenseVector<ValueType> xcorrSigmaEM; //!< correlated Wavefields for the sigma gradient
             scai::lama::DenseVector<ValueType> xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradient
             scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEM; //!< correlated Wavefields for the rEpsilonSigma gradient
-            scai::lama::DenseVector<ValueType> xcorrSigmaEMstep; //!< correlated Wavefields for the sigma gradient
-            scai::lama::DenseVector<ValueType> xcorrEpsilonEMstep; //!< correlated Wavefields for the epsilon gradient
-            scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEMstep; //!< correlated Wavefields for the rEpsilonSigma gradient
             scai::lama::DenseVector<ValueType> xcorrSigmaEMSuRu;
             scai::lama::DenseVector<ValueType> xcorrSigmaEMSdRd;
             scai::lama::DenseVector<ValueType> xcorrSigmaEMSuRd;

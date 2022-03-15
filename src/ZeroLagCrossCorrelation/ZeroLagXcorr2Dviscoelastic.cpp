@@ -49,7 +49,7 @@ hmemo::ContextPtr KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::g
  \param t Current Timestep
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const & /*workflow*/)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoelastic<ValueType>::write(std::string filename, IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
     this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
     COMMON_THROWEXCEPTION("write correlated viscoelastic wavefields is not implemented yet.")

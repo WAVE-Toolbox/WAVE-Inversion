@@ -174,16 +174,20 @@ int main(int argc, char *argv[])
     /* coordinate mapping (3D<->1D)            */
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> receivers; 
-    ValueType NXPerShot;
-    IndexType numShotPerSuperShot;
-    receivers.getModelPerShotSize(commAll, config, NXPerShot, numShotPerSuperShot);
+    ValueType NXPerShot = config.get<IndexType>("NX");
+    IndexType numShotPerSuperShot = 1;
+    if (inversionType != 0) {
+        receivers.getModelPerShotSize(commAll, config, NXPerShot, numShotPerSuperShot);
+    }
     Acquisition::Coordinates<ValueType> modelCoordinates(config, 1, NXPerShot);
     Acquisition::Coordinates<ValueType> modelCoordinatesInversion(config, config.get<IndexType>("DHInversion"), NXPerShot);
     
     Acquisition::Receivers<ValueType> receiversEM; 
-    ValueType NXPerShotEM;
-    IndexType numShotPerSuperShotEM;
-    receiversEM.getModelPerShotSize(commAll, config, NXPerShotEM, numShotPerSuperShotEM);
+    ValueType NXPerShotEM = configEM.get<IndexType>("NX");
+    IndexType numShotPerSuperShotEM = 1;
+    if (inversionTypeEM != 0) {
+        receiversEM.getModelPerShotSize(commAll, config, NXPerShotEM, numShotPerSuperShotEM);
+    }
     Acquisition::Coordinates<ValueType> modelCoordinatesEM(configEM, 1, NXPerShotEM);
     Acquisition::Coordinates<ValueType> modelCoordinatesInversionEM(configEM, configEM.get<IndexType>("DHInversion"), NXPerShotEM);
     
@@ -314,8 +318,8 @@ int main(int argc, char *argv[])
     IndexType gradientDomainEM = configEM.getAndCatch("gradientDomain", 0);
     Common::checkNumShotDomains(numShotDomains, commAll);
     Common::checkNumShotDomains(numShotDomainsEM, commAll); 
-    ValueType memWavefiledsStorage;
-    ValueType memWavefiledsStorageEM;
+    ValueType memWavefiledsStorage = 0;
+    ValueType memWavefiledsStorageEM = 0;
     if (inversionType != 0) {
         ValueType memDerivatives = derivatives->estimateMemory(config, dist, modelCoordinates);
         ValueType memWavefileds = wavefields->estimateMemory(dist, numRelaxationMechanisms);
@@ -929,8 +933,7 @@ int main(int argc, char *argv[])
                 freqFilter.calc(transFcnFmly, "hp", workflow.getFilterOrder(), workflow.getUpperCornerFreq()); 
             
             if (workflow.skipDT > 1) {
-                ValueType temp = memWavefiledsStorage / workflow.skipDT;
-                HOST_PRINT(commAll, " -  Forward wavefield storage is reduced to \t" << temp << " MB as skipDT = " << workflow.skipDT << "\n");
+                HOST_PRINT(commAll, "\nForward wavefield storage reduces from " << memWavefiledsStorage << " MB to " << memWavefiledsStorage / workflow.skipDT << " MB (skipDT = " << workflow.skipDT << ")\n");
             }
             IndexType NT = tStepEnd;
             if (gradientDomain != 0) {
@@ -975,8 +978,7 @@ int main(int argc, char *argv[])
                 freqFilterEM.calc(transFcnFmly, "hp", workflowEM.getFilterOrder(), workflowEM.getUpperCornerFreq());  
             
             if (workflowEM.skipDT > 1) {
-                ValueType temp = memWavefiledsStorageEM / workflowEM.skipDT;
-                HOST_PRINT(commAll, " -  Forward wavefield storage is reduced to \t" << temp << " MB as skipDT = " << workflowEM.skipDT << "\n");
+                HOST_PRINT(commAll, "\nForward wavefield storage reduces from " << memWavefiledsStorageEM << " MB to " << memWavefiledsStorageEM / workflowEM.skipDT << " MB (skipDT = " << workflowEM.skipDT << ")\n");
             }
             IndexType NT = tStepEndEM;
             if (gradientDomainEM != 0) {

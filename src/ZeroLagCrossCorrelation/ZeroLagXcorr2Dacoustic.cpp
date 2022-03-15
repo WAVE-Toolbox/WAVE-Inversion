@@ -60,9 +60,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string 
 {
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->writeWavefield(xcorrRho, "xcorrRho", filename, t);
-        if (decomposition == 0) {
-            this->writeWavefield(xcorrRhostep, "xcorrRho.step", filename, t);
-        } else if (gradientKernel == 1 && decomposition == 1) {
+        if (gradientKernel == 1 && decomposition == 1) {
             this->writeWavefield(xcorrRhoSdRu, "xcorrRho.SdRu", filename, t);
             this->writeWavefield(xcorrRhoSuRd, "xcorrRho.SuRd", filename, t);
         } else if (gradientKernel == 2 && decomposition == 1) {
@@ -72,9 +70,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::write(std::string 
     }
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->writeWavefield(xcorrLambda, "xcorrLambda", filename, t);
-        if (decomposition == 0) {
-            this->writeWavefield(xcorrLambdastep, "xcorrLambda.step", filename, t);
-        } else if (gradientKernel == 1 && decomposition == 1) {
+        if (gradientKernel == 1 && decomposition == 1) {
             this->writeWavefield(xcorrLambdaSdRu, "xcorrLambda.SdRu", filename, t);
             this->writeWavefield(xcorrLambdaSuRd, "xcorrLambda.SuRd", filename, t);
         } else if (gradientKernel == 2 && decomposition == 1) {
@@ -122,71 +118,71 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::resetXcorr(KITGPI:
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dacoustic<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
-    //temporary wavefield allocated for every timestep (might be inefficient)
+    scai::lama::DenseVector<ValueType> temp;
     if (workflow.getInvertForVp() || workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         if (gradientKernel == 0 || decomposition == 0) {   
             // Born kernel or FWI kernel
-            xcorrLambdastep = adjointWavefield.getRefP();
-            xcorrLambdastep *= forwardWavefieldDerivative.getRefP();
-            xcorrLambda += xcorrLambdastep;
+            temp = adjointWavefield.getRefP();
+            temp *= forwardWavefieldDerivative.getRefP();
+            xcorrLambda += temp;
         } else if (gradientKernel == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields   
-            xcorrLambdastep = adjointWavefield.getRefPdown();
-            xcorrLambdastep *= forwardWavefieldDerivative.getRefPdown();
-            xcorrLambdaSdRu += xcorrLambdastep;           
-            xcorrLambdastep = adjointWavefield.getRefPup();
-            xcorrLambdastep *= forwardWavefieldDerivative.getRefPup();
-            xcorrLambdaSuRd += xcorrLambdastep;  
+            temp = adjointWavefield.getRefPdown();
+            temp *= forwardWavefieldDerivative.getRefPdown();
+            xcorrLambdaSdRu += temp;           
+            temp = adjointWavefield.getRefPup();
+            temp *= forwardWavefieldDerivative.getRefPup();
+            xcorrLambdaSuRd += temp;  
             xcorrLambda = xcorrLambdaSdRu + xcorrLambdaSuRd;
         } else if (gradientKernel == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
-            xcorrLambdastep = adjointWavefield.getRefPdown();
-            xcorrLambdastep *= forwardWavefieldDerivative.getRefPup();
-            xcorrLambdaSuRu += xcorrLambdastep;           
-            xcorrLambdastep = adjointWavefield.getRefPup();
-            xcorrLambdastep *= forwardWavefieldDerivative.getRefPdown();
-            xcorrLambdaSdRd += xcorrLambdastep; 
+            temp = adjointWavefield.getRefPdown();
+            temp *= forwardWavefieldDerivative.getRefPup();
+            xcorrLambdaSuRu += temp;           
+            temp = adjointWavefield.getRefPup();
+            temp *= forwardWavefieldDerivative.getRefPdown();
+            xcorrLambdaSdRd += temp; 
             xcorrLambda = xcorrLambdaSuRu + xcorrLambdaSdRd;
         }
     }
     if (workflow.getInvertForDensity() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         if (gradientKernel == 0 || decomposition == 0) { 
             // Born kernel or FWI kernel
-            xcorrRhostep = forwardWavefieldDerivative.getRefVX();
-            xcorrRhostep *= adjointWavefield.getRefVX();
-            xcorrRho += xcorrRhostep;
-            xcorrRhostep = forwardWavefieldDerivative.getRefVY();
-            xcorrRhostep *= adjointWavefield.getRefVY();
-            xcorrRho += xcorrRhostep;
+            temp = forwardWavefieldDerivative.getRefVX();
+            temp *= adjointWavefield.getRefVX();
+            xcorrRho += temp;
+            temp = forwardWavefieldDerivative.getRefVY();
+            temp *= adjointWavefield.getRefVY();
+            xcorrRho += temp;
         } else if (gradientKernel == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields   
-            xcorrRhostep = forwardWavefieldDerivative.getRefVXdown();
-            xcorrRhostep *= adjointWavefield.getRefVXdown();
-            xcorrRhoSdRu += xcorrRhostep;
-            xcorrRhostep = forwardWavefieldDerivative.getRefVYdown();
-            xcorrRhostep *= adjointWavefield.getRefVYdown();
-            xcorrRhoSdRu += xcorrRhostep;  
-            xcorrRhostep = forwardWavefieldDerivative.getRefVXup();
-            xcorrRhostep *= adjointWavefield.getRefVXup();
-            xcorrRhoSuRd += xcorrRhostep;
-            xcorrRhostep = forwardWavefieldDerivative.getRefVYup();
-            xcorrRhostep *= adjointWavefield.getRefVYup();
-            xcorrRhoSuRd += xcorrRhostep;  
+            temp = forwardWavefieldDerivative.getRefVXdown();
+            temp *= adjointWavefield.getRefVXdown();
+            xcorrRhoSdRu += temp;
+            temp = forwardWavefieldDerivative.getRefVYdown();
+            temp *= adjointWavefield.getRefVYdown();
+            xcorrRhoSdRu += temp;  
+            temp = forwardWavefieldDerivative.getRefVXup();
+            temp *= adjointWavefield.getRefVXup();
+            xcorrRhoSuRd += temp;
+            temp = forwardWavefieldDerivative.getRefVYup();
+            temp *= adjointWavefield.getRefVYup();
+            xcorrRhoSuRd += temp;  
             xcorrRho = xcorrRhoSdRu + xcorrRhoSuRd;
         } else if (gradientKernel == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
-            xcorrRhostep = forwardWavefieldDerivative.getRefVXdown();
-            xcorrRhostep *= adjointWavefield.getRefVXup();
-            xcorrRhoSdRd += xcorrRhostep;
-            xcorrRhostep = forwardWavefieldDerivative.getRefVYdown();
-            xcorrRhostep *= adjointWavefield.getRefVYup();
-            xcorrRhoSdRd += xcorrRhostep;
-            xcorrRhostep = forwardWavefieldDerivative.getRefVXup();
-            xcorrRhostep *= adjointWavefield.getRefVXdown();
-            xcorrRhoSuRu += xcorrRhostep;
-            xcorrRhostep = forwardWavefieldDerivative.getRefVYup();
-            xcorrRhostep *= adjointWavefield.getRefVYdown();
-            xcorrRhoSuRu += xcorrRhostep;
+            temp = forwardWavefieldDerivative.getRefVXdown();
+            temp *= adjointWavefield.getRefVXup();
+            xcorrRhoSdRd += temp;
+            temp = forwardWavefieldDerivative.getRefVYdown();
+            temp *= adjointWavefield.getRefVYup();
+            xcorrRhoSdRd += temp;
+            temp = forwardWavefieldDerivative.getRefVXup();
+            temp *= adjointWavefield.getRefVXdown();
+            xcorrRhoSuRu += temp;
+            temp = forwardWavefieldDerivative.getRefVYup();
+            temp *= adjointWavefield.getRefVYdown();
+            xcorrRhoSuRu += temp;
             xcorrRho = xcorrRhoSdRd + xcorrRhoSuRu;
         }
     }

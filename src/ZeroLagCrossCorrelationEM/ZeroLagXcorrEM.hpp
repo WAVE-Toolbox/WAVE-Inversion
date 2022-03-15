@@ -75,8 +75,6 @@ namespace KITGPI
 
             using ZeroLagXcorr<ValueType>::xcorrRho;    //!< correlated Wavefields for the rho gradient
             using ZeroLagXcorr<ValueType>::xcorrLambda; //!< correlated Wavefields for the lambda gradient
-            using ZeroLagXcorr<ValueType>::xcorrRhostep; 
-            using ZeroLagXcorr<ValueType>::xcorrLambdastep;
             using ZeroLagXcorr<ValueType>::xcorrRhoSuRu; 
             using ZeroLagXcorr<ValueType>::xcorrRhoSdRd; 
             using ZeroLagXcorr<ValueType>::xcorrRhoSuRd;
@@ -90,8 +88,6 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrSigmaEM; //!< correlated Wavefields for the sigma gradient
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradient
             using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM; //!< correlated Wavefields for the rSigma gradient
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMstep; //!< correlated Wavefields for the sigma gradient
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep; //!< correlated Wavefields for the epsilon gradient
             using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRu;
             using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRd;
             using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRd;
@@ -100,7 +96,6 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRd;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRd;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEMstep; //!< correlated Wavefields for the rSigma gradient gradient
         };
     }
 }

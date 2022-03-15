@@ -49,11 +49,14 @@ namespace KITGPI
             void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
             
           private:
-              
+
+            typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
+    
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType;
             using ZeroLagXcorr<ValueType>::gradientKernel;
             using ZeroLagXcorr<ValueType>::gradientDomain;
+            using ZeroLagXcorr<ValueType>::normalizeGradient;
             using ZeroLagXcorr<ValueType>::useSourceEncode;
             using ZeroLagXcorr<ValueType>::decomposition;
             using ZeroLagXcorr<ValueType>::NT;             
@@ -61,12 +64,22 @@ namespace KITGPI
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrSigmaEM;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEM;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMstep;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
             using ZeroLagXcorr<ValueType>::EXforward;
             using ZeroLagXcorr<ValueType>::EXadjoint;
             using ZeroLagXcorr<ValueType>::EYforward;
             using ZeroLagXcorr<ValueType>::EYadjoint;
+            using ZeroLagXcorr<ValueType>::fEXforward;
+            using ZeroLagXcorr<ValueType>::fEXadjoint;
+            using ZeroLagXcorr<ValueType>::fEYforward;
+            using ZeroLagXcorr<ValueType>::fEYadjoint;
             
             /* non required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;

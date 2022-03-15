@@ -49,6 +49,7 @@ namespace KITGPI
             void init(scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Configuration::Configuration config, scai::IndexType numShotPerSuperShot) override;
 
             void write(std::string filename, scai::IndexType t, KITGPI::Workflow::Workflow<ValueType> const &workflow) override;
+            
           private:
               
             typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
@@ -73,8 +74,6 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRd;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRd;
             using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMstep;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMstep;
             using ZeroLagXcorr<ValueType>::EZforward;
             using ZeroLagXcorr<ValueType>::EZadjoint;
             using ZeroLagXcorr<ValueType>::fEZforward;
@@ -82,7 +81,6 @@ namespace KITGPI
             
             /* non required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEMstep;
             
             std::string type;
         };

@@ -83,9 +83,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string file
 {
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         this->writeWavefield(xcorrSigmaEM, "xcorrSigmaEM", filename, t);
-        if (decomposition == 0) {
-            this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, t);
-        } else if (gradientKernel == 1 && decomposition == 1) {
+        if (gradientKernel == 1 && decomposition == 1) {
             this->writeWavefield(xcorrSigmaEMSdRu, "xcorrSigmaEM.SdRu", filename, t);
             this->writeWavefield(xcorrSigmaEMSuRd, "xcorrSigmaEM.SuRd", filename, t);
         } else if (gradientKernel == 2 && decomposition == 1) {
@@ -96,9 +94,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::write(std::string file
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation())
     {
         this->writeWavefield(xcorrEpsilonEM, "xcorrEpsilonEM", filename, t);
-        if (decomposition == 0) {
-            this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename, t);
-        } else if (gradientKernel == 1 && decomposition == 1) {
+        if (gradientKernel == 1 && decomposition == 1) {
             this->writeWavefield(xcorrEpsilonEMSdRu, "xcorrEpsilonEM.SdRu", filename, t);
             this->writeWavefield(xcorrEpsilonEMSuRd, "xcorrEpsilonEM.SuRd", filename, t);
         } else if (gradientKernel == 2 && decomposition == 1) {
@@ -153,55 +149,56 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::resetXcorr(KITGPI::Wor
 template <typename ValueType>
 void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::update(Wavefields::Wavefields<ValueType> &forwardWavefieldDerivative, Wavefields::Wavefields<ValueType> &forwardWavefield, Wavefields::Wavefields<ValueType> &adjointWavefield, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {
+    scai::lama::DenseVector<ValueType> temp;
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         if (gradientKernel == 0 || decomposition == 0) {   
             // Born kernel or FWI kernel
-            xcorrSigmaEMstep = adjointWavefield.getRefEZ();
-            xcorrSigmaEMstep *= forwardWavefield.getRefEZ();
-            xcorrSigmaEM += xcorrSigmaEMstep;           
+            temp = adjointWavefield.getRefEZ();
+            temp *= forwardWavefield.getRefEZ();
+            xcorrSigmaEM += temp;           
         } else if (gradientKernel == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields
-            xcorrSigmaEMstep = adjointWavefield.getRefEZdown();
-            xcorrSigmaEMstep *= forwardWavefield.getRefEZdown();
-            xcorrSigmaEMSdRu += xcorrSigmaEMstep;           
-            xcorrSigmaEMstep = adjointWavefield.getRefEZup();
-            xcorrSigmaEMstep *= forwardWavefield.getRefEZup();
-            xcorrSigmaEMSuRd += xcorrSigmaEMstep;      
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefield.getRefEZdown();
+            xcorrSigmaEMSdRu += temp;           
+            temp = adjointWavefield.getRefEZup();
+            temp *= forwardWavefield.getRefEZup();
+            xcorrSigmaEMSuRd += temp;      
             xcorrSigmaEM = xcorrSigmaEMSdRu + xcorrSigmaEMSuRd;    
         } else if (gradientKernel == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
-            xcorrSigmaEMstep = adjointWavefield.getRefEZdown();
-            xcorrSigmaEMstep *= forwardWavefield.getRefEZup();
-            xcorrSigmaEMSuRu += xcorrSigmaEMstep;           
-            xcorrSigmaEMstep = adjointWavefield.getRefEZup();
-            xcorrSigmaEMstep *= forwardWavefield.getRefEZdown();
-            xcorrSigmaEMSdRd += xcorrSigmaEMstep;  
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefield.getRefEZup();
+            xcorrSigmaEMSuRu += temp;           
+            temp = adjointWavefield.getRefEZup();
+            temp *= forwardWavefield.getRefEZdown();
+            xcorrSigmaEMSdRd += temp;  
             xcorrSigmaEM = xcorrSigmaEMSuRu + xcorrSigmaEMSdRd;           
         }
     }
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         if (gradientKernel == 0 || decomposition == 0) {   
             // Born kernel or FWI kernel
-            xcorrEpsilonEMstep = adjointWavefield.getRefEZ();
-            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZ();
-            xcorrEpsilonEM += xcorrEpsilonEMstep;
+            temp = adjointWavefield.getRefEZ();
+            temp *= forwardWavefieldDerivative.getRefEZ();
+            xcorrEpsilonEM += temp;
         } else if (gradientKernel == 1 && decomposition == 1) {    
             // migration kernel using up/down-going wavefields   
-            xcorrEpsilonEMstep = adjointWavefield.getRefEZdown();
-            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZdown();
-            xcorrEpsilonEMSdRu += xcorrEpsilonEMstep;           
-            xcorrEpsilonEMstep = adjointWavefield.getRefEZup();
-            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZup();
-            xcorrEpsilonEMSuRd += xcorrEpsilonEMstep;      
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefieldDerivative.getRefEZdown();
+            xcorrEpsilonEMSdRu += temp;           
+            temp = adjointWavefield.getRefEZup();
+            temp *= forwardWavefieldDerivative.getRefEZup();
+            xcorrEpsilonEMSuRd += temp;      
             xcorrEpsilonEM = xcorrEpsilonEMSdRu + xcorrEpsilonEMSuRd;   
         } else if (gradientKernel == 2 && decomposition == 1) {    
             // tomographic kernel using up/down-going wavefields
-            xcorrEpsilonEMstep = adjointWavefield.getRefEZdown();
-            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZup();
-            xcorrEpsilonEMSuRu += xcorrEpsilonEMstep;           
-            xcorrEpsilonEMstep = adjointWavefield.getRefEZup();
-            xcorrEpsilonEMstep *= forwardWavefieldDerivative.getRefEZdown();
-            xcorrEpsilonEMSdRd += xcorrEpsilonEMstep;  
+            temp = adjointWavefield.getRefEZdown();
+            temp *= forwardWavefieldDerivative.getRefEZup();
+            xcorrEpsilonEMSuRu += temp;           
+            temp = adjointWavefield.getRefEZup();
+            temp *= forwardWavefieldDerivative.getRefEZdown();
+            xcorrEpsilonEMSdRd += temp;  
             xcorrEpsilonEM = xcorrEpsilonEMSuRu + xcorrEpsilonEMSdRd;      
         }
     }
@@ -256,10 +253,13 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
     double start_t_shot, end_t_shot; /* For timing */
     start_t_shot = common::Walltime::get();
     
-    scai::lama::DenseMatrix<ComplexValueType> fEZ;
-    scai::lama::DenseVector<ComplexValueType> temp1;
-    scai::lama::DenseVector<ComplexValueType> temp2;
-    scai::lama::DenseVector<ValueType> fc12Ind;
+    scai::lama::DenseMatrix<ComplexValueType> ftempM;
+    scai::lama::DenseVector<ComplexValueType> ftemp1;
+    scai::lama::DenseVector<ComplexValueType> ftemp2;
+    scai::lama::DenseVector<ValueType> xcorrSigmaEMstep;
+    scai::lama::DenseVector<ValueType> xcorrEpsilonEMstep;
+    scai::lama::DenseVector<ValueType> fcInd; // frequency indices start from 0
+    scai::lama::DenseVector<ValueType> fc12Ind; // frequency indices start from fc1
     IndexType nfc12 = 0;
     
     scai::IndexType NF = sourceFC.size();
@@ -272,17 +272,23 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
     omega = sourceFC * 2.0 * M_PI;
     sourceFC /= df;
     sourceFC += 0.5;
-    fc12Ind = scai::lama::floor(sourceFC);
-    nfc12 = fc12Ind.size();
+    fcInd = scai::lama::floor(sourceFC);
+    nfc12 = fcInd.size();
+    if (gradientDomain == 1) { // FFT
+        fc12Ind = fcInd;
+    } else if (gradientDomain == 2 || gradientDomain == 3) { // DFT or Phase sensitive detection (PSD) for special frequency samples.
+        fc12Ind = scai::lama::linearDenseVector<ValueType>(nfc12, 0, 1);
+    }
     
     if (gradientKernel == 0 || decomposition == 0) {  
         if (gradientDomain == 1 || NF <= 1) { // FFT for all frequency samples
+            auto dist = EZforward.getRowDistributionPtr();
+            auto distNFFT = std::make_shared<scai::dmemo::NoDistribution>(nFFT);
             fEZforward = scai::lama::cast<ComplexValueType>(EZforward);
             fEZadjoint = scai::lama::cast<ComplexValueType>(EZadjoint);
-            fEZforward.resize(EZforward.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
-            fEZadjoint.resize(EZadjoint.getRowDistributionPtr(), std::make_shared<scai::dmemo::NoDistribution>(nFFT));
-
-            scai::lama::fft<ComplexValueType>(fEZforward, 1);
+            fEZforward.resize(dist, distNFFT);
+            fEZadjoint.resize(dist, distNFFT);
+            scai::lama::fft<ComplexValueType>(fEZforward, 1);            
             scai::lama::fft<ComplexValueType>(fEZadjoint, 1);
         } else if (gradientDomain == 2 && NF > 1) { // DFT for special frequency samples.
             scai::lama::DenseMatrix<ComplexValueType> L;
@@ -290,15 +296,15 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
             auto distNT = std::make_shared<scai::dmemo::NoDistribution>(NT);
             L.allocate(distNT, distNF);
             for (int tStep = 0; tStep < NT; tStep++) {
-                temp1 = scai::lama::cast<ComplexValueType>(omega);
-                temp1 *= -j * tStep * DT * workflow.skipDT;
-                temp1.unaryOp(temp1, common::UnaryOp::EXP);
-                L.setRow(temp1, tStep, common::BinaryOp::COPY);
+                ftemp1 = scai::lama::cast<ComplexValueType>(omega);
+                ftemp1 *= -j * tStep * DT * workflow.skipDT;
+                ftemp1.unaryOp(ftemp1, common::UnaryOp::EXP);
+                L.setRow(ftemp1, tStep, common::BinaryOp::COPY);
             }
-            fEZ = scai::lama::cast<ComplexValueType>(EZforward);
-            fEZforward = fEZ * L; // NR * NT * NT * NF = NR * NF
-            fEZ = scai::lama::cast<ComplexValueType>(EZadjoint);
-            fEZadjoint = fEZ * L;
+            ftempM = scai::lama::cast<ComplexValueType>(EZforward);
+            fEZforward = ftempM * L; // NR * NT * NT * NF = NR * NF
+            ftempM = scai::lama::cast<ComplexValueType>(EZadjoint);
+            fEZadjoint = ftempM * L;
         }            
         
         IndexType frequencySkip = 1;
@@ -307,43 +313,37 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
         
         if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
             for (IndexType jf = 0; jf < nfc12; jf++) {
-                if (gradientDomain == 1) { // FFT
-                    fEZforward.getColumn(temp1, fc12Ind[jf]);
-                    fEZadjoint.getColumn(temp2, fc12Ind[jf]);
-                } else if (gradientDomain == 2 || gradientDomain == 3) { // DFT or Phase sensitive detection (PSD) for special frequency samples.
-                    fEZforward.getColumn(temp1, jf);
-                    fEZadjoint.getColumn(temp2, jf);
-                }
-                temp2.unaryOp(temp2, common::UnaryOp::CONJ);
-                temp1 *= temp2;
-                xcorrSigmaEMstep = scai::lama::real(temp1);
+                fEZforward.getColumn(ftemp1, fc12Ind[jf]);
+                fEZadjoint.getColumn(ftemp2, fc12Ind[jf]);                
+                ftemp2.unaryOp(ftemp2, common::UnaryOp::CONJ);
+                ftemp1 *= ftemp2;
+                
+                xcorrSigmaEMstep = scai::lama::real(ftemp1);
+                
                 if (normalizeGradient && useSourceEncode != 0 && xcorrSigmaEMstep.maxNorm() != 0)
                     xcorrSigmaEMstep *= 1.0 / xcorrSigmaEMstep.maxNorm();
-                xcorrSigmaEMstep *= weightingFreq[fc12Ind[jf]];
+                xcorrSigmaEMstep *= weightingFreq[fcInd[jf]];
                 if (snapType > 0) {
-                    this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, frequencySkip*fc12Ind[jf]);
+                    this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, frequencySkip*fcInd[jf]);
                 }
                 xcorrSigmaEM += xcorrSigmaEMstep;
             }
         }
         if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
             for (IndexType jf = 0; jf < nfc12; jf++) {
-                if (gradientDomain == 1) { // FFT
-                    fEZforward.getColumn(temp1, fc12Ind[jf]);
-                    fEZadjoint.getColumn(temp2, fc12Ind[jf]);
-                } else if (gradientDomain == 2 || gradientDomain == 3) { // DFT
-                    fEZforward.getColumn(temp1, jf);
-                    fEZadjoint.getColumn(temp2, jf);
-                }
-                temp2.unaryOp(temp2, common::UnaryOp::CONJ);
-                temp1 *= temp2;
-                temp1 *= j * omega[jf];
-                xcorrEpsilonEMstep = scai::lama::real(temp1);
+                fEZforward.getColumn(ftemp1, fc12Ind[jf]);
+                fEZadjoint.getColumn(ftemp2, fc12Ind[jf]);                
+                ftemp2.unaryOp(ftemp2, common::UnaryOp::CONJ);
+                ftemp1 *= ftemp2;
+                
+                ftemp1 *= j * omega[jf];
+                xcorrEpsilonEMstep = scai::lama::real(ftemp1);
+                
                 if (normalizeGradient && useSourceEncode != 0 && xcorrEpsilonEMstep.maxNorm() != 0)
                     xcorrEpsilonEMstep *= 1.0 / xcorrEpsilonEMstep.maxNorm();
-                xcorrEpsilonEMstep *= weightingFreq[fc12Ind[jf]];
+                xcorrEpsilonEMstep *= weightingFreq[fcInd[jf]];
                 if (snapType > 0 && useSourceEncode == 0) {
-                    this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename, frequencySkip*fc12Ind[jf]);
+                    this->writeWavefield(xcorrEpsilonEMstep, "xcorrEpsilonEM.step", filename, frequencySkip*fcInd[jf]);
                 }
                 xcorrEpsilonEM += xcorrEpsilonEMstep;
             }

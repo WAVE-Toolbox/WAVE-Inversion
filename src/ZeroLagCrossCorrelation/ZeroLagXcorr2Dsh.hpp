@@ -54,12 +54,32 @@ namespace KITGPI
 
           private:
               
+            typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
+            
             using ZeroLagXcorr<ValueType>::numDimension;
             using ZeroLagXcorr<ValueType>::equationType;
-            
+            using ZeroLagXcorr<ValueType>::gradientKernel;
+            using ZeroLagXcorr<ValueType>::gradientDomain;
+            using ZeroLagXcorr<ValueType>::normalizeGradient;
+            using ZeroLagXcorr<ValueType>::useSourceEncode;
+            using ZeroLagXcorr<ValueType>::decomposition;
+            using ZeroLagXcorr<ValueType>::NT;  
+                          
             /* required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrRho;
             using ZeroLagXcorr<ValueType>::xcorrMuC;
+            using ZeroLagXcorr<ValueType>::VZforward;
+            using ZeroLagXcorr<ValueType>::VZadjoint;
+            using ZeroLagXcorr<ValueType>::Sxzforward;
+            using ZeroLagXcorr<ValueType>::Sxzadjoint;
+            using ZeroLagXcorr<ValueType>::Syzforward;
+            using ZeroLagXcorr<ValueType>::Syzadjoint;
+            using ZeroLagXcorr<ValueType>::fVZforward;
+            using ZeroLagXcorr<ValueType>::fVZadjoint;
+            using ZeroLagXcorr<ValueType>::fSxzforward;
+            using ZeroLagXcorr<ValueType>::fSxzadjoint;
+            using ZeroLagXcorr<ValueType>::fSyzforward;
+            using ZeroLagXcorr<ValueType>::fSyzadjoint;
             /* non required wavefields */
             using ZeroLagXcorr<ValueType>::xcorrLambda;
             using ZeroLagXcorr<ValueType>::xcorrMuA;
