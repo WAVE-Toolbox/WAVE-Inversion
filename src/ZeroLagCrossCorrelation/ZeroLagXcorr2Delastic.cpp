@@ -363,7 +363,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::gatherWavefields(Wa
 /*! \brief Sum wavefields in the frequency domain
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sourceFC, ValueType DT, scai::IndexType shotNumber)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sourceFC, ValueType DT, scai::IndexType shotNumber, std::vector<scai::lama::SparseVector<ValueType>> taperEncode)
 {
     double start_t_shot, end_t_shot; /* For timing */
     start_t_shot = common::Walltime::get();
@@ -503,7 +503,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::sumWavefields(scai:
                 if (normalizeGradient && useSourceEncode != 0 && xcorrRhostep.maxNorm() != 0)
                     xcorrRhostep *= 1.0 / xcorrRhostep.maxNorm();
                 xcorrRhostep *= weightingFreq[fcInd[jf]];
-                if (snapType > 0) {
+                if (snapType > 0 && workflow.workflowStage == 0 && workflow.iteration == 0) {
                     this->writeWavefield(xcorrRhostep, "xcorrRho.step", filename, frequencySkip*fcInd[jf]);
                 }
                 xcorrRho += xcorrRhostep;
@@ -527,7 +527,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::sumWavefields(scai:
                 if (normalizeGradient && useSourceEncode != 0 && xcorrLambdastep.maxNorm() != 0)
                     xcorrLambdastep *= 1.0 / xcorrLambdastep.maxNorm();
                 xcorrLambdastep *= weightingFreq[fcInd[jf]];
-                if (snapType > 0) {
+                if (snapType > 0 && workflow.workflowStage == 0 && workflow.iteration == 0) {
                     this->writeWavefield(xcorrLambdastep, "xcorrLambda.step", filename, frequencySkip*fcInd[jf]);
                 }
                 xcorrLambda += xcorrLambdastep;
@@ -578,7 +578,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Delastic<ValueType>::sumWavefields(scai:
                 xcorrMuAstep *= weightingFreq[fcInd[jf]];
                 xcorrMuBstep *= weightingFreq[fcInd[jf]];
                 xcorrMuCstep *= weightingFreq[fcInd[jf]];
-                if (snapType > 0) {
+                if (snapType > 0 && workflow.workflowStage == 0 && workflow.iteration == 0) {
                     this->writeWavefield(xcorrMuAstep, "xcorrMuA.step", filename, frequencySkip*fcInd[jf]);
                     this->writeWavefield(xcorrMuBstep, "xcorrMuB.step", filename, frequencySkip*fcInd[jf]);
                     this->writeWavefield(xcorrMuCstep, "xcorrMuC.step", filename, frequencySkip*fcInd[jf]);

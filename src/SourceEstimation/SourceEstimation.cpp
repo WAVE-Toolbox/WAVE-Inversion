@@ -390,7 +390,7 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTraces(Configuration::Configura
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode)
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode)
 {
     if (useSourceEncode != 0) {
         double start_t_shot, end_t_shot; /* For timing */
@@ -402,6 +402,8 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::Com
         sources.getAcquisitionSettings(config, shotIncr); // to get numshots
         bool useStreamConfig = config.getAndCatch<bool>("useStreamConfig", false);
         if (useStreamConfig) {
+            Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
+            Acquisition::Coordinates<ValueType> modelCoordinatesBig(configBig);
             std::vector<Acquisition::coordinate3D> cutCoordinates;
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
             sourceSettingsBig = sources.getSourceSettings(); 

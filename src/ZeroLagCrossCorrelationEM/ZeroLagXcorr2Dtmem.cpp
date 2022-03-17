@@ -248,7 +248,7 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::gatherWavefields(Wavef
 /*! \brief Sum wavefields in the frequency domain
  */
 template <typename ValueType>
-void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sourceFC, ValueType DT, scai::IndexType shotNumber)
+void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dmemo::CommunicatorPtr commShot, std::string filename, IndexType snapType, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::lama::DenseVector<ValueType> sourceFC, ValueType DT, scai::IndexType shotNumber, std::vector<scai::lama::SparseVector<ValueType>> taperEncode)
 {
     double start_t_shot, end_t_shot; /* For timing */
     start_t_shot = common::Walltime::get();
@@ -320,10 +320,15 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
                 
                 xcorrSigmaEMstep = scai::lama::real(ftemp1);
                 
+                if (taperEncode.size() == 1) {
+                    xcorrSigmaEMstep *= taperEncode[0];
+                } else if (taperEncode.size() > 1) {
+                    xcorrSigmaEMstep *= taperEncode[jf];
+                }
                 if (normalizeGradient && useSourceEncode != 0 && xcorrSigmaEMstep.maxNorm() != 0)
                     xcorrSigmaEMstep *= 1.0 / xcorrSigmaEMstep.maxNorm();
                 xcorrSigmaEMstep *= weightingFreq[fcInd[jf]];
-                if (snapType > 0) {
+                if (snapType > 0 && workflow.workflowStage == 0 && workflow.iteration == 0) {
                     this->writeWavefield(xcorrSigmaEMstep, "xcorrSigmaEM.step", filename, frequencySkip*fcInd[jf]);
                 }
                 xcorrSigmaEM += xcorrSigmaEMstep;
@@ -339,6 +344,11 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dtmem<ValueType>::sumWavefields(scai::dm
                 ftemp1 *= j * omega[jf];
                 xcorrEpsilonEMstep = scai::lama::real(ftemp1);
                 
+                if (taperEncode.size() == 1) {
+                    xcorrEpsilonEMstep *= taperEncode[0];
+                } else if (taperEncode.size() > 1) {
+                    xcorrEpsilonEMstep *= taperEncode[jf];
+                }
                 if (normalizeGradient && useSourceEncode != 0 && xcorrEpsilonEMstep.maxNorm() != 0)
                     xcorrEpsilonEMstep *= 1.0 / xcorrEpsilonEMstep.maxNorm();
                 xcorrEpsilonEMstep *= weightingFreq[fcInd[jf]];

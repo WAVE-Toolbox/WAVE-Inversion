@@ -47,19 +47,28 @@ void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::C
     dataMisfit.clearStorage();
     steplengthInit = config.get<ValueType>("steplengthInit");  
     
+    IndexType gradientDomain = config.getAndCatch("gradientDomain", 0);
     IndexType dtinversion = config.get<IndexType>("DTInversion"); 
     if (dtinversion == 1 || upperCornerFreq == 0.0) {
         skipDT = 1;
     } else {
         ValueType dtMax = 1.0 / (upperCornerFreq * 5);
         skipDT = floor(dtMax / config.get<ValueType>("DT")); // Nyquist sampling step
+        if (gradientDomain != 0) {
+            scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(skipDT - 1);
+            if (nFFT > skipDT) {
+                skipDT = nFFT / 2;
+            } else {
+                skipDT = nFFT;
+            }
+        }
     }
         
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
-    IndexType gradientDomain = config.getAndCatch("gradientDomain", 0);
     if (gradientDomain != 0) {
         IndexType NT = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
         scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(NT - 1);
+        SCAI_ASSERT_ERROR(nFFT == NT, "NT must be the power of 2 when gradientDomain != 0!");
         ValueType df = 1 / (nFFT * config.get<ValueType>("DT"));
         IndexType fc1Ind = ceil(lowerCornerFreq / df);
         IndexType fc2Ind = ceil(upperCornerFreq / df);  

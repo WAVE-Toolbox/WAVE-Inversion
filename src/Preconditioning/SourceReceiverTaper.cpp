@@ -10,6 +10,28 @@ scai::lama::SparseVector<ValueType> KITGPI::Preconditioning::SourceReceiverTaper
     return taper;
 }
 
+/*! \brief Get taper
+ *
+ */
+template <typename ValueType>
+std::vector<scai::lama::SparseVector<ValueType>> KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::getTaperEncode()
+{
+    return taperEncode;
+}
+
+/*! \brief stack taper 
+ *
+ \param gradient gradient
+ */
+template <typename ValueType>
+void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::stack(scai::lama::SparseVector<ValueType> taperSingle)
+{   
+    IndexType numshotsSuperShot = taperEncode.size();
+    for (scai::IndexType shotInd = 0; shotInd < numshotsSuperShot; shotInd++) {
+        taperEncode[shotInd] *= taperSingle;
+    }
+}
+
 /*! \brief apply taper on gradient
  *
  \param gradient gradient
@@ -45,7 +67,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 
     lama::VectorAssembly<ValueType> assembly;
 
-    // distributed acquistion coordinates needed for each processor
+    // distributed acquisition coordinates needed for each processor
     auto acquisition1DCoordinates = Acquisition.get1DCoordinates();
     acquisition1DCoordinates.replicate();
     auto rAcquisition1DCoordinates = scai::hmemo::hostReadAccess(acquisition1DCoordinates.getLocalValues());
@@ -65,10 +87,8 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
                 // get 1D coordinate
                 SourceCoordinate = rAcquisition1DCoordinates[srcRecNum];
 
-                KITGPI::Acquisition::coordinate3D centerCoord;
-
                 // get 3D coordinate of source or receiver position
-                centerCoord = modelCoordinates.index2coordinate(SourceCoordinate);
+                KITGPI::Acquisition::coordinate3D centerCoord = modelCoordinates.index2coordinate(SourceCoordinate);
                 
                 ValueType distance;
 
@@ -122,10 +142,6 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     /* Get local "global" indices */
     hmemo::HArray<IndexType> ownedIndexes;
     dist->getOwnedIndexes(ownedIndexes); // get global indexes for local part
-
-    //gets coordinate index for first source to be changed
-    IndexType SourceCoordinate;
-    IndexType ReceiverCoordinate;
     
     IndexType taperType = 0;
     
@@ -133,7 +149,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 
     lama::VectorAssembly<ValueType> assembly;
 
-    // distributed acquistion coordinates needed for each processor
+    // distributed acquisition coordinates needed for each processor
     auto sources1DCoordinates = sources.get1DCoordinates();
     sources1DCoordinates.replicate();
     auto rSources1DCoordinates = scai::hmemo::hostReadAccess(sources1DCoordinates.getLocalValues());
@@ -142,16 +158,12 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     auto rReceivers1DCoordinates = scai::hmemo::hostReadAccess(receivers1DCoordinates.getLocalValues());
 
     KITGPI::Acquisition::coordinate3D sourceCoordFirst = modelCoordinates.index2coordinate(rSources1DCoordinates[0]);
-    KITGPI::Acquisition::coordinate3D receiverCoordFirst = modelCoordinates.index2coordinate(rReceivers1DCoordinates[0]);
-    KITGPI::Acquisition::coordinate3D receiverCoordLast = modelCoordinates.index2coordinate(rReceivers1DCoordinates[receivers1DCoordinates.size()-1]);
+    KITGPI::Acquisition::coordinate3D receiverCoordLast = modelCoordinates.index2coordinate(rReceivers1DCoordinates[rReceivers1DCoordinates.size()-1]);
     
-    if(receiverCoordLast.y != receiverCoordFirst.y && abs(receiverCoordLast.x - receiverCoordFirst.x) / abs(receiverCoordLast.y - receiverCoordFirst.y) < 1){ // borehole
-        KITGPI::Acquisition::coordinate3D sourceCoordFirstEdge = modelCoordinates.edgeDistance(sourceCoordFirst);
-        KITGPI::Acquisition::coordinate3D receiverCoordFirstEdge = modelCoordinates.edgeDistance(receiverCoordFirst);
-        if (sourceCoordFirst.x == sourceCoordFirstEdge.x && receiverCoordFirst.x != receiverCoordFirstEdge.x) {
-            taperType = 1; // source is on the left of receiver array
-        } else if (sourceCoordFirst.x != sourceCoordFirstEdge.x && receiverCoordFirst.x == receiverCoordFirstEdge.x) {
-            taperType = 2; // source is on the right of receiver array
+    if (rReceivers1DCoordinates.size() > 4) {
+        KITGPI::Acquisition::coordinate3D receiverCoordFirst = modelCoordinates.index2coordinate(rReceivers1DCoordinates[rReceivers1DCoordinates.size()-5]);
+        if(abs(receiverCoordLast.x - receiverCoordFirst.x) < abs(receiverCoordLast.y - receiverCoordFirst.y)){ // borehole
+            taperType = 1; 
         }
     }
     if(taperType > 0){
@@ -162,38 +174,9 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
             KITGPI::Acquisition::coordinate3D coord;
             // get 3D coordinate of current ownedIndex
             coord = modelCoordinates.index2coordinate(ownedIndex);
-                
-            //loop over all shots
-            for (IndexType srcRecNum = 0; srcRecNum < sources1DCoordinates.size(); srcRecNum++) {
-                // get 1D coordinate
-                SourceCoordinate = rSources1DCoordinates[srcRecNum];
-
-                KITGPI::Acquisition::coordinate3D sourceCoord;
-
-                // get 3D coordinate of source position
-                sourceCoord = modelCoordinates.index2coordinate(SourceCoordinate);
-                
-                if (taperType == 1 && coord.x <= sourceCoord.x) {
-                    value=0;
-                } else if (taperType == 2 && coord.x >= sourceCoord.x) {
-                    value=0;
-                }
-            }
-            //loop over all receiver
-            for (IndexType srcRecNum = 0; srcRecNum < receivers1DCoordinates.size(); srcRecNum++) {
-                // get 1D coordinate
-                ReceiverCoordinate = rReceivers1DCoordinates[srcRecNum];
-
-                KITGPI::Acquisition::coordinate3D receiverCoord;
-
-                // get 3D coordinate of receiver position
-                receiverCoord = modelCoordinates.index2coordinate(ReceiverCoordinate);
-                
-                if (taperType == 2 && coord.x <= receiverCoord.x) {
-                    value=0;
-                } else if (taperType == 1 && coord.x >= receiverCoord.x) {
-                    value=0;
-                }  
+            
+            if ((coord.x - sourceCoordFirst.x) * (coord.x - receiverCoordLast.x) >= 0) {
+                value=0;
             }
             assembly.push(ownedIndex, value); 
         }
@@ -201,6 +184,73 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
 
     taper.setContextPtr(ctx);
     taper.fillFromAssembly(assembly);
+    
+    IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
+    if (useSourceEncode == 0) {
+        taperEncode.clear();
+        taperEncode.push_back(taper);
+    }
+}
+
+/*! \brief Init taper
+ *
+ \param dist_wavefield Distribution of the wavefields
+ \param ctx Context
+ \param sources sources
+ \param receivers receivers
+ \param config Configuration class, which is used to derive all required parameters
+ \param modelCoordinates Coordinate class, which eg. maps 3D coordinates to 1D model indices
+ \param radius radius of the taper. 0=not apply taper.
+ */
+template <typename ValueType>
+void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::CommunicatorPtr commShot, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, scai::IndexType shotNumberEncode)
+{
+    IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
+    if (useSourceEncode != 0) {
+        double start_t_shot, end_t_shot; /* For timing */
+        start_t_shot = common::Walltime::get();
+                
+        std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings;  
+        Acquisition::Sources<ValueType> sources;
+        ValueType shotIncr = 0; 
+        sources.getAcquisitionSettings(config, shotIncr); // to get numshots
+        bool useStreamConfig = config.getAndCatch<bool>("useStreamConfig", false);
+        if (useStreamConfig) {
+            Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
+            Acquisition::Coordinates<ValueType> modelCoordinatesBig(configBig);
+            std::vector<Acquisition::coordinate3D> cutCoordinates;
+            std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
+            sourceSettingsBig = sources.getSourceSettings(); 
+            Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
+            Acquisition::getSettingsPerShot(sourceSettings, sourceSettingsBig, cutCoordinates);
+        } else {
+            sourceSettings = sources.getSourceSettings(); 
+        }
+        std::vector<scai::IndexType> uniqueShotNos;
+        Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
+        IndexType numshotsIncr = sourceSettingsEncode.size();
+        std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncodeTemp; // to control the useSourceEncode
+        KITGPI::Acquisition::Receivers<ValueType> receivers;
+        
+        taperEncode.clear();
+        for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
+            if (std::abs(sourceSettingsEncode[shotInd].sourceNo) == shotNumberEncode) {
+                IndexType shotNumber = uniqueShotNos[sourceSettingsEncode[shotInd].row];                 
+                std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
+                Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettings, shotNumber);
+                sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
+                
+                if (config.get<IndexType>("useReceiversPerShot") != 0) {
+                    receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncodeTemp);
+                }
+                
+                init(dist, ctx, sources, receivers, config, modelCoordinates);  
+                taperEncode.push_back(taper);
+            }
+        }
+        end_t_shot = common::Walltime::get();
+        HOST_PRINT(commShot, "Shot number " << shotNumberEncode << ": Calculate encoded source and receiver taper in " << end_t_shot - start_t_shot << " sec.\n");
+    }
 }
 
 template class KITGPI::Preconditioning::SourceReceiverTaper<double>;

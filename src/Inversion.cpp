@@ -1148,7 +1148,7 @@ int main(int argc, char *argv[])
                         if (useSourceEncode == 0) {
                             sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinates);
                         } else {
-                            sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, modelCoordinates, modelCoordinatesBig, ctx, dist, sourceSettingsEncode, receiversTrue);
+                            sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
                         }
                         if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
                             if (config.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -1348,7 +1348,7 @@ int main(int argc, char *argv[])
                                 energyPrecond.intSquaredWavefields(*wavefieldsInversion, config.get<ValueType>("DT"));
                             }        
 
-                            if (workflow.workflowStage == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                            if (workflow.workflowStage == 0 && workflow.iteration == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                                 wavefields->write(snapType, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source", tStep, *derivatives, *model, config.get<IndexType>("FileFormat"));
                             }
                         }
@@ -1385,7 +1385,7 @@ int main(int argc, char *argv[])
                                     }
                                     energyPrecondReflect.intSquaredWavefields(*wavefieldsInversion, config.get<ValueType>("DT"));
                                 }
-                                if (workflow.workflowStage == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                                if (workflow.workflowStage == 0 && workflow.iteration == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                                     wavefields->write(config.getAndCatch("snapType", 0), config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, *derivatives, *model, config.get<IndexType>("FileFormat"));
                                 }
                             }
@@ -1424,7 +1424,7 @@ int main(int argc, char *argv[])
                                 }
                                 energyPrecond.intSquaredWavefields(*wavefieldsInversion, config.get<ValueType>("DT"));
                             }                            
-                            if (workflow.workflowStage == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                            if (workflow.workflowStage == 0 && workflow.iteration == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                                 wavefields->write(snapType, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source", tStep, *derivatives, *modelPerShot, config.get<IndexType>("FileFormat"));
                             }
                         }
@@ -1461,7 +1461,7 @@ int main(int argc, char *argv[])
                                     }
                                     energyPrecondReflect.intSquaredWavefields(*wavefieldsInversion, config.get<ValueType>("DT"));
                                 }
-                                if (workflow.workflowStage == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                                if (workflow.workflowStage == 0 && workflow.iteration == 0 && gradientDomain == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
                                     wavefields->write(config.getAndCatch("snapType", 0), config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, *derivatives, *modelPerShot, config.get<IndexType>("FileFormat"));
                                 }
                             }
@@ -1525,9 +1525,9 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshots << "): Start backward in " << end_t_shot - start_t_shot << " sec.\n");
                     }
                     if (!useStreamConfig) {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, shotIndTrue, workflow, wavefieldTaper2D, wavefieldrecordReflect, *dataMisfit, energyPrecond, energyPrecondReflect);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *model, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, shotIndTrue, workflow, wavefieldTaper2D, wavefieldrecordReflect, *dataMisfit, energyPrecond, energyPrecondReflect, sourceSettingsEncode);
                     } else {
-                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, shotIndTrue, workflow, wavefieldTaper2D, wavefieldrecordReflect, *dataMisfit, energyPrecond, energyPrecondReflect);
+                        gradientCalculation.run(commAll, *solver, *derivatives, receivers, sources, adjointSources, *modelPerShot, *gradientPerShot, wavefieldrecord, config, modelCoordinates, shotNumber, shotIndTrue, workflow, wavefieldTaper2D, wavefieldrecordReflect, *dataMisfit, energyPrecond, energyPrecondReflect, sourceSettingsEncode);
                     }
                     
                     if (!useStreamConfig) {
@@ -1825,7 +1825,7 @@ int main(int argc, char *argv[])
                         if (useSourceEncode == 0) {
                             sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinates);
                         } else {
-                            sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, modelCoordinates, modelCoordinatesBig, ctx, dist, sourceSettingsEncode, receiversTrue);
+                            sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
                         }
                         if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
                             if (config.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -2113,7 +2113,7 @@ int main(int argc, char *argv[])
                         if (useSourceEncode == 0) {
                             sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinatesEM);
                         } else {
-                            sourceEstEM.calcOffsetMutesEncode(commShot, shotNumber, configEM, modelCoordinatesEM, modelCoordinatesBigEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM);
+                            sourceEstEM.calcOffsetMutesEncode(commShot, shotNumber, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM);
                         }
                         if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
                             if (configEM.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -2313,7 +2313,7 @@ int main(int argc, char *argv[])
                                 }
                                 energyPrecondEM.intSquaredWavefields(*wavefieldsInversionEM, configEM.get<ValueType>("DT"));
                             }                            
-                            if (workflowEM.workflowStage == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                            if (workflowEM.workflowStage == 0 && workflowEM.iteration == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
                                 wavefieldsEM->write(snapTypeEM, configEM.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) +  + ".shot_" + std::to_string(shotNumber) + ".source", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
                             }
                         }
@@ -2350,7 +2350,7 @@ int main(int argc, char *argv[])
                                     }
                                     energyPrecondReflectEM.intSquaredWavefields(*wavefieldsInversionEM, configEM.get<ValueType>("DT"));
                                 }
-                                if (workflowEM.workflowStage == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                                if (workflowEM.workflowStage == 0 && workflowEM.iteration == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
                                     wavefieldsEM->write(configEM.getAndCatch("snapType", 0), configEM.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, *derivativesEM, *modelEM, configEM.get<IndexType>("FileFormat"));
                                 }
                             }
@@ -2389,7 +2389,7 @@ int main(int argc, char *argv[])
                                 }
                                 energyPrecondEM.intSquaredWavefields(*wavefieldsInversionEM, configEM.get<ValueType>("DT"));
                             }                            
-                            if (workflowEM.workflowStage == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                            if (workflowEM.workflowStage == 0 && workflowEM.iteration == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
                                 wavefieldsEM->write(snapTypeEM, configEM.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".source", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
                             }
                         }
@@ -2426,7 +2426,7 @@ int main(int argc, char *argv[])
                                     }
                                     energyPrecondReflectEM.intSquaredWavefields(*wavefieldsInversionEM, configEM.get<ValueType>("DT"));
                                 }
-                                if (workflowEM.workflowStage == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
+                                if (workflowEM.workflowStage == 0 && workflowEM.iteration == 0 && gradientDomainEM == 0 && configEM.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT")) && tStep <= Common::time2index(configEM.get<ValueType>("tlastSnapshot"), configEM.get<ValueType>("DT")) && (tStep - Common::time2index(configEM.get<ValueType>("tFirstSnapshot"), configEM.get<ValueType>("DT"))) % Common::time2index(configEM.get<ValueType>("tincSnapshot"), configEM.get<ValueType>("DT")) == 0) {
                                     wavefieldsEM->write(configEM.getAndCatch("snapType", 0), configEM.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, *derivativesEM, *modelPerShotEM, configEM.get<IndexType>("FileFormat"));
                                 }
                             }
@@ -2491,9 +2491,9 @@ int main(int argc, char *argv[])
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Start backward in " << end_t_shot - start_t_shot << " sec.\n");
                     }
                     if (!useStreamConfigEM) {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, shotIndTrue, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM, *dataMisfitEM, energyPrecondEM, energyPrecondReflectEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, shotIndTrue, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM, *dataMisfitEM, energyPrecondEM, energyPrecondReflectEM, sourceSettingsEncodeEM);
                     } else {
-                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, shotIndTrue, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM, *dataMisfitEM, energyPrecondEM, energyPrecondReflectEM);
+                        gradientCalculationEM.run(commAll, *solverEM, *derivativesEM, receiversEM, sourcesEM, adjointSourcesEM, *modelPerShotEM, *gradientPerShotEM, wavefieldrecordEM, configEM, modelCoordinatesEM, shotNumber, shotIndTrue, workflowEM, wavefieldTaper2DEM, wavefieldrecordReflectEM, *dataMisfitEM, energyPrecondEM, energyPrecondReflectEM, sourceSettingsEncodeEM);
                     }
                         
                     if (!useStreamConfigEM) {
@@ -2823,7 +2823,7 @@ int main(int argc, char *argv[])
                         if (useSourceEncode == 0) {
                             sourceEstEM.calcOffsetMutes(sourcesEM, receiversTrueEM, configEM.getAndCatch("minOffsetSrcEst", 0.0), configEM.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinatesEM);
                         } else {
-                            sourceEstEM.calcOffsetMutesEncode(commShot, shotNumber, configEM, modelCoordinatesEM, modelCoordinatesBigEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM);
+                            sourceEstEM.calcOffsetMutesEncode(commShot, shotNumber, configEM, modelCoordinatesEM, ctx, distEM, sourceSettingsEncodeEM, receiversTrueEM);
                         }
                         if (configEM.get<IndexType>("useSourceSignalInversion") == 2 || misfitTypeEM.compare("l3") == 0 || multiMisfitTypeEM.find('3') != std::string::npos) {
                             if (configEM.get<IndexType>("useSourceSignalTaper") == 2) {
