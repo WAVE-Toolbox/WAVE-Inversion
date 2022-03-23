@@ -3,7 +3,7 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface_Stream';
+observationType = 'Surface_COP';
 equationType = 'TMEM';
 NoiseType = '';
 modelType = 'Inv';
@@ -32,7 +32,6 @@ depthGain = '';
 Insert_name = cellMerge({invertParameterType,...
     bandPass,NoisedB,sourceType,depthGain,timeGain},1); 
 
-writefiles=1;
 writeAdjointSource=0;
 writeSourceTrue=1;
 filenamein = ['../' config.getString('logFilename')];
@@ -70,59 +69,34 @@ else
 end
 seismogramInv=[];seismogramTrue=[];
 dampFactor=2e-2/DT;
-for ishot=1:Nshot
-    if useSourceEncode==0
-        shotnr=source(ishot,1);
-    else
-        shotnr=sourceEncode(ishot,1);
-    end
-    SOURCE_TYPE=source(ishot,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
-    component = getSeismogramComponent(equationType,SOURCE_TYPE);
-    
-    %% Read seismogram
-    sourceSeismogramFilename=config.getString('sourceSeismogramFilename');
-    seismogramFilename=config.getString('SeismogramFilename');
-    writeSourceFilename=configTrue.getString('writeSourceFilename');
-    fieldSeisName=config.getString('fieldSeisName');
-    if writeAdjointSource==0
-        filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage)...
-            '.shot_' num2str(shotnr) '.' component];
-        filenameTrue=['../' writeSourceFilename '.shot_' num2str(shotnr) '.' component];
-    else
-        filenameInv=['../' seismogramFilename '.stage_' num2str(stage)...
-            '.It_' num2str(iteration) '.shot_' num2str(shotnr) '.' component...
-            '.refTrace'];
-        filenameTrue=['../' fieldSeisName '.stage_' num2str(stage) '.shot_' ...
-            num2str(shotnr) '.' component '.refTrace'];
-    end
-    sourceInv=readSeismogram(filenameInv,fileFormat);
-    if size(sourceInv,2)==1
-        sourceInv=sourceInv';
-    end
-    T=1*DT:DT:size(sourceInv,2)*DT;
-    timeDamping=ones(size(sourceInv));
-    if useDamp==1
-        timeDamping(T<T0damp)=timeDamping(T<T0damp).*exp(dampFactor*(T(T<T0damp)-T0damp));
-        timeDamping(T>T1damp)=timeDamping(T>T1damp).*exp(-dampFactor*(T(T>T1damp)-T1damp));
-    end
-    sourceInv=sourceInv.*timeDamping;
-    seismogramInv=[seismogramInv;sourceInv];
-    
-    if writeSourceTrue~=0        
-        sourceTrue=readSeismogram(filenameTrue,fileFormat);
-        if size(sourceTrue,2)==1
-            sourceTrue=sourceTrue';
-        end
-        seismogramTrue=[seismogramTrue;sourceTrue];
-    end
-end
+
+SOURCE_TYPE=source(1,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
+component = getSeismogramComponent(equationType,SOURCE_TYPE);
+
+%% Read seismogram
+sourceSeismogramFilename=config.getString('sourceSeismogramFilename');
+seismogramFilename=config.getString('SeismogramFilename');
+writeSourceFilename=configTrue.getString('writeSourceFilename');
+fieldSeisName=config.getString('fieldSeisName');
 if writeAdjointSource==0
     filenameInv=['../' sourceSeismogramFilename '.stage_' num2str(stage) '.' component];
     filenameTrue=['../' writeSourceFilename '.' component];
 else
     filenameInv=['../' seismogramFilename '.stage_' num2str(stage)...
-            '.It_' num2str(iteration) '.' component '.refTrace'];
+        '.It_' num2str(iteration) '.' component '.refTrace'];
     filenameTrue=['../' fieldSeisName '.stage_' num2str(stage) '.' component '.refTrace'];
+end
+seismogramInv=readSeismogram(filenameInv,fileFormat);
+T=1*DT:DT:size(seismogramInv,2)*DT;
+timeDamping=ones(size(seismogramInv));
+if useDamp==1
+    timeDamping(T<T0damp)=timeDamping(T<T0damp).*exp(dampFactor*(T(T<T0damp)-T0damp));
+    timeDamping(T>T1damp)=timeDamping(T>T1damp).*exp(-dampFactor*(T(T>T1damp)-T1damp));
+end
+seismogramInv=seismogramInv.*timeDamping;
+
+if writeSourceTrue~=0        
+    seismogramTrue=readSeismogram(filenameTrue,fileFormat);
 end
 
 %% plot
@@ -193,22 +167,6 @@ legend('boxoff')
 axis([flim 0 maxValue*1.1]);
 ImageBold(gca);
 pause(0.1);
-
-%% write
-if writefiles~=0
-    answer=overwritedlg(filenameInv,fileFormat);
-    if answer==0
-        return;
-    end
-    writeSeismogram(filenameInv,seismogramInv,fileFormat);
-    if writeSourceTrue~=0  
-        answer=overwritedlg(filenameTrue,fileFormat);
-        if answer==0
-            return;
-        end
-        writeSeismogram(filenameTrue,seismogramTrue,fileFormat);
-    end
-end
 
 if copy_inv == 1
     answer = copyfile_image(filenameInv,fileFormat,DIR_PATH_NEW,Insert_name,config); 

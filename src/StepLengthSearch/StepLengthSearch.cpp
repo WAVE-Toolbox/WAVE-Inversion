@@ -374,6 +374,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
     /* ------------------------------------------- */
+    IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     std::string equationType = config.get<std::string>("equationType");
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower); 
     bool isSeismic = Common::checkEquationType<ValueType>(equationType);   
@@ -436,9 +437,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     if (config.get<IndexType>("useReceiversPerShot") == 0) {
         receiversLast.init(config, modelCoordinates, ctx, dist);
     }
+    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1) {
+        if (receivers.getNumTracesGlobal() == 1)
+            receiversLast.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
+    }
 
-    //     double start_t, end_t; /* For timing */
-    IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
     int testShotIncr = config.get<int>("testShotIncr");
 
     scai::lama::DenseVector<ValueType> misfitTest(numshots, 0, ctx);
@@ -516,6 +519,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
             receiversLast.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
         }
+        receiversLast.getSeismogramHandler().setShotInd(shotIndTrue);
 
         if (useSourceEncode == 0) {
             receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);

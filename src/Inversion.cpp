@@ -51,6 +51,8 @@ int main(int argc, char *argv[])
     double start_t, end_t, start_t_shot, end_t_shot; /* For timing */
     double globalStart_t, globalEnd_t; /* For timing */
     globalStart_t = common::Walltime::get();
+    start_t_shot = 0;
+    end_t_shot = 0;
     IndexType seedtime = (int)time(0);
     
     /* --------------------------------------- */
@@ -490,6 +492,13 @@ int main(int argc, char *argv[])
         if (config.get<IndexType>("useReceiversPerShot") == 0) {
             receivers.init(config, modelCoordinates, ctx, dist);
         }
+        
+        if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1) {
+            if (config.get<bool>("writeInvertedSource"))
+                sources.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
+            if (receivers.getNumTracesGlobal() == 1)
+                receivers.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
+        }
     }
     if (inversionTypeEM != 0) {
         ValueType shotIncr = config.getAndCatch("shotIncr", 0);
@@ -524,6 +533,13 @@ int main(int argc, char *argv[])
         }     
         if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
             receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM);
+        }
+        
+        if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1) {
+            if (configEM.get<bool>("writeInvertedSource"))
+                sourcesEM.getSeismogramHandler().allocateDataCOP(numshotsEM, tStepEndEM);
+            if (receiversEM.getNumTracesGlobal() == 1)
+                receiversEM.getSeismogramHandler().allocateDataCOP(numshotsEM, tStepEndEM);
         }
     }
     
@@ -636,12 +652,20 @@ int main(int argc, char *argv[])
             receiversTrue.init(config, modelCoordinates, ctx, dist);
             receiversStart.init(config, modelCoordinates, ctx, dist);
         }
+        if (receivers.getNumTracesGlobal() == 1) {
+            receiversTrue.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
+            receiversStart.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
+        }
         seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
     }
     if (inversionTypeEM != 0) {
         if (configEM.get<IndexType>("useReceiversPerShot") == 0) {
             receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM);
             receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM);
+        }
+        if (receiversEM.getNumTracesGlobal() == 1) {
+            receiversTrueEM.getSeismogramHandler().allocateDataCOP(numshotsEM, tStepEndEM);
+            receiversStartEM.getSeismogramHandler().allocateDataCOP(numshotsEM, tStepEndEM);
         }
         seismogramTaper1DEM.init(std::make_shared<dmemo::NoDistribution>(tStepEndEM), ctx, 1);
     }
@@ -664,11 +688,21 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Acquisition::Receivers<ValueType> adjointSources;
     Acquisition::Receivers<ValueType> adjointSourcesEM;
-    if (inversionType != 0 && config.get<IndexType>("useReceiversPerShot") == 0)
-        adjointSources.init(config, modelCoordinates, ctx, dist);
+    if (inversionType != 0) {
+        if (config.get<IndexType>("useReceiversPerShot") == 0)
+            adjointSources.init(config, modelCoordinates, ctx, dist);
+        if (receivers.getNumTracesGlobal() == 1) {
+            adjointSources.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
+        }
+    }
 
-    if (inversionTypeEM != 0 && configEM.get<IndexType>("useReceiversPerShot") == 0)
-        adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM);
+    if (inversionTypeEM != 0) {
+        if (configEM.get<IndexType>("useReceiversPerShot") == 0)
+            adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM);
+        if (receiversEM.getNumTracesGlobal() == 1) {
+            adjointSourcesEM.getSeismogramHandler().allocateDataCOP(numshotsEM, tStepEndEM);
+        }
+    }
     
     Acquisition::Receivers<ValueType> sourcesReflect;    
     Acquisition::Receivers<ValueType> sourcesReflectEM; 
@@ -1102,6 +1136,7 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncode, shotNumber);
                     }                    
                     sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
+                    sources.getSeismogramHandler().setShotInd(shotIndTrue);
 
                     IndexType shotIndPerShot = shotIndTrue;
                     if (useSourceEncode == 3) {
@@ -1125,6 +1160,9 @@ int main(int argc, char *argv[])
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                     }
+                    receivers.getSeismogramHandler().setShotInd(shotIndTrue);
+                    receiversTrue.getSeismogramHandler().setShotInd(shotIndTrue);
+                    adjointSources.getSeismogramHandler().setShotInd(shotIndTrue);
 
                     /* Read field data (or pseudo-observed data, respectively) */
                     if (useSourceEncode == 0) {
@@ -1268,6 +1306,8 @@ int main(int argc, char *argv[])
                         if (config.get<IndexType>("useReceiversPerShot") != 0) {
                             receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                         }
+                        receiversStart.getSeismogramHandler().setShotInd(shotIndTrue);
+                    
                         if (useSourceEncode == 0) {
                             receiversStart.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                         } else {
@@ -1540,6 +1580,44 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshots << "): Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
                 } //end of loop over shots
+                if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1) {
+                    if (config.get<bool>("writeInvertedSource") && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
+                        sources.getSeismogramHandler().sumShotDomain(commInterShot);
+                        sources.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1), modelCoordinates);
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished sources sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }        
+                    if (receivers.getNumTracesGlobal() == 1) {
+                        receivers.getSeismogramHandler().sumShotDomain(commInterShot);
+                        receivers.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration), modelCoordinates);
+                        }
+                        if ((useSourceEncode == 0 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) || useSourceEncode != 0) {
+                            receiversTrue.getSeismogramHandler().sumShotDomain(commInterShot);
+                            receiversTrue.getSeismogramHandler().assignDataCOP();
+                            if (commInterShot->getRank() == 0) {
+                                if (useSourceEncode == 0 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
+                                    receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1), modelCoordinates);
+                                } else if (useSourceEncode != 0) {
+                                    receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration), modelCoordinates);
+                                }
+                            }
+                        }
+                        if (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1) {
+                            receiversStart.getSeismogramHandler().sumShotDomain(commInterShot);
+                            receiversStart.getSeismogramHandler().assignDataCOP();
+                            if (commInterShot->getRank() == 0) {
+                                receiversStart.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1), modelCoordinates);
+                            }
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished receivers sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }
+                }
            
                 commInterShot->sumArray(misfitPerIt.getLocalValues());
                 dataMisfit->sumShotDomain(commInterShot);
@@ -1788,6 +1866,7 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncode, shotNumber);
                     }                    
                     sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
+                    sources.getSeismogramHandler().setShotInd(shotIndTrue);
 
                     if (useStreamConfig) {
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshots << "): Switch to model subset\n");
@@ -1805,6 +1884,9 @@ int main(int argc, char *argv[])
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                     }
+                    receivers.getSeismogramHandler().setShotInd(shotIndTrue);
+                    receiversTrue.getSeismogramHandler().setShotInd(shotIndTrue);
+                    
                     if (useSourceEncode == 0) {
                         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
                     } else {
@@ -1921,6 +2003,12 @@ int main(int argc, char *argv[])
                     receivers.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), shotNumber, sourceSettingsEncode, 0);
                     receivers.writeReceiverMark(config, shotNumber, workflow.workflowStage + 1, workflow.iteration + 1);
                     receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                    
+                    if (useSourceEncode == 0 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
+                        receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                    } else if (useSourceEncode != 0) {
+                        receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
+                    }
                 
                     if (useSourceEncode == 0) {
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshots << "): Calculate misfit\n");
@@ -1935,7 +2023,39 @@ int main(int argc, char *argv[])
                     end_t_shot = common::Walltime::get();
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshots << "): Finished additional forward run\n");
 
-                } //end of loop over Seismic shots      
+                } //end of loop over shots      
+                if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1) {
+                    if (config.get<bool>("writeInvertedSource") && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
+                        sources.getSeismogramHandler().sumShotDomain(commInterShot);
+                        sources.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1), modelCoordinates);
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished sources sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }        
+                    if (receivers.getNumTracesGlobal() == 1) {
+                        receivers.getSeismogramHandler().sumShotDomain(commInterShot);
+                        receivers.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            receivers.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), modelCoordinates);
+                        }
+                        if ((useSourceEncode == 0 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) || useSourceEncode != 0) {
+                            receiversTrue.getSeismogramHandler().sumShotDomain(commInterShot);
+                            receiversTrue.getSeismogramHandler().assignDataCOP();
+                            if (commInterShot->getRank() == 0) {
+                                if (useSourceEncode == 0 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
+                                    receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1), modelCoordinates);
+                                } else if (useSourceEncode != 0) {
+                                    receiversTrue.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1), modelCoordinates);
+                                }
+                            }
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished receivers sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }
+                }
+                    
                 commInterShot->sumArray(misfitPerIt.getLocalValues());          
                 dataMisfit->sumShotDomain(commInterShot);  
                 dataMisfit->addToStorage(misfitPerIt);
@@ -2066,6 +2186,7 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncodeEM, shotNumber);
                     }                    
                     sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
+                    sourcesEM.getSeismogramHandler().setShotInd(shotIndTrue);
 
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "), local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << ": Started\n");                        
 
@@ -2090,6 +2211,9 @@ int main(int argc, char *argv[])
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                     }
+                    receiversEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                    receiversTrueEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                    adjointSourcesEM.getSeismogramHandler().setShotInd(shotIndTrue);
 
                     /* Read field data (or pseudo-observed data, respectively) */
                     if (useSourceEncodeEM == 0) {
@@ -2233,6 +2357,8 @@ int main(int argc, char *argv[])
                         if (configEM.get<IndexType>("useReceiversPerShot") != 0) {
                             receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                         }
+                        receiversStartEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                    
                         if (useSourceEncodeEM == 0) {
                             receiversStartEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
                         } else {
@@ -2506,6 +2632,44 @@ int main(int argc, char *argv[])
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Finished in " << end_t_shot - start_t_shot << " sec.\n");
 
                 } //end of loop over shots
+                if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1) {
+                    if (configEM.get<bool>("writeInvertedSource") && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
+                        sourcesEM.getSeismogramHandler().sumShotDomain(commInterShot);
+                        sourcesEM.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            sourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1), modelCoordinatesEM);
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished sources sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }     
+                    if (receiversEM.getNumTracesGlobal() == 1) {   
+                        receiversEM.getSeismogramHandler().sumShotDomain(commInterShot);
+                        receiversEM.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration), modelCoordinatesEM);
+                        }
+                        if ((useSourceEncodeEM == 0 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) || useSourceEncodeEM != 0) {
+                            receiversTrueEM.getSeismogramHandler().sumShotDomain(commInterShot);
+                            receiversTrueEM.getSeismogramHandler().assignDataCOP();
+                            if (commInterShot->getRank() == 0) {
+                                if (useSourceEncodeEM == 0 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
+                                    receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1), modelCoordinatesEM);
+                                } else if (useSourceEncodeEM != 0) {
+                                    receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration), modelCoordinatesEM);
+                                }
+                            }
+                        }
+                        if (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1) {
+                            receiversStartEM.getSeismogramHandler().sumShotDomain(commInterShot);
+                            receiversStartEM.getSeismogramHandler().assignDataCOP();
+                            if (commInterShot->getRank() == 0) {
+                                receiversStartEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1), modelCoordinatesEM);
+                            }
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished receivers sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }
+                }
                 
                 commInterShot->sumArray(misfitPerItEM.getLocalValues());
                 dataMisfitEM->sumShotDomain(commInterShot);        
@@ -2786,6 +2950,7 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncodeEM, shotNumber);
                     }                    
                     sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
+                    sourcesEM.getSeismogramHandler().setShotInd(shotIndTrue);
 
                     if (useStreamConfigEM) {
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Switch to model subset\n");
@@ -2803,6 +2968,9 @@ int main(int argc, char *argv[])
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                     }
+                    receiversEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                    receiversTrueEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                    
                     if (useSourceEncodeEM == 0) {
                         receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
                     } else {
@@ -2933,7 +3101,39 @@ int main(int argc, char *argv[])
                     end_t_shot = common::Walltime::get();
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Finished additional forward run\n");
 
-                } //end of loop over EM shots
+                } //end of loop over shots
+                if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1) {
+                    if (configEM.get<bool>("writeInvertedSource") && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
+                        sourcesEM.getSeismogramHandler().sumShotDomain(commInterShot);
+                        sourcesEM.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            sourcesEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1), modelCoordinatesEM);
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished sources sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }     
+                    if (receiversEM.getNumTracesGlobal() == 1) {   
+                        receiversEM.getSeismogramHandler().sumShotDomain(commInterShot);
+                        receiversEM.getSeismogramHandler().assignDataCOP();
+                        if (commInterShot->getRank() == 0) {
+                            receiversEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), modelCoordinatesEM);
+                        }
+                        if ((useSourceEncodeEM == 0 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) || useSourceEncodeEM != 0) {
+                            receiversTrueEM.getSeismogramHandler().sumShotDomain(commInterShot);
+                            receiversTrueEM.getSeismogramHandler().assignDataCOP();
+                            if (commInterShot->getRank() == 0) {
+                                if (useSourceEncodeEM == 0 && (workflowEM.iteration == 0 || shotHistoryEM[shotIndTrue] == 1)) {
+                                    receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1), modelCoordinatesEM);
+                                } else if (useSourceEncodeEM != 0) {
+                                    receiversTrueEM.getSeismogramHandler().write(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflowEM.workflowStage + 1) + ".It_" + std::to_string(workflowEM.iteration + 1), modelCoordinatesEM);
+                                }
+                            }
+                        }
+                        start_t_shot = common::Walltime::get();
+                        HOST_PRINT(commAll, "Finished receivers sumShotDomain in " << start_t_shot - end_t_shot << " sec.\n", "");
+                    }
+                }
+                
                 commInterShot->sumArray(misfitPerItEM.getLocalValues());
                 dataMisfitEM->sumShotDomain(commInterShot);  
                 dataMisfitEM->addToStorage(misfitPerItEM);
