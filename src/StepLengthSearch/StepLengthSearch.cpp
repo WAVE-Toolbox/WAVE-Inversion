@@ -60,6 +60,7 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = 1;
     IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+    Common::checkNumShotDomains(numShotDomains, commAll);
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
     if (useSourceEncode == 0) {
         numshots = uniqueShotNos.size();
@@ -68,7 +69,6 @@ void KITGPI::StepLengthSearch<ValueType>::runLineSearch(scai::dmemo::Communicato
     }
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.getAndCatch("useRandomSource", 0) != 0) {  
-        Common::checkNumShotDomains(numShotDomains, commAll);
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
         shotDist = dmemo::blockDistribution(numshots, commInterShot);
@@ -167,6 +167,7 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     IndexType numshots = 1;
     IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+    Common::checkNumShotDomains(numShotDomains, commAll);
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
     if (useSourceEncode == 0) {
         numshots = uniqueShotNos.size();
@@ -175,7 +176,6 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     }
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.getAndCatch("useRandomSource", 0) != 0) {  
-        Common::checkNumShotDomains(numShotDomains, commAll);
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
         shotDist = dmemo::blockDistribution(numshots, commInterShot);
@@ -398,12 +398,14 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     SCAI_DMEMO_TASK(commShot)
 
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings = sources.getSourceSettings();
+    std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings0;
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsEncode;
     std::vector<scai::IndexType> uniqueShotNos;
     std::vector<scai::IndexType> uniqueShotNosEncode;
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
     IndexType numshots = 1;
     IndexType numShotDomains = config.get<IndexType>("NumShotDomains");
+    Common::checkNumShotDomains(numShotDomains, commAll);
     Acquisition::calcuniqueShotNo(uniqueShotNos, sourceSettings);
     if (useSourceEncode == 0) {
         numshots = uniqueShotNos.size();
@@ -415,11 +417,14 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     bool useStreamConfig = config.getAndCatch("useStreamConfig", false);
     Acquisition::Coordinates<ValueType> modelCoordinatesBig;
     std::vector<Acquisition::coordinate3D> cutCoordinates;
+    ValueType shotIncr = 0;
+    sources.getAcquisitionSettings(config, shotIncr);
+    sourceSettings0 = sources.getSourceSettings(); 
     if (useStreamConfig) {
         KITGPI::Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
         modelCoordinatesBig.init(configBig);
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
-        ValueType shotIncr = config.getAndCatch("shotIncr", 0);
+        shotIncr = config.getAndCatch("shotIncr", 0.0);
         sources.getAcquisitionSettings(config, shotIncr);
         sourceSettingsBig = sources.getSourceSettings(); 
         Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
@@ -427,7 +432,6 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     
     std::shared_ptr<const dmemo::BlockDistribution> shotDist;
     if (config.getAndCatch("useRandomSource", 0) != 0) {  
-        Common::checkNumShotDomains(numShotDomains, commAll);
         shotDist = dmemo::blockDistribution(numShotDomains, commInterShot);
     } else {
         shotDist = dmemo::blockDistribution(numshots, commInterShot);
@@ -437,7 +441,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     if (config.get<IndexType>("useReceiversPerShot") == 0) {
         receiversLast.init(config, modelCoordinates, ctx, dist);
     }
-    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1) {
+    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == 1) {
         if (receivers.getNumTracesGlobal() == 1)
             receiversLast.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
     }
@@ -481,6 +485,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     std::vector<scai::IndexType> uniqueShotInds = sources.getUniqueShotInds();
     IndexType shotNumber;  
     IndexType shotIndTrue = 0;  
+    IndexType shotInd0 = 0;  
     ValueType numerator = 0;
     ValueType denominator = 0;
     // later it should be possible to select only a subset of shots for the step length search
@@ -519,11 +524,14 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
             receiversLast.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
         }
-        receiversLast.getSeismogramHandler().setShotInd(shotIndTrue);
+        if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == 1) {
+            Acquisition::getuniqueShotInd(shotInd0, sourceSettings0, shotNumber);
+            receiversLast.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+        }
 
         if (useSourceEncode == 0) {
             receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
-            receiversLast.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber), 1);
+            receiversLast.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber));
         } else {
             receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode, 1);
             receiversLast.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration), shotNumber, sourceSettingsEncode, 1);

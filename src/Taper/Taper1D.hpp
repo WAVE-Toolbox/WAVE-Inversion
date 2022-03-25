@@ -23,7 +23,7 @@ namespace KITGPI
 
             void init(scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, bool dir);
 
-            void calcTimeDampingTaper(ValueType timeDampingFactor, ValueType DT);
+            void calcTimeDampingTaper(ValueType timeDampingFactor_in, ValueType DT);
             void calcCosineTaper(scai::IndexType iStart, scai::IndexType iEnd, bool reverse);
             void calcCosineTaper(scai::IndexType iStart1, scai::IndexType iEnd1, scai::IndexType iStart2, scai::IndexType iEnd2, bool reverse);
             void calcCosineTaper(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismograms, ValueType lowerCornerFreq, ValueType upperCornerFreq, ValueType DT, scai::hmemo::ContextPtr ctx, bool reverse = false);
@@ -42,7 +42,9 @@ namespace KITGPI
             void calcCosineTaperDown(scai::lama::DenseVector<ValueType> &result, scai::IndexType iStart, scai::IndexType iEnd);
 
             scai::lama::DenseVector<ValueType> data;
+            scai::lama::DenseVector<ValueType> dataDamping;
             bool direction;
+            ValueType timeDampingFactor;
         };
     }
 }

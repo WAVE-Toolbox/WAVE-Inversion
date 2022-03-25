@@ -312,14 +312,14 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     IndexType numShotDomains = config.get<IndexType>("NumShotDomains"); // total number of shot domains
     IndexType numShotDomainsEM = configEM.get<IndexType>("NumShotDomains");
+    Common::checkNumShotDomains(numShotDomains, commAll);
+    Common::checkNumShotDomains(numShotDomainsEM, commAll); 
     IndexType numRelaxationMechanisms = config.get<IndexType>("numRelaxationMechanisms");
     IndexType numRelaxationMechanismsEM = configEM.get<IndexType>("numRelaxationMechanisms");
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
     IndexType useSourceEncodeEM = configEM.getAndCatch("useSourceEncode", 0);
     IndexType gradientDomain = config.getAndCatch("gradientDomain", 0);
     IndexType gradientDomainEM = configEM.getAndCatch("gradientDomain", 0);
-    Common::checkNumShotDomains(numShotDomains, commAll);
-    Common::checkNumShotDomains(numShotDomainsEM, commAll); 
     ValueType memWavefiledsStorage = 0;
     ValueType memWavefiledsStorageEM = 0;
     if (inversionType != 0) {
@@ -438,9 +438,11 @@ int main(int argc, char *argv[])
     Acquisition::Sources<ValueType> sourcesEM;   
     
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings;
+    std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings0;
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsEncode;
     std::vector<Acquisition::coordinate3D> cutCoordinates;
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsEM;
+    std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings0EM;
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsEncodeEM;
     std::vector<Acquisition::coordinate3D> cutCoordinatesEM; 
     
@@ -459,8 +461,12 @@ int main(int argc, char *argv[])
     IndexType maxcountEM = 1;  
     
     if (inversionType != 0) {
-        ValueType shotIncr = config.getAndCatch("shotIncr", 0);
+        ValueType shotIncr = 0;
         sources.getAcquisitionSettings(config, shotIncr);
+        sourceSettings0 = sources.getSourceSettings();
+        shotIncr = config.getAndCatch("shotIncr", 0.0);
+        if (shotIncr != 0)
+            sources.getAcquisitionSettings(config, shotIncr);
         if (useStreamConfig) {
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
             sourceSettingsBig = sources.getSourceSettings(); 
@@ -501,8 +507,12 @@ int main(int argc, char *argv[])
         }
     }
     if (inversionTypeEM != 0) {
-        ValueType shotIncr = config.getAndCatch("shotIncr", 0);
+        ValueType shotIncr = 0;
         sourcesEM.getAcquisitionSettings(configEM, shotIncr);
+        sourceSettings0EM = sourcesEM.getSourceSettings(); 
+        shotIncr = config.getAndCatch("shotIncr", 0.0);
+        if (shotIncr != 0)
+            sourcesEM.getAcquisitionSettings(configEM, shotIncr);
         if (useStreamConfigEM) {
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBigEM;
             sourceSettingsBigEM = sourcesEM.getSourceSettings(); 
@@ -945,7 +955,8 @@ int main(int argc, char *argv[])
         IndexType useRTM = 0; 
         IndexType useRTMEM = 0; 
         IndexType shotNumber;
-        IndexType shotIndTrue = 0;   
+        IndexType shotIndTrue = 0; 
+        IndexType shotInd0 = 0;  
         
         if (inversionType != 0 && (breakLoop == false || breakLoopType == 2)) {
             if (exchangeStrategy == 4 || exchangeStrategy == 6)
@@ -1136,7 +1147,10 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncode, shotNumber);
                     }                    
                     sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
-                    sources.getSeismogramHandler().setShotInd(shotIndTrue);
+                    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1) {
+                        Acquisition::getuniqueShotInd(shotInd0, sourceSettings0, shotNumber);
+                        sources.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
 
                     IndexType shotIndPerShot = shotIndTrue;
                     if (useSourceEncode == 3) {
@@ -1160,10 +1174,11 @@ int main(int argc, char *argv[])
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                         adjointSources.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                     }
-                    receivers.getSeismogramHandler().setShotInd(shotIndTrue);
-                    receiversTrue.getSeismogramHandler().setShotInd(shotIndTrue);
-                    adjointSources.getSeismogramHandler().setShotInd(shotIndTrue);
-
+                    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == 1) {
+                        receivers.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        receiversTrue.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        adjointSources.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
                     /* Read field data (or pseudo-observed data, respectively) */
                     if (useSourceEncode == 0) {
                         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
@@ -1306,7 +1321,9 @@ int main(int argc, char *argv[])
                         if (config.get<IndexType>("useReceiversPerShot") != 0) {
                             receiversStart.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                         }
-                        receiversStart.getSeismogramHandler().setShotInd(shotIndTrue);
+                        if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == 1) {
+                            receiversStart.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        }
                     
                         if (useSourceEncode == 0) {
                             receiversStart.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
@@ -1866,7 +1883,10 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncode, shotNumber);
                     }                    
                     sources.init(sourceSettingsShot, config, modelCoordinates, ctx, dist);
-                    sources.getSeismogramHandler().setShotInd(shotIndTrue);
+                    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1) {
+                        Acquisition::getuniqueShotInd(shotInd0, sourceSettings0, shotNumber);
+                        sources.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
 
                     if (useStreamConfig) {
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshots << "): Switch to model subset\n");
@@ -1884,8 +1904,10 @@ int main(int argc, char *argv[])
                         receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                         receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
                     }
-                    receivers.getSeismogramHandler().setShotInd(shotIndTrue);
-                    receiversTrue.getSeismogramHandler().setShotInd(shotIndTrue);
+                    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == 1) {
+                        receivers.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        receiversTrue.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
                     
                     if (useSourceEncode == 0) {
                         receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
@@ -2186,7 +2208,10 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncodeEM, shotNumber);
                     }                    
                     sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
-                    sourcesEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                    if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1) {
+                        Acquisition::getuniqueShotInd(shotInd0, sourceSettings0EM, shotNumber);
+                        sourcesEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
 
                     HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "), local shot " << localShotInd << " of " << shotDistEM->getLocalSize() << ": Started\n");                        
 
@@ -2211,10 +2236,11 @@ int main(int argc, char *argv[])
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                         adjointSourcesEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                     }
-                    receiversEM.getSeismogramHandler().setShotInd(shotIndTrue);
-                    receiversTrueEM.getSeismogramHandler().setShotInd(shotIndTrue);
-                    adjointSourcesEM.getSeismogramHandler().setShotInd(shotIndTrue);
-
+                    if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1 && receiversEM.getNumTracesGlobal() == 1) {
+                        receiversEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        receiversTrueEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        adjointSourcesEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
                     /* Read field data (or pseudo-observed data, respectively) */
                     if (useSourceEncodeEM == 0) {
                         receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
@@ -2357,7 +2383,9 @@ int main(int argc, char *argv[])
                         if (configEM.get<IndexType>("useReceiversPerShot") != 0) {
                             receiversStartEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                         }
-                        receiversStartEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                        if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1 && receiversEM.getNumTracesGlobal() == 1) {
+                            receiversStartEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        }
                     
                         if (useSourceEncodeEM == 0) {
                             receiversStartEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("SeismogramFilename") + ".shot_" + std::to_string(shotNumber), 1);
@@ -2950,7 +2978,10 @@ int main(int argc, char *argv[])
                         Acquisition::createSettingsForShot(sourceSettingsShot, sourceSettingsEncodeEM, shotNumber);
                     }                    
                     sourcesEM.init(sourceSettingsShot, configEM, modelCoordinatesEM, ctx, distEM);
-                    sourcesEM.getSeismogramHandler().setShotInd(shotIndTrue);
+                    if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1) {
+                        Acquisition::getuniqueShotInd(shotInd0, sourceSettings0EM, shotNumber);
+                        sourcesEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
 
                     if (useStreamConfigEM) {
                         HOST_PRINT(commShot, "Shot number " << shotNumber << " (" << "domain " << shotDomain << ", index " << shotIndTrue + 1 << " of " << numshotsEM << "): Switch to model subset\n");
@@ -2968,9 +2999,10 @@ int main(int argc, char *argv[])
                         receiversEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                         receiversTrueEM.init(configEM, modelCoordinatesEM, ctx, distEM, shotNumber, sourceSettingsEncodeEM);
                     }
-                    receiversEM.getSeismogramHandler().setShotInd(shotIndTrue);
-                    receiversTrueEM.getSeismogramHandler().setShotInd(shotIndTrue);
-                    
+                    if (uniqueShotNosEM.size() == sourceSettingsEM.size() && uniqueShotNosEM.size() > 1 && receiversEM.getNumTracesGlobal() == 1) {
+                        receiversEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                        receiversTrueEM.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+                    }
                     if (useSourceEncodeEM == 0) {
                         receiversTrueEM.getSeismogramHandler().read(configEM.get<IndexType>("SeismogramFormat"), configEM.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
                     } else {

@@ -15,6 +15,9 @@ void KITGPI::Taper::Taper1D<ValueType>::init(scai::dmemo::DistributionPtr dist, 
     data.allocate(dist);
     data = 1.0; // in this state the taper does nothing when applied
     data.setContextPtr(ctx);
+    dataDamping.allocate(dist);
+    dataDamping = 1.0; // in this state the taper does nothing when applied
+    dataDamping.setContextPtr(ctx);
 }
 
 /*! \brief Get direction of taper
@@ -30,11 +33,14 @@ bool KITGPI::Taper::Taper1D<ValueType>::getDirection() const
  \param DT DT
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::calcTimeDampingTaper(ValueType timeDampingFactor, ValueType DT)
+void KITGPI::Taper::Taper1D<ValueType>::calcTimeDampingTaper(ValueType timeDampingFactor_in, ValueType DT)
 {
-    data = lama::linearDenseVector<ValueType>(data.size(), 0.0, -DT);
-    data *= timeDampingFactor;
-    data.unaryOp(data, common::UnaryOp::EXP);
+    timeDampingFactor = timeDampingFactor_in;
+    if (timeDampingFactor != 0) {
+        dataDamping = lama::linearDenseVector<ValueType>(dataDamping.size(), 0.0, -DT);
+        dataDamping *= timeDampingFactor;
+        dataDamping.unaryOp(dataDamping, common::UnaryOp::EXP);
+    }
 }
 
 /*! \brief Wrapper to calculate a cosine taper with one transition zone
@@ -71,7 +77,7 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, Index
     data *= helpTaper;
 
     if (reverse)
-        data = -data + 1;
+        data = 1 - data;
 }
 
 /*! \brief Wrapper to calculate a cosine taper using the inverted source
@@ -115,16 +121,9 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::Sei
     if (iEnd1 < 10)
         iEnd1 = 10;
     SCAI_ASSERT_ERROR(iEnd2 < tStepEnd, "iEnd2 >= tStepEnd");
-    bool savedata = false;
-    if (data.size() != 0) { // save timeDampingFactor
-        tempRow = data;
-        savedata = true;
-    }
+    
     this->init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
     this->calcCosineTaper(iStart1, iEnd1, iStart2, iEnd2, reverse);
-    if (savedata) {
-        data *= tempRow;
-    }
 }
 
 /*! \brief Calculate cosine taper which starts with 0 and ends with 1 (slope >= 0)
@@ -213,10 +212,17 @@ void KITGPI::Taper::Taper1D<ValueType>::apply(KITGPI::Acquisition::Seismogram<Va
 template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat) const
 {
-    if (direction == 0)
-        mat.scaleRows(data); // scaleRows means, that every row is scaled with one entry in data
-    else
-        mat.scaleColumns(data);
+    if (direction == 0) {
+        mat.scaleRows(data); // scaleRows means, that every row is scaled with one entry in data    
+        if (timeDampingFactor != 0) {
+            mat.scaleRows(dataDamping);
+        }
+    } else {
+        mat.scaleColumns(data);   
+        if (timeDampingFactor != 0) {
+            mat.scaleColumns(dataDamping);
+        }
+    }
 }
 
 /*! \brief Apply taper to a Gradient
@@ -226,6 +232,9 @@ template <typename ValueType>
 void KITGPI::Taper::Taper1D<ValueType>::apply(scai::lama::DenseVector<ValueType> &trace) const
 {
     trace *= data;
+    if (timeDampingFactor != 0) {
+        trace *= dataDamping;
+    }
 }
 
 /*! \brief Apply taper to a Gradient
