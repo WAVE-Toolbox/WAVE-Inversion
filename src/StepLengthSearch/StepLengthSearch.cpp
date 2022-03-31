@@ -230,7 +230,7 @@ void KITGPI::StepLengthSearch<ValueType>::runParabolicSearch(scai::dmemo::Commun
     step3ok = false; // true if second step length decreases the misfit AND third step length increases the misfit relative to second step length */
 
     /* --- Save first step length (steplength=0 is used to save computational time) --- */
-    std::vector<scai::IndexType> uniqueShotInds = sources.getUniqueShotInds();
+    std::vector<IndexType> uniqueShotInds = sources.getUniqueShotInds();
     misfitTestSum = 0; 
     IndexType shotIndTrue = 0;  
     for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
@@ -392,13 +392,17 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             dist = wavefields.getRefEX().getDistributionPtr();      
         }
     }
-    scai::dmemo::CommunicatorPtr commShot = dist->getCommunicatorPtr();
+    IndexType shotDomain; // will contain the domain to which this processor belongs
+    shotDomain = config.get<IndexType>("NumShotDomains");
+
+    // Build subsets of processors for the shots
+    dmemo::CommunicatorPtr commShot = commAll->split(shotDomain/2);
+//     scai::dmemo::CommunicatorPtr commShot = dist->getCommunicatorPtr();
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
 
     SCAI_DMEMO_TASK(commShot)
 
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings = sources.getSourceSettings();
-    std::vector<Acquisition::sourceSettings<ValueType>> sourceSettings0;
     std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsEncode;
     std::vector<scai::IndexType> uniqueShotNos;
     std::vector<scai::IndexType> uniqueShotNosEncode;
@@ -417,14 +421,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     bool useStreamConfig = config.getAndCatch("useStreamConfig", false);
     Acquisition::Coordinates<ValueType> modelCoordinatesBig;
     std::vector<Acquisition::coordinate3D> cutCoordinates;
-    ValueType shotIncr = 0;
-    sources.getAcquisitionSettings(config, shotIncr);
-    sourceSettings0 = sources.getSourceSettings(); 
     if (useStreamConfig) {
         KITGPI::Configuration::Configuration configBig(config.get<std::string>("streamConfigFilename"));
         modelCoordinatesBig.init(configBig);
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
-        shotIncr = config.getAndCatch("shotIncr", 0.0);
+        ValueType shotIncr = config.getAndCatch("shotIncr", 0.0);
         sources.getAcquisitionSettings(config, shotIncr);
         sourceSettingsBig = sources.getSourceSettings(); 
         Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
@@ -441,9 +442,10 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
     if (config.get<IndexType>("useReceiversPerShot") == 0) {
         receiversLast.init(config, modelCoordinates, ctx, dist);
     }
-    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == 1) {
-        if (receivers.getNumTracesGlobal() == 1)
-            receiversLast.getSeismogramHandler().allocateDataCOP(numshots, tStepEnd);
+    IndexType numshotsIncr = sourceSettings.size();
+    IndexType numShotPerSuperShot = ceil(ValueType(numshotsIncr) / numShotDomains); 
+    if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == numShotPerSuperShot) {
+        receiversLast.getSeismogramHandler().allocateCOP(numshots, tStepEnd);
     }
 
     int testShotIncr = config.get<int>("testShotIncr");
@@ -482,15 +484,17 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         solver.prepareForModelling(*testmodel, config.get<ValueType>("DT"));
     }
 
-    std::vector<scai::IndexType> uniqueShotInds = sources.getUniqueShotInds();
+    std::vector<IndexType> uniqueShotInds = sources.getUniqueShotInds();
+    std::vector<IndexType> shotIndsIncr = sources.getShotIndsIncr();
     IndexType shotNumber;  
     IndexType shotIndTrue = 0;  
-    IndexType shotInd0 = 0;  
+    IndexType shotIndIncr = 0;  
     ValueType numerator = 0;
     ValueType denominator = 0;
     // later it should be possible to select only a subset of shots for the step length search
     for (IndexType shotInd = shotDist->lb(); shotInd < shotDist->ub(); shotInd += testShotIncr) {
         shotIndTrue = uniqueShotInds[shotInd];
+        shotIndIncr = shotIndsIncr[shotInd]; // it is not compatible with useSourceEncode != 0
             
         std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsShot;
         if (useSourceEncode == 0) {
@@ -524,16 +528,18 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
             receiversLast.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncode);
         }
-        if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == 1) {
-            Acquisition::getuniqueShotInd(shotInd0, sourceSettings0, shotNumber);
-            receiversLast.getSeismogramHandler().setShotInd(shotIndTrue, shotInd0);
+        if (uniqueShotNos.size() == sourceSettings.size() && uniqueShotNos.size() > 1 && receivers.getNumTracesGlobal() == numShotPerSuperShot) {
+            receiversLast.getSeismogramHandler().setShotInd(shotIndTrue, shotIndIncr);
         }
 
         if (useSourceEncode == 0) {
             receiversTrue.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("fieldSeisName") + ".shot_" + std::to_string(shotNumber), 1);
-            receiversLast.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber));
         } else {
             receiversTrue.encode(config, config.get<std::string>("fieldSeisName"), shotNumber, sourceSettingsEncode, 1);
+        }
+        if (useSourceEncode == 0 || receivers.getNumTracesGlobal() == numShotPerSuperShot) {
+            receiversLast.getSeismogramHandler().read(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration) + ".shot_" + std::to_string(shotNumber));
+        } else {
             receiversLast.encode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration), shotNumber, sourceSettingsEncode, 1);
         }
 
@@ -619,13 +625,8 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         /* Normalize observed and synthetic data */
         if (config.get<IndexType>("normalizeTraces") == 3 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 6) {
             // to read inverseAGC matrix.
-            receiversTrue.getSeismogramHandler().read(5, config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), 1); 
-            ValueType frequencyAGC = config.get<ValueType>("CenterFrequencyCPML");
-            if (workflow.getUpperCornerFreq() != 0.0) {
-                frequencyAGC = (workflow.getLowerCornerFreq() + workflow.getUpperCornerFreq()) / 2;
-            }
-            receivers.getSeismogramHandler().setFrequencyAGC(frequencyAGC);      
-            receivers.getSeismogramHandler().calcInverseAGC();      
+            receiversTrue.getSeismogramHandler().read(5, config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber));      
+            receivers.getSeismogramHandler().setInverseAGC(receiversTrue.getSeismogramHandler());      
         }
         receivers.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
         receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));

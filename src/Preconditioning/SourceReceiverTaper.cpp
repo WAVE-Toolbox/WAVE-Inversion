@@ -30,6 +30,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::stack(scai::lama::
     for (scai::IndexType shotInd = 0; shotInd < numshotsSuperShot; shotInd++) {
         taperEncode[shotInd] *= taperSingle;
     }
+    taper *= taperSingle;
 }
 
 /*! \brief apply taper on gradient
@@ -206,6 +207,7 @@ template <typename ValueType>
 void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::CommunicatorPtr commShot, scai::dmemo::DistributionPtr dist, scai::hmemo::ContextPtr ctx, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, scai::IndexType shotNumberEncode)
 {
     IndexType useSourceEncode = config.getAndCatch("useSourceEncode", 0);
+    IndexType gradientDomain = config.getAndCatch("gradientDomain", 0);
     if (useSourceEncode != 0) {
         double start_t_shot, end_t_shot; /* For timing */
         start_t_shot = common::Walltime::get();
@@ -248,6 +250,8 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
                 taperEncode.push_back(taper);
             }
         }
+        if (gradientDomain == 0)
+            taper.setSameValue(dist, 1.0); // sparse vector taper gets zero element 1.0
         end_t_shot = common::Walltime::get();
         HOST_PRINT(commShot, "Shot number " << shotNumberEncode << ": Calculate encoded source and receiver taper in " << end_t_shot - start_t_shot << " sec.\n");
     }

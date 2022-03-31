@@ -171,7 +171,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
                 wavefields->decompose(decomposition, *wavefieldsReflect, derivatives);
         }
             
-        if (((gradientKernel != 2 && decomposition == 0) || decomposition != 0) && tStep % workflow.skipDT == 0 && (useSourceEncode == 0 || (useSourceEncode != 0 && tStep < tStepEnd / 2))) {
+        if (((gradientKernel != 2 && decomposition == 0) || decomposition != 0) && tStep % workflow.skipDT == 0) {
             wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
             energyPrecond.intSquaredWavefields(*wavefieldsAdjointTemp, isAdjoint, config.get<ValueType>("DT"));
             if (gradientDomain == 0) { 
@@ -184,20 +184,13 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
             
                 /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
                 ZeroLagXcorr->update(*wavefieldsTemp, *wavefieldrecord[floor(tStep / workflow.skipDT + 0.5)], *wavefieldsAdjointTemp, workflow);
-                
-                if (workflow.workflowStage == 0 && workflow.iteration == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
-                    if (gradientDomain == 0) {
-                        ZeroLagXcorr->write(config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), tStep, workflow);
-                    }
-                    wavefields->write(snapType, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
-                }
             } else if (gradientDomain == 1 || gradientDomain == 2) {
                 /* Cross correlation in the frequency domain */
                 ZeroLagXcorr->gatherWavefields(*wavefieldsAdjointTemp, sources.getSourceFC(shotIndTrue), workflow, tStep, config.get<ValueType>("DT"), isAdjoint);
             } else if (gradientDomain == 3 && tStep < tStepEnd / 2) {
                 this->gatherWavefields(*wavefieldsAdjointTemp, sources.getSourceFC(shotIndTrue), workflow, tStep, config.get<ValueType>("DT"), isAdjoint);
             }
-        } else if (gradientKernel == 2 && decomposition == 0 && tStep % workflow.skipDT == 0 && (useSourceEncode == 0 || (useSourceEncode != 0 && tStep < tStepEnd / 2))) {
+        } else if (gradientKernel == 2 && decomposition == 0 && tStep % workflow.skipDT == 0) {
             wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
             energyPrecond.intSquaredWavefields(*wavefieldsAdjointTemp, isAdjoint, config.get<ValueType>("DT"));
             if (gradientDomain == 0) { 
@@ -209,20 +202,23 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
                 *wavefieldsTemp *= workflow.skipDT; 
             
                 /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
-                ZeroLagXcorrReflect->update(*wavefieldsTemp, *wavefieldrecordReflect[floor(tStep / workflow.skipDT + 0.5)], *wavefieldsAdjointTemp, workflow);
-                
-                if (workflow.workflowStage == 0 && workflow.iteration == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
-                    if (gradientDomain == 0) {
-                        ZeroLagXcorrReflect->write(config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, workflow);
-                    }
-                    wavefields->write(snapType, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
-                }
+                ZeroLagXcorrReflect->update(*wavefieldsTemp, *wavefieldrecordReflect[floor(tStep / workflow.skipDT + 0.5)], *wavefieldsAdjointTemp, workflow);                
             } else if (gradientDomain == 1 || gradientDomain == 2) {
                 /* Cross correlation in the frequency domain */
                 ZeroLagXcorrReflect->gatherWavefields(*wavefieldsAdjointTemp, sources.getSourceFC(shotIndTrue), workflow, tStep, config.get<ValueType>("DT"), isAdjoint);
             } else if (gradientDomain == 3 && tStep < tStepEnd / 2) {
                 this->gatherWavefields(*wavefieldsAdjointTemp, sources.getSourceFC(shotIndTrue), workflow, tStep, config.get<ValueType>("DT"), isAdjoint, isReflect);
             }
+        }                
+        if (workflow.workflowStage == 0 && workflow.iteration == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+            if (gradientDomain == 0) {
+                if ((gradientKernel != 2 && decomposition == 0) || decomposition != 0) {
+                    ZeroLagXcorr->write(config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber), tStep, workflow);
+                } else if (gradientKernel == 2 && decomposition == 0) {
+                    ZeroLagXcorrReflect->write(config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".sourceReflect", tStep, workflow);
+                }
+            }
+            wavefields->write(snapType, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiver", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
         }
     }
     solver.resetCPML();
@@ -305,7 +301,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
             /* --------------------------------------- */
             /*  Cross correlation in the time domain   */
             /* --------------------------------------- */
-            if (tStep % workflow.skipDT == 0 && (useSourceEncode == 0 || (useSourceEncode != 0 && tStep < tStepEnd / 2))) {
+            if (tStep % workflow.skipDT == 0) {
                 wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
                 energyPrecondReflect.intSquaredWavefields(*wavefieldsAdjointTemp, isAdjoint, config.get<ValueType>("DT"));
                 if (gradientDomain == 0) { 
@@ -317,19 +313,18 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
                     *wavefieldsTemp *= workflow.skipDT; 
                 
                     /* please note that we exchange the position of the derivative and the forwardwavefield itself, which is different with the defination in ZeroLagXcorr function */
-                    ZeroLagXcorr->update(*wavefieldsTemp, *wavefieldrecord[floor(tStep / workflow.skipDT + 0.5)], *wavefieldsAdjointTemp, workflow);
-                    
-                    if (workflow.workflowStage == 0 && workflow.iteration == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
-                        if (gradientDomain == 0) {
-                            ZeroLagXcorr->write(config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect", tStep, workflow);
-                        }
-                        wavefields->write(config.getAndCatch("snapType", 0), config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
-                    }
+                    ZeroLagXcorr->update(*wavefieldsTemp, *wavefieldrecord[floor(tStep / workflow.skipDT + 0.5)], *wavefieldsAdjointTemp, workflow);                    
                 } else if (gradientDomain == 1 || gradientDomain == 2) {
                     /* Cross correlation in the frequency domain */
                     ZeroLagXcorr->gatherWavefields(*wavefieldsAdjointTemp, sources.getSourceFC(shotIndTrue), workflow, tStep, config.get<ValueType>("DT"), isAdjoint);
                 } else if (gradientDomain == 3 && tStep < tStepEnd / 2) {
                     this->gatherWavefields(*wavefieldsAdjointTemp, sources.getSourceFC(shotIndTrue), workflow, tStep, config.get<ValueType>("DT"), isAdjoint);
+                }
+                if (workflow.workflowStage == 0 && workflow.iteration == 0 && config.getAndCatch("snapType", 0) > 0 && tStep >= Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT")) && tStep <= Common::time2index(config.get<ValueType>("tlastSnapshot"), config.get<ValueType>("DT")) && (tStep - Common::time2index(config.get<ValueType>("tFirstSnapshot"), config.get<ValueType>("DT"))) % Common::time2index(config.get<ValueType>("tincSnapshot"), config.get<ValueType>("DT")) == 0) {
+                    if (gradientDomain == 0) {
+                        ZeroLagXcorr->write(config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect", tStep, workflow);
+                    }
+                    wavefields->write(config.getAndCatch("snapType", 0), config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect", tStep, derivatives, model, config.get<IndexType>("FileFormat"));
                 }
             }
         }       
