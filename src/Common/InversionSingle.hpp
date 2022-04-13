@@ -112,6 +112,7 @@ namespace KITGPI
         typedef typename Wavefields::Wavefields<ValueType>::WavefieldPtr wavefieldPtr;
         wavefieldPtr wavefields;
         wavefieldPtr wavefieldsTemp;
+        wavefieldPtr wavefieldsInversion;
         std::vector<wavefieldPtr> wavefieldrecord;
         std::vector<wavefieldPtr> wavefieldrecordReflect;
         

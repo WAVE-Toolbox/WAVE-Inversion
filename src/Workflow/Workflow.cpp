@@ -37,7 +37,7 @@ void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::C
     steplengthInit = config.get<ValueType>("steplengthInit");  
     
     IndexType gradientDomain = config.getAndCatch("gradientDomain", 0);
-    IndexType dtinversion = config.get<IndexType>("DTInversion"); 
+    IndexType dtinversion = config.getAndCatch("DTInversion", 1); 
     if (dtinversion == 1 || upperCornerFreq == 0.0) {
         skipDT = 1;
     } else {

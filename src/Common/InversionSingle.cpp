@@ -40,6 +40,7 @@ KITGPI::InversionSingle<ValueType>::InversionSingle(KITGPI::Configuration::Confi
         solver = ForwardSolver::Factory<ValueType>::Create(dimension, equationType);
         wavefields = Wavefields::Factory<ValueType>::Create(dimension, equationType);
         wavefieldsTemp = Wavefields::Factory<ValueType>::Create(dimension, equationType);
+        wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
         modelPriori = Modelparameter::Factory<ValueType>::Create(equationType);
         modelPerShot = Modelparameter::Factory<ValueType>::Create(equationType);
         gradient = Gradient::Factory<ValueType>::Create(equationType);
@@ -209,6 +210,7 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
         /* Wavefields                              */
         /* --------------------------------------- */ 
         wavefields->init(ctx, dist, numRelaxationMechanisms);
+        wavefieldsInversion->init(ctx, distInversion, numRelaxationMechanisms);
         if ((gradientKernel == 2 || gradientKernel == 3) && decomposition == 0)
             wavefieldsTemp->init(ctx, dist, numRelaxationMechanisms);
         if ((gradientKernel == 2 || gradientKernel == 3) && decomposition != 0)
@@ -313,7 +315,7 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
             }  
         }
         wavefieldTaper2D.initAverageMatrix(config, distInversion, dist, ctx); 
-        Acquisition::Coordinates<ValueType> modelCoordinatesInversion(config, config.get<IndexType>("DHInversion"), NXPerShot);
+        Acquisition::Coordinates<ValueType> modelCoordinatesInversion(config, config.getAndCatch("DHInversion", 1), NXPerShot);
         wavefieldTaper2D.calcAverageMatrix(modelCoordinates, modelCoordinatesInversion);
         
         /* --------------------------------------- */
@@ -359,9 +361,9 @@ void KITGPI::InversionSingle<ValueType>::estimateMemory(scai::dmemo::Communicato
             NT = numShotPerSuperShot * 2;
         }
         if (dimension.compare("3d") == 0) {
-            memWavefiledsStorage = memWavefileds * NT / pow(config.get<IndexType>("DHInversion"), 3);
+            memWavefiledsStorage = memWavefileds * NT / pow(config.getAndCatch("DHInversion", 1), 3);
         } else {
-            memWavefiledsStorage = memWavefileds * NT / pow(config.get<IndexType>("DHInversion"), 2);
+            memWavefiledsStorage = memWavefileds * NT / pow(config.getAndCatch("DHInversion", 1), 2);
         }
         ValueType memModel = model->estimateMemory(dist);
         ValueType memSolver = solver->estimateMemory(config, dist, modelCoordinates);
@@ -777,7 +779,6 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
 
             ValueType DTinv = 1.0 / config.get<ValueType>("DT");
             lama::DenseVector<ValueType> compensation;
-            wavefieldPtr wavefieldsInversion = Wavefields::Factory<ValueType>::Create(dimension, equationType);
             if (gradientKernelPerIt == 2 && decomposition == 0) { 
                 HOST_PRINT(commAll, "================ initWholeSpace receivers ===============\n");
                 sourcesReflect.initWholeSpace(config, modelCoordinates, ctx, dist, receivers.getSeismogramTypes());
@@ -807,10 +808,14 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
                         compensation = modelPerShot->getCompensation(config.get<ValueType>("DT"), tStep);
                         *wavefieldsInversion = *wavefields;
                         *wavefieldsInversion *= compensation;
-                            
-                        wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefieldsInversion);
+                        if (config.getAndCatch("DHInversion", 1) > 1)
+                            wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefieldsInversion);
                     } else {
-                        wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+                        if (config.getAndCatch("DHInversion", 1) > 1) {
+                            wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+                        } else {
+                            *wavefieldsInversion = *wavefields;
+                        }
                     }
                     if (gradientDomain == 0 || tStep == 0) {
                         *wavefieldrecord[floor(tStep / workflow.skipDT + 0.5)] = *wavefieldsInversion;
@@ -844,11 +849,15 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
                         if (config.getAndCatch("compensation", 0)) {
                             compensation = modelPerShot->getCompensation(config.get<ValueType>("DT"), tStep);
                             *wavefieldsInversion = *wavefields;
-                            *wavefieldsInversion *= compensation;
-                                
-                            wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefieldsInversion);
+                            *wavefieldsInversion *= compensation;                                
+                            if (config.getAndCatch("DHInversion", 1) > 1)
+                                wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefieldsInversion);
                         } else {
-                            wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+                            if (config.getAndCatch("DHInversion", 1) > 1) {
+                                wavefieldsInversion->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+                            } else {
+                                *wavefieldsInversion = *wavefields;
+                            }
                         }
                         if (gradientDomain == 0 || tStep == 0) {
                             *wavefieldrecordReflect[floor(tStep / workflow.skipDT + 0.5)] = *wavefieldsInversion;

@@ -72,7 +72,6 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     ValueType DTinv = 1.0 / config.get<ValueType>("DT");
     double start_t_shot, end_t_shot; /* For timing */
     start_t_shot = common::Walltime::get();
-    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 1 \n");
 
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
@@ -100,7 +99,6 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     }
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
-    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 2 \n");
 
     /* ------------------------------------------------------ */
     /*                Backward Modelling                      */
@@ -150,7 +148,6 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     ZeroLagXcorr->prepareForInversion(gradientKernel, config);
     bool isReflect = true;
     bool isAdjoint = true;
-    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 3 \n");
     
     lama::DenseVector<ValueType> compensation;
     if (config.getAndCatch("compensation", 0))
@@ -175,7 +172,11 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         }
             
         if (((gradientKernel != 2 && decomposition == 0) || decomposition != 0) && tStep % workflow.skipDT == 0) {
-            wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+            if (config.getAndCatch("DHInversion", 1) > 1) {
+                wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+            } else {
+                *wavefieldsAdjointTemp = *wavefields;
+            }
             energyPrecond.intSquaredWavefields(*wavefieldsAdjointTemp, isAdjoint, config.get<ValueType>("DT"));
             if (gradientDomain == 0) { 
                 /*  Cross correlation in the time domain   */
@@ -194,7 +195,11 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
                 this->gatherWavefields(*wavefieldsAdjointTemp, sources.getSourceFC(shotIndTrue), workflow, tStep, config.get<ValueType>("DT"), isAdjoint);
             }
         } else if (gradientKernel == 2 && decomposition == 0 && tStep % workflow.skipDT == 0) {
-            wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+            if (config.getAndCatch("DHInversion", 1) > 1) {
+                wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+            } else {
+                *wavefieldsAdjointTemp = *wavefields;
+            }
             energyPrecond.intSquaredWavefields(*wavefieldsAdjointTemp, isAdjoint, config.get<ValueType>("DT"));
             if (gradientDomain == 0) { 
                 /*  Cross correlation in the time domain   */
@@ -225,7 +230,6 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         }
     }
     solver.resetCPML();
-    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 4 \n");
 
     // check wavefield for NaNs or infinite values
     if (commShot->any(!wavefields->isFinite(dist)) && commInterShot->getRank()==0){ // if any processor returns isfinite=false, write model and break
@@ -253,7 +257,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         }
         ZeroLagXcorr->sumWavefields(commShot, filename, config.getAndCatch("snapType", 0), workflow, sources.getSourceFC(shotIndTrue), config.get<ValueType>("DT"), shotNumber, sourceReceiverTaper.getTaperEncode());
     }
-    ZeroLagXcorr->applyTransform(wavefieldTaper2D.getRecoverMatrix(), workflow);
+    if (config.getAndCatch("DHInversion", 1) > 1)
+        ZeroLagXcorr->applyTransform(wavefieldTaper2D.getRecoverMatrix(), workflow);
     gradientPerShot.estimateParameter(*ZeroLagXcorr, model, config.get<ValueType>("DT"), workflow);
     ZeroLagXcorr->resetXcorr(workflow);
     
@@ -262,10 +267,10 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     }
 
     /* Apply energy preconditioning per shot */
-    energyPrecond.applyTransform(wavefieldTaper2D.getRecoverMatrix());
+    if (config.getAndCatch("DHInversion", 1) > 1)
+        energyPrecond.applyTransform(wavefieldTaper2D.getRecoverMatrix());
     energyPrecond.apply(gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
-    gradientPerShot.applyMedianFilter(commAll, config); 
-    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 5 \n");  
+    gradientPerShot.applyMedianFilter(commAll, config);  
     
     scai::lama::DenseVector<ValueType> mask; //mask to restore vacuum
     if (isSeismic) {
@@ -307,7 +312,11 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
             /*  Cross correlation in the time domain   */
             /* --------------------------------------- */
             if (tStep % workflow.skipDT == 0) {
-                wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+                if (config.getAndCatch("DHInversion", 1) > 1) {
+                    wavefieldsAdjointTemp->applyTransform(wavefieldTaper2D.getAverageMatrix(), *wavefields);
+                } else {
+                    *wavefieldsAdjointTemp = *wavefields;
+                }
                 energyPrecondReflect.intSquaredWavefields(*wavefieldsAdjointTemp, isAdjoint, config.get<ValueType>("DT"));
                 if (gradientDomain == 0) { 
                     /*  Cross correlation in the time domain   */
@@ -342,7 +351,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
             /* Cross correlation in the frequency domain */
             ZeroLagXcorrReflect->sumWavefields(commShot, config.getAndCatch<std::string>("WavefieldFileName", "") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".shot_" + std::to_string(shotNumber) + ".receiverReflect", config.getAndCatch("snapType", 0), workflow, sources.getSourceFC(shotIndTrue), config.get<ValueType>("DT"), shotNumber, sourceReceiverTaper.getTaperEncode());
         }  
-        ZeroLagXcorrReflect->applyTransform(wavefieldTaper2D.getRecoverMatrix(), workflow); 
+        if (config.getAndCatch("DHInversion", 1) > 1)
+            ZeroLagXcorrReflect->applyTransform(wavefieldTaper2D.getRecoverMatrix(), workflow); 
         gradientPerShot.estimateParameter(*ZeroLagXcorrReflect, model, config.get<ValueType>("DT"), workflow);
         ZeroLagXcorrReflect->resetXcorr(workflow);
     
@@ -351,7 +361,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         }
 
         /* Apply energy preconditioning per shot */
-        energyPrecondReflect.applyTransform(wavefieldTaper2D.getRecoverMatrix());
+        if (config.getAndCatch("DHInversion", 1) > 1)
+            energyPrecondReflect.applyTransform(wavefieldTaper2D.getRecoverMatrix());
         energyPrecondReflect.apply(gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
         gradientPerShot.applyMedianFilter(commAll, config); 
         gradientPerShot *= mask;
