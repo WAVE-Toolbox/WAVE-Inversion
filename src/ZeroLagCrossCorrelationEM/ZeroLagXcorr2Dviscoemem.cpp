@@ -98,7 +98,6 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::update(Wavefields
 {
     //temporary wavefield allocated for every timestep (might be inefficient)
     lama::DenseVector<ValueType> temp;    
-    lama::DenseVector<ValueType> xcorrREpsilonEM;    
     lama::DenseVector<ValueType> xcorrRSigmaEM;    
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         temp = adjointWavefield.getRefEX();
@@ -119,21 +118,12 @@ void KITGPI::ZeroLagXcorr::ZeroLagXcorr2Dviscoemem<ValueType>::update(Wavefields
     if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {
         for (int l=0; l<numRelaxationMechanisms; l++) {
             xcorrRSigmaEM = adjointWavefield.getRefRX()[l];
-            xcorrRSigmaEM *= forwardWavefield.getRefRX()[l];
+            xcorrRSigmaEM *= forwardWavefield.getRefEX();
             temp = adjointWavefield.getRefRY()[l];
-            temp *= forwardWavefield.getRefRY()[l];
-            xcorrRSigmaEM += temp;
+            temp *= forwardWavefield.getRefEY();
+            xcorrRSigmaEM += temp; 
             
-            xcorrREpsilonEM = adjointWavefield.getRefRX()[l];
-            xcorrREpsilonEM *= forwardWavefieldDerivative.getRefRX()[l];
-            temp = adjointWavefield.getRefRY()[l];
-            temp *= forwardWavefieldDerivative.getRefRY()[l];
-            xcorrREpsilonEM += temp; 
-            
-            xcorrREpsilonEM *= relaxationTime[l];
-            xcorrREpsilonEM += xcorrRSigmaEM;
-            xcorrREpsilonEM *= relaxationTime[l];
-            xcorrREpsilonSigmaEM += xcorrREpsilonEM;
+            xcorrREpsilonSigmaEM += xcorrRSigmaEM;
         }
     }
 }

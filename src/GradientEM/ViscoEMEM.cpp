@@ -985,9 +985,6 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
                 
         scai::lama::DenseVector<ValueType> gradREpsilonSigmaEM;   
         gradREpsilonSigmaEM = DT * correlatedWavefields.getXcorrREpsilonSigmaEM(); 
-        gradREpsilonSigmaEM *= -numRelaxationMechanisms;      
-        gradREpsilonSigmaEM /= model.getDielectricPermittivity();       
-        gradREpsilonSigmaEM /= model.getTauDielectricPermittivity();  
         gradEpsilonStatic = gradREpsilonSigmaEM / model.getDielectricPermittivity();
         gradTauEpsilonEM = gradREpsilonSigmaEM / model.getTauDielectricPermittivity(); 
         

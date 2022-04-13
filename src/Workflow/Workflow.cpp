@@ -1,16 +1,5 @@
 #include "Workflow.hpp"
 
-/*! \brief Constructor
- *
- *
- \param config Configuration
- */
-template <typename ValueType>
-KITGPI::Workflow::Workflow<ValueType>::Workflow(KITGPI::Configuration::Configuration config)
-{
-    init(config);
-}
-
 /*! \brief Initialize members of the object
  *
  *

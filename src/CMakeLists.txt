@@ -65,7 +65,7 @@ find_package( Simulation REQUIRED CONFIG
 
 set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${Simulation_CXX_FLAGS} )
 
-## provide WAVE-Simulation include directories + library for WAve-Inversion
+## provide WAVE-Simulation include directories + library for WAVE-Inversion
 
 include_directories( ${Simulation_INCLUDE_DIRS} )
 set( Inversion_used_libs ${Simulation_LIBRARIES} )
@@ -138,7 +138,6 @@ set ( Inversion_LIB_DIRS
 	StepLengthSearch
 	Taper
 	Workflow
-	WorkflowEM
 	ZeroLagCrossCorrelation
 	ZeroLagCrossCorrelationEM
          )
@@ -162,7 +161,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 #  WAVE-Inversion library                                    #
 ####################################################
 
-include_directories( Common Gradient GradientEM Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow WorkflowEM ZeroLagCrossCorrelation ZeroLagCrossCorrelationEM )
+include_directories( Common Gradient GradientEM Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation ZeroLagCrossCorrelationEM )
 
 add_library( Inversion ${Inversion_FILES} )
 
@@ -194,7 +193,7 @@ if ( ${GTEST_FOUND} )
 
   add_executable( utest ${Inversion_UNIT_TEST_SOURCES} )
 
-  target_include_directories( utest PRIVATE Common Gradient GradientEM Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow WorkflowEM ZeroLagCrossCorrelation ZeroLagCrossCorrelationEM  ${GTEST_INCLUDE_DIR} )
+  target_include_directories( utest PRIVATE Common Gradient GradientEM Misfit Optimization Preconditioning SourceEstimation StepLengthSearch Taper Workflow ZeroLagCrossCorrelation ZeroLagCrossCorrelationEM  ${GTEST_INCLUDE_DIR} )
   target_link_libraries( utest ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} Inversion ${Inversion_used_libs} )
 
   set_target_properties( utest PROPERTIES OUTPUT_NAME Test_unit )

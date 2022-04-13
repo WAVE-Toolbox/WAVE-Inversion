@@ -27,8 +27,6 @@ namespace KITGPI
             /* Default constructor and destructor */
             Workflow(){};
             ~Workflow(){};
-
-            Workflow(KITGPI::Configuration::Configuration config);
             
             void init(KITGPI::Configuration::Configuration config);
             void changeStage(KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfit, ValueType &steplengthInit);

@@ -392,12 +392,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             dist = wavefields.getRefEX().getDistributionPtr();      
         }
     }
-    IndexType shotDomain; // will contain the domain to which this processor belongs
-    shotDomain = config.get<IndexType>("NumShotDomains");
-
-    // Build subsets of processors for the shots
-    dmemo::CommunicatorPtr commShot = commAll->split(shotDomain/2);
-//     scai::dmemo::CommunicatorPtr commShot = dist->getCommunicatorPtr();
+    scai::dmemo::CommunicatorPtr commShot = dist->getCommunicatorPtr();
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
 
     SCAI_DMEMO_TASK(commShot)
