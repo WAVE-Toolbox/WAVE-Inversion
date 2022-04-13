@@ -72,6 +72,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     ValueType DTinv = 1.0 / config.get<ValueType>("DT");
     double start_t_shot, end_t_shot; /* For timing */
     start_t_shot = common::Walltime::get();
+    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 1 \n");
 
     /* ------------------------------------------- */
     /* Get distribution, communication and context */
@@ -99,6 +100,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     }
     scai::hmemo::ContextPtr ctx = scai::hmemo::Context::getContextPtr();                 // default context, set by environment variable SCAI_CONTEXT
     scai::dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
+    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 2 \n");
 
     /* ------------------------------------------------------ */
     /*                Backward Modelling                      */
@@ -148,6 +150,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     ZeroLagXcorr->prepareForInversion(gradientKernel, config);
     bool isReflect = true;
     bool isAdjoint = true;
+    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 3 \n");
     
     lama::DenseVector<ValueType> compensation;
     if (config.getAndCatch("compensation", 0))
@@ -222,6 +225,7 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
         }
     }
     solver.resetCPML();
+    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 4 \n");
 
     // check wavefield for NaNs or infinite values
     if (commShot->any(!wavefields->isFinite(dist)) && commInterShot->getRank()==0){ // if any processor returns isfinite=false, write model and break
@@ -260,7 +264,8 @@ void KITGPI::GradientCalculation<ValueType>::run(scai::dmemo::CommunicatorPtr co
     /* Apply energy preconditioning per shot */
     energyPrecond.applyTransform(wavefieldTaper2D.getRecoverMatrix());
     energyPrecond.apply(gradientPerShot, shotNumber, config.get<IndexType>("FileFormat"));
-    gradientPerShot.applyMedianFilter(commAll, config);   
+    gradientPerShot.applyMedianFilter(commAll, config); 
+    HOST_PRINT(commShot, "Shot number " << shotNumber << ": 5 \n");  
     
     scai::lama::DenseVector<ValueType> mask; //mask to restore vacuum
     if (isSeismic) {
