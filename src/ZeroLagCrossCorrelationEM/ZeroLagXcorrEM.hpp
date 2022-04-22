@@ -52,9 +52,9 @@ namespace KITGPI
             virtual scai::lama::DenseVector<ValueType> const &getXcorrMuC() const override;
             
             /* EM */
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrSigmaEM() const override;  
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrEpsilonEM() const override; 
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigmaEM() const override; 
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrSigma() const override;  
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrEpsilon() const override; 
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigma() const override; 
 
           protected:
             /* Common */
@@ -85,17 +85,17 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::xcorrLambdaSdRu;
             
             /* EM */
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEM; //!< correlated Wavefields for the sigma gradient
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradient
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM; //!< correlated Wavefields for the rSigma gradient
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRu;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRd;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRd;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRu;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRu;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRd;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRd;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrSigma; //!< correlated Wavefields for the sigma gradient
+            using ZeroLagXcorr<ValueType>::xcorrEpsilon; //!< correlated Wavefields for the epsilon gradient
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigma; //!< correlated Wavefields for the rSigma gradient
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSdRu;
         };
     }
 }

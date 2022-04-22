@@ -33,14 +33,14 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::init(scai::dmemo::Distr
     lastConjugateGradientSaturation.setSameValue(dist, 0);
     lastConjugateGradientReflectivity.setSameValue(dist, 0);
     
-    lastGradientSigmaEM.setSameValue(dist, 0);
-    lastGradientEpsilonEM.setSameValue(dist, 0);
-    lastGradientTauSigmaEM.setSameValue(dist, 0);
-    lastGradientTauEpsilonEM.setSameValue(dist, 0);
-    lastConjugateGradientSigmaEM.setSameValue(dist, 0);
-    lastConjugateGradientEpsilonEM.setSameValue(dist, 0);
-    lastConjugateGradientTauSigmaEM.setSameValue(dist, 0);
-    lastConjugateGradientTauEpsilonEM.setSameValue(dist, 0); 
+    lastGradientSigma.setSameValue(dist, 0);
+    lastGradientEpsilon.setSameValue(dist, 0);
+    lastGradientTauSigma.setSameValue(dist, 0);
+    lastGradientTauEpsilon.setSameValue(dist, 0);
+    lastConjugateGradientSigma.setSameValue(dist, 0);
+    lastConjugateGradientEpsilon.setSameValue(dist, 0);
+    lastConjugateGradientTauSigma.setSameValue(dist, 0);
+    lastConjugateGradientTauEpsilon.setSameValue(dist, 0); 
 }
 
 /*! \brief Calculate the conjugate gradient direction after Polak and Ribiere for all used parameters
@@ -111,74 +111,74 @@ void KITGPI::Optimization::ConjugateGradient<ValueType>::apply(KITGPI::Gradient:
         }
     } else { 
         if(workflow.iteration==0){        
-            if(workflow.getInvertForSigmaEM()){
-                lastGradientSigmaEM = gradient.getElectricConductivity();
-                lastConjugateGradientSigmaEM = gradient.getElectricConductivity();
+            if(workflow.getInvertForSigma()){
+                lastGradientSigma = gradient.getElectricConductivity();
+                lastConjugateGradientSigma = gradient.getElectricConductivity();
             }
             
-            if(workflow.getInvertForEpsilonEM()){
-                lastGradientEpsilonEM = gradient.getDielectricPermittivity();
-                lastConjugateGradientEpsilonEM = gradient.getDielectricPermittivity();
+            if(workflow.getInvertForEpsilon()){
+                lastGradientEpsilon = gradient.getDielectricPermittivity();
+                lastConjugateGradientEpsilon = gradient.getDielectricPermittivity();
             }
             
-            if(workflow.getInvertForTauSigmaEM()){
-                lastGradientTauSigmaEM = gradient.getTauElectricConductivity();
-                lastConjugateGradientTauSigmaEM = gradient.getTauElectricConductivity();
+            if(workflow.getInvertForTauSigma()){
+                lastGradientTauSigma = gradient.getTauElectricConductivity();
+                lastConjugateGradientTauSigma = gradient.getTauElectricConductivity();
             }
             
-            if(workflow.getInvertForTauEpsilonEM()){
-                lastGradientTauEpsilonEM = gradient.getTauDielectricPermittivity();
-                lastConjugateGradientTauEpsilonEM = gradient.getTauDielectricPermittivity();
+            if(workflow.getInvertForTauEpsilon()){
+                lastGradientTauEpsilon = gradient.getTauDielectricPermittivity();
+                lastConjugateGradientTauEpsilon = gradient.getTauDielectricPermittivity();
             }        
         } else {    
-            if(workflow.getInvertForSigmaEM()){
-                scai::lama::DenseVector<ValueType> gradientSigmaEM; 
-                gradientSigmaEM = gradient.getElectricConductivity();
-                scai::lama::DenseVector<ValueType> conjugateGradientSigmaEM;
+            if(workflow.getInvertForSigma()){
+                scai::lama::DenseVector<ValueType> gradientSigma; 
+                gradientSigma = gradient.getElectricConductivity();
+                scai::lama::DenseVector<ValueType> conjugateGradientSigma;
                 
-                this->calcConjugateGradient(conjugateGradientSigmaEM, gradientSigmaEM, lastConjugateGradientSigmaEM, lastGradientSigmaEM);
+                this->calcConjugateGradient(conjugateGradientSigma, gradientSigma, lastConjugateGradientSigma, lastGradientSigma);
                 
-                lastConjugateGradientSigmaEM = conjugateGradientSigmaEM;
-                lastGradientSigmaEM = gradientSigmaEM;
+                lastConjugateGradientSigma = conjugateGradientSigma;
+                lastGradientSigma = gradientSigma;
                 
-                gradient.setElectricConductivity(conjugateGradientSigmaEM);
+                gradient.setElectricConductivity(conjugateGradientSigma);
             }
             
-            if(workflow.getInvertForEpsilonEM()){
-                scai::lama::DenseVector<ValueType> gradientEpsilonEM;
-                gradientEpsilonEM = gradient.getDielectricPermittivity();
-                scai::lama::DenseVector<ValueType> conjugateGradientEpsilonEM;
+            if(workflow.getInvertForEpsilon()){
+                scai::lama::DenseVector<ValueType> gradientEpsilon;
+                gradientEpsilon = gradient.getDielectricPermittivity();
+                scai::lama::DenseVector<ValueType> conjugateGradientEpsilon;
                 
-                this->calcConjugateGradient(conjugateGradientEpsilonEM, gradientEpsilonEM, lastConjugateGradientEpsilonEM, lastGradientEpsilonEM);
+                this->calcConjugateGradient(conjugateGradientEpsilon, gradientEpsilon, lastConjugateGradientEpsilon, lastGradientEpsilon);
                 
-                lastConjugateGradientEpsilonEM = conjugateGradientEpsilonEM;
-                lastGradientEpsilonEM = gradientEpsilonEM;
+                lastConjugateGradientEpsilon = conjugateGradientEpsilon;
+                lastGradientEpsilon = gradientEpsilon;
                 
-                gradient.setDielectricPermittivity(conjugateGradientEpsilonEM);
+                gradient.setDielectricPermittivity(conjugateGradientEpsilon);
             }
             
-            if(workflow.getInvertForTauSigmaEM()){
+            if(workflow.getInvertForTauSigma()){
                 scai::lama::DenseVector<ValueType> gradientTauElectricConductivity;
                 gradientTauElectricConductivity = gradient.getTauElectricConductivity();
                 scai::lama::DenseVector<ValueType> conjugateGradientTauElectricConductivity;
                 
-                this->calcConjugateGradient(conjugateGradientTauElectricConductivity, gradientTauElectricConductivity, lastConjugateGradientTauSigmaEM, lastGradientTauSigmaEM);
+                this->calcConjugateGradient(conjugateGradientTauElectricConductivity, gradientTauElectricConductivity, lastConjugateGradientTauSigma, lastGradientTauSigma);
                 
-                lastConjugateGradientTauSigmaEM = conjugateGradientTauElectricConductivity;
-                lastGradientTauSigmaEM = gradientTauElectricConductivity;
+                lastConjugateGradientTauSigma = conjugateGradientTauElectricConductivity;
+                lastGradientTauSigma = gradientTauElectricConductivity;
                 
                 gradient.setTauElectricConductivity(conjugateGradientTauElectricConductivity);
             }
             
-            if(workflow.getInvertForTauEpsilonEM()){
+            if(workflow.getInvertForTauEpsilon()){
                 scai::lama::DenseVector<ValueType> gradientTauDielectricPermittivity;
                 gradientTauDielectricPermittivity = gradient.getTauDielectricPermittivity();
                 scai::lama::DenseVector<ValueType> conjugateGradientTauDielectricPermittivity;
                 
-                this->calcConjugateGradient(conjugateGradientTauDielectricPermittivity, gradientTauDielectricPermittivity, lastConjugateGradientTauEpsilonEM, lastGradientTauEpsilonEM);
+                this->calcConjugateGradient(conjugateGradientTauDielectricPermittivity, gradientTauDielectricPermittivity, lastConjugateGradientTauEpsilon, lastGradientTauEpsilon);
                 
-                lastConjugateGradientTauEpsilonEM = conjugateGradientTauDielectricPermittivity;
-                lastGradientTauEpsilonEM = gradientTauDielectricPermittivity;
+                lastConjugateGradientTauEpsilon = conjugateGradientTauDielectricPermittivity;
+                lastGradientTauEpsilon = gradientTauDielectricPermittivity;
                 
                 gradient.setTauDielectricPermittivity(conjugateGradientTauDielectricPermittivity);
             }           

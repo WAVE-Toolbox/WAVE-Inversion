@@ -78,30 +78,30 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::resetGradient()
 
 /*! \brief Write model to an external file
  *
- \param filename For the tauElectricConductivity ".tauSigmaEMr.mtx" and for tauDielectricPermittivity ".tauEpsilonEM.mtx" is added.
+ \param filename For the tauElectricConductivity ".tauSigmar.mtx" and for tauDielectricPermittivity ".tauEpsilon.mtx" is added.
  \param fileFormat format of output file
  */
 template <typename ValueType>
 void KITGPI::Gradient::ViscoEMEM<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
-    if (workflow.getInvertForSigmaEM()) {
-        std::string filenameElectricConductivity = filename + ".sigmaEM";
+    if (workflow.getInvertForSigma()) {
+        std::string filenameElectricConductivity = filename + ".sigma";
         this->writeParameterisation(electricConductivity, filenameElectricConductivity, fileFormat);
     }
     
-    if (workflow.getInvertForEpsilonEM()) {       
-        std::string filenameDielectricPermittivity = filename + ".epsilonEMr";
+    if (workflow.getInvertForEpsilon()) {       
+        std::string filenameDielectricPermittivity = filename + ".epsilonr";
         this->writeParameterisation(dielectricPermittivity, filenameDielectricPermittivity, fileFormat);
     }
     
-    if (workflow.getInvertForTauSigmaEM()) {
-        std::string filenameTauSigmaEM = filename + ".tauSigmaEMr";
-        this->writeParameterisation(tauElectricConductivity, filenameTauSigmaEM, fileFormat);
+    if (workflow.getInvertForTauSigma()) {
+        std::string filenameTauSigma = filename + ".tauSigmar";
+        this->writeParameterisation(tauElectricConductivity, filenameTauSigma, fileFormat);
     }
 
-    if (workflow.getInvertForTauEpsilonEM()) {
-        std::string filenameTauEpsilonEM = filename + ".tauEpsilonEM";
-        this->writeParameterisation(tauDielectricPermittivity, filenameTauEpsilonEM, fileFormat);
+    if (workflow.getInvertForTauEpsilon()) {
+        std::string filenameTauEpsilon = filename + ".tauEpsilon";
+        this->writeParameterisation(tauDielectricPermittivity, filenameTauEpsilon, fileFormat);
     }
     
     if (workflow.getInvertForPorosity()) { 
@@ -158,13 +158,13 @@ KITGPI::Gradient::ViscoEMEM<ValueType> operator*(ValueType lhs, KITGPI::Gradient
 template <typename ValueType>
 KITGPI::Gradient::ViscoEMEM<ValueType> &KITGPI::Gradient::ViscoEMEM<ValueType>::operator*=(ValueType const &rhs)
 {
-    if (workflowInner.getInvertForSigmaEM()) 
+    if (workflowInner.getInvertForSigma()) 
         electricConductivity *= rhs;
-    if (workflowInner.getInvertForEpsilonEM()) 
+    if (workflowInner.getInvertForEpsilon()) 
         dielectricPermittivity *= rhs;
-    if (workflowInner.getInvertForTauSigmaEM()) 
+    if (workflowInner.getInvertForTauSigma()) 
         tauElectricConductivity *= rhs;
-    if (workflowInner.getInvertForTauEpsilonEM()) 
+    if (workflowInner.getInvertForTauEpsilon()) 
         tauDielectricPermittivity *= rhs;
     if (workflowInner.getInvertForPorosity()) 
         porosity *= rhs;
@@ -310,13 +310,13 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::plusAssign(KITGPI::Gradient::Gradie
 template <typename ValueType>
 void KITGPI::Gradient::ViscoEMEM<ValueType>::timesAssign(ValueType const &rhs)
 {
-    if (workflowInner.getInvertForSigmaEM()) 
+    if (workflowInner.getInvertForSigma()) 
         electricConductivity *= rhs;
-    if (workflowInner.getInvertForEpsilonEM()) 
+    if (workflowInner.getInvertForEpsilon()) 
         dielectricPermittivity *= rhs;
-    if (workflowInner.getInvertForTauSigmaEM()) 
+    if (workflowInner.getInvertForTauSigma()) 
         tauElectricConductivity *= rhs;
-    if (workflowInner.getInvertForTauEpsilonEM()) 
+    if (workflowInner.getInvertForTauEpsilon()) 
         tauDielectricPermittivity *= rhs;
     if (workflowInner.getInvertForPorosity()) 
         porosity *= rhs;
@@ -370,7 +370,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::minusAssign(KITGPI::Modelparameter:
         ValueType const TauDielectricPermittivityReference = lhs.getTauDielectricPermittivityReference();     
         ValueType const TauElectricConductivityReference = lhs.getTauElectricConductivityReference(); 
         
-        if (workflowInner.getInvertForSigmaEM()) {       
+        if (workflowInner.getInvertForSigma()) {       
             scai::lama::DenseVector<ValueType> dielectricPermittivityRealEffective; 
             if (lhs.getEffectiveParameterisation()) {
                 dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
@@ -384,7 +384,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::minusAssign(KITGPI::Modelparameter:
                 scai::lama::DenseVector<ValueType> electricConductivityStatic = lhs.getElectricConductivityStatic(dielectricPermittivityRealEffective, electricConductivitytemp, calculateType); 
                 lhs.setElectricConductivity(electricConductivityStatic);
             } else {
-                if (!workflowInner.getInvertForEpsilonEM())
+                if (!workflowInner.getInvertForEpsilon())
                     dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
                 
                 electricConductivitytemp = lhs.getElectricConductivity();  
@@ -393,14 +393,14 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::minusAssign(KITGPI::Modelparameter:
                 this->deleteParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 
                 lhs.setElectricConductivity(electricConductivitytemp);
                 
-                if (!workflowInner.getInvertForEpsilonEM()) {     
+                if (!workflowInner.getInvertForEpsilon()) {     
                     IndexType calculateType = 1;
                     scai::lama::DenseVector<ValueType> dielectricPermittivityStatic = lhs.getDielectricPermittivityStatic(dielectricPermittivityRealEffective, electricConductivitytemp, calculateType); 
                     lhs.setDielectricPermittivity(dielectricPermittivityStatic);
                 }
             }
         }
-        if (workflowInner.getInvertForEpsilonEM()) {
+        if (workflowInner.getInvertForEpsilon()) {
             scai::lama::DenseVector<ValueType> electricConductivityRealEffective; 
             if (lhs.getEffectiveParameterisation()) { 
                 electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
@@ -414,7 +414,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::minusAssign(KITGPI::Modelparameter:
                 scai::lama::DenseVector<ValueType> dielectricPermittivityStatic = lhs.getDielectricPermittivityStatic(dielectricPermittivitytemp, electricConductivityRealEffective, calculateType); 
                 lhs.setDielectricPermittivity(dielectricPermittivityStatic);
             } else {
-                if (!workflowInner.getInvertForSigmaEM())
+                if (!workflowInner.getInvertForSigma())
                     electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
                 
                 dielectricPermittivitytemp = lhs.getDielectricPermittivity(); 
@@ -423,26 +423,26 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::minusAssign(KITGPI::Modelparameter:
                 this->deleteParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());
                 lhs.setDielectricPermittivity(dielectricPermittivitytemp);
                 
-                if (!workflowInner.getInvertForSigmaEM()) {    
+                if (!workflowInner.getInvertForSigma()) {    
                     IndexType calculateType = 1;
                     scai::lama::DenseVector<ValueType> electricConductivityStatic = lhs.getElectricConductivityStatic(dielectricPermittivitytemp, electricConductivityRealEffective, calculateType); 
                     lhs.setElectricConductivity(electricConductivityStatic);
                 }
             }
         }
-        if (workflowInner.getInvertForTauSigmaEM()) {            
+        if (workflowInner.getInvertForTauSigma()) {            
             tauElectricConductivitytemp = lhs.getTauElectricConductivity();  
             this->applyParameterisation(tauElectricConductivitytemp, TauElectricConductivityReference, lhs.getParameterisation());  
             tauElectricConductivitytemp -= rhs.getTauElectricConductivity();  
             this->deleteParameterisation(tauElectricConductivitytemp, TauElectricConductivityReference, lhs.getParameterisation()); 
             lhs.setTauElectricConductivity(tauElectricConductivitytemp);
         }
-        if (workflowInner.getInvertForTauEpsilonEM()) {
+        if (workflowInner.getInvertForTauEpsilon()) {
             scai::lama::DenseVector<ValueType> dielectricPermittivityRealEffective; 
             scai::lama::DenseVector<ValueType> electricConductivityRealEffective;  
-            if (!workflowInner.getInvertForEpsilonEM() && workflowInner.getInvertForSigmaEM()) {  
+            if (!workflowInner.getInvertForEpsilon() && workflowInner.getInvertForSigma()) {  
                 dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
-            } else if (!workflowInner.getInvertForSigmaEM() && workflowInner.getInvertForEpsilonEM()) {
+            } else if (!workflowInner.getInvertForSigma() && workflowInner.getInvertForEpsilon()) {
                 electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
             }
             
@@ -452,12 +452,12 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::minusAssign(KITGPI::Modelparameter:
             this->deleteParameterisation(tauDielectricPermittivitytemp, TauDielectricPermittivityReference, lhs.getParameterisation());         
             lhs.setTauDielectricPermittivity(tauDielectricPermittivitytemp);
                         
-            if (!workflowInner.getInvertForEpsilonEM() && workflowInner.getInvertForSigmaEM()) {     
+            if (!workflowInner.getInvertForEpsilon() && workflowInner.getInvertForSigma()) {     
                 IndexType calculateType = 2;
                 electricConductivityRealEffective = lhs.getElectricConductivityRealEffective();
                 scai::lama::DenseVector<ValueType> dielectricPermittivityStatic = lhs.getDielectricPermittivityStatic(dielectricPermittivityRealEffective, electricConductivityRealEffective, calculateType); 
                 lhs.setDielectricPermittivity(dielectricPermittivityStatic);
-            } else if (!workflowInner.getInvertForSigmaEM() && workflowInner.getInvertForEpsilonEM()) {
+            } else if (!workflowInner.getInvertForSigma() && workflowInner.getInvertForEpsilon()) {
                 IndexType calculateType = 2;
                 dielectricPermittivityRealEffective = lhs.getDielectricPermittivityRealEffective();
                 scai::lama::DenseVector<ValueType> electricConductivityStatic = lhs.getElectricConductivityStatic(dielectricPermittivityRealEffective, electricConductivityRealEffective, calculateType); 
@@ -547,28 +547,28 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::sumGradientPerShot(KITGPI::Modelpar
     scai::lama::DenseVector<ValueType> weightingVector;
     scai::IndexType NY = modelCoordinates.getNY();
     
-    if (workflowInner.getInvertForEpsilonEM()) {
+    if (workflowInner.getInvertForEpsilon()) {
         weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getDielectricPermittivity(), NY);
         temp = weightingVector * gradientPerShot.getDielectricPermittivity();  
         temp = recoverMatrix * temp;
         dielectricPermittivity += temp; 
     }
   
-    if (workflowInner.getInvertForSigmaEM()) {
+    if (workflowInner.getInvertForSigma()) {
         weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getElectricConductivity(), NY);
         temp = weightingVector * gradientPerShot.getElectricConductivity();  
         temp = recoverMatrix * temp;
         electricConductivity += temp; 
     }
         
-    if (workflowInner.getInvertForTauEpsilonEM()) {
+    if (workflowInner.getInvertForTauEpsilon()) {
         weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getTauDielectricPermittivity(), NY);
         temp = weightingVector * gradientPerShot.getTauDielectricPermittivity();  
         temp = recoverMatrix * temp;
         tauDielectricPermittivity += temp; 
     }
   
-    if (workflowInner.getInvertForTauSigmaEM()) {
+    if (workflowInner.getInvertForTauSigma()) {
         weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getTauElectricConductivity(), NY);
         temp = weightingVector * gradientPerShot.getTauElectricConductivity();  
         temp = recoverMatrix * temp;
@@ -609,19 +609,19 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::smooth(scai::dmemo::CommunicatorPtr
         if (smoothGradient != 0) {
             HOST_PRINT(commAll, "Apply Gaussian filter to gradient\n");
             scai::lama::DenseVector<ValueType> vector2Dpadded;
-            if (workflowInner.getInvertForEpsilonEM()) {
+            if (workflowInner.getInvertForEpsilon()) {
                 KITGPI::Common::pad2DVector(dielectricPermittivity, vector2Dpadded, NX, NY, PX, PY); 
                 dielectricPermittivity = GaussianKernel * vector2Dpadded;
             }
-            if (workflowInner.getInvertForSigmaEM()) {
+            if (workflowInner.getInvertForSigma()) {
                 KITGPI::Common::pad2DVector(electricConductivity, vector2Dpadded, NX, NY, PX, PY); 
                 electricConductivity = GaussianKernel * vector2Dpadded;
             }
-            if (workflowInner.getInvertForTauEpsilonEM()) {
+            if (workflowInner.getInvertForTauEpsilon()) {
                 KITGPI::Common::pad2DVector(tauDielectricPermittivity, vector2Dpadded, NX, NY, PX, PY); 
                 tauDielectricPermittivity = GaussianKernel * vector2Dpadded;
             }
-            if (workflowInner.getInvertForTauSigmaEM()) {
+            if (workflowInner.getInvertForTauSigma()) {
                 KITGPI::Common::pad2DVector(tauElectricConductivity, vector2Dpadded, NX, NY, PX, PY); 
                 tauElectricConductivity = GaussianKernel * vector2Dpadded;
             }
@@ -650,13 +650,13 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::applyMedianFilter(scai::dmemo::Comm
         HOST_PRINT(commAll, "Apply median filter to gradient\n");
         scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
         
-        if (workflowInner.getInvertForEpsilonEM())
+        if (workflowInner.getInvertForEpsilon())
             KITGPI::Common::applyMedianFilterTo2DVector(dielectricPermittivity, NX, NY, spatialLength);
-        if (workflowInner.getInvertForSigmaEM())
+        if (workflowInner.getInvertForSigma())
             KITGPI::Common::applyMedianFilterTo2DVector(electricConductivity, NX, NY, spatialLength);
-        if (workflowInner.getInvertForTauEpsilonEM())
+        if (workflowInner.getInvertForTauEpsilon())
             KITGPI::Common::applyMedianFilterTo2DVector(tauDielectricPermittivity, NX, NY, spatialLength);
-        if (workflowInner.getInvertForTauSigmaEM())
+        if (workflowInner.getInvertForTauSigma())
             KITGPI::Common::applyMedianFilterTo2DVector(tauElectricConductivity, NX, NY, spatialLength);
         if (workflowInner.getInvertForPorosity())
             KITGPI::Common::applyMedianFilterTo2DVector(porosity, NX, NY, spatialLength);
@@ -682,7 +682,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::scale(KITGPI::Modelparameter::Model
           
     IndexType scaleGradient = config.get<IndexType>("scaleGradient");
     if (scaleGradient != 0) {       
-        if (workflow.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {  
+        if (workflow.getInvertForSigma() && electricConductivity.maxNorm() != 0) {  
             if (scaleGradient == 1) {
                 if (model.getEffectiveParameterisation()) {
                     maxValue = model.getElectricConductivityRealEffective().maxNorm();
@@ -690,13 +690,13 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::scale(KITGPI::Modelparameter::Model
                     maxValue = model.getElectricConductivity().maxNorm();
                 }
             } else if (scaleGradient == 2) {
-                maxValue = config.get<ValueType>("upperSigmaEMTh") - config.get<ValueType>("lowerSigmaEMTh");
+                maxValue = config.get<ValueType>("upperSigmaTh") - config.get<ValueType>("lowerSigmaTh");
             }
             this->applyParameterisation(maxValue, ElectricConductivityReference, model.getParameterisation());
             electricConductivity *= 1 / electricConductivity.maxNorm() * maxValue;
         }  
         
-        if (workflow.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
+        if (workflow.getInvertForEpsilon() && dielectricPermittivity.maxNorm() != 0) {
             if (scaleGradient == 1) {
                 if (model.getEffectiveParameterisation()) {
                     maxValue = model.getDielectricPermittivityRealEffective().maxNorm();
@@ -704,28 +704,28 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::scale(KITGPI::Modelparameter::Model
                     maxValue = model.getDielectricPermittivity().maxNorm();
                 }
             } else if (scaleGradient == 2) {
-                maxValue = (config.get<ValueType>("upperEpsilonEMrTh") - config.get<ValueType>("lowerEpsilonEMrTh")) * DielectricPermittivityVacuum;
+                maxValue = (config.get<ValueType>("upperEpsilonrTh") - config.get<ValueType>("lowerEpsilonrTh")) * DielectricPermittivityVacuum;
             }      
             this->applyParameterisation(maxValue, DielectricPermittivityVacuum, model.getParameterisation()); 
             dielectricPermittivity *= 1 / dielectricPermittivity.maxNorm() * maxValue;
         }
         
-        if (workflow.getInvertForTauSigmaEM() && tauElectricConductivity.maxNorm() != 0) {
+        if (workflow.getInvertForTauSigma() && tauElectricConductivity.maxNorm() != 0) {
             if (scaleGradient == 1) {
                 maxValue = model.getTauElectricConductivity().maxNorm();
             } else if (scaleGradient == 2) {
                 ValueType relaxationTime_ref = 1.0 / (2.0 * M_PI * model.getCenterFrequencyCPML());
-                maxValue = (config.get<ValueType>("upperTauSigmaEMrTh") - config.get<ValueType>("lowerTauSigmaEMrTh")) * relaxationTime_ref;
+                maxValue = (config.get<ValueType>("upperTauSigmarTh") - config.get<ValueType>("lowerTauSigmarTh")) * relaxationTime_ref;
             }
             this->applyParameterisation(maxValue, TauElectricConductivityReference, model.getParameterisation());
             tauElectricConductivity *= 1 / tauElectricConductivity.maxNorm() * maxValue;
         }    
         
-        if (workflow.getInvertForTauEpsilonEM() && tauDielectricPermittivity.maxNorm() != 0) {
+        if (workflow.getInvertForTauEpsilon() && tauDielectricPermittivity.maxNorm() != 0) {
             if (scaleGradient == 1) {
                 maxValue = model.getTauDielectricPermittivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = config.get<ValueType>("upperTauEpsilonEMTh") - config.get<ValueType>("lowerTauEpsilonEMTh");
+                maxValue = config.get<ValueType>("upperTauEpsilonTh") - config.get<ValueType>("lowerTauEpsilonTh");
             }      
             this->applyParameterisation(maxValue, TauDielectricPermittivityReference, model.getParameterisation()); 
             tauDielectricPermittivity *= 1 / tauDielectricPermittivity.maxNorm() * maxValue;
@@ -772,56 +772,56 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::applyEnergyPreconditioning(ValueTyp
     // see Nuber et al., 2015., Enhancement of near-surface elastic full waveform inversion results in regions of low sensitivities.
     scai::lama::DenseVector<ValueType> approxHessian;  
        
-    if (workflowInner.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {
+    if (workflowInner.getInvertForSigma() && electricConductivity.maxNorm() != 0) {
         approxHessian = electricConductivity;
         approxHessian *= electricConductivity;
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
         approxHessian *= 1 / approxHessian.maxNorm(); 
         
         if(saveApproxHessian){
-            IO::writeVector(approxHessian, filename + ".sigmaEM", fileFormat);        
+            IO::writeVector(approxHessian, filename + ".sigma", fileFormat);        
         }
             
         approxHessian = 1 / approxHessian;
         electricConductivity *= approxHessian; 
     }
     
-    if (workflowInner.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
+    if (workflowInner.getInvertForEpsilon() && dielectricPermittivity.maxNorm() != 0) {
         approxHessian = dielectricPermittivity;
         approxHessian *= dielectricPermittivity;
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
         approxHessian *= 1 / approxHessian.maxNorm(); 
         
         if(saveApproxHessian){
-            IO::writeVector(approxHessian, filename + ".epsilonEMr", fileFormat);        
+            IO::writeVector(approxHessian, filename + ".epsilonr", fileFormat);        
         }
             
         approxHessian = 1 / approxHessian;
         dielectricPermittivity *= approxHessian; 
     }
     
-    if (workflowInner.getInvertForTauSigmaEM() && tauElectricConductivity.maxNorm() != 0) {
+    if (workflowInner.getInvertForTauSigma() && tauElectricConductivity.maxNorm() != 0) {
         approxHessian = tauElectricConductivity;
         approxHessian *= tauElectricConductivity;
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
         approxHessian *= 1 / approxHessian.maxNorm(); 
         
         if(saveApproxHessian){
-            IO::writeVector(approxHessian, filename + ".tauSigmaEMr", fileFormat);        
+            IO::writeVector(approxHessian, filename + ".tauSigmar", fileFormat);        
         }
             
         approxHessian = 1 / approxHessian;
         tauElectricConductivity *= approxHessian; 
     }
     
-    if (workflowInner.getInvertForTauEpsilonEM() && tauDielectricPermittivity.maxNorm() != 0) {
+    if (workflowInner.getInvertForTauEpsilon() && tauDielectricPermittivity.maxNorm() != 0) {
         approxHessian = tauDielectricPermittivity;
         approxHessian *= tauDielectricPermittivity;
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
         approxHessian *= 1 / approxHessian.maxNorm(); 
         
         if(saveApproxHessian){
-            IO::writeVector(approxHessian, filename + ".tauEpsilonEM", fileFormat);        
+            IO::writeVector(approxHessian, filename + ".tauEpsilon", fileFormat);        
         }
             
         approxHessian = 1 / approxHessian;
@@ -935,15 +935,15 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
     scai::lama::DenseVector<ValueType> gradEpsilonEffectiveOptical;
     scai::lama::DenseVector<ValueType> gradSigmaEffectiveOptical;
     scai::lama::DenseVector<ValueType> gradEpsilonStatic;
-    scai::lama::DenseVector<ValueType> gradTauEpsilonEM;
+    scai::lama::DenseVector<ValueType> gradTauEpsilon;
     scai::lama::DenseVector<ValueType> gradEpsilonStatic1;
     scai::lama::DenseVector<ValueType> gradSigmaStatic;
-    scai::lama::DenseVector<ValueType> gradTauEpsilonEM1;
-    scai::lama::DenseVector<ValueType> gradTauSigmaEM;
+    scai::lama::DenseVector<ValueType> gradTauEpsilon1;
+    scai::lama::DenseVector<ValueType> gradTauSigma;
     scai::lama::DenseVector<ValueType> gradEpsilonEffective;
     scai::lama::DenseVector<ValueType> gradSigmaEffective;
-    scai::lama::DenseVector<ValueType> gradTauEpsilonEM2;
-    scai::lama::DenseVector<ValueType> gradTauSigmaEM1;
+    scai::lama::DenseVector<ValueType> gradTauEpsilon2;
+    scai::lama::DenseVector<ValueType> gradTauSigma1;
     scai::lama::DenseVector<ValueType> temp; 
     scai::lama::DenseVector<ValueType> a_temp;
     scai::lama::DenseVector<ValueType> b_temp;  
@@ -974,25 +974,25 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
     c_temp = a_temp - c_temp;
     c_temp = 1.0 / c_temp;
 
-    gradEpsilonEffectiveOptical = DT * correlatedWavefields.getXcorrEpsilonEM();
+    gradEpsilonEffectiveOptical = DT * correlatedWavefields.getXcorrEpsilon();
     
     scai::hmemo::ContextPtr ctx = gradEpsilonEffectiveOptical.getContextPtr();
     scai::dmemo::DistributionPtr dist = gradEpsilonEffectiveOptical.getDistributionPtr();
     
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForEpsilonEM() || workflow.getInvertForTauSigmaEM() || workflow.getInvertForTauEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
+    if (workflow.getInvertForSigma() || workflow.getInvertForEpsilon() || workflow.getInvertForTauSigma() || workflow.getInvertForTauEpsilon() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
         // basic gradients
-        gradSigmaEffectiveOptical = DT * correlatedWavefields.getXcorrSigmaEM(); 
+        gradSigmaEffectiveOptical = DT * correlatedWavefields.getXcorrSigma(); 
                 
-        scai::lama::DenseVector<ValueType> gradREpsilonSigmaEM;   
-        gradREpsilonSigmaEM = DT * correlatedWavefields.getXcorrREpsilonSigmaEM(); 
-        gradEpsilonStatic = gradREpsilonSigmaEM / model.getDielectricPermittivity();
-        gradTauEpsilonEM = gradREpsilonSigmaEM / model.getTauDielectricPermittivity(); 
+        scai::lama::DenseVector<ValueType> gradREpsilonSigma;   
+        gradREpsilonSigma = DT * correlatedWavefields.getXcorrREpsilonSigma(); 
+        gradEpsilonStatic = gradREpsilonSigma / model.getDielectricPermittivity();
+        gradTauEpsilon = gradREpsilonSigma / model.getTauDielectricPermittivity(); 
         
         // In case that tauDielectricPermittivity = 0 in air layer
         Common::replaceInvalid<ValueType>(gradEpsilonStatic, 0.0);
-        Common::replaceInvalid<ValueType>(gradTauEpsilonEM, 0.0);
+        Common::replaceInvalid<ValueType>(gradTauEpsilon, 0.0);
              
-        // convert the gradient from (gradEpsilonEffectiveOptical, gradSigmaEffectiveOptical, gradEpsilonStatic, gradTauEpsilonEM) to (gradEpsilonStatic, gradSigmaStatic, gradTauEpsilonEM1, gradTauSigmaEM).
+        // convert the gradient from (gradEpsilonEffectiveOptical, gradSigmaEffectiveOptical, gradEpsilonStatic, gradTauEpsilon) to (gradEpsilonStatic, gradSigmaStatic, gradTauEpsilon1, gradTauSigma).
         gradSigmaStatic = gradSigmaEffectiveOptical;
         temp = model.getTauElectricConductivity() * gradEpsilonEffectiveOptical;
         gradSigmaStatic += temp;  
@@ -1005,17 +1005,17 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
         temp *= gradEpsilonEffectiveOptical;
         gradEpsilonStatic1 += temp;
         
-        gradTauSigmaEM = model.getElectricConductivity() * gradEpsilonEffectiveOptical;
+        gradTauSigma = model.getElectricConductivity() * gradEpsilonEffectiveOptical;
         
-        gradTauEpsilonEM1 = gradTauEpsilonEM;        
+        gradTauEpsilon1 = gradTauEpsilon;        
         temp = gradSigmaEffectiveOptical * w_average;
         temp *= model.getDielectricPermittivity();
-        gradTauEpsilonEM1 += temp;  
+        gradTauEpsilon1 += temp;  
         temp = gradEpsilonEffectiveOptical * model.getDielectricPermittivity(); 
-        gradTauEpsilonEM1 -= temp;        
+        gradTauEpsilon1 -= temp;        
     }
     
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
+    if (workflow.getInvertForSigma() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
         if (model.getEffectiveParameterisation()) {
             scai::lama::DenseVector<ValueType> epsilonStatic1DeSigmaEffective;
             scai::lama::DenseVector<ValueType> sigmaStaticDeSigmaEffective;
@@ -1035,7 +1035,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
         this->initParameterisation(electricConductivity, ctx, dist, 0.0);
     }
     
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {        
+    if (workflow.getInvertForEpsilon() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) {        
         if (model.getEffectiveParameterisation()) {
             scai::lama::DenseVector<ValueType> epsilonStatic1DeEpsilonEffective;
             scai::lama::DenseVector<ValueType> sigmaStaticDeEpsilonEffective;
@@ -1054,7 +1054,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
         this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }
 
-    if (workflow.getInvertForTauSigmaEM()) {              
+    if (workflow.getInvertForTauSigma()) {              
         if (model.getEffectiveParameterisation()) {
             scai::lama::DenseVector<ValueType> epsilonStatic1DeTauSigma1;
             scai::lama::DenseVector<ValueType> sigmaStaticDeTauSigma1;
@@ -1068,9 +1068,9 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
             tauElectricConductivity = epsilonStatic1DeTauSigma1 * gradEpsilonStatic1;
             temp = sigmaStaticDeTauSigma1 * gradSigmaStatic;
             tauElectricConductivity += temp;
-            tauElectricConductivity += gradTauSigmaEM;
+            tauElectricConductivity += gradTauSigma;
         } else {
-            tauElectricConductivity = gradTauSigmaEM;
+            tauElectricConductivity = gradTauSigma;
         }
         
         this->gradientParameterisation(tauElectricConductivity, model.getTauElectricConductivity(), TauElectricConductivityReference, model.getParameterisation()); 
@@ -1078,7 +1078,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
         this->initParameterisation(tauElectricConductivity, ctx, dist, 0.0);
     }
     
-    if (workflow.getInvertForTauEpsilonEM()) {                 
+    if (workflow.getInvertForTauEpsilon()) {                 
         if (model.getEffectiveParameterisation()) {
             scai::lama::DenseVector<ValueType> epsilonStatic1DeTauEpsilon2;
             scai::lama::DenseVector<ValueType> sigmaStaticDeTauEpsilon2;
@@ -1094,9 +1094,9 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXc
             tauDielectricPermittivity = epsilonStatic1DeTauEpsilon2 * gradEpsilonStatic1;
             temp = sigmaStaticDeTauEpsilon2 * gradSigmaStatic;
             tauDielectricPermittivity += temp;
-            tauDielectricPermittivity += gradTauEpsilonEM1;
+            tauDielectricPermittivity += gradTauEpsilon1;
         } else {
-            tauDielectricPermittivity = gradTauEpsilonEM1;
+            tauDielectricPermittivity = gradTauEpsilon1;
         }
         
         this->gradientParameterisation(tauDielectricPermittivity, model.getTauDielectricPermittivity(), TauDielectricPermittivityReference, model.getParameterisation()); 
@@ -1171,14 +1171,14 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::calcStabilizingFunctionalGradient(K
     scai::hmemo::ContextPtr ctx = dielectricPermittivity.getContextPtr();
     scai::dmemo::DistributionPtr dist = dielectricPermittivity.getDistributionPtr();
     
-    if (workflow.getInvertForEpsilonEM()) {
+    if (workflow.getInvertForEpsilon()) {
         dielectricPermittivityPrioritemp = dielectricPermittivity - dielectricPermittivityPrioritemp;
         dielectricPermittivity = this->calcStabilizingFunctionalGradientPerModel(dielectricPermittivityPrioritemp, config, dataMisfitEM);
     } else {
         this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }
         
-    if (workflow.getInvertForSigmaEM()) { 
+    if (workflow.getInvertForSigma()) { 
         electricConductivityPrioritemp = electricConductivity - electricConductivityPrioritemp;
         electricConductivity = this->calcStabilizingFunctionalGradientPerModel(electricConductivityPrioritemp, config, dataMisfitEM);
     } else {

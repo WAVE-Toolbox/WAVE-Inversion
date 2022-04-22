@@ -39,28 +39,28 @@ scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrSeis
 
 
 /* EM */
-//! \brief Getter routine for xcorrSigmaEM
+//! \brief Getter routine for xcorrSigma
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrSeismic<ValueType>::getXcorrSigmaEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrSeismic<ValueType>::getXcorrSigma() const
 {
-    COMMON_THROWEXCEPTION("There is no xcorrSigmaEM in the ZeroLagXcorrSeismic.")
-    return (xcorrSigmaEM);
+    COMMON_THROWEXCEPTION("There is no xcorrSigma in the ZeroLagXcorrSeismic.")
+    return (xcorrSigma);
 }
 
-//! \brief Getter routine for xcorrEpsilonEM
+//! \brief Getter routine for xcorrEpsilon
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrSeismic<ValueType>::getXcorrEpsilonEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrSeismic<ValueType>::getXcorrEpsilon() const
 {
-    COMMON_THROWEXCEPTION("There is no xcorrEpsilonEM in the ZeroLagXcorrSeismic.")
-    return (xcorrEpsilonEM);
+    COMMON_THROWEXCEPTION("There is no xcorrEpsilon in the ZeroLagXcorrSeismic.")
+    return (xcorrEpsilon);
 }
 
-//! \brief Getter routine for xcorrREpsilonSigmaEM
+//! \brief Getter routine for xcorrREpsilonSigma
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrSeismic<ValueType>::getXcorrREpsilonSigmaEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrSeismic<ValueType>::getXcorrREpsilonSigma() const
 {
-    COMMON_THROWEXCEPTION("There is no xcorrREpsilonSigmaEM in the ZeroLagXcorrSeismic.")
-    return (xcorrREpsilonSigmaEM);
+    COMMON_THROWEXCEPTION("There is no xcorrREpsilonSigma in the ZeroLagXcorrSeismic.")
+    return (xcorrREpsilonSigma);
 }
 
 template class KITGPI::ZeroLagXcorr::ZeroLagXcorrSeismic<float>;

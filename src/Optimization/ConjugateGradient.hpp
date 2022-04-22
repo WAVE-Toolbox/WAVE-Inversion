@@ -44,14 +44,14 @@ namespace KITGPI
             scai::lama::DenseVector<ValueType> lastConjugateGradientReflectivity;
             
             /* Use KITGPI::Gradient::Gradient<ValueType> lastGradient and KITGPI::Gradient::Gradient<ValueType> lastConjugateGradient instead! */
-            scai::lama::DenseVector<ValueType> lastGradientSigmaEM;
-            scai::lama::DenseVector<ValueType> lastGradientEpsilonEM;
-            scai::lama::DenseVector<ValueType> lastGradientTauSigmaEM;
-            scai::lama::DenseVector<ValueType> lastGradientTauEpsilonEM;
-            scai::lama::DenseVector<ValueType> lastConjugateGradientSigmaEM;
-            scai::lama::DenseVector<ValueType> lastConjugateGradientEpsilonEM;
-            scai::lama::DenseVector<ValueType> lastConjugateGradientTauSigmaEM;
-            scai::lama::DenseVector<ValueType> lastConjugateGradientTauEpsilonEM;
+            scai::lama::DenseVector<ValueType> lastGradientSigma;
+            scai::lama::DenseVector<ValueType> lastGradientEpsilon;
+            scai::lama::DenseVector<ValueType> lastGradientTauSigma;
+            scai::lama::DenseVector<ValueType> lastGradientTauEpsilon;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientSigma;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientEpsilon;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientTauSigma;
+            scai::lama::DenseVector<ValueType> lastConjugateGradientTauEpsilon;
         };
     }
 }

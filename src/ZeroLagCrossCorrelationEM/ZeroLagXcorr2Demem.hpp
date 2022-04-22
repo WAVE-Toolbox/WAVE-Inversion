@@ -40,7 +40,7 @@ namespace KITGPI
             std::string getEquationType() const;
             
             /* Getter routines for non-required wavefields: Will throw an error */    
-            scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigmaEM() const override;   
+            scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigma() const override;   
 
             scai::hmemo::ContextPtr getContextPtr() override;
 
@@ -62,16 +62,16 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::NT;             
             
             /* required wavefields */
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEM;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEM;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRu;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRd;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSuRd;
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEMSdRu;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRu;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRd;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSuRd;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEMSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrSigma;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilon;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrSigmaSdRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSuRu;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSdRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSuRd;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilonSdRu;
             using ZeroLagXcorr<ValueType>::EXforward;
             using ZeroLagXcorr<ValueType>::EXadjoint;
             using ZeroLagXcorr<ValueType>::EYforward;
@@ -82,7 +82,7 @@ namespace KITGPI
             using ZeroLagXcorr<ValueType>::fEYadjoint;
             
             /* non required wavefields */
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigma;
             
             std::string type;
         };

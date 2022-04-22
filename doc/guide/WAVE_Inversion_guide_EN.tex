@@ -719,9 +719,9 @@ Additional to the configuration file a workflow file has to be used because some
 \end{verbnobox}
 With the first three parameters it can be decided which seismic parameter class should be updated. The parameter \verb+invertForPorosity+ and \verb+invertForSaturation+ are available for porosity and saturation update in petrophysical inversion where \verb+parametersation+=1 or 2. \verb+relativeMisfitChange+ will be explained in subsection \ref{config:abort} and the next three parameters are related to the frequency filtering which is documented in the manual of WAVE-Simulation (insert link). The last parameter \verb+timeDampingFactor+ is for time-frequency windowing \citep{athanasopoulos2020time}. For example, in shallow seismic FWI, you may start with the contribution of refracted P-waves and gradually increase the time window by decreasing \verb+timeDampingFactor+ to account for scattered body waves, higher mode Rayleigh waves and finally the fundamental Rayleigh wave mode. \verb+timeDampingFactor+ > 0 means the short travel time signals will be enhanced, while \verb+timeDampingFactor+ < 0 means the long travel time signals will be enhanced.
 
-The GPR workflow file contains the following parameters: \verb+invertForSigmaEM+, \verb+invertForEpsilonEM+, \verb+invertForTauSigmaEM+, \verb+invertForTauEpsilonEM+, \verb+invertForPorosity+, \verb+invertForSaturation+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+, \verb+upperCornerFreq+ and \verb+timeDampingFactor+. Its structure is 
+The GPR workflow file contains the following parameters: \verb+invertForSigma+, \verb+invertForEpsilon+, \verb+invertForTauSigma+, \verb+invertForTauEpsilon+, \verb+invertForPorosity+, \verb+invertForSaturation+, \verb+relativeMisfitChange+, \verb+filterOrder+, \verb+lowerCornerFreq+, \verb+upperCornerFreq+ and \verb+timeDampingFactor+. Its structure is 
 \begin{verbnobox}[\fontsize{11pt}{11pt}\selectfont]
-invertForSigmaEM invertForEpsilonEM invertForTauSigmaEM invertForTauEpsilonEM
+invertForSigma invertForEpsilon invertForTauSigma invertForTauEpsilon
       1                1                  0                   0                 
       0                1                  1                   0                 
       1                0                  1                   0                 
@@ -889,14 +889,14 @@ As discussed previously, the gradient can be scaled to the maximum of the corres
          upperVSTh                & Lower vs threshold in meter per seconds                             & double & 3500 \\
          lowerDensityTh           & Lower density threshold in kilogramms per cubicmeter                 & double & 1000 \\
          upperDensityTh           & Upper density threshold in kilogramms per cubicmeter                 & double & 5000 \\
-         lowerSigmaEMTh           & Lower conductivity threshold in S/m                 & double & 1e-3 \\
-         upperSigmaEMTh           & Upper conductivity threshold in S/m                 & double & 10e-3 \\
-         lowerEpsilonEMrTh           & Lower relative permittivity threshold in (-)                & double & 5 \\
-         upperEpsilonEMrTh           & Upper relative permittivity threshold in (-)                 & double & 20 \\
-         lowerTauSigmaEMrTh           & Lower tauEpsilonEM threshold in (-)                 & double & 0 \\
-         upperTauSigmaEMrTh           & Upper tauEpsilonEM threshold in (-)                & double & 5 \\
-         lowerTauEpsilonEMTh           & Lower tauEpsilonEM threshold in (-)                 & double & 0 \\
-         upperTauEpsilonEMTh           & Upper tauEpsilonEM threshold in (-)                 & double & 0.5 \\
+         lowerSigmaTh           & Lower conductivity threshold in S/m                 & double & 1e-3 \\
+         upperSigmaTh           & Upper conductivity threshold in S/m                 & double & 10e-3 \\
+         lowerEpsilonrTh           & Lower relative permittivity threshold in (-)                & double & 5 \\
+         upperEpsilonrTh           & Upper relative permittivity threshold in (-)                 & double & 20 \\
+         lowerTauSigmarTh           & Lower tauEpsilon threshold in (-)                 & double & 0 \\
+         upperTauSigmarTh           & Upper tauEpsilon threshold in (-)                & double & 5 \\
+         lowerTauEpsilonTh           & Lower tauEpsilon threshold in (-)                 & double & 0 \\
+         upperTauEpsilonTh           & Upper tauEpsilon threshold in (-)                 & double & 0.5 \\
          lowerPorosityTh           & Lower porosity threshold in (-)                 & double & 0.05 \\
          upperPorosityTh           & Upper porosity threshold in (-)                 & double & 0.35 \\
          lowerSaturationTh           & Lower saturation threshold in (-)                 & double & 0.10 \\
@@ -907,7 +907,7 @@ As discussed previously, the gradient can be scaled to the maximum of the corres
 \end{table}
 For seismic inversion, the lower and upper limit of the model parameters as seen in table \ref{tab:config_thresholds} can be definied in meter per second or kilogram per cubicmeter for P-wave and S-wave velocity and density, respectively. Specially, for elastic and viscoelastic equation, one can set the lower and upper limit for P-wave and S-wave velocity ratio which should be greater than $\sqrt{2}$ because $v_p=\sqrt{(\lambda+2\mu)/\rho}$ and $v_s=\sqrt{\mu/\rho}$ where $\lambda$ > 0.
 
-For GPR inversion, one can set the lower and upper limits for conductivity $\sigma$, relative permittivity $\varepsilon_r$, $\tau_{\sigma e r}$ and $\tau_{\varepsilon}$ where $\tau_{\sigma e r}=\tau_{\sigma e}/\tau_{D}=2 \pi f_l \tau_{\sigma e}$ and $f_l$ is the relaxation frequency of the $l$th relaxation mechanism (see details in \cite{qin2022full}). Due to that conductivity and permittivity are constant in air and water ($\sigma$ = 0, $\varepsilon_r$ = 1 in air and $\varepsilon_r$ = 81 in water), air and water area will be automatically excluded from the the defined model thresholds. For example, if your model includes an air layer above the ground where the transmitters and receivers are laid out for surface GPR FWI, \verb+lowerEpsilonEMrTh+ = 5 in table \ref{tab:config_thresholds} will only be applied to the underground area of your model.
+For GPR inversion, one can set the lower and upper limits for conductivity $\sigma$, relative permittivity $\varepsilon_r$, $\tau_{\sigma e r}$ and $\tau_{\varepsilon}$ where $\tau_{\sigma e r}=\tau_{\sigma e}/\tau_{D}=2 \pi f_l \tau_{\sigma e}$ and $f_l$ is the relaxation frequency of the $l$th relaxation mechanism (see details in \cite{qin2022full}). Due to that conductivity and permittivity are constant in air and water ($\sigma$ = 0, $\varepsilon_r$ = 1 in air and $\varepsilon_r$ = 81 in water), air and water area will be automatically excluded from the the defined model thresholds. For example, if your model includes an air layer above the ground where the transmitters and receivers are laid out for surface GPR FWI, \verb+lowerEpsilonrTh+ = 5 in table \ref{tab:config_thresholds} will only be applied to the underground area of your model.
 
 In petrophysical inversion, the lower and upper limit of porosity and saturation have to be defined with \verb+lowerPorosityTh+ > 0.0, \verb+lowerPorosityTh+ > 0.0, \verb+upperPorosityTh+ < $\phi_c$ and \verb+upperPorosityTh+ < 1.0 where $\phi_c=0.4$ is the critical porosity above which the solid becomes a suspension. 
 

@@ -2,10 +2,10 @@ clear all;close all;
 addpath('../configuration');
 addpath('../common');
 
-modelName = 'EttlingerCB';
-observationType = 'Surface_COP';
+modelName = 'trench';
+observationType = 'Surface';
 equationType = 'TMEM';
-NoiseType = '';
+NoiseType = 'Noisy';
 modelType = 'Inv';
 HPCType = 'HPC';
 dimension=cellMerge({equationType,'2D'},0);
@@ -19,12 +19,12 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 0; copy_true_start = 0;
+copy_inv = 1; copy_true_start = 0;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
-invertParameterType = 'EpsilonEMSigmaEM_Field';
-bandPass = 'BP530MHz';
-NoisedB = '';
+invertParameterType = 'Uncorrelated';
+bandPass = 'BP515MHz';
+NoisedB = '20dB';
 NoisedB = cellMerge({NoiseType,NoisedB},0);
 sourceType = '';
 timeGain = '';
@@ -45,7 +45,8 @@ showmax=30;
 legendType = 2; % 1 = parameter symblicName; 2 = inversionTypeName
 % 3 = parameter symblicName + inversionTypeName
 showTitle=0; showXlabel=1; showYlabel=1;
-
+offsetType=1; % 1=offset in absolute position m, 2=offset in relative distance m,
+                % other=traces
 normalize=1;
 inversionType = [0 1];
 parameterisation = [0 0];
@@ -72,6 +73,11 @@ dampFactor=2e-2/DT;
 
 SOURCE_TYPE=source(1,5);% Source Type (1=P,2=vX,3=vY,4=vZ)
 component = getSeismogramComponent(equationType,SOURCE_TYPE);
+geometry.DH = config.getValue('DH');
+geometry.x0 = config.getValue('x0');
+geometry.y0 = config.getValue('y0');
+geometry.z0 = config.getValue('z0');
+offset = calcOffset(source(1,:),source(:,2:5),geometry,offsetType);
 
 %% Read seismogram
 sourceSeismogramFilename=config.getString('sourceSeismogramFilename');
@@ -112,8 +118,11 @@ lineSettingAll = getLinesettingInv(equationType,inversionType,parameterisation,e
 titleName = '';
 [titleLabelSettingAll] = getTitleLabelSettingAll(showTitle,showXlabel,showYlabel...
     ,inversionType,parameterisation,exchangeStrategy,titleName,equationType,legendType,showText,textName);
-offset.value=[1:Nshot];
-offset.labelName='Shot number';
+if contains(offset.labelName,'(m)')
+    offset.labelName='Source location (m)';
+else
+    offset.labelName='Source number';
+end
 residualScale=1;
 syntheticDatanameAll={filenameTrue;filenameInv};
 syntheticDataAll = {seismogramTrue;seismogramInv};

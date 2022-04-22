@@ -65,9 +65,9 @@ namespace KITGPI
             virtual scai::lama::DenseVector<ValueType> const &getXcorrMuC() const = 0;
             
             /* EM */
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrSigmaEM() const = 0;  
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrEpsilonEM() const = 0; 
-            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigmaEM() const = 0; 
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrSigma() const = 0;  
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrEpsilon() const = 0; 
+            virtual scai::lama::DenseVector<ValueType> const &getXcorrREpsilonSigma() const = 0; 
 
           protected:
             /* Common */
@@ -137,17 +137,17 @@ namespace KITGPI
             scai::lama::DenseMatrix<ComplexValueType> fSyzadjoint;
             
             /* EM */
-            scai::lama::DenseVector<ValueType> xcorrSigmaEM; //!< correlated Wavefields for the sigma gradient
-            scai::lama::DenseVector<ValueType> xcorrEpsilonEM; //!< correlated Wavefields for the epsilon gradient
-            scai::lama::DenseVector<ValueType> xcorrREpsilonSigmaEM; //!< correlated Wavefields for the rEpsilonSigma gradient
-            scai::lama::DenseVector<ValueType> xcorrSigmaEMSuRu;
-            scai::lama::DenseVector<ValueType> xcorrSigmaEMSdRd;
-            scai::lama::DenseVector<ValueType> xcorrSigmaEMSuRd;
-            scai::lama::DenseVector<ValueType> xcorrSigmaEMSdRu;
-            scai::lama::DenseVector<ValueType> xcorrEpsilonEMSuRu;
-            scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRd;
-            scai::lama::DenseVector<ValueType> xcorrEpsilonEMSuRd;
-            scai::lama::DenseVector<ValueType> xcorrEpsilonEMSdRu;
+            scai::lama::DenseVector<ValueType> xcorrSigma; //!< correlated Wavefields for the sigma gradient
+            scai::lama::DenseVector<ValueType> xcorrEpsilon; //!< correlated Wavefields for the epsilon gradient
+            scai::lama::DenseVector<ValueType> xcorrREpsilonSigma; //!< correlated Wavefields for the rEpsilonSigma gradient
+            scai::lama::DenseVector<ValueType> xcorrSigmaSuRu;
+            scai::lama::DenseVector<ValueType> xcorrSigmaSdRd;
+            scai::lama::DenseVector<ValueType> xcorrSigmaSuRd;
+            scai::lama::DenseVector<ValueType> xcorrSigmaSdRu;
+            scai::lama::DenseVector<ValueType> xcorrEpsilonSuRu;
+            scai::lama::DenseVector<ValueType> xcorrEpsilonSdRd;
+            scai::lama::DenseVector<ValueType> xcorrEpsilonSuRd;
+            scai::lama::DenseVector<ValueType> xcorrEpsilonSdRu;
             scai::lama::DenseMatrix<ValueType> EXforward;
             scai::lama::DenseMatrix<ValueType> EXadjoint;
             scai::lama::DenseMatrix<ValueType> EYforward;

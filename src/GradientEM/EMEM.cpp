@@ -70,19 +70,19 @@ void KITGPI::Gradient::EMEM<ValueType>::resetGradient()
 
 /*! \brief Write model to an external file
  *
- \param filename For the electricConductivity ".sigmaEM.mtx" and for dielectricPermittivity ".epsilonEMr.mtx" is added.
+ \param filename For the electricConductivity ".sigma.mtx" and for dielectricPermittivity ".epsilonr.mtx" is added.
  \param fileFormat format of output file
  */
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::write(std::string filename, IndexType fileFormat, KITGPI::Workflow::Workflow<ValueType> const &workflow) const
 {
-    if (workflow.getInvertForSigmaEM()) {
-        std::string filenameElectricConductivity = filename + ".sigmaEM";
+    if (workflow.getInvertForSigma()) {
+        std::string filenameElectricConductivity = filename + ".sigma";
         this->writeParameterisation(electricConductivity, filenameElectricConductivity, fileFormat);
     }
     
-    if (workflow.getInvertForEpsilonEM()) {
-        std::string filenameDielectricPermittivity = filename + ".epsilonEMr";
+    if (workflow.getInvertForEpsilon()) {
+        std::string filenameDielectricPermittivity = filename + ".epsilonr";
         this->writeParameterisation(dielectricPermittivity, filenameDielectricPermittivity, fileFormat);
     }
     
@@ -175,9 +175,9 @@ KITGPI::Gradient::EMEM<ValueType> operator*(ValueType lhs, KITGPI::Gradient::EME
 template <typename ValueType>
 KITGPI::Gradient::EMEM<ValueType> &KITGPI::Gradient::EMEM<ValueType>::operator*=(ValueType const &rhs)
 {
-    if (workflowInner.getInvertForSigmaEM()) 
+    if (workflowInner.getInvertForSigma()) 
         electricConductivity *= rhs;
-    if (workflowInner.getInvertForEpsilonEM()) 
+    if (workflowInner.getInvertForEpsilon()) 
         dielectricPermittivity *= rhs;
     if (workflowInner.getInvertForPorosity()) 
         porosity *= rhs;
@@ -310,9 +310,9 @@ void KITGPI::Gradient::EMEM<ValueType>::plusAssign(KITGPI::Gradient::Gradient<Va
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::timesAssign(ValueType const &rhs)
 {
-    if (workflowInner.getInvertForSigmaEM()) 
+    if (workflowInner.getInvertForSigma()) 
         electricConductivity *= rhs;
-    if (workflowInner.getInvertForEpsilonEM()) 
+    if (workflowInner.getInvertForEpsilon()) 
         dielectricPermittivity *= rhs;
     if (workflowInner.getInvertForPorosity()) 
         porosity *= rhs;
@@ -360,14 +360,14 @@ void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Modelparameter::Mode
         ValueType const DielectricPermittivityVacuum = lhs.getDielectricPermittivityVacuum();
         ValueType const ElectricConductivityReference = lhs.getElectricConductivityReference();    
         
-        if (workflowInner.getInvertForSigmaEM()) {
+        if (workflowInner.getInvertForSigma()) {
             electricConductivitytemp = lhs.getElectricConductivity();  
             this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 
             electricConductivitytemp -= rhs.getElectricConductivity();    
             this->deleteParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation());  
             lhs.setElectricConductivity(electricConductivitytemp);
         }
-        if (workflowInner.getInvertForEpsilonEM()) {
+        if (workflowInner.getInvertForEpsilon()) {
             dielectricPermittivitytemp = lhs.getDielectricPermittivity(); 
             this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, lhs.getParameterisation());  
             dielectricPermittivitytemp -= rhs.getDielectricPermittivity(); 
@@ -447,14 +447,14 @@ void KITGPI::Gradient::EMEM<ValueType>::sumGradientPerShot(KITGPI::Modelparamete
     scai::lama::DenseVector<ValueType> weightingVector;
     scai::IndexType NY = modelCoordinates.getNY();
     
-    if (workflowInner.getInvertForEpsilonEM()) {
+    if (workflowInner.getInvertForEpsilon()) {
         weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getDielectricPermittivity(), NY);
         temp = weightingVector * gradientPerShot.getDielectricPermittivity();  
         temp = recoverMatrix * temp;
         dielectricPermittivity += temp; 
     }
   
-    if (workflowInner.getInvertForSigmaEM()) {
+    if (workflowInner.getInvertForSigma()) {
         weightingVector = gradientPerShot.calcWeightingVector(gradientPerShot.getElectricConductivity(), NY);
         temp = weightingVector * gradientPerShot.getElectricConductivity();  
         temp = recoverMatrix * temp;
@@ -496,11 +496,11 @@ void KITGPI::Gradient::EMEM<ValueType>::smooth(scai::dmemo::CommunicatorPtr comm
         if (smoothGradient != 0) {
             double start_t = common::Walltime::get();
             scai::lama::DenseVector<ValueType> vector2Dpadded;
-            if (workflowInner.getInvertForEpsilonEM()) {
+            if (workflowInner.getInvertForEpsilon()) {
                 KITGPI::Common::pad2DVector(dielectricPermittivity, vector2Dpadded, NX, NY, PX, PY); 
                 dielectricPermittivity = GaussianKernel * vector2Dpadded;
             }
-            if (workflowInner.getInvertForSigmaEM()) {
+            if (workflowInner.getInvertForSigma()) {
                 KITGPI::Common::pad2DVector(electricConductivity, vector2Dpadded, NX, NY, PX, PY); 
                 electricConductivity = GaussianKernel * vector2Dpadded;
             }
@@ -535,9 +535,9 @@ void KITGPI::Gradient::EMEM<ValueType>::applyMedianFilter(scai::dmemo::Communica
         HOST_PRINT(commAll, "Apply median filter to gradient\n");
         scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
         
-        if (workflowInner.getInvertForEpsilonEM())
+        if (workflowInner.getInvertForEpsilon())
             KITGPI::Common::applyMedianFilterTo2DVector(dielectricPermittivity, NX, NY, spatialLength);
-        if (workflowInner.getInvertForSigmaEM())
+        if (workflowInner.getInvertForSigma())
             KITGPI::Common::applyMedianFilterTo2DVector(electricConductivity, NX, NY, spatialLength);
         if (workflowInner.getInvertForPorosity())
             KITGPI::Common::applyMedianFilterTo2DVector(porosity, NX, NY, spatialLength);
@@ -561,21 +561,21 @@ void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparam
     
     IndexType scaleGradient = config.get<IndexType>("scaleGradient");
     if (scaleGradient != 0) {
-        if (workflow.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {  
+        if (workflow.getInvertForSigma() && electricConductivity.maxNorm() != 0) {  
             if (scaleGradient == 1) {
                 maxValue = model.getElectricConductivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = config.get<ValueType>("upperSigmaEMTh") - config.get<ValueType>("lowerSigmaEMTh");
+                maxValue = config.get<ValueType>("upperSigmaTh") - config.get<ValueType>("lowerSigmaTh");
             }
             this->applyParameterisation(maxValue, ElectricConductivityReference, model.getParameterisation());
             electricConductivity *= 1 / electricConductivity.maxNorm() * maxValue;
         }  
         
-        if (workflow.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
+        if (workflow.getInvertForEpsilon() && dielectricPermittivity.maxNorm() != 0) {
             if (scaleGradient == 1) {
                 maxValue = model.getDielectricPermittivity().maxNorm();
             } else if (scaleGradient == 2) {
-                maxValue = (config.get<ValueType>("upperEpsilonEMrTh") - config.get<ValueType>("lowerEpsilonEMrTh")) * DielectricPermittivityVacuum;
+                maxValue = (config.get<ValueType>("upperEpsilonrTh") - config.get<ValueType>("lowerEpsilonrTh")) * DielectricPermittivityVacuum;
             }      
             this->applyParameterisation(maxValue, DielectricPermittivityVacuum, model.getParameterisation()); 
             dielectricPermittivity *= 1 / dielectricPermittivity.maxNorm() * maxValue;
@@ -622,28 +622,28 @@ void KITGPI::Gradient::EMEM<ValueType>::applyEnergyPreconditioning(ValueType eps
     // see Nuber et al., 2015., Enhancement of near-surface elastic full waveform inversion results in regions of low sensitivities.
     scai::lama::DenseVector<ValueType> approxHessian;  
        
-    if (workflowInner.getInvertForSigmaEM() && electricConductivity.maxNorm() != 0) {
+    if (workflowInner.getInvertForSigma() && electricConductivity.maxNorm() != 0) {
         approxHessian = electricConductivity;
         approxHessian *= electricConductivity;
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
         approxHessian *= 1 / approxHessian.maxNorm(); 
         
         if(saveApproxHessian){
-            IO::writeVector(approxHessian, filename + ".sigmaEM", fileFormat);        
+            IO::writeVector(approxHessian, filename + ".sigma", fileFormat);        
         }
             
         approxHessian = 1 / approxHessian;
         electricConductivity *= approxHessian; 
     }
     
-    if (workflowInner.getInvertForEpsilonEM() && dielectricPermittivity.maxNorm() != 0) {
+    if (workflowInner.getInvertForEpsilon() && dielectricPermittivity.maxNorm() != 0) {
         approxHessian = dielectricPermittivity;
         approxHessian *= dielectricPermittivity;
         approxHessian += epsilonHessian*approxHessian.maxNorm(); 
         approxHessian *= 1 / approxHessian.maxNorm(); 
         
         if(saveApproxHessian){
-            IO::writeVector(approxHessian, filename + ".epsilonEMr", fileFormat);        
+            IO::writeVector(approxHessian, filename + ".epsilonr", fileFormat);        
         }
             
         approxHessian = 1 / approxHessian;
@@ -728,26 +728,26 @@ void KITGPI::Gradient::EMEM<ValueType>::normalize()
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::ZeroLagXcorr<ValueType> const &correlatedWavefields, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, ValueType DT, KITGPI::Workflow::Workflow<ValueType> const &workflow)
 {    
-    scai::lama::DenseVector<ValueType> gradEpsilonEM;
-    scai::lama::DenseVector<ValueType> gradSigmaEM;
+    scai::lama::DenseVector<ValueType> gradEpsilon;
+    scai::lama::DenseVector<ValueType> gradSigma;
     scai::lama::DenseVector<ValueType> temp;     
     
-    gradEpsilonEM = DT * correlatedWavefields.getXcorrEpsilonEM();
+    gradEpsilon = DT * correlatedWavefields.getXcorrEpsilon();
     
-    scai::hmemo::ContextPtr ctx = gradEpsilonEM.getContextPtr();
-    scai::dmemo::DistributionPtr dist = gradEpsilonEM.getDistributionPtr();
+    scai::hmemo::ContextPtr ctx = gradEpsilon.getContextPtr();
+    scai::dmemo::DistributionPtr dist = gradEpsilon.getDistributionPtr();
     
-    if (workflow.getInvertForSigmaEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
-        gradSigmaEM = DT * correlatedWavefields.getXcorrSigmaEM(); 
-        electricConductivity = gradSigmaEM;
+    if (workflow.getInvertForSigma() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation()) { 
+        gradSigma = DT * correlatedWavefields.getXcorrSigma(); 
+        electricConductivity = gradSigma;
         
         this->gradientParameterisation(electricConductivity, model.getElectricConductivity(), model.getElectricConductivityReference(), model.getParameterisation());
     } else {
         this->initParameterisation(electricConductivity, ctx, dist, 0.0);
     }
     
-    if (workflow.getInvertForEpsilonEM() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation() || workflow.getInvertForReflectivity()) {
-        dielectricPermittivity = gradEpsilonEM;
+    if (workflow.getInvertForEpsilon() || workflow.getInvertForPorosity() || workflow.getInvertForSaturation() || workflow.getInvertForReflectivity()) {
+        dielectricPermittivity = gradEpsilon;
         
         this->gradientParameterisation(dielectricPermittivity, model.getDielectricPermittivity(), model.getDielectricPermittivityVacuum(), model.getParameterisation());
     } else {
@@ -762,11 +762,11 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
         // Based on complex refractive index model (CRIM)    
         dielectricPermittiviyDePorosity = this->getDielectricPermittiviyDePorosity(model);             
         
-        porosity = dielectricPermittiviyDePorosity * gradEpsilonEM;
+        porosity = dielectricPermittiviyDePorosity * gradEpsilon;
         if (model.getParameterisation() == 2) {
             // Based on Archie equation
             conductivityDePorosity = this->getElectricConductivityDePorosity(model);    
-            conductivityDePorosity *= gradSigmaEM;
+            conductivityDePorosity *= gradSigma;
             porosity += conductivityDePorosity; 
         } 
     } else {
@@ -781,11 +781,11 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
         // Based on complex refractive index model (CRIM)            
         dielectricPermittiviyDeSaturation = this->getDielectricPermittiviyDeSaturation(model);             
         
-        saturation = dielectricPermittiviyDeSaturation * gradEpsilonEM;
+        saturation = dielectricPermittiviyDeSaturation * gradEpsilon;
         if (model.getParameterisation() == 2) {
             // Based on Archie equation
             conductivityDeSaturation = this->getElectricConductivityDeSaturation(model); 
-            conductivityDeSaturation *= gradSigmaEM;
+            conductivityDeSaturation *= gradSigma;
             saturation += conductivityDeSaturation; 
         }           
     } else {
@@ -793,7 +793,7 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
     }  
     
     if (workflow.getInvertForReflectivity()) {
-        reflectivity = -gradEpsilonEM;
+        reflectivity = -gradEpsilon;
     } else {
         this->initParameterisation(reflectivity, ctx, dist, 0.0);
     }  
@@ -821,14 +821,14 @@ void KITGPI::Gradient::EMEM<ValueType>::calcStabilizingFunctionalGradient(KITGPI
     scai::hmemo::ContextPtr ctx = dielectricPermittivity.getContextPtr();
     scai::dmemo::DistributionPtr dist = dielectricPermittivity.getDistributionPtr();
     
-    if (workflow.getInvertForEpsilonEM()) {
+    if (workflow.getInvertForEpsilon()) {
         dielectricPermittivityPrioritemp = dielectricPermittivity - dielectricPermittivityPrioritemp;
         dielectricPermittivity = this->calcStabilizingFunctionalGradientPerModel(dielectricPermittivityPrioritemp, config, dataMisfitEM);
     } else {
         this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }
     
-    if (workflow.getInvertForSigmaEM()) { 
+    if (workflow.getInvertForSigma()) { 
         electricConductivityPrioritemp = electricConductivity - electricConductivityPrioritemp;
         electricConductivity = this->calcStabilizingFunctionalGradientPerModel(electricConductivityPrioritemp, config, dataMisfitEM);
     } else {

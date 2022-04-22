@@ -2,25 +2,25 @@
 
 using namespace scai;
 
-//! \brief Getter routine for xcorrSigmaEM
+//! \brief Getter routine for xcorrSigma
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrSigmaEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrSigma() const
 {
-    return (xcorrSigmaEM);
+    return (xcorrSigma);
 }
 
-//! \brief Getter routine for xcorrEpsilonEM
+//! \brief Getter routine for xcorrEpsilon
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrEpsilonEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrEpsilon() const
 {
-    return (xcorrEpsilonEM);
+    return (xcorrEpsilon);
 }
 
-//! \brief Getter routine for xcorrREpsilonSigmaEM
+//! \brief Getter routine for xcorrREpsilonSigma
 template <typename ValueType>
-scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrREpsilonSigmaEM() const
+scai::lama::DenseVector<ValueType> const &KITGPI::ZeroLagXcorr::ZeroLagXcorrEM<ValueType>::getXcorrREpsilonSigma() const
 {
-    return (xcorrREpsilonSigmaEM);
+    return (xcorrREpsilonSigma);
 }
 
 

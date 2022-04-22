@@ -233,7 +233,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
     this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, model.getParameterisation());       
     this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, model.getParameterisation());       
                
-    if (workflow.getInvertForEpsilonEM()) {
+    if (workflow.getInvertForEpsilon()) {
         tempX = DxfEM * dielectricPermittivitytemp;    
         tempY = DyfEM * dielectricPermittivitytemp;
         
@@ -255,7 +255,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcModelDerivative(KITGPI::Misfit
     modelDerivativeYtemp = tempY;   
     
     if (exchangeStrategy == 2) {
-        if (workflow.getInvertForSigmaEM()) {        
+        if (workflow.getInvertForSigma()) {        
             tempX = DxfEM * electricConductivitytemp;    
             tempY = DyfEM * electricConductivitytemp;
             
@@ -316,7 +316,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
     modelDerivativeXtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
     modelDerivativeYtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp); 
                  
-    if (workflow.getInvertForEpsilonEM()) {    
+    if (workflow.getInvertForEpsilon()) {    
         tempX = DxfEM * dielectricPermittivitytemp;    
         tempY = DyfEM * dielectricPermittivitytemp;
         
@@ -340,7 +340,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
     modelDerivativeXtemp = tempX;
     modelDerivativeYtemp = tempY; 
             
-    if (workflow.getInvertForSigmaEM()) {
+    if (workflow.getInvertForSigma()) {
         tempX = DxfEM * electricConductivitytemp;    
         tempY = DyfEM * electricConductivitytemp;          
         
@@ -390,7 +390,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
             
     temp = modelDerivativeXtemp - modelDerivativeYtemp; 
                  
-    if (workflow.getInvertForEpsilonEM()) {
+    if (workflow.getInvertForEpsilon()) {
         tempX = DxfEM * dielectricPermittivitytemp;    
         tempY = DyfEM * dielectricPermittivitytemp;   
         
@@ -414,7 +414,7 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     
     temp = tempX - tempY; 
         
-    if (workflow.getInvertForSigmaEM()) {      
+    if (workflow.getInvertForSigma()) {      
         // derivative of cross gradient with respect to electricConductivity   
         electricConductivitytemp = this->getElectricConductivity();
         electricConductivitytemp *= temp;  

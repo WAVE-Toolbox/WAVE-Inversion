@@ -119,7 +119,7 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
     if (isSeismic)
         workflowFile >> invertForVp >> invertForVs >> invertForDensity >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
     else
-        workflowFile >> invertForSigmaEM >> invertForEpsilonEM >> invertForTauSigmaEM >> invertForTauEpsilonEM >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
+        workflowFile >> invertForSigma >> invertForEpsilon >> invertForTauSigma >> invertForTauEpsilon >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
     
     workflowFile.close();
 }
@@ -139,14 +139,14 @@ void KITGPI::Workflow::Workflow<ValueType>::printInvertForParameters(scai::dmemo
         if (invertForDensity)
             HOST_PRINT(comm, "invertForDensity = " << invertForDensity << "\n");
     } else {
-        if (invertForSigmaEM)
-            HOST_PRINT(comm, "invertForSigmaEM = " << invertForSigmaEM << "\n");
-        if (invertForEpsilonEM)
-            HOST_PRINT(comm, "invertForEpsilonEM = " << invertForEpsilonEM << "\n");
-        if (invertForTauSigmaEM)
-            HOST_PRINT(comm, "invertForTauSigmaEM = " << invertForTauSigmaEM << "\n");
-        if (invertForTauEpsilonEM)
-            HOST_PRINT(comm, "invertForTauEpsilonEM = " << invertForTauEpsilonEM << "\n");
+        if (invertForSigma)
+            HOST_PRINT(comm, "invertForSigma = " << invertForSigma << "\n");
+        if (invertForEpsilon)
+            HOST_PRINT(comm, "invertForEpsilon = " << invertForEpsilon << "\n");
+        if (invertForTauSigma)
+            HOST_PRINT(comm, "invertForTauSigma = " << invertForTauSigma << "\n");
+        if (invertForTauEpsilon)
+            HOST_PRINT(comm, "invertForTauEpsilon = " << invertForTauEpsilon << "\n");
     }
     if (invertForPorosity)
         HOST_PRINT(comm, "invertForPorosity = " << invertForPorosity << "\n");
@@ -236,39 +236,39 @@ bool KITGPI::Workflow::Workflow<ValueType>::getInvertForReflectivity() const
     return invertForReflectivity;
 }
 
-/*! \brief Return copy of invertForSigmaEM
+/*! \brief Return copy of invertForSigma
  */
 template <typename ValueType>
-bool KITGPI::Workflow::Workflow<ValueType>::getInvertForSigmaEM() const
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForSigma() const
 {
     SCAI_ASSERT_ERROR(!isSeismic, "isSeismic");
-    return invertForSigmaEM;
+    return invertForSigma;
 }
 
-/*! \brief Return copy of invertForEpsilonEM
+/*! \brief Return copy of invertForEpsilon
  */
 template <typename ValueType>
-bool KITGPI::Workflow::Workflow<ValueType>::getInvertForEpsilonEM() const
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForEpsilon() const
 {
     SCAI_ASSERT_ERROR(!isSeismic, "isSeismic");
-    return invertForEpsilonEM;
+    return invertForEpsilon;
 }
 
-/*! \brief Return copy of invertForTauSigmaEM
+/*! \brief Return copy of invertForTauSigma
  */
 template <typename ValueType>
-bool KITGPI::Workflow::Workflow<ValueType>::getInvertForTauSigmaEM() const
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForTauSigma() const
 {
     SCAI_ASSERT_ERROR(!isSeismic, "isSeismic");
-    return invertForTauSigmaEM;
+    return invertForTauSigma;
 }
 
-/*! \brief Return copy of invertForTauEpsilonEM
+/*! \brief Return copy of invertForTauEpsilon
  */
 template <typename ValueType>
-bool KITGPI::Workflow::Workflow<ValueType>::getInvertForTauEpsilonEM() const
+bool KITGPI::Workflow::Workflow<ValueType>::getInvertForTauEpsilon() const
 {
-    return invertForTauEpsilonEM;
+    return invertForTauEpsilon;
 }
 
 /*! \brief Return the vector of the inverted parameters
@@ -281,7 +281,7 @@ std::vector<bool> KITGPI::Workflow::Workflow<ValueType>::getInvertForParameters(
         std::vector<bool> temp{invertForVp, invertForVs, invertForDensity, invertForPorosity, invertForSaturation, invertForReflectivity};
         invertForParameters = temp;
     } else {
-        std::vector<bool> temp{invertForSigmaEM, invertForEpsilonEM, invertForTauSigmaEM, invertForTauEpsilonEM, invertForPorosity, invertForSaturation, invertForReflectivity};
+        std::vector<bool> temp{invertForSigma, invertForEpsilon, invertForTauSigma, invertForTauEpsilon, invertForPorosity, invertForSaturation, invertForReflectivity};
         invertForParameters = temp;
     }
     return invertForParameters;
@@ -300,10 +300,10 @@ void KITGPI::Workflow::Workflow<ValueType>::setInvertForParameters(std::vector<b
         invertForSaturation = setInvertForParameters[4];
         invertForReflectivity = setInvertForParameters[5];
     } else {    
-        invertForSigmaEM = setInvertForParameters[0];
-        invertForEpsilonEM = setInvertForParameters[1];
-        invertForTauSigmaEM = setInvertForParameters[2];
-        invertForTauEpsilonEM = setInvertForParameters[3];
+        invertForSigma = setInvertForParameters[0];
+        invertForEpsilon = setInvertForParameters[1];
+        invertForTauSigma = setInvertForParameters[2];
+        invertForTauEpsilon = setInvertForParameters[3];
         invertForPorosity = setInvertForParameters[4];
         invertForSaturation = setInvertForParameters[5];
         invertForReflectivity = setInvertForParameters[6];
@@ -387,10 +387,10 @@ KITGPI::Workflow::Workflow<ValueType> &KITGPI::Workflow::Workflow<ValueType>::op
     invertForPorosity = rhs.invertForPorosity;
     invertForSaturation = rhs.invertForSaturation;
     invertForReflectivity = rhs.invertForReflectivity;
-    invertForSigmaEM = rhs.invertForSigmaEM;
-    invertForEpsilonEM = rhs.invertForEpsilonEM;
-    invertForTauSigmaEM = rhs.invertForTauSigmaEM;
-    invertForTauEpsilonEM = rhs.invertForTauEpsilonEM;
+    invertForSigma = rhs.invertForSigma;
+    invertForEpsilon = rhs.invertForEpsilon;
+    invertForTauSigma = rhs.invertForTauSigma;
+    invertForTauEpsilon = rhs.invertForTauEpsilon;
     
     return *this;
 }

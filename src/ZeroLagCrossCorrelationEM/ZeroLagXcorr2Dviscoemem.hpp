@@ -58,9 +58,9 @@ namespace KITGPI
             std::vector<ValueType> relaxationTime; 
             
             /* required wavefields */
-            using ZeroLagXcorr<ValueType>::xcorrSigmaEM;
-            using ZeroLagXcorr<ValueType>::xcorrEpsilonEM;
-            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigmaEM;
+            using ZeroLagXcorr<ValueType>::xcorrSigma;
+            using ZeroLagXcorr<ValueType>::xcorrEpsilon;
+            using ZeroLagXcorr<ValueType>::xcorrREpsilonSigma;
             
             /* non required wavefields */
             
