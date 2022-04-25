@@ -99,6 +99,7 @@ namespace KITGPI
         ValueType memWavefiledsStorage = 0;
         
         Acquisition::Receivers<ValueType> receivers; 
+        ValueType NXPerShot;
         IndexType numShotPerSuperShot = 1;
         
         IndexType shotDomain;

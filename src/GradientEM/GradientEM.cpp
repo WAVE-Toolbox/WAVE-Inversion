@@ -311,10 +311,10 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradient(KITGPI::Misfit::
     scai::hmemo::ContextPtr ctx = dielectricPermittivitytemp.getContextPtr();
     scai::dmemo::DistributionPtr dist = dielectricPermittivitytemp.getDistributionPtr();        
                               
-    modelDerivativeXtemp = dataMisfit.getModelDerivativeX();  
-    modelDerivativeYtemp = dataMisfit.getModelDerivativeY();   
-    modelDerivativeXtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
-    modelDerivativeYtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp); 
+    tempX = dataMisfit.getModelDerivativeX();  
+    tempY = dataMisfit.getModelDerivativeY();   
+    modelTaper2DJoint.applyGradientTransform1to2(tempX, modelDerivativeXtemp); 
+    modelTaper2DJoint.applyGradientTransform1to2(tempY, modelDerivativeYtemp); 
                  
     if (workflow.getInvertForEpsilon()) {    
         tempX = DxfEM * dielectricPermittivitytemp;    
@@ -375,8 +375,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     dielectricPermittivitytemp = model.getDielectricPermittivity();
     this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, model.getParameterisation());      
                
-    modelDerivativeXtemp = dataMisfit.getModelDerivativeX();  
-    modelDerivativeYtemp = dataMisfit.getModelDerivativeY();
+    tempX = dataMisfit.getModelDerivativeX();  
+    tempY = dataMisfit.getModelDerivativeY();
                       
     scai::hmemo::ContextPtr ctx = dielectricPermittivitytemp.getContextPtr();
     scai::dmemo::DistributionPtr dist = dielectricPermittivitytemp.getDistributionPtr();  
@@ -385,8 +385,8 @@ void KITGPI::Gradient::GradientEM<ValueType>::calcCrossGradientDerivative(KITGPI
     auto const &DxfEM = derivativesEM.getDxf();
     auto const &DyfEM = derivativesEM.getDyf();  
     
-    modelDerivativeXtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeXtemp); 
-    modelDerivativeYtemp = modelTaper2DJoint.applyGradientTransformToEM(modelDerivativeYtemp);   
+    modelTaper2DJoint.applyGradientTransform1to2(tempX, modelDerivativeXtemp); 
+    modelTaper2DJoint.applyGradientTransform1to2(tempY, modelDerivativeYtemp);   
             
     temp = modelDerivativeXtemp - modelDerivativeYtemp; 
                  

@@ -65,6 +65,7 @@ void KITGPI::InversionSingle<ValueType>::printConfig(scai::dmemo::CommunicatorPt
         if (commAll->getRank() == MASTERGPI) {
             config.print();
         }
+        receivers.getModelPerShotSize(commAll, config, NXPerShot, numShotPerSuperShot);
     }
 }
 
@@ -92,8 +93,6 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
         /* --------------------------------------- */
         /* coordinate mapping (3D<->1D)            */
         /* --------------------------------------- */
-        ValueType NXPerShot;
-        receivers.getModelPerShotSize(commAll, config, NXPerShot, numShotPerSuperShot);
         modelCoordinates.init(config, 1, NXPerShot);
         if (config.get<bool>("useVariableGrid")) {
             CheckParameter::checkVariableGrid(config, commAll, modelCoordinates);
@@ -185,7 +184,10 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
         } else {
             numshots = numShotDomains;
         }
-        SCAI_ASSERT_ERROR(numshots >= numShotDomains, "numshots < numShotDomains");
+        SCAI_ASSERT_ERROR(numshots >= numShotDomains, "numshots = " + std::to_string(numshots) + ", numShotDomains = " + std::to_string(numShotDomains));
+        if (useSourceEncode == 0 && useRandomSource == 0) {
+            SCAI_ASSERT_ERROR(numshots % numShotDomains == 0, "numshots = " + std::to_string(numshots) + ", numShotDomains = " + std::to_string(numShotDomains));
+        }    
         sources.writeShotIndsIncr(commAll, config, uniqueShotNos);
         Acquisition::writeCutCoordToFile(commAll, config, cutCoordinates, uniqueShotNos, NXPerShot);
         
@@ -257,11 +259,6 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
         /* --------------------------------------- */
         misfitPerIt = scai::lama::fill<scai::lama::DenseVector<ValueType>>(numshots, 0);
         
-        /* --------------------------------------- */
-        /* Workflow                                */
-        /* --------------------------------------- */
-        workflow.init(config);
-
         /* --------------------------------------- */
         /* Step length search                      */
         /* --------------------------------------- */

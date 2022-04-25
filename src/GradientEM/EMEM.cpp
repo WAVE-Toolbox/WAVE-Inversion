@@ -359,7 +359,6 @@ void KITGPI::Gradient::EMEM<ValueType>::minusAssign(KITGPI::Modelparameter::Mode
         scai::lama::DenseVector<ValueType> dielectricPermittivitytemp; 
         ValueType const DielectricPermittivityVacuum = lhs.getDielectricPermittivityVacuum();
         ValueType const ElectricConductivityReference = lhs.getElectricConductivityReference();    
-        
         if (workflowInner.getInvertForSigma()) {
             electricConductivitytemp = lhs.getElectricConductivity();  
             this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, lhs.getParameterisation()); 

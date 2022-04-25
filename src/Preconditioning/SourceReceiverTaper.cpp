@@ -62,7 +62,8 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     //gets coordinate index for first source to be changed
     IndexType SourceCoordinate;
     
-    IndexType taperType = config.get<IndexType>("sourceReceiverTaperType");
+    IndexType taperType = config.get<IndexType>("sourceReceiverTaperType"); // taperType = 0, 1, 2, 3, 4, 5
+    taperType = taperType % 3;
 
     taper.setSameValue(dist, 1.0); // sparse vector taper gets zero element 1.0
 
@@ -144,7 +145,8 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     hmemo::HArray<IndexType> ownedIndexes;
     dist->getOwnedIndexes(ownedIndexes); // get global indexes for local part
     
-    IndexType taperType = 0;
+    IndexType taperType = config.get<IndexType>("sourceReceiverTaperType"); // taperType = 3, 4, 5
+    taperType /= 3;
     
     taper.setSameValue(dist, 1.0); // sparse vector taper gets zero element 1.0
 
@@ -161,12 +163,6 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
     KITGPI::Acquisition::coordinate3D sourceCoordFirst = modelCoordinates.index2coordinate(rSources1DCoordinates[0]);
     KITGPI::Acquisition::coordinate3D receiverCoordLast = modelCoordinates.index2coordinate(rReceivers1DCoordinates[rReceivers1DCoordinates.size()-1]);
     
-    if (rReceivers1DCoordinates.size() > 4) {
-        KITGPI::Acquisition::coordinate3D receiverCoordFirst = modelCoordinates.index2coordinate(rReceivers1DCoordinates[rReceivers1DCoordinates.size()-5]);
-        if(abs(receiverCoordLast.x - receiverCoordFirst.x) < abs(receiverCoordLast.y - receiverCoordFirst.y)){ // borehole
-            taperType = 1; 
-        }
-    }
     if(taperType > 0){
         //loop over all gridpoint -> this is costly maybe there is a better alternative because the size of the taper is known
         for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)){
