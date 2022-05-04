@@ -173,7 +173,7 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
             sourceSettingsBig = sources.getSourceSettings(); 
             Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
-            Acquisition::getSettingsPerShot<ValueType>(sourceSettings, sourceSettingsBig, cutCoordinates);
+            Acquisition::getSettingsPerShot<ValueType>(sourceSettings, sourceSettingsBig, cutCoordinates, modelCoordinates, config.get<IndexType>("BoundaryWidth"));
             sources.setSourceSettings(sourceSettings); // for StepLengthSearch and useSourceEncode
         }
         CheckParameter::checkSources(sourceSettings, modelCoordinates, commShot);
@@ -271,7 +271,7 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
         lama::DenseVector<IndexType> sourcecoords = getsourcecoordinates(sourceSettings, modelCoordinates);
         dmemo::DistributionPtr dist_sources = Acquisition::calcDistribution(sourcecoords, dist);
         if (config.get<IndexType>("useSourceSignalInversion") != 0)
-            sourceEst.init(config, ctx, dist_sources, sourceSignalTaper);
+            sourceEst.init(config, workflow, ctx, dist_sources, sourceSignalTaper);
         
         /* --------------------------------------- */
         /* Frequency filter                        */
@@ -623,11 +623,14 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
             std::string filenameSyn = config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration);
             std::string filenameObs = config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration);
             
-            if (config.get<IndexType>("useSourceSignalInversion") != 0 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
+            if (workflow.getMinOffset() != 0 || workflow.getMaxOffset() != 0 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
                 if (useSourceEncode == 0) {
-                    sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinates);
+                    sourceEst.calcOffsetMutes(sources, receiversTrue, workflow.getMinOffset(), workflow.getMaxOffset(), shotIndTrue, modelCoordinates);
+                    sourceEst.applyOffsetMute(config, shotIndTrue, receiversTrue);
                 } else {
-                    sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
+                    sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, workflow, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
+                    receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
+                    sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receiversTrue);
                 }
                 if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
                     if (config.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -636,7 +639,6 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
                     if (useSourceEncode == 0) {
                         sourceEst.calcRefTraces(config, shotIndTrue, receiversTrue, sourceSignalTaper);
                     } else {
-                        receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
                         sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
                     }
                     sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue, shotNumber);
@@ -668,10 +670,12 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
                     receiversTrue.getSeismogramHandler().normalize(config.get<IndexType>("normalizeTraces"));
                     
                     if (useSourceEncode == 0) {
+                        sourceEst.applyOffsetMute(config, shotIndTrue, receivers);
                         sourceEst.estimateSourceSignal(receivers, receiversTrue, shotIndTrue, shotNumber);
                     } else {
                         receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode, 0);
                         receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
+                        sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receivers);
                         sourceEst.estimateSourceSignalEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, receiversTrue);
                     }
                 }
@@ -765,6 +769,12 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
                 
                 if (config.getAndCatch("writeAdjointSource", false))
                     receiversStart.decode(config, config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1), shotNumber, sourceSettingsEncode, 1);
+                
+                if (useSourceEncode == 0) {
+                    sourceEst.applyOffsetMute(config, shotIndTrue, receiversStart);
+                } else {
+                    sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receiversStart);
+                }
                 
                 receiversStart.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
             }
@@ -875,6 +885,11 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
             if ((commShot->any(!wavefields->isFinite(dist)) || commShot->any(!receivers.getSeismogramHandler().isFinite())) && (commInterShot->getRank() == 0)){ // if any processor returns isfinite=false, write model and break
                 model->write("model_crash", config.get<IndexType>("FileFormat"));
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
+            }
+            if (useSourceEncode == 0) {
+                sourceEst.applyOffsetMute(config, shotIndTrue, receivers);
+            } else {
+                sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receivers);
             }
             if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) { 
                 if (useSourceEncode == 0) {               
@@ -1299,11 +1314,14 @@ void KITGPI::InversionSingle<ValueType>::runExtra(scai::dmemo::CommunicatorPtr c
             std::string filenameSyn = config.get<std::string>("SeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1);
             std::string filenameObs = config.get<std::string>("fieldSeisName") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1);
             
-            if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
+            if (workflow.getMinOffset() != 0 || workflow.getMaxOffset() != 0 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos || misfitType.compare("l4") == 0 || multiMisfitType.find('4') != std::string::npos){
                 if (useSourceEncode == 0) {
-                    sourceEst.calcOffsetMutes(sources, receiversTrue, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotIndTrue, modelCoordinates);
+                    sourceEst.calcOffsetMutes(sources, receiversTrue, workflow.getMinOffset(), workflow.getMaxOffset(), shotIndTrue, modelCoordinates);
+                    sourceEst.applyOffsetMute(config, shotIndTrue, receiversTrue);
                 } else {
-                    sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
+                    sourceEst.calcOffsetMutesEncode(commShot, shotNumber, config, workflow, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue);
+                    receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
+                    sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receiversTrue);
                 }
                 if (config.get<IndexType>("useSourceSignalInversion") == 2 || misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
                     if (config.get<IndexType>("useSourceSignalTaper") == 2) {
@@ -1312,7 +1330,6 @@ void KITGPI::InversionSingle<ValueType>::runExtra(scai::dmemo::CommunicatorPtr c
                     if (useSourceEncode == 0) {
                         sourceEst.calcRefTraces(config, shotIndTrue, receiversTrue, sourceSignalTaper);
                     } else {
-                        receiversTrue.decode(config, filenameObs, shotNumber, sourceSettingsEncode, 0);
                         sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
                     }
                     sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue, shotNumber);
@@ -1357,11 +1374,16 @@ void KITGPI::InversionSingle<ValueType>::runExtra(scai::dmemo::CommunicatorPtr c
                 model->write("model_crash", config.get<IndexType>("FileFormat"));
                 COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield, output model as model_crash.FILE_EXTENSION!");
             }
+            if (useSourceEncode == 0) {
+                sourceEst.applyOffsetMute(config, shotIndTrue, receivers);
+            } else {
+                receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode, 0);
+                sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receivers);
+            }
             if (misfitType.compare("l3") == 0 || multiMisfitType.find('3') != std::string::npos) {
                 if (useSourceEncode == 0) {               
                     sourceEst.calcRefTraces(config, shotIndTrue, receivers, sourceSignalTaper);    
                 } else {
-                    receivers.decode(config, filenameSyn, shotNumber, sourceSettingsEncode, 0);
                     sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
                 }   
             }

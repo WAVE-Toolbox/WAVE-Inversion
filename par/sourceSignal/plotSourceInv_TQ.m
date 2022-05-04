@@ -3,7 +3,7 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface_COP';
+observationType = 'Surface_StreamBig';
 equationType = 'TMEM';
 NoiseType = '';
 modelType = 'Inv';
@@ -19,10 +19,10 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 0; copy_true_start = 0;
+copy_inv = 1; copy_true_start = 1;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
-invertParameterType = 'EpsilonSigma';
+invertParameterType = 'EpsilonSigma_08m';
 bandPass = 'BP530MHz';
 NoisedB = '';
 NoisedB = cellMerge({NoiseType,NoisedB},0);
@@ -45,13 +45,13 @@ showmax=30;
 legendType = 2; % 1 = parameter symblicName; 2 = inversionTypeName
 % 3 = parameter symblicName + inversionTypeName
 showTitle=0; showXlabel=1; showYlabel=1;
-offsetType=1; % 1=offset in absolute position m, 2=offset in relative distance m,
+offsetType=4; % 1=offset in absolute position m, 2=offset in relative distance m,
                 % other=traces
 normalize=1;
 inversionType = [0 1];
 parameterisation = [0 0];
 exchangeStrategy = [0 0];
-orientation = 'vertical';
+orientation = 'horizontal';
 wiggleType='wiggle';
 shotIncr=config.getAndCatch('ShotIncr',0);
 [source sourceEncode]=readSourcesfromConfig(config,shotIncr,stage,iteration);

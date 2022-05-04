@@ -19,6 +19,7 @@
 #include "../Common/Common.hpp"
 #include "../Taper/Taper1D.hpp"
 #include "../Taper/Taper2D.hpp"
+#include "../Workflow/Workflow.hpp"
 
 namespace KITGPI
 {
@@ -35,7 +36,7 @@ namespace KITGPI
         ~SourceEstimation(){};
 
         void init(scai::IndexType nt, scai::dmemo::DistributionPtr sourceDistribution, ValueType waterLvl, std::string tprName = "");
-        void init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper);
+        void init(Configuration::Configuration const &config, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper);
 
         typedef scai::common::Complex<scai::RealType<ValueType>> ComplexValueType;
 
@@ -46,9 +47,11 @@ namespace KITGPI
         
         void calcOffsetMutes(KITGPI::Acquisition::Sources<ValueType> const &sources, KITGPI::Acquisition::Receivers<ValueType> &receivers, ValueType minOffset, ValueType maxOffset, scai::IndexType shotInd, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates);
         void calcRefTraces(Configuration::Configuration const &config, scai::IndexType shotInd, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper);
+        void applyOffsetMute(Configuration::Configuration const &config, scai::IndexType shotInd, KITGPI::Acquisition::Receivers<ValueType> &receivers);
         void setRefTracesToSource(KITGPI::Acquisition::Sources<ValueType> &sources, KITGPI::Acquisition::Receivers<ValueType> const &receivers, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, scai::IndexType shotIndTrue, scai::IndexType shotNumberEncode);
-        void calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode);
+        void calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode);
         void calcRefTracesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode, Taper::Taper1D<ValueType> const &sourceSignalTaper);
+        void applyOffsetMuteEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode);
         
       private:
         ValueType waterLevel;

@@ -117,9 +117,9 @@ void KITGPI::Workflow::Workflow<ValueType>::readFromFile(std::string workflowFil
         
     /* Extract variables from current workflow stage */
     if (isSeismic)
-        workflowFile >> invertForVp >> invertForVs >> invertForDensity >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
+        workflowFile >> invertForVp >> invertForVs >> invertForDensity >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> minOffset >> maxOffset >> timeDampingFactor;
     else
-        workflowFile >> invertForSigma >> invertForEpsilon >> invertForTauSigma >> invertForTauEpsilon >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> timeDampingFactor;
+        workflowFile >> invertForSigma >> invertForEpsilon >> invertForTauSigma >> invertForTauEpsilon >> invertForPorosity >> invertForSaturation >> relativeMisfitChange >> filterOrder >> lowerCornerFreq >> upperCornerFreq >> minOffset >> maxOffset >> timeDampingFactor;
     
     workflowFile.close();
 }
@@ -170,6 +170,8 @@ void KITGPI::Workflow::Workflow<ValueType>::printParameters(scai::dmemo::Communi
     HOST_PRINT(comm, "filterOrder = " << filterOrder << "\n");
     HOST_PRINT(comm, "lowerCornerFreq = " << lowerCornerFreq << "\n");
     HOST_PRINT(comm, "upperCornerFreq = " << upperCornerFreq << "\n");
+    HOST_PRINT(comm, "minOffset = " << minOffset << "\n");
+    HOST_PRINT(comm, "maxOffset = " << maxOffset << "\n");
     HOST_PRINT(comm, "timeDampingFactor = " << timeDampingFactor << "\n");
     if (weightingFreq.size() != 0) {
         HOST_PRINT(comm, "frequencyVector =");
@@ -340,6 +342,22 @@ template <typename ValueType>
 ValueType KITGPI::Workflow::Workflow<ValueType>::getUpperCornerFreq() const
 {
     return upperCornerFreq;
+}
+
+/*! \brief Return copy of lowerCornerFreq
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getMinOffset() const
+{
+    return minOffset;
+}
+
+/*! \brief Return copy of upperCornerFreq
+ */
+template <typename ValueType>
+ValueType KITGPI::Workflow::Workflow<ValueType>::getMaxOffset() const
+{
+    return maxOffset;
 }
 
 /*! \brief Return copy of timeDampingFactor

@@ -543,6 +543,14 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             receiversTrue.getSeismogramHandler().filter(freqFilter);
         }
                 
+        if (useSourceEncode == 0) {
+            sourceEst.applyOffsetMute(config, shotIndTrue, receiversTrue);
+            sourceEst.applyOffsetMute(config, shotIndTrue, receiversLast);
+        } else {
+            receiversTrue.decode(config, "", shotNumber, sourceSettingsEncode, 0);
+            sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receiversTrue);            
+            sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receiversLast);
+        }
         if (config.get<IndexType>("useSourceSignalInversion") == 2 || dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
             if (config.get<IndexType>("useSourceSignalTaper") == 2) {
                 sourceSignalTaper.calcCosineTaper(sources.getSeismogramHandler(), workflow.getLowerCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx);
@@ -550,7 +558,6 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             if (useSourceEncode == 0) {
                 sourceEst.calcRefTraces(config, shotIndTrue, receiversTrue, sourceSignalTaper);
             } else {
-                receiversTrue.decode(config, "", shotNumber, sourceSettingsEncode, 0);
                 sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receiversTrue, sourceSignalTaper);
             }
             sourceEst.setRefTracesToSource(sources, receiversTrue, sourceSettingsEncode, shotIndTrue, shotNumber);
@@ -603,11 +610,16 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             testmodel->write("model_crash", config.get<IndexType>("FileFormat"));
             COMMON_THROWEXCEPTION("Infinite or NaN value in seismogram or/and velocity wavefield for model in steplength search, output model as model_crash.FILE_EXTENSION!");
         }
+        if (useSourceEncode == 0) {
+            sourceEst.applyOffsetMute(config, shotIndTrue, receivers);
+        } else {
+            receivers.decode(config, "", shotNumber, sourceSettingsEncode, 0);
+            sourceEst.applyOffsetMuteEncode(commShot, shotNumber, config, sourceSettingsEncode, receivers);
+        }
         if (dataMisfit.getMisfitTypeShots().getValue(shotIndTrue) == 3) {
             if (useSourceEncode == 0) {
                 sourceEst.calcRefTraces(config, shotIndTrue, receivers, sourceSignalTaper);
             } else {
-                receivers.decode(config, "", shotNumber, sourceSettingsEncode, 0);
                 sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
             }
         }

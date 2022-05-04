@@ -220,7 +220,7 @@ void KITGPI::Preconditioning::SourceReceiverTaper<ValueType>::init(scai::dmemo::
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
             sourceSettingsBig = sources.getSourceSettings(); 
             Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
-            Acquisition::getSettingsPerShot(sourceSettings, sourceSettingsBig, cutCoordinates);
+            Acquisition::getSettingsPerShot(sourceSettings, sourceSettingsBig, cutCoordinates, modelCoordinates, config.get<IndexType>("BoundaryWidth"));
         } else {
             sourceSettings = sources.getSourceSettings(); 
         }

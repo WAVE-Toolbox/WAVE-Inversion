@@ -9,7 +9,7 @@ using namespace scai;
  \param sourceSignalTaper 1D TaperPtr
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration const &config, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper)
+void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration const &config, KITGPI::Workflow::Workflow<ValueType> const &workflow, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr sourceDistribution, Taper::Taper1D<ValueType> &sourceSignalTaper)
 {
     std::string equationType = config.get<std::string>("equationType"); 
     std::transform(equationType.begin(), equationType.end(), equationType.begin(), ::tolower);  
@@ -27,7 +27,7 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
         init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"));
     }
     
-    if (config.getAndCatch("minOffsetSrcEst", 0.0) || config.get<bool>("maxOffsetSrcEst"))
+    if (workflow.getMinOffset() != 0 || workflow.getMaxOffset() != 0)
         useOffsetMutes = true;
     
     useSourceEncode = config.getAndCatch("useSourceEncode", 0);
@@ -384,13 +384,32 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTraces(Configuration::Configura
     }
 }
 
+/*! \brief Sets mutes vector needed to exclude offsets greater than a threshold from the source estimation
+ \param sources Sources
+ \param receivers Receivers
+ \param maxOffset Offset threshold
+ */
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::applyOffsetMute(Configuration::Configuration const &config, scai::IndexType shotInd, KITGPI::Acquisition::Receivers<ValueType> &receivers)
+{
+    if (useOffsetMutes) {
+        for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+            if (receivers.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+                lama::DenseMatrix<ValueType> &data = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
+                
+                data.scaleRows(mutes[shotInd]);
+            }
+        }
+    }
+}
+
 /*! \brief Calculate the Wiener filter
  \param receivers Synthetic receivers
  \param receiversTrue Observed receivers
  \param shotNumber Shot number of source
  */
 template <typename ValueType>
-void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode)
+void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, KITGPI::Workflow::Workflow<ValueType> const &workflow, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr dist, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode)
 {
     if (useSourceEncode != 0) {
         double start_t_shot, end_t_shot; /* For timing */
@@ -408,7 +427,7 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::Com
             std::vector<Acquisition::sourceSettings<ValueType>> sourceSettingsBig;
             sourceSettingsBig = sources.getSourceSettings(); 
             Acquisition::getCutCoord(config, cutCoordinates, sourceSettingsBig, modelCoordinates, modelCoordinatesBig);
-            Acquisition::getSettingsPerShot(sourceSettings, sourceSettingsBig, cutCoordinates);
+            Acquisition::getSettingsPerShot(sourceSettings, sourceSettingsBig, cutCoordinates, modelCoordinates, config.get<IndexType>("BoundaryWidth"));
         } else {
             sourceSettings = sources.getSourceSettings(); 
         }
@@ -429,7 +448,7 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutesEncode(scai::dmemo::Com
                     receivers.init(config, modelCoordinates, ctx, dist, shotNumber, sourceSettingsEncodeTemp);
                 }
                 
-                calcOffsetMutes(sources, receivers, config.getAndCatch("minOffsetSrcEst", 0.0), config.get<ValueType>("maxOffsetSrcEst"), shotInd, modelCoordinates);                                              
+                calcOffsetMutes(sources, receivers, workflow.getMinOffset(), workflow.getMaxOffset(), shotInd, modelCoordinates);                                              
             }
         }
         for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
@@ -476,6 +495,40 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTracesEncode(scai::dmemo::Commu
         }
         end_t_shot = common::Walltime::get();
         HOST_PRINT(commShot, "Shot number " << shotNumberEncode << ": Calculate encoded refTraces in " << end_t_shot - start_t_shot << " sec.\n");
+    }
+}
+
+/*! \brief Calculate the Wiener filter
+ \param receivers Synthetic receivers
+ \param receiversTrue Observed receivers
+ \param shotNumber Shot number of source
+ */
+template <typename ValueType>
+void KITGPI::SourceEstimation<ValueType>::applyOffsetMuteEncode(scai::dmemo::CommunicatorPtr commShot, scai::IndexType shotNumberEncode, KITGPI::Configuration::Configuration const &config, std::vector<KITGPI::Acquisition::sourceSettings<ValueType>> sourceSettingsEncode, KITGPI::Acquisition::Receivers<ValueType> &receiversEncode)
+{
+    if (useSourceEncode != 0) {
+        double start_t_shot, end_t_shot; /* For timing */
+        start_t_shot = common::Walltime::get();
+                
+        IndexType numshotsIncr = sourceSettingsEncode.size();
+        KITGPI::Acquisition::Receivers<ValueType> receivers;
+        IndexType countDecode = 0;
+        for (scai::IndexType shotInd = 0; shotInd < numshotsIncr; shotInd++) {
+            if (std::abs(sourceSettingsEncode[shotInd].sourceNo) == shotNumberEncode) {
+                for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+                    if (receiversEncode.getSeismogramHandler().getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+                        receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData() = receiversEncode.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getDataDecode(countDecode);
+                        
+                        applyOffsetMute(config, shotInd, receivers);
+                        
+                        receiversEncode.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getDataDecode(countDecode) = receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).getData();
+                    }
+                }                
+                countDecode++;
+            }
+        }
+        end_t_shot = common::Walltime::get();
+        HOST_PRINT(commShot, "Shot number " << shotNumberEncode << ": Apply encoded offsetMute in " << end_t_shot - start_t_shot << " sec.\n");
     }
 }
 

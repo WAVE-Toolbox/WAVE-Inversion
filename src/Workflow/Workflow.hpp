@@ -50,6 +50,8 @@ namespace KITGPI
             scai::IndexType getFilterOrder() const;
             ValueType getLowerCornerFreq() const;
             ValueType getUpperCornerFreq() const;
+            ValueType getMinOffset() const;
+            ValueType getMaxOffset() const;
             ValueType getTimeDampingFactor() const;
             scai::IndexType getSkipCount() const;
             scai::lama::DenseVector<ValueType> getWeightingFreq() const;
@@ -82,6 +84,8 @@ namespace KITGPI
             scai::IndexType filterOrder;
             ValueType lowerCornerFreq;
             ValueType upperCornerFreq;
+            ValueType minOffset;
+            ValueType maxOffset;
             ValueType timeDampingFactor; 
             scai::lama::DenseVector<ValueType> weightingFreq; 
             scai::lama::DenseVector<ValueType> frequencyVector;           
