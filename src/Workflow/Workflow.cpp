@@ -41,7 +41,7 @@ void KITGPI::Workflow::Workflow<ValueType>::changeStage(KITGPI::Configuration::C
     if (dtinversion == 1 || upperCornerFreq == 0.0) {
         skipDT = 1;
     } else {
-        ValueType dtMax = 1.0 / (upperCornerFreq * 5);
+        ValueType dtMax = 1.0 / (upperCornerFreq * 10);
         skipDT = floor(dtMax / config.get<ValueType>("DT")); // Nyquist sampling step
         if (gradientDomain != 0) {
             scai::IndexType nFFT = Common::calcNextPowTwo<ValueType>(skipDT - 1);

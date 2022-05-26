@@ -270,8 +270,7 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
         // calculate source dist
         lama::DenseVector<IndexType> sourcecoords = getsourcecoordinates(sourceSettings, modelCoordinates);
         dmemo::DistributionPtr dist_sources = Acquisition::calcDistribution(sourcecoords, dist);
-        if (config.get<IndexType>("useSourceSignalInversion") != 0)
-            sourceEst.init(config, workflow, ctx, dist_sources, sourceSignalTaper);
+        sourceEst.init(config, workflow, ctx, dist_sources, sourceSignalTaper);
         
         /* --------------------------------------- */
         /* Frequency filter                        */

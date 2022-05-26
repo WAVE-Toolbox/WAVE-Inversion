@@ -53,19 +53,19 @@ void KITGPI::SourceEstimation<ValueType>::init(IndexType nt, dmemo::Distribution
     nFFT = Common::calcNextPowTwo<ValueType>(nt - 1);
     waterLevel = waterLvl;
     filter.allocate(sourceDistribution, std::make_shared<dmemo::NoDistribution>(nFFT));
-    IndexType ns = sourceDistribution->getGlobalSize();
+    IndexType numshots = sourceDistribution->getGlobalSize();
     refTraces.clear();
     mutes.clear();
     offsets.clear();
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
         scai::lama::DenseMatrix<ValueType> refTracesTemp(sourceDistribution, std::make_shared<dmemo::NoDistribution>(nt));
-        for (scai::IndexType shotInd = 0; shotInd < ns; shotInd++) {
+        for (scai::IndexType shotInd = 0; shotInd < numshots; shotInd++) {
             scai::lama::DenseVector<ValueType> temp(nt, 0);
             refTracesTemp.setRow(temp, shotInd, common::BinaryOp::COPY);
         }
         refTraces.push_back(refTracesTemp);
     }
-    for (scai::IndexType shotInd = 0; shotInd < ns; shotInd++) {
+    for (scai::IndexType shotInd = 0; shotInd < numshots; shotInd++) {
         scai::lama::DenseVector<ValueType> temp;
         mutes.push_back(temp);
         offsets.push_back(temp);
@@ -286,30 +286,33 @@ void KITGPI::SourceEstimation<ValueType>::calcOffsetMutes(KITGPI::Acquisition::S
             
             Common::calcOffsets(offset, sourceIndex, receiverIndexVec, modelCoordinates);
             
+            offsets[shotInd] = offset;
             offsetSign = offset;
             offsetSign.unaryOp(offsetSign, common::UnaryOp::ABS);
             offsetTemp = offsetSign;
-            if (maxOffset != 0) {
-                offsetSign /= -maxOffset;
-                offsetSign.unaryOp(offsetSign, common::UnaryOp::CEIL);
-                offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
-                offsetSign += 1.0; // offsetSign = 1,1,1,...,1,0,...,0,0,0
+            if (offset.size() > 1) {
+                if (maxOffset != 0) {
+                    offsetSign /= -maxOffset;
+                    offsetSign.unaryOp(offsetSign, common::UnaryOp::CEIL);
+                    offsetSign.unaryOp(offsetSign, common::UnaryOp::SIGN);
+                    offsetSign += 1.0; // offsetSign = 1,1,1,...,1,0,...,0,0,0
+                } else {
+                    offsetSign = 1.0;
+                }
+                if (minOffset != 0) {
+                    offsetTemp /= -minOffset;
+                    offsetTemp.unaryOp(offsetTemp, common::UnaryOp::CEIL);
+                    offsetTemp.unaryOp(offsetTemp, common::UnaryOp::SIGN);
+                    offsetTemp *= -1.0; // offsetSign = 0,0,0,...,0,1,...,1,1,1
+                    offsetSign *= offsetTemp;
+                }
             } else {
-                offsetSign = 1.0;
+                offsetSign.unaryOp(offsetSign, common::UnaryOp::CEIL);
             }
-            if (minOffset != 0) {
-                offsetTemp /= -minOffset;
-                offsetTemp.unaryOp(offsetTemp, common::UnaryOp::CEIL);
-                offsetTemp.unaryOp(offsetTemp, common::UnaryOp::SIGN);
-                offsetTemp *= -1.0; // offsetSign = 0,0,0,...,0,1,...,1,1,1
-                offsetSign *= offsetTemp;
-            }
-            offsets[shotInd] = offset;
             mutes[shotInd] = offsetSign;
             if (useSourceEncode == 0) {
                 receivers.getSeismogramHandler().getSeismogram(Acquisition::SeismogramType(iComponent)).setOffsets(offsets);
             }
-            break;
         }
     }
 }

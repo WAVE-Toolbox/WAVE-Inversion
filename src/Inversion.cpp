@@ -288,17 +288,9 @@ int main(int argc, char *argv[])
             if (breakLoop == true) {                 
                 if (inversionType > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) { 
                     if (inversionType == 3) {
-                        HOST_PRINT(commAll, "\n=================================================");
-                        HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                        HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                        HOST_PRINT(commAll, "\n=================================================\n");
-                        modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, 2); 
+                        modelTaper2DJoint.exchangePetrophysics(commAll, *model, config, *modelEM, configEM, 2); 
                     } else if (inversionType == 4) {
-                        HOST_PRINT(commAll, "\n=================================================");
-                        HOST_PRINT(commAll, "\n================ Joint inversion ================");
-                        HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                        HOST_PRINT(commAll, "\n=================================================\n");
-                        modelTaper2DJoint.exchangeModelparameters(*model, config, *modelEM, configEM, 2); 
+                        modelTaper2DJoint.exchangeModelparameters(commAll, *model, config, *modelEM, configEM, 2); 
                     }            
                 }       
                 if (breakLoopType == 0 && breakLoopEM == true) {
@@ -317,17 +309,9 @@ int main(int argc, char *argv[])
             
             if (inversionType > 2 && (breakLoop == false || breakLoopType == 2) && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflow.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
                 if (inversionType == 3) {
-                    HOST_PRINT(commAll, "\n=================================================");
-                    HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                    HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                    HOST_PRINT(commAll, "\n=================================================\n");
-                    modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, 2); 
+                    modelTaper2DJoint.exchangePetrophysics(commAll, *model, config, *modelEM, configEM, 2); 
                 } else if (inversionType == 4) {
-                    HOST_PRINT(commAll, "\n=================================================");
-                    HOST_PRINT(commAll, "\n================ Joint inversion ================");
-                    HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                    HOST_PRINT(commAll, "\n=================================================\n");
-                    modelTaper2DJoint.exchangeModelparameters(*model, config, *modelEM, configEM, 2); 
+                    modelTaper2DJoint.exchangeModelparameters(commAll, *model, config, *modelEM, configEM, 2); 
                 }            
             }            
             
@@ -347,17 +331,9 @@ int main(int argc, char *argv[])
             if (breakLoopEM == true) {   
                 if (inversionTypeEM > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) {
                     if (inversionTypeEM == 3) {
-                        HOST_PRINT(commAll, "\n=================================================");
-                        HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                        HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " 2 to " << equationType << " 1 ============");
-                        HOST_PRINT(commAll, "\n=================================================\n");
-                        modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config, 1); 
+                        modelTaper2DJoint.exchangePetrophysics(commAll, *modelEM, configEM, *model, config, 1); 
                     } else if (inversionTypeEM == 4) {
-                        HOST_PRINT(commAll, "\n=================================================");
-                        HOST_PRINT(commAll, "\n================ Joint inversion ================");
-                        HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " 2 to " << equationType << " 1 ============");
-                        HOST_PRINT(commAll, "\n=================================================\n");
-                        modelTaper2DJoint.exchangeModelparameters(*modelEM, configEM, *model, config, 1); 
+                        modelTaper2DJoint.exchangeModelparameters(commAll, *modelEM, configEM, *model, config, 1); 
                     } 
                 }   
                 if (breakLoopType == 1) {
@@ -387,17 +363,9 @@ int main(int argc, char *argv[])
                     } else {
                         if (inversionType > 2 && (exchangeStrategy == 1 || exchangeStrategy == 2 || exchangeStrategy == 3 || exchangeStrategy == 5)) {
                             if (inversionType == 3) {
-                                HOST_PRINT(commAll, "\n=================================================");
-                                HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                                HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                                HOST_PRINT(commAll, "\n=================================================\n");
-                                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, 2); 
+                                modelTaper2DJoint.exchangePetrophysics(commAll, *model, config, *modelEM, configEM, 2); 
                             } else if (inversionType == 4) {
-                                HOST_PRINT(commAll, "\n=================================================");
-                                HOST_PRINT(commAll, "\n================ Joint inversion ================");
-                                HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                                HOST_PRINT(commAll, "\n=================================================\n");
-                                modelTaper2DJoint.exchangeModelparameters(*model, config, *modelEM, configEM, 2); 
+                                modelTaper2DJoint.exchangeModelparameters(commAll, *model, config, *modelEM, configEM, 2); 
                             }           
                         } 
                     }
@@ -408,17 +376,9 @@ int main(int argc, char *argv[])
                
             if (inversionTypeEM > 2 && (breakLoopEM == false || breakLoopType == 2) && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflowEM.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
                 if (inversionTypeEM == 3) {
-                    HOST_PRINT(commAll, "\n=================================================");
-                    HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                    HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " 2 to " << equationType << " 1 ============");
-                    HOST_PRINT(commAll, "\n=================================================\n");
-                    modelTaper2DJoint.exchangePetrophysics(*modelEM, *model, config, 1); 
+                    modelTaper2DJoint.exchangePetrophysics(commAll, *modelEM, configEM, *model, config, 1); 
                 } else if (inversionTypeEM == 4) {
-                    HOST_PRINT(commAll, "\n=================================================");
-                    HOST_PRINT(commAll, "\n================ Joint inversion ================");
-                    HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " 2 to " << equationType << " 1 ============");
-                    HOST_PRINT(commAll, "\n=================================================\n");
-                    modelTaper2DJoint.exchangeModelparameters(*modelEM, configEM, *model, config, 1); 
+                    modelTaper2DJoint.exchangeModelparameters(commAll, *modelEM, configEM, *model, config, 1); 
                 }           
             }
 
@@ -448,25 +408,13 @@ int main(int argc, char *argv[])
         if (workflow.workflowStage == workflow.maxStage - 1 && inversionType > 1 && (exchangeStrategy == 4 || exchangeStrategy == 6)) { 
             stageCount++;
             if (inversionType == 3) {
-                HOST_PRINT(commAll, "\n=================================================");
-                HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
-                HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                HOST_PRINT(commAll, "\n=================================================\n");
-                modelTaper2DJoint.exchangePetrophysics(*model, *modelEM, configEM, 2); 
+                modelTaper2DJoint.exchangePetrophysics(commAll, *model, config, *modelEM, configEM, 2); 
             } else if (inversionType == 4) {
                 if (stageCount % 2 == 1) {
-                    HOST_PRINT(commAll, "\n=================================================");
-                    HOST_PRINT(commAll, "\n================ Joint inversion ================");
-                    HOST_PRINT(commAll, "\n============  From " << equationType << " 1 to " << equationTypeEM << " 2 ============");
-                    HOST_PRINT(commAll, "\n=================================================\n");
-                    modelTaper2DJoint.exchangeModelparameters(*model, config, *modelEM, configEM, 2); 
+                    modelTaper2DJoint.exchangeModelparameters(commAll, *model, config, *modelEM, configEM, 2); 
                     HOST_PRINT(commAll, "\nChange workflow stage from " << equationType << " 1 to " << equationTypeEM << " 2\n");
                 } else {
-                    HOST_PRINT(commAll, "\n=================================================");
-                    HOST_PRINT(commAll, "\n================ Joint inversion ================");
-                    HOST_PRINT(commAll, "\n============  From " << equationTypeEM << " 2 to " << equationType << " 1 ============");
-                    HOST_PRINT(commAll, "\n=================================================\n");
-                    modelTaper2DJoint.exchangeModelparameters(*modelEM, configEM, *model, config, 1); 
+                    modelTaper2DJoint.exchangeModelparameters(commAll, *modelEM, configEM, *model, config, 1); 
                     
                     SLsearch.initLogFile(commAll, logFilename, misfitType, config.getAndCatch("steplengthType", 2), workflow.getInvertForParameters().size(), config.getAndCatch("saveCrossGradientMisfit", 0));
                     HOST_PRINT(commAll, "\nChange workflow stage from " << equationTypeEM << " 2 to " << equationType << " 1\n");

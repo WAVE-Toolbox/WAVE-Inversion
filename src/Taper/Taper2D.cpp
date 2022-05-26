@@ -1,4 +1,5 @@
 #include "Taper2D.hpp"
+#include <IO/IO.hpp>
 
 using namespace scai;
 
@@ -88,8 +89,14 @@ void KITGPI::Taper::Taper2D<ValueType>::applyGradientTransform1to2(scai::lama::V
     dmemo::DistributionPtr dist2 = gradientParameter2.getDistributionPtr();
     dmemo::DistributionPtr no_dist1 = transformMatrix2to1.getRowDistributionPtr();
     
+    scai::dmemo::CommunicatorPtr commShot = gradientParameter1.getDistributionPtr()->getCommunicatorPtr();
+    dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr();
+    dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
     gradientParameterTransform = gradientParameter1;
     gradientParameterTransform.redistribute(no_dist1);
+    commInterShot->sumArray(gradientParameterTransform.getLocalValues()); // to remove the effect of model partitioning
+    gradientParameterTransform /= commInterShot->getSize();
+    
     gradientParameter2 = transformMatrix1to2 * gradientParameterTransform;
     gradientParameter2.redistribute(dist2);
 }
@@ -98,7 +105,7 @@ void KITGPI::Taper::Taper2D<ValueType>::applyGradientTransform1to2(scai::lama::V
  \param modelParameter1 model1 parameter
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform1to2(scai::lama::Vector<ValueType> const &modelParameter1, scai::lama::Vector<ValueType> &modelParameter2)
+void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform1to2(scai::lama::Vector<ValueType> const &modelParameter1, scai::lama::Vector<ValueType> &modelParameter2, scai::lama::DenseVector<ValueType> mask)
 {
     lama::DenseVector<ValueType> modelParameterResidual;
     lama::DenseVector<ValueType> modelParameterTransform;
@@ -106,16 +113,28 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform1to2(scai::lama::Vect
     dmemo::DistributionPtr no_dist1 = transformMatrix2to1.getRowDistributionPtr();
     dmemo::DistributionPtr no_dist2 = transformMatrix2to1.getColDistributionPtr();
     
+    scai::lama::DenseVector<ValueType> maskAir; //mask to store vacuum
+    maskAir = 1 - mask;
+    maskAir *= modelParameter2;
+    
     modelParameter2.redistribute(no_dist2);
     modelParameterTransform = transformMatrix2to1 * modelParameter2;
     modelParameterResidual = transformMatrix1to2 * modelParameterTransform;
     modelParameterResidual = modelParameter2 - modelParameterResidual;
     
+    scai::dmemo::CommunicatorPtr commShot = modelParameter1.getDistributionPtr()->getCommunicatorPtr();
+    dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr();
+    dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
     modelParameterTransform = modelParameter1;
     modelParameterTransform.redistribute(no_dist1);
+    commInterShot->sumArray(modelParameterTransform.getLocalValues()); // to remove the effect of model partitioning
+    modelParameterTransform /= commInterShot->getSize();
+    
     modelParameter2 = transformMatrix1to2 * modelParameterTransform;
-    modelParameter2 += modelParameterResidual;
+    modelParameter2 += modelParameterResidual;    
     modelParameter2.redistribute(dist2);
+    modelParameter2 *= mask;
+    modelParameter2 += maskAir;
 }
 
 /*! \brief Apply model1 transform to a parameter
@@ -128,8 +147,14 @@ void KITGPI::Taper::Taper2D<ValueType>::applyGradientTransform2to1(scai::lama::V
     dmemo::DistributionPtr dist1 = gradientParameter1.getDistributionPtr();
     dmemo::DistributionPtr no_dist2 = transformMatrix2to1.getColDistributionPtr();
     
+    scai::dmemo::CommunicatorPtr commShot = gradientParameter2.getDistributionPtr()->getCommunicatorPtr();
+    dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr();
+    dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
     gradientParameterTransform = gradientParameter2;
     gradientParameterTransform.redistribute(no_dist2);
+    commInterShot->sumArray(gradientParameterTransform.getLocalValues()); // to remove the effect of model partitioning
+    gradientParameterTransform /= commInterShot->getSize();
+    
     gradientParameter1 = transformMatrix2to1 * gradientParameterTransform;
     gradientParameter1.redistribute(dist1);
 }
@@ -138,27 +163,36 @@ void KITGPI::Taper::Taper2D<ValueType>::applyGradientTransform2to1(scai::lama::V
  \param modelParameter1 model1 parameter
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform2to1(scai::lama::Vector<ValueType> &modelParameter1, scai::lama::Vector<ValueType> const &modelParameter2)
+void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform2to1(scai::lama::Vector<ValueType> &modelParameter1, scai::lama::Vector<ValueType> const &modelParameter2, scai::lama::DenseVector<ValueType> mask)
 {
     lama::DenseVector<ValueType> modelParameterResidual;
     lama::DenseVector<ValueType> modelParameterTransform;
     dmemo::DistributionPtr dist1 = modelParameter1.getDistributionPtr();
     dmemo::DistributionPtr no_dist1 = transformMatrix2to1.getRowDistributionPtr();
     dmemo::DistributionPtr no_dist2 = transformMatrix2to1.getColDistributionPtr();
-    
-    auto dist = modelParameter1.getDistributionPtr();
-    auto comm = dist->getCommunicatorPtr();
+        
+    scai::lama::DenseVector<ValueType> maskAir; //mask to store vacuum
+    maskAir = 1 - mask;
+    maskAir *= modelParameter1;
     
     modelParameter1.redistribute(no_dist1);
     modelParameterTransform = transformMatrix1to2 * modelParameter1;
     modelParameterResidual = transformMatrix2to1 * modelParameterTransform;
     modelParameterResidual = modelParameter1 - modelParameterResidual;
     
+    scai::dmemo::CommunicatorPtr commShot = modelParameter2.getDistributionPtr()->getCommunicatorPtr();
+    dmemo::CommunicatorPtr commAll = dmemo::Communicator::getCommunicatorPtr();
+    dmemo::CommunicatorPtr commInterShot = commAll->split(commShot->getRank());
     modelParameterTransform = modelParameter2;
     modelParameterTransform.redistribute(no_dist2);
+    commInterShot->sumArray(modelParameterTransform.getLocalValues()); // to remove the effect of model partitioning
+    modelParameterTransform /= commInterShot->getSize();
+    
     modelParameter1 = transformMatrix2to1 * modelParameterTransform;
     modelParameter1 += modelParameterResidual;
     modelParameter1.redistribute(dist1);
+    modelParameter1 *= mask;
+    modelParameter1 += maskAir;
 }
 
 /*! \brief Read a taper from file
@@ -364,38 +398,66 @@ void KITGPI::Taper::Taper2D<ValueType>::calcTransformMatrix2to1(KITGPI::Acquisit
  * \param model2 EM model1
  * \param config EM config
  */
-template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(KITGPI::Modelparameter::Modelparameter<ValueType> const &model2, KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Configuration::Configuration config, IndexType equationInd)
+template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model2, KITGPI::Configuration::Configuration config2, KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Configuration::Configuration config1, IndexType equationInd)
 {
     lama::DenseVector<ValueType> porositytemp;
     lama::DenseVector<ValueType> saturationtemp;
-     
-    IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy"); 
+    
+    std::string equationType1 = config1.get<std::string>("equationType"); 
+    std::transform(equationType1.begin(), equationType1.end(), equationType1.begin(), ::tolower); 
+    bool isSeismic1 = Common::checkEquationType<ValueType>(equationType1); 
+    std::string equationType2 = config2.get<std::string>("equationType"); 
+    std::transform(equationType2.begin(), equationType2.end(), equationType2.begin(), ::tolower); 
+    HOST_PRINT(commAll, "\n=================================================");
+    HOST_PRINT(commAll, "\n========= Joint petrophysical inversion =========");
+    if (equationInd == 1) {
+        HOST_PRINT(commAll, "\n============  From " << equationType2 << " 2 to " << equationType1 << " 1 ============");
+    } else {
+        HOST_PRINT(commAll, "\n============  From " << equationType2 << " 1 to " << equationType1 << " 2 ============");
+    }
+    HOST_PRINT(commAll, "\n=================================================\n");
+    
+    scai::lama::DenseVector<ValueType> mask; //mask to store subsurface
+    if (isSeismic1) {
+        if(equationType2.compare("sh") == 0 || equationType2.compare("viscosh") == 0){
+            mask = model1.getVelocityS();  
+        } else {
+            mask = model1.getVelocityP();      
+        }  
+    } else {    
+        mask = model1.getDielectricPermittivity();
+        mask /= model1.getDielectricPermittivityVacuum();  // calculate the relative dielectricPermittivity    
+        mask -= 1;
+    }
+    mask.unaryOp(mask, common::UnaryOp::SIGN);
+    mask.unaryOp(mask, common::UnaryOp::ABS); 
+    
+    IndexType exchangeStrategy = config1.get<IndexType>("exchangeStrategy"); 
     if (exchangeStrategy == 2) {
         // case 2: exchange all of the petrophysical parameters 
         porositytemp = model1.getPorosity();            
         saturationtemp = model1.getSaturation();
         
         if (equationInd == 1) {
-            this->applyModelTransform2to1(porositytemp, model2.getPorosity());             
-            this->applyModelTransform2to1(saturationtemp, model2.getSaturation());  
+            this->applyModelTransform2to1(porositytemp, model2.getPorosity(), mask);             
+            this->applyModelTransform2to1(saturationtemp, model2.getSaturation(), mask);  
         } else {
-            this->applyModelTransform1to2(model2.getPorosity(), porositytemp);             
-            this->applyModelTransform1to2(model2.getSaturation(), saturationtemp);  
+            this->applyModelTransform1to2(model2.getPorosity(), porositytemp, mask);             
+            this->applyModelTransform1to2(model2.getSaturation(), saturationtemp, mask);  
         }
         
         model1.setPorosity(porositytemp);
         model1.setSaturation(saturationtemp);
     } else if (exchangeStrategy != 0) {  
-        std::string equationType = config.get<std::string>("equationType");
-        bool isSeismic = Common::checkEquationType<ValueType>(equationType); 
+        bool isSeismic = Common::checkEquationType<ValueType>(equationType1); 
         if (isSeismic) {
             // case 1,3,4,5,6: exchange saturation to seismic model1 
             saturationtemp = model1.getSaturation();         
             
             if (equationInd == 1) {           
-                this->applyModelTransform2to1(saturationtemp, model2.getSaturation());  
+                this->applyModelTransform2to1(saturationtemp, model2.getSaturation(), mask);  
             } else {                
-                this->applyModelTransform1to2(model2.getSaturation(), saturationtemp);  
+                this->applyModelTransform1to2(model2.getSaturation(), saturationtemp, mask);  
             }
             
             model1.setSaturation(saturationtemp);
@@ -404,9 +466,9 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
             porositytemp = model1.getPorosity();      
             
             if (equationInd == 1) {
-                this->applyModelTransform2to1(porositytemp, model2.getPorosity());       
+                this->applyModelTransform2to1(porositytemp, model2.getPorosity(), mask);       
             } else {
-                this->applyModelTransform1to2(model2.getPorosity(), porositytemp);      
+                this->applyModelTransform1to2(model2.getPorosity(), porositytemp, mask);      
             }
             
             model1.setPorosity(porositytemp);
@@ -414,8 +476,8 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
     }
     // case 0,1,2,3,4: self-constraint of the petrophysical relationship                     
     model1.calcWaveModulusFromPetrophysics(); 
-    if (config.get<bool>("useModelThresholds"))
-        model1.applyThresholds(config); 
+    if (config1.get<bool>("useModelThresholds"))
+        model1.applyThresholds(config1); 
 }
 
 /*! \brief exchange mode parameters from one seismic/EM wave to another seismic/EM wave
@@ -424,7 +486,7 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
  * \param config1 Seismic/EM config
  * \param config2 Seismic/EM config
  */
-template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeModelparameters(KITGPI::Modelparameter::Modelparameter<ValueType> const &model2, KITGPI::Configuration::Configuration config2, KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Configuration::Configuration config1, IndexType equationInd)
+template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeModelparameters(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model2, KITGPI::Configuration::Configuration config2, KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Configuration::Configuration config1, IndexType equationInd)
 {
     std::string equationType1 = config1.get<std::string>("equationType");
     std::transform(equationType1.begin(), equationType1.end(), equationType1.begin(), ::tolower);  
@@ -436,100 +498,123 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
     SCAI_ASSERT_ERROR(isSeismic1 == isSeismic2, "isSeismic1 != isSeismic2");
     SCAI_ASSERT_ERROR((exchangeStrategy1 > 1), "exchangeStrategy must be 0, 2, 4, 6 in exchangeModelparameters()");
  
-    lama::DenseVector<ValueType> temp;  
+    HOST_PRINT(commAll, "\n=================================================");
+    HOST_PRINT(commAll, "\n================ Joint inversion ================");
+    if (equationInd == 1) {
+        HOST_PRINT(commAll, "\n============  From " << equationType2 << " 2 to " << equationType1 << " 1 ============");
+    } else {        
+        HOST_PRINT(commAll, "\n============  From " << equationType2 << " 1 to " << equationType1 << " 2 ============");
+    }
+    HOST_PRINT(commAll, "\n=================================================\n");
+    
+    scai::lama::DenseVector<ValueType> temp; 
+    scai::lama::DenseVector<ValueType> mask; //mask to store subsurface
+    if (isSeismic1) {
+        if(equationType2.compare("sh") == 0 || equationType2.compare("viscosh") == 0){
+            mask = model1.getVelocityS();  
+        } else {
+            mask = model1.getVelocityP();      
+        }  
+    } else {    
+        mask = model1.getDielectricPermittivity();
+        mask /= model1.getDielectricPermittivityVacuum();  // calculate the relative dielectricPermittivity    
+        mask -= 1;
+    }
+    mask.unaryOp(mask, common::UnaryOp::SIGN);
+    mask.unaryOp(mask, common::UnaryOp::ABS); 
             
     temp = model1.getReflectivity();
     if (equationInd == 1) {           
-        this->applyModelTransform2to1(temp, model2.getReflectivity());  
+        this->applyModelTransform2to1(temp, model2.getReflectivity(), mask);  
     } else {        
-        this->applyModelTransform1to2(model2.getReflectivity(), temp);  
+        this->applyModelTransform1to2(model2.getReflectivity(), temp, mask);  
     }
     model1.setReflectivity(temp);
     
     if (isSeismic1 && exchangeStrategy1 > 1) {          
         temp = model1.getDensity();
         if (equationInd == 1) {           
-            this->applyModelTransform2to1(temp, model2.getDensity());  
+            this->applyModelTransform2to1(temp, model2.getDensity(), mask);  
         } else {        
-            this->applyModelTransform1to2(model2.getDensity(), temp);  
+            this->applyModelTransform1to2(model2.getDensity(), temp, mask);  
         }
         model1.setDensity(temp);
         
         if ((equationType1.compare("sh") == 0 || equationType1.compare("viscosh") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("sh") == 0 || equationType2.compare("viscosh") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
             temp = model1.getVelocityS();
             if (equationInd == 1) {           
-                this->applyModelTransform2to1(temp, model2.getVelocityS());  
+                this->applyModelTransform2to1(temp, model2.getVelocityS(), mask);  
             } else {        
-                this->applyModelTransform1to2(model2.getVelocityS(), temp);  
+                this->applyModelTransform1to2(model2.getVelocityS(), temp, mask);  
             }
             model1.setVelocityS(temp);
         }
         if ((equationType1.compare("acoustic") == 0 || equationType1.compare("elastic") == 0 || equationType1.compare("viscoelastic") == 0) && (equationType2.compare("acoustic") == 0 || equationType2.compare("elastic") == 0 || equationType2.compare("viscoelastic") == 0)) {
             temp = model1.getVelocityP();
             if (equationInd == 1) {           
-                this->applyModelTransform2to1(temp, model2.getVelocityP());  
+                this->applyModelTransform2to1(temp, model2.getVelocityP(), mask);  
             } else {        
-                this->applyModelTransform1to2(model2.getVelocityP(), temp);  
+                this->applyModelTransform1to2(model2.getVelocityP(), temp, mask);  
             }
             model1.setVelocityP(temp);
         }
         if ((equationType1.compare("viscoelastic") == 0 || equationType1.compare("viscosh") == 0) && (equationType2.compare("viscoelastic") == 0 || equationType2.compare("viscosh") == 0)){
             temp = model1.getTauS();
             if (equationInd == 1) {           
-                this->applyModelTransform2to1(temp, model2.getTauS());  
+                this->applyModelTransform2to1(temp, model2.getTauS(), mask);  
             } else {        
-                this->applyModelTransform1to2(model2.getTauS(), temp);  
+                this->applyModelTransform1to2(model2.getTauS(), temp, mask);  
             }
             model1.setTauS(temp);
         }
         if (equationType1.compare("viscoelastic") == 0 && equationType2.compare("viscoelastic") == 0){
             temp = model1.getTauP();
             if (equationInd == 1) {           
-                this->applyModelTransform2to1(temp, model2.getTauP());  
+                this->applyModelTransform2to1(temp, model2.getTauP(), mask);  
             } else {        
-                this->applyModelTransform1to2(model2.getTauP(), temp);  
+                this->applyModelTransform1to2(model2.getTauP(), temp, mask);  
             }
             model1.setTauP(temp);
         }
     } else if (!isSeismic1 && exchangeStrategy1 > 1) {          
         temp = model1.getMagneticPermeability();
         if (equationInd == 1) {           
-            this->applyModelTransform2to1(temp, model2.getMagneticPermeability());  
+            this->applyModelTransform2to1(temp, model2.getMagneticPermeability(), mask);  
         } else {        
-            this->applyModelTransform1to2(model2.getMagneticPermeability(), temp);  
+            this->applyModelTransform1to2(model2.getMagneticPermeability(), temp, mask);  
         }
         model1.setMagneticPermeability(temp);
         
         temp = model1.getElectricConductivity();
         if (equationInd == 1) {           
-            this->applyModelTransform2to1(temp, model2.getElectricConductivity());  
+            this->applyModelTransform2to1(temp, model2.getElectricConductivity(), mask);  
         } else {        
-            this->applyModelTransform1to2(model2.getElectricConductivity(), temp);  
+            this->applyModelTransform1to2(model2.getElectricConductivity(), temp, mask);  
         }
         model1.setElectricConductivity(temp);
         
         temp = model1.getDielectricPermittivity();
         if (equationInd == 1) {           
-            this->applyModelTransform2to1(temp, model2.getDielectricPermittivity());  
+            this->applyModelTransform2to1(temp, model2.getDielectricPermittivity(), mask);  
         } else {        
-            this->applyModelTransform1to2(model2.getDielectricPermittivity(), temp);  
+            this->applyModelTransform1to2(model2.getDielectricPermittivity(), temp, mask); 
         }
         model1.setDielectricPermittivity(temp);
             
         if ((equationType1.compare("viscotmem") == 0 || equationType1.compare("viscoemem") == 0) && (equationType2.compare("viscotmem") == 0 || equationType2.compare("viscoemem") == 0)){
             temp = model1.getTauElectricConductivity();
             if (equationInd == 1) {           
-                this->applyModelTransform2to1(temp, model2.getTauElectricConductivity());  
+                this->applyModelTransform2to1(temp, model2.getTauElectricConductivity(), mask);  
             } else {        
-                this->applyModelTransform1to2(model2.getTauElectricConductivity(), temp);  
+                this->applyModelTransform1to2(model2.getTauElectricConductivity(), temp, mask);  
             }
             model1.setTauElectricConductivity(temp);
             
             temp = model1.getTauDielectricPermittivity();
             if (equationInd == 1) {           
-                this->applyModelTransform2to1(temp, model2.getTauDielectricPermittivity());  
+                this->applyModelTransform2to1(temp, model2.getTauDielectricPermittivity(), mask);  
             } else {        
-                this->applyModelTransform1to2(model2.getTauDielectricPermittivity(), temp);  
+                this->applyModelTransform1to2(model2.getTauDielectricPermittivity(), temp, mask);  
             }
             model1.setTauDielectricPermittivity(temp);
         }

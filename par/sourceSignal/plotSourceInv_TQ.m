@@ -3,7 +3,7 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface_StreamBig';
+observationType = 'Surface_Stream';
 equationType = 'TMEM';
 NoiseType = '';
 modelType = 'Inv';
@@ -19,10 +19,10 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 1; copy_true_start = 1;
+copy_inv = 1; copy_true_start = 0;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
-invertParameterType = 'EpsilonSigma_08m';
+invertParameterType = 'EpsilonSigma_Noisy30cm8m';
 bandPass = 'BP530MHz';
 NoisedB = '';
 NoisedB = cellMerge({NoiseType,NoisedB},0);
