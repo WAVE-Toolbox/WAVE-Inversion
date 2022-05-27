@@ -134,7 +134,7 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform1to2(scai::lama::Vect
     modelParameter2 += modelParameterResidual;    
     modelParameter2.redistribute(dist2);
     modelParameter2 *= mask;
-    modelParameter2 += maskAir;
+    modelParameter2 += maskAir; // to restore the air layer
 }
 
 /*! \brief Apply model1 transform to a parameter
@@ -192,7 +192,7 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform2to1(scai::lama::Vect
     modelParameter1 += modelParameterResidual;
     modelParameter1.redistribute(dist1);
     modelParameter1 *= mask;
-    modelParameter1 += maskAir;
+    modelParameter1 += maskAir; // to restore the air layer
 }
 
 /*! \brief Read a taper from file
@@ -216,180 +216,75 @@ void KITGPI::Taper::Taper2D<ValueType>::read(std::string filename)
  * \param configEM Configuration EM
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::calcTransformMatrix1to2(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates1, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates2)
+void KITGPI::Taper::Taper2D<ValueType>::calcTransformMatrix(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates2, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates1, IndexType equationInd)
 {
     // this function is only valid for grid partitioning with useVariableGrid=0
     KITGPI::Acquisition::coordinate3D coordinate1;
-    KITGPI::Acquisition::coordinate3D coordinate2;
     ValueType DH1 = modelCoordinates1.getDH();
     ValueType DH2 = modelCoordinates2.getDH();
-    ValueType x1;
-    ValueType y1;
-    ValueType z1;
-    ValueType x2;
-    ValueType y2;
-    ValueType z2;
     ValueType x01 = modelCoordinates1.getX0();
     ValueType y01 = modelCoordinates1.getY0();
-    ValueType z01 = modelCoordinates1.getZ0();
     ValueType x02 = modelCoordinates2.getX0();
-    ValueType y02 = modelCoordinates2.getY0();
-    ValueType z02 = modelCoordinates2.getZ0();
-    IndexType padOrder;
-    IndexType padWidth;        
-    
-    if (DH1 <= DH2) {
-        padOrder = 1;
-    } else {        
-        padOrder = std::round(DH1/DH2);
-    }
-    padWidth = std::floor((padOrder-1)/2);
-    
-    dmemo::DistributionPtr dist2(transformMatrix1to2.getRowDistributionPtr());
-    dmemo::DistributionPtr dist1(transformMatrix1to2.getColDistributionPtr());
-    hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
-    IndexType rowIndex;
-    lama::MatrixAssembly<ValueType> assembly;
-
-    if (DH1 <= DH2) {
-        SparseFormat matrix2to1;
-        matrix2to1.allocate(dist1, dist2);
-        dist2->getOwnedIndexes(ownedIndexes);
-        for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
-            coordinate2 = modelCoordinates2.index2coordinate(ownedIndex);
-            x2=coordinate2.x*DH2+x02;
-            y2=coordinate2.y*DH2+y02;
-            z2=coordinate2.z*DH2+z02;
-            coordinate1.x=round((x2-x01)/DH1)-padWidth;
-            coordinate1.y=round((y2-y01)/DH1)-padWidth;
-            coordinate1.z=round((z2-z01)/DH1)-padWidth;
-            for (IndexType iXorder = 0; iXorder < padOrder; iXorder++) {            
-                for (IndexType iYorder = 0; iYorder < padOrder; iYorder++) {            
-                    for (IndexType iZorder = 0; iZorder < padOrder; iZorder++) {
-                        if (coordinate1.x+iXorder<modelCoordinates1.getNX() && coordinate1.y+iYorder<modelCoordinates1.getNY() && coordinate1.z+iZorder<modelCoordinates1.getNZ() && coordinate1.x+iXorder>=0 && coordinate1.y+iYorder>=0 && coordinate1.z+iZorder>=0) {
-                            rowIndex=modelCoordinates1.coordinate2index(coordinate1.x+iXorder, coordinate1.y+iYorder, coordinate1.z+iZorder);
-                            assembly.push(rowIndex, ownedIndex, 1);
-                        }
-                    }
-                }
-            }
-        }
-        matrix2to1.fillFromAssembly(assembly);
-        transformMatrix1to2 = transpose(matrix2to1);
+    ValueType y02 = modelCoordinates2.getY0();       
+    IndexType NX2 = modelCoordinates2.getNX();
+    IndexType NY2 = modelCoordinates2.getNY();
+    ValueType x;
+    ValueType y;
+    ValueType z = 0;
+    ValueType xy;
+    SCAI_ASSERT_ERROR(modelCoordinates2.getNZ() == 1, "Transformation can only be implemented for 2D model!");
+    if (DH1 >= DH2) {
+        SCAI_ASSERT_ERROR( DH1 % DH2 == 0, "DH1 must be the same or multiples of DH2!");
     } else {
-        dist1->getOwnedIndexes(ownedIndexes);
-        for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
-            coordinate1 = modelCoordinates1.index2coordinate(ownedIndex);
-            x1=coordinate1.x*DH1+x01;
-            y1=coordinate1.y*DH1+y01;
-            z1=coordinate1.z*DH1+z01;
-            coordinate2.x=round((x1-x02)/DH2)-padWidth;
-            coordinate2.y=round((y1-y02)/DH2)-padWidth;
-            coordinate2.z=round((z1-z02)/DH2)-padWidth;
-            for (IndexType iXorder = 0; iXorder < padOrder; iXorder++) {            
-                for (IndexType iYorder = 0; iYorder < padOrder; iYorder++) {            
-                    for (IndexType iZorder = 0; iZorder < padOrder; iZorder++) {
-                        if (coordinate2.x+iXorder<modelCoordinates2.getNX()  && coordinate2.y+iYorder<modelCoordinates2.getNY()  && coordinate2.z+iZorder<modelCoordinates2.getNZ()  && coordinate2.x+iXorder>=0 && coordinate2.y+iYorder>=0 && coordinate2.z+iZorder>=0) {
-                            rowIndex=modelCoordinates2.coordinate2index(coordinate2.x+iXorder, coordinate2.y+iYorder, coordinate2.z+iZorder);
-                            assembly.push(rowIndex, ownedIndex, 1);
-                        }
-                    }
-                }
-            }
-        }
-        transformMatrix1to2.fillFromAssembly(assembly);
+        SCAI_ASSERT_ERROR( DH2 % DH1 == 0, "DH2 must be the same or multiples of DH1!");
     }
-}
-
-/*! \brief calculate a matrix to transform EM model1 to Seismic model1
- * \param modelCoordinates1 coordinates of the seismic model1
- * \param config Configuration seismic
- * \param modelCoordinates2 coordinates of the EM model1
- * \param configEM Configuration EM
- */
-template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::calcTransformMatrix2to1(KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates1, KITGPI::Acquisition::Coordinates<ValueType> modelCoordinates2)
-{
-    // this function is only valid for grid partitioning with useVariableGrid=0
-    KITGPI::Acquisition::coordinate3D coordinate1;
-    KITGPI::Acquisition::coordinate3D coordinate2;
-    ValueType DH1 = modelCoordinates1.getDH();
-    ValueType DH2 = modelCoordinates2.getDH();
-    ValueType x1;
-    ValueType y1;
-    ValueType z1;
-    ValueType x2;
-    ValueType y2;
-    ValueType z2;
-    ValueType x01 = modelCoordinates1.getX0();
-    ValueType y01 = modelCoordinates1.getY0();
-    ValueType z01 = modelCoordinates1.getZ0();
-    ValueType x02 = modelCoordinates2.getX0();
-    ValueType y02 = modelCoordinates2.getY0();
-    ValueType z02 = modelCoordinates2.getZ0();
-    IndexType padOrder;
-    IndexType padWidth;        
-    
-    if (DH2 <= DH1) {
-        padOrder = 1;
-    } else {        
-        padOrder = std::round(DH2/DH1);
+        
+    dmemo::DistributionPtr dist1;
+    if (equationInd == 1) { // 2->1
+        dist1 = transformMatrix2to1.getRowDistributionPtr();
+    } else { // 1->2
+        dist1 = transformMatrix1to2.getRowDistributionPtr();
     }
-    padWidth = std::floor((padOrder-1)/2);
-    
-    dmemo::DistributionPtr dist1(transformMatrix2to1.getRowDistributionPtr());
-    dmemo::DistributionPtr dist2(transformMatrix2to1.getColDistributionPtr());
     hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
-    IndexType rowIndex;
+    IndexType colIndex;
     lama::MatrixAssembly<ValueType> assembly;
-
-    if (DH1 <= DH2) {
-        dist2->getOwnedIndexes(ownedIndexes);
-        for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
-            coordinate2 = modelCoordinates2.index2coordinate(ownedIndex);
-            x2=coordinate2.x*DH2+x02;
-            y2=coordinate2.y*DH2+y02;
-            z2=coordinate2.z*DH2+z02;
-            coordinate1.x=round((x2-x01)/DH1)-padWidth;
-            coordinate1.y=round((y2-y01)/DH1)-padWidth;
-            coordinate1.z=round((z2-z01)/DH1)-padWidth;
-            for (IndexType iXorder = 0; iXorder < padOrder; iXorder++) {            
-                for (IndexType iYorder = 0; iYorder < padOrder; iYorder++) {            
-                    for (IndexType iZorder = 0; iZorder < padOrder; iZorder++) {
-                        if (coordinate1.x+iXorder<modelCoordinates1.getNX() && coordinate1.y+iYorder<modelCoordinates1.getNY() && coordinate1.z+iZorder<modelCoordinates1.getNZ() && coordinate1.x+iXorder>=0 && coordinate1.y+iYorder>=0 && coordinate1.z+iZorder>=0) {
-                            rowIndex=modelCoordinates1.coordinate2index(coordinate1.x+iXorder, coordinate1.y+iYorder, coordinate1.z+iZorder);
-                            assembly.push(rowIndex, ownedIndex, 1);
-                        }
-                    }
-                }
+    
+    dist1->getOwnedIndexes(ownedIndexes);
+    for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
+        coordinate1 = modelCoordinates1.index2coordinate(ownedIndex);
+        x = (coordinate1.x*DH1+x01-x02)/DH2;
+        y = (coordinate1.y*DH1+y01-y02)/DH2;
+        if (x <= NX2 - 1 && y <= NY2 - 1 && x >= 0 && y >= 0) {
+            if (x == floor(x) && y == floor(y)) {
+                colIndex=modelCoordinates2.coordinate2index(floor(x), floor(y), z);
+                assembly.push(ownedIndex, colIndex, 1);
+            } else if (x == floor(x) && y > floor(y)) {
+                colIndex=modelCoordinates2.coordinate2index(floor(x), floor(y), z);
+                assembly.push(ownedIndex, colIndex, ceil(y) - y);
+                colIndex=modelCoordinates2.coordinate2index(floor(x), ceil(y), z);
+                assembly.push(ownedIndex, colIndex, y - floor(y));
+            } else if (x > floor(x) && y == floor(y)) {
+                colIndex=modelCoordinates2.coordinate2index(floor(x), floor(y), z);
+                assembly.push(ownedIndex, colIndex, ceil(x) - x);
+                colIndex=modelCoordinates2.coordinate2index(ceil(x), floor(y), z);
+                assembly.push(ownedIndex, colIndex, x - floor(x));
+            } else if (x > floor(x) && y > floor(y)) {
+                xy = 1 / sqrt(pow(x - floor(x), 2) + pow(y - floor(y), 2)) + 1 / sqrt(pow(ceil(x) - x, 2) + pow(y - floor(y), 2)) + 1 / sqrt(pow(x - floor(x), 2) + pow(ceil(y) - y, 2)) + 1 / sqrt(pow(ceil(x) - x, 2) + pow(ceil(y) - y, 2));
+                colIndex=modelCoordinates2.coordinate2index(floor(x), floor(y), z);
+                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(x - floor(x), 2) + pow(y - floor(y), 2)) / xy);
+                colIndex=modelCoordinates2.coordinate2index(ceil(x), floor(y), z);
+                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(ceil(x) - x, 2) + pow(y - floor(y), 2)) / xy);
+                colIndex=modelCoordinates2.coordinate2index(floor(x), ceil(y), z);
+                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(x - floor(x), 2) + pow(ceil(y) - y, 2)) / xy);
+                colIndex=modelCoordinates2.coordinate2index(ceil(x), ceil(y), z);
+                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(ceil(x) - x, 2) + pow(ceil(y) - y, 2)) / xy);
             }
         }
+    }
+    if (equationInd == 1) {
         transformMatrix2to1.fillFromAssembly(assembly);
     } else {
-        SparseFormat matrix1to2;
-        matrix1to2.allocate(dist2, dist1);
-        dist1->getOwnedIndexes(ownedIndexes);
-        for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
-            coordinate1 = modelCoordinates1.index2coordinate(ownedIndex);
-            x1=coordinate1.x*DH1+x01;
-            y1=coordinate1.y*DH1+y01;
-            z1=coordinate1.z*DH1+z01;
-            coordinate2.x=round((x1-x02)/DH2)-padWidth;
-            coordinate2.y=round((y1-y02)/DH2)-padWidth;
-            coordinate2.z=round((z1-z02)/DH2)-padWidth;
-            for (IndexType iXorder = 0; iXorder < padOrder; iXorder++) {            
-                for (IndexType iYorder = 0; iYorder < padOrder; iYorder++) {            
-                    for (IndexType iZorder = 0; iZorder < padOrder; iZorder++) {
-                        if (coordinate2.x+iXorder<modelCoordinates2.getNX()  && coordinate2.y+iYorder<modelCoordinates2.getNY()  && coordinate2.z+iZorder<modelCoordinates2.getNZ()  && coordinate2.x+iXorder>=0 && coordinate2.y+iYorder>=0 && coordinate2.z+iZorder>=0) {
-                            rowIndex=modelCoordinates2.coordinate2index(coordinate2.x+iXorder, coordinate2.y+iYorder, coordinate2.z+iZorder);
-                            assembly.push(rowIndex, ownedIndex, 1);
-                        }
-                    }
-                }
-            }
-        }
-        matrix1to2.fillFromAssembly(assembly);
-        transformMatrix2to1 = transpose(matrix1to2);
+        transformMatrix1to2.fillFromAssembly(assembly);
     }
 }
 
@@ -400,6 +295,8 @@ void KITGPI::Taper::Taper2D<ValueType>::calcTransformMatrix2to1(KITGPI::Acquisit
  */
 template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePetrophysics(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model2, KITGPI::Configuration::Configuration config2, KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Configuration::Configuration config1, IndexType equationInd)
 {
+    double start_t = common::Walltime::get();
+    
     lama::DenseVector<ValueType> porositytemp;
     lama::DenseVector<ValueType> saturationtemp;
     
@@ -415,11 +312,10 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
     } else {
         HOST_PRINT(commAll, "\n============  From " << equationType2 << " 1 to " << equationType1 << " 2 ============");
     }
-    HOST_PRINT(commAll, "\n=================================================\n");
     
     scai::lama::DenseVector<ValueType> mask; //mask to store subsurface
     if (isSeismic1) {
-        if(equationType2.compare("sh") == 0 || equationType2.compare("viscosh") == 0){
+        if(equationType1.compare("sh") == 0 || equationType1.compare("viscosh") == 0){
             mask = model1.getVelocityS();  
         } else {
             mask = model1.getVelocityP();      
@@ -478,6 +374,10 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
     model1.calcWaveModulusFromPetrophysics(); 
     if (config1.get<bool>("useModelThresholds"))
         model1.applyThresholds(config1); 
+    
+    double end_t = common::Walltime::get();
+    HOST_PRINT(commAll, "\nFinished exchange petrophysics in " << end_t - start_t << " sec.");
+    HOST_PRINT(commAll, "\n=================================================\n");
 }
 
 /*! \brief exchange mode parameters from one seismic/EM wave to another seismic/EM wave
@@ -488,6 +388,8 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
  */
 template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeModelparameters(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model2, KITGPI::Configuration::Configuration config2, KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Configuration::Configuration config1, IndexType equationInd)
 {
+    double start_t = common::Walltime::get();
+    
     std::string equationType1 = config1.get<std::string>("equationType");
     std::transform(equationType1.begin(), equationType1.end(), equationType1.begin(), ::tolower);  
     bool isSeismic1 = Common::checkEquationType<ValueType>(equationType1); 
@@ -505,12 +407,11 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
     } else {        
         HOST_PRINT(commAll, "\n============  From " << equationType2 << " 1 to " << equationType1 << " 2 ============");
     }
-    HOST_PRINT(commAll, "\n=================================================\n");
     
     scai::lama::DenseVector<ValueType> temp; 
     scai::lama::DenseVector<ValueType> mask; //mask to store subsurface
     if (isSeismic1) {
-        if(equationType2.compare("sh") == 0 || equationType2.compare("viscosh") == 0){
+        if(equationType1.compare("sh") == 0 || equationType1.compare("viscosh") == 0){
             mask = model1.getVelocityS();  
         } else {
             mask = model1.getVelocityP();      
@@ -619,6 +520,9 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
             model1.setTauDielectricPermittivity(temp);
         }
     }     
+    double end_t = common::Walltime::get();
+    HOST_PRINT(commAll, "\nFinished exchange model in " << end_t - start_t << " sec.");
+    HOST_PRINT(commAll, "\n=================================================\n");
 }
 
 /*! \brief Initialize wavefield transform matrix

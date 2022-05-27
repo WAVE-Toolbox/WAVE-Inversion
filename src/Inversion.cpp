@@ -235,20 +235,20 @@ int main(int argc, char *argv[])
     if (inversionType > 1 || inversionTypeEM > 1) {
         if (!useStreamConfig && !useStreamConfigEM) {
             modelTaper2DJoint.initTransformMatrix(dist, distEM, ctx);  
-            modelTaper2DJoint.calcTransformMatrix1to2(modelCoordinates, modelCoordinatesEM);
-            modelTaper2DJoint.calcTransformMatrix2to1(modelCoordinates, modelCoordinatesEM); 
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinates, modelCoordinatesEM, 2);
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinatesEM, modelCoordinates, 1); 
         } else if (useStreamConfig && !useStreamConfigEM) {
             modelTaper2DJoint.initTransformMatrix(distBig, distEM, ctx);  
-            modelTaper2DJoint.calcTransformMatrix1to2(modelCoordinatesBig, modelCoordinatesEM);
-            modelTaper2DJoint.calcTransformMatrix2to1(modelCoordinatesBig, modelCoordinatesEM); 
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinatesBig, modelCoordinatesEM, 2);
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinatesEM, modelCoordinatesBig, 1); 
         } else if (!useStreamConfig && useStreamConfigEM) {
             modelTaper2DJoint.initTransformMatrix(dist, distBigEM, ctx);  
-            modelTaper2DJoint.calcTransformMatrix1to2(modelCoordinates, modelCoordinatesBigEM);
-            modelTaper2DJoint.calcTransformMatrix2to1(modelCoordinates, modelCoordinatesBigEM); 
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinates, modelCoordinatesBigEM, 2);
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinatesBigEM, modelCoordinates, 1); 
         } else if (useStreamConfig && useStreamConfigEM) {
             modelTaper2DJoint.initTransformMatrix(distBig, distBigEM, ctx);  
-            modelTaper2DJoint.calcTransformMatrix1to2(modelCoordinatesBig, modelCoordinatesBigEM);
-            modelTaper2DJoint.calcTransformMatrix2to1(modelCoordinatesBig, modelCoordinatesBigEM); 
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinatesBig, modelCoordinatesBigEM, 2);
+            modelTaper2DJoint.calcTransformMatrix(modelCoordinatesBigEM, modelCoordinatesBig, 1); 
         }
     }
     
