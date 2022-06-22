@@ -3,14 +3,12 @@ addpath('../configuration');
 addpath('../common');
 
 modelName = 'EttlingerCB';
-observationType = 'Surface_Stream';
-equationType = 'TMEM';
-NoiseType = '';
+observationType = 'Surface';
+equationType = 'Viscoelastic';
 modelType = 'Inv';
-HPCType = 'HPC';
 dimension=cellMerge({equationType,'2D'},0);
 configFilename=cellMerge({'configuration',modelName,observationType,dimension...
-    ,modelType,NoiseType,HPCType},1);
+    ,modelType},1);
 modelType = 'True';
 configTrueFilename=cellMerge({'configuration',modelName,observationType,dimension...
     ,modelType},1);
@@ -19,13 +17,12 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 1; copy_true_start = 0;
+copy_inv = 0; copy_true_start = 0;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
-invertParameterType = 'EpsilonSigma_Noisy30cm8m';
+invertParameterType = 'Field';
 bandPass = 'BP530MHz';
 NoisedB = '';
-NoisedB = cellMerge({NoiseType,NoisedB},0);
 sourceType = '';
 timeGain = '';
 depthGain = '';
@@ -37,7 +34,7 @@ writeSourceTrue=1;
 filenamein = ['../' config.getString('logFilename')];
 [lastStage lastIt]= getMisfitIt(filenamein,2);
 stage=lastStage; iteration=lastIt;
-%stage=1; iteration=1;
+stage=5; iteration=1;
 useDamp=0; T0damp=15e-9; T1damp=25e-9; 
 showLegend = 0;
 showResidual = 0;
