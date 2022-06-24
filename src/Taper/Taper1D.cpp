@@ -87,7 +87,7 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(IndexType iStart1, Index
  \param DT DT
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismograms, ValueType lowerCornerFreq, ValueType upperCornerFreq, ValueType DT, scai::hmemo::ContextPtr ctx, bool reverse)
+void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismograms, ValueType lowerCornerFreq, ValueType upperCornerFreq, ValueType DT, scai::hmemo::ContextPtr ctx)
 {
     Acquisition::Seismogram<ValueType> thisSeismogram;
     for (scai::IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
@@ -121,7 +121,7 @@ void KITGPI::Taper::Taper1D<ValueType>::calcCosineTaper(KITGPI::Acquisition::Sei
     if (iEnd1 < 10)
         iEnd1 = 10;
     SCAI_ASSERT_ERROR(iEnd2 < tStepEnd, "iEnd2 >= tStepEnd");
-    
+    bool reverse = false;
     this->init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
     this->calcCosineTaper(iStart1, iEnd1, iStart2, iEnd2, reverse);
 }

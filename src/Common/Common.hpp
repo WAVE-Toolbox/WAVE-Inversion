@@ -85,7 +85,7 @@ namespace KITGPI
             scai::hmemo::ContextPtr ctx = vector2D.getContextPtr();
 			
 			/* define filter size as fraction of reference velocity wavelength */
-            ValueType wavelengthMean = velocityMean / FCmain;
+            ValueType wavelengthMean = velocityMean / (FCmain * 2);
             ValueType wavelengthMulti = smoothGradient % 10;
             smoothGradient = (smoothGradient - wavelengthMulti) / 10;
             ValueType wavelengthMultiX = wavelengthMulti;

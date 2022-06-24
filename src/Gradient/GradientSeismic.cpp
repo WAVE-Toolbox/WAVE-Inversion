@@ -49,6 +49,8 @@ scai::lama::DenseVector<ValueType> KITGPI::Gradient::GradientSeismic<ValueType>:
 
     // derivative of mu_sat
     // \pdv{\mu_{sat}}{\phi}=-\mu_{ma} \pdv{\beta}{\phi}
+    std::cout<< "mu_ma = " << mu_ma<< std::endl;
+    std::cout<< "betaDePorosity = " << betaDePorosity<< std::endl;
     mu_satDePorosity = -mu_ma;
     mu_satDePorosity *= betaDePorosity;   
     

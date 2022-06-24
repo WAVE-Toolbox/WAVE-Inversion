@@ -17,7 +17,7 @@ void KITGPI::SourceEstimation<ValueType>::init(Configuration::Configuration cons
         
     IndexType tStepEnd = static_cast<IndexType>((config.get<ValueType>("T") / config.get<ValueType>("DT")) + 0.5);
 
-    if (config.get<IndexType>("useSeismogramTaper") != 0 && config.get<IndexType>("useSeismogramTaper") != 2 && config.get<IndexType>("useSeismogramTaper") != 5) {
+    if (config.get<IndexType>("useSeismogramTaper") != 0 && config.get<IndexType>("useSeismogramTaper") != 2) {
         if (config.get<IndexType>("useSeismogramTaper") == 4) {        
             init(tStepEnd, sourceDistribution, config.get<ValueType>("waterLevel"), config.get<std::string>("seismogramTaperName") + ".SrcEst");
         } else {     
@@ -326,9 +326,9 @@ template <typename ValueType>
 void KITGPI::SourceEstimation<ValueType>::calcRefTraces(Configuration::Configuration const &config, scai::IndexType shotInd, KITGPI::Acquisition::Receivers<ValueType> &receivers, Taper::Taper1D<ValueType> const &sourceSignalTaper)
 {
     lama::DenseMatrix<ValueType> data;
-    ValueType mainVelocity = config.getAndCatch("mainVelocity", 0.0);
+    ValueType maxVelocity = config.getAndCatch("VMaxCPML", 0.0);
     ValueType DT = config.get<ValueType>("DT");
-    SCAI_ASSERT_ERROR(mainVelocity != 0.0, "mainVelocity cannot be zero when calculating the referenced trace!");
+    SCAI_ASSERT_ERROR(maxVelocity != 0.0, "VMaxCPML cannot be zero when calculating the referenced trace!");
         
     // get indices of receiver position and calc mutes
     for (IndexType iComponent = 0; iComponent < Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
@@ -358,7 +358,7 @@ void KITGPI::SourceEstimation<ValueType>::calcRefTraces(Configuration::Configura
                     if (offsetUse.getValue(ir) != 0) {
                         count++;
                         data.getRow(rowTemp, ir);
-                        IndexType tCut = static_cast<IndexType>(std::abs(offsetUse.getValue(ir)) / mainVelocity / DT + 0.5);
+                        IndexType tCut = static_cast<IndexType>(std::abs(offsetUse.getValue(ir)) / maxVelocity / DT + 0.5);
                         for (IndexType it = tCut; it < NT; it++) {
                             refTrace.setValue(it-tCut, rowTemp.getValue(it));
                         }

@@ -798,6 +798,281 @@ void KITGPI::Gradient::EMEM<ValueType>::estimateParameter(KITGPI::ZeroLagXcorr::
     }  
 }
 
+/*! \brief Function for calculating the model derivatives 
+ *
+ \param dataMisfit dataMisfit to store the model derivatives.
+ \param model model parameters.
+ \param derivatives derivatives
+ \param config config handle
+ \param modelTaper2DJoint Taper to provide transform matrix
+ \param workflow workflow
+ */
+template <typename ValueType>
+void KITGPI::Gradient::EMEM<ValueType>::calcModelDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivatives, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    scai::lama::DenseVector<ValueType> electricConductivitytemp;
+    scai::lama::DenseVector<ValueType> dielectricPermittivitytemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> tempX;
+    scai::lama::DenseVector<ValueType> tempY;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
+    scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
+    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
+    ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
+    
+    /* Get references to required derivatives matrices */
+    scai::lama::CSRSparseMatrix<ValueType> Dxf;
+    scai::lama::CSRSparseMatrix<ValueType> Dyf;
+    ValueType DT = config.get<ValueType>("DT");
+    Dxf = derivatives.getDxf();
+    Dyf = derivatives.getDyf();  
+    Dxf.scale(1.0 / DT);
+    Dyf.scale(1.0 / DT);     
+          
+    electricConductivitytemp = model.getElectricConductivity();  
+    dielectricPermittivitytemp = model.getDielectricPermittivity();             
+                      
+    this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, model.getParameterisation());       
+    this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, model.getParameterisation());       
+                   
+    // store the mean value of model parameters for weighting the gradient in summing
+    if (workflow.workflowStage + workflow.iteration == 0) {
+        electricConductivity0mean = electricConductivitytemp.sum() / electricConductivitytemp.size();
+        dielectricPermittivity0mean = dielectricPermittivitytemp.sum() / dielectricPermittivitytemp.size();
+    }
+    
+    dielectricPermittivitytemp *= 1 / dielectricPermittivity0mean;
+    
+    modelDerivativeXtemp = Dxf * dielectricPermittivitytemp;    
+    modelDerivativeYtemp = Dyf * dielectricPermittivitytemp;
+    
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);  
+    
+    if (exchangeStrategy == 2) {
+        electricConductivitytemp *= 1 / electricConductivity0mean;
+    
+        tempX = Dxf * electricConductivitytemp;    
+        tempY = Dyf * electricConductivitytemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempX, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempY, NX, NY, spatialLength);   
+        
+        modelDerivativeXtemp += tempX;
+        modelDerivativeYtemp += tempY; 
+    }
+    
+    dataMisfitEM.setModelDerivativeX(modelDerivativeXtemp);
+    dataMisfitEM.setModelDerivativeY(modelDerivativeYtemp);
+}
+
+/*! \brief Function for calculating the cross gradient 
+ *
+ \param dataMisfit dataMisfit to store the model derivatives.
+ \param model model parameters.
+ \param derivatives derivatives
+ \param config config handle
+ \param modelTaper2DJoint Taper to provide transform matrix
+ \param workflow workflow
+ */
+template <typename ValueType>
+void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivatives, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    scai::lama::DenseVector<ValueType> electricConductivitytemp;
+    scai::lama::DenseVector<ValueType> dielectricPermittivitytemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> tempXY;
+    scai::lama::DenseVector<ValueType> tempYX;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
+    scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
+    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
+    ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
+    
+    /* Get references to required derivatives matrices */
+    scai::lama::CSRSparseMatrix<ValueType> Dxf;
+    scai::lama::CSRSparseMatrix<ValueType> Dyf;
+    ValueType DT = config.get<ValueType>("DT");
+    Dxf = derivatives.getDxf();
+    Dyf = derivatives.getDyf();  
+    Dxf.scale(1.0 / DT);
+    Dyf.scale(1.0 / DT);     
+    
+    electricConductivitytemp = model.getElectricConductivity();
+    dielectricPermittivitytemp = model.getDielectricPermittivity();  
+        
+    this->applyParameterisation(electricConductivitytemp, ElectricConductivityReference, model.getParameterisation());       
+    this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, model.getParameterisation());       
+    
+    // store the mean value of model parameters for weighting the gradient in summing
+    if (workflow.workflowStage + workflow.iteration == 0) {
+        electricConductivity0mean = electricConductivitytemp.sum() / electricConductivitytemp.size();
+        dielectricPermittivity0mean = dielectricPermittivitytemp.sum() / dielectricPermittivitytemp.size();
+    }
+    
+    dielectricPermittivitytemp *= 1 / dielectricPermittivity0mean;
+    
+    modelDerivativeXtemp = Dxf * dielectricPermittivitytemp;    
+    modelDerivativeYtemp = Dyf * dielectricPermittivitytemp;
+    
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);  
+    
+    scai::hmemo::ContextPtr ctx = dielectricPermittivitytemp.getContextPtr();
+    scai::dmemo::DistributionPtr dist = dielectricPermittivitytemp.getDistributionPtr(); 
+                                                    
+    if (workflow.getInvertForEpsilon() && exchangeStrategy != 0) {   
+        // cross gradient of vs and modelDerivative    
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeX(), tempYX); 
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeY(), tempXY); 
+        
+        tempYX *= modelDerivativeYtemp;   
+        tempXY *= modelDerivativeXtemp;    
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);   
+        
+        dielectricPermittivity = tempYX - tempXY;   
+    } else {
+        this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
+    }   
+                
+    if (workflow.getInvertForSigma()) {
+        // cross gradient of electricConductivity and modelDerivative  
+        electricConductivitytemp *= 1 / electricConductivity0mean;
+        
+        tempXY = Dxf * electricConductivitytemp;    
+        tempYX = Dyf * electricConductivitytemp; 
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);          
+        
+        tempYX *= modelDerivativeXtemp;   
+        tempXY *= modelDerivativeYtemp;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);   
+        
+        electricConductivity = tempYX - tempXY;                         
+    } else {
+        this->initParameterisation(electricConductivity, ctx, dist, 0.0);
+    }       
+}
+
+/*! \brief Function for calculating the derivatives of cross gradient 
+ *
+ \param dataMisfit dataMisfit to store the model derivatives.
+ \param model model parameters.
+ \param derivatives derivatives
+ \param config config handle
+ \param modelTaper2DJoint Taper to provide transform matrix
+ \param workflow workflow
+ */
+template <typename ValueType>
+void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit::Misfit<ValueType> &dataMisfit, KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::ForwardSolver::Derivatives::Derivatives<ValueType> const &derivatives, KITGPI::Configuration::Configuration config, KITGPI::Taper::Taper2D<ValueType> modelTaper2DJoint, KITGPI::Workflow::Workflow<ValueType> const &workflow)
+{
+    scai::lama::DenseVector<ValueType> dielectricPermittivitytemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeXtemp;
+    scai::lama::DenseVector<ValueType> modelDerivativeYtemp;
+    scai::lama::DenseVector<ValueType> tempXY;
+    scai::lama::DenseVector<ValueType> tempYX;
+    scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
+    scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
+    scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
+    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
+        
+    dielectricPermittivitytemp = model.getDielectricPermittivity();
+    this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, model.getParameterisation());      
+                                     
+    scai::hmemo::ContextPtr ctx = dielectricPermittivitytemp.getContextPtr();
+    scai::dmemo::DistributionPtr dist = dielectricPermittivitytemp.getDistributionPtr();  
+        
+    /* Get references to required derivatives matrices */
+    scai::lama::CSRSparseMatrix<ValueType> Dxf;
+    scai::lama::CSRSparseMatrix<ValueType> Dyf;
+    ValueType DT = config.get<ValueType>("DT");
+    Dxf = derivatives.getDxf();
+    Dyf = derivatives.getDyf();  
+    Dxf.scale(1.0 / DT);
+    Dyf.scale(1.0 / DT);      
+                               
+    dielectricPermittivitytemp *= 1 /dielectricPermittivity0mean;
+    
+    modelDerivativeXtemp = Dxf * dielectricPermittivitytemp;    
+    modelDerivativeYtemp = Dyf * dielectricPermittivitytemp;
+    
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);       
+              
+    if (workflow.getInvertForEpsilon() && exchangeStrategy != 0) { 
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeX(), tempYX); 
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeY(), tempXY); 
+        
+        tempYX *= dielectricPermittivity;   
+        tempXY *= dielectricPermittivity;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength); 
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);   
+        
+        tempYX = Dyf * tempYX;   
+        tempXY = Dxf * tempXY;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        dielectricPermittivity = tempXY - tempYX;          
+    } else {
+        this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
+    }        
+            
+    if (workflow.getInvertForSigma()) {      
+        // derivative of cross gradient with respect to electricConductivity   
+        tempYX = modelDerivativeXtemp * electricConductivity; 
+        tempXY = modelDerivativeYtemp * electricConductivity;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        tempYX = Dyf * tempYX;   
+        tempXY = Dxf * tempXY;  
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(tempXY, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(tempYX, NX, NY, spatialLength);
+        
+        electricConductivity = tempXY - tempYX;  
+    } else {
+        this->initParameterisation(electricConductivity, ctx, dist, 0.0);
+    }     
+}
+
+/*! \brief calculate the misfit of CrossGradient
+ *
+ */
+template <typename ValueType>
+ValueType KITGPI::Gradient::EMEM<ValueType>::calcCrossGradientMisfit()
+{
+    ValueType misfitSum = 0;
+    IndexType count = 0;
+    if (dielectricPermittivity.l2Norm() != 0) {
+        misfitSum += dielectricPermittivity.l2Norm() / dielectricPermittivity.size();
+        count++;
+    }
+    if (electricConductivity.l2Norm() != 0) {
+        misfitSum += electricConductivity.l2Norm() / electricConductivity.size();
+        count++;
+    }
+    if (count != 0)
+        misfitSum /= count;
+    
+    return (misfitSum);
+}
+
 /*! \brief calculate the stabilizing functional of each model parameter */
 template <typename ValueType>
 void KITGPI::Gradient::EMEM<ValueType>::calcStabilizingFunctionalGradient(KITGPI::Modelparameter::Modelparameter<ValueType> const &model, KITGPI::Modelparameter::Modelparameter<ValueType> const &modelPrioriEM, KITGPI::Configuration::Configuration config, KITGPI::Misfit::Misfit<ValueType> &dataMisfitEM, KITGPI::Workflow::Workflow<ValueType> const &workflow)

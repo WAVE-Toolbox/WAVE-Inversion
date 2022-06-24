@@ -567,9 +567,11 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
         Taper::Taper1D<ValueType> seismogramTaper1D;
         seismogramTaper1D.init(std::make_shared<dmemo::NoDistribution>(tStepEnd), ctx, 1);
         seismogramTaper1D.calcTimeDampingTaper(workflow.getTimeDampingFactor(), config.get<ValueType>("DT"));  
-        if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {
+        if (config.get<IndexType>("useSeismogramTaper") > 1) {
             seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-            if (config.get<IndexType>("useSeismogramTaper") == 4) {
+            if (config.get<IndexType>("useSeismogramTaper") == 5) {
+                seismogramTaper2D.calcCosineTaper(receiversTrue.getSeismogramHandler(), workflow.getUpperCornerFreq(), workflow.getUpperCornerFreq(), config, shotIndTrue, ctx);
+            } else if (config.get<IndexType>("useSeismogramTaper") == 4) {
                 seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
             } else {
                 seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
@@ -624,7 +626,7 @@ ValueType KITGPI::StepLengthSearch<ValueType>::calcMisfit(scai::dmemo::Communica
             }
         }
 
-        if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {                                                   
+        if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
             seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
         }
         seismogramTaper1D.apply(receivers.getSeismogramHandler());

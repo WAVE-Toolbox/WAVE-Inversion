@@ -87,7 +87,7 @@ void KITGPI::InversionSingle<ValueType>::printConfig(scai::dmemo::CommunicatorPt
  \param SLsearch SLsearch
  */
 template <typename ValueType>
-void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config, IndexType inversionType, IndexType equationInd, Acquisition::Coordinates<ValueType> &modelCoordinates, Acquisition::Coordinates<ValueType> &modelCoordinatesBig, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr &dist, scai::dmemo::DistributionPtr &distBig, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversion, IndexType maxiterations, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Workflow::Workflow<ValueType> &workflow, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivative, KITGPI::StepLengthSearch<ValueType> &SLsearch)
+void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commAll, KITGPI::Configuration::Configuration config, IndexType inversionType, IndexType equationInd, Acquisition::Coordinates<ValueType> &modelCoordinates, Acquisition::Coordinates<ValueType> &modelCoordinatesBig, scai::hmemo::ContextPtr ctx, scai::dmemo::DistributionPtr &dist, scai::dmemo::DistributionPtr &distBig, IndexType maxiterations, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Workflow::Workflow<ValueType> &workflow, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivative, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversion, KITGPI::StepLengthSearch<ValueType> &SLsearch)
 {
     if (inversionType != 0) {
         /* --------------------------------------- */
@@ -292,6 +292,12 @@ void KITGPI::InversionSingle<ValueType>::init(scai::dmemo::CommunicatorPtr commA
         }
         gradientPerShot->init(ctx, dist); 
         gradient->calcGaussianKernel(commAll, *model, config);
+        if (inversionType == 2 || config.getAndCatch("saveCrossGradientMisfit", 0)) {
+            crossGradientDerivative->calcGaussianKernel(commAll, *model, config);
+        }
+        if (config.getAndCatch("stablizingFunctionalType", 0)) {
+            stabilizingFunctionalGradient->calcGaussianKernel(commAll, *model, config);
+        }
         
         gradient->prepareForInversion(config);
         gradientPerShot->prepareForInversion(config);  
@@ -475,7 +481,7 @@ void KITGPI::InversionSingle<ValueType>::initStage(scai::dmemo::CommunicatorPtr 
  \param derivativesInversionEM derivativesInversionEM
  */
 template <typename ValueType>
-void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorPtr commAll, scai::dmemo::DistributionPtr dist, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, KITGPI::Workflow::Workflow<ValueType> &workflow, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfit, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivative, KITGPI::StepLengthSearch<ValueType> &SLsearch, Taper::Taper2D<ValueType> modelTaper2DJoint, IndexType maxiterations, IndexType &useRTM, bool &breakLoop, scai::hmemo::ContextPtr ctx, IndexType &seedtime, IndexType inversionType, IndexType equationInd, bool &breakLoopEM, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &modelEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, KITGPI::Workflow::Workflow<ValueType> &workflowEM, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfitEM, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivativeEM, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversionEM)
+void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorPtr commAll, scai::dmemo::DistributionPtr dist, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, KITGPI::Workflow::Workflow<ValueType> &workflow, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfit, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivative, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversion, KITGPI::StepLengthSearch<ValueType> &SLsearch, Taper::Taper2D<ValueType> modelTaper2DJoint, IndexType maxiterations, IndexType &useRTM, bool &breakLoop, scai::hmemo::ContextPtr ctx, IndexType &seedtime, IndexType inversionType, IndexType equationInd, bool &breakLoopEM, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &modelEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, KITGPI::Workflow::Workflow<ValueType> &workflowEM, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfitEM, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivativeEM, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversionEM)
 {          
     if (inversionType != 0 && (breakLoop == false || breakLoopType == 2 || useRTM != 0)) {
         IndexType shotNumber;
@@ -694,18 +700,17 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
             if (config.get<bool>("writeInvertedSource") && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1))
                 sources.getSeismogramHandler().write(config.get<IndexType>("SeismogramFormat"), config.get<std::string>("sourceSeismogramFilename") + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".shot_" + std::to_string(shotNumber), modelCoordinates);
             
-            if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {
+            if (config.get<IndexType>("useSeismogramTaper") > 1) {
                 seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-                if (config.get<IndexType>("useSeismogramTaper") == 4) {
+                if (config.get<IndexType>("useSeismogramTaper") == 5) {
+                    seismogramTaper2D.calcCosineTaper(receiversTrue.getSeismogramHandler(), workflow.getUpperCornerFreq(), workflow.getUpperCornerFreq(), config, shotIndTrue, ctx);
+                } else if (config.get<IndexType>("useSeismogramTaper") == 4) {
                     seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
                 } else {
                     seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
                 }
                 seismogramTaper2D.apply(receiversTrue.getSeismogramHandler()); 
             }
-            if (config.get<IndexType>("useSeismogramTaper") == 5 && (workflow.iteration == 0 || shotHistory[shotIndTrue] == 1)) {
-                seismogramTaper1D.calcCosineTaper(receiversTrue.getSeismogramHandler(), workflow.getUpperCornerFreq(), workflow.getUpperCornerFreq(), config.get<ValueType>("DT"), ctx, 1);
-            } 
             seismogramTaper1D.apply(receiversTrue.getSeismogramHandler());                                        
             
             /* Normalize observed and synthetic data */
@@ -756,7 +761,7 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
                 if (workflow.getLowerCornerFreq() != 0.0 || workflow.getUpperCornerFreq() != 0.0){
                     receiversStart.getSeismogramHandler().filter(freqFilter);
                 }
-                if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {
+                if (config.get<IndexType>("useSeismogramTaper") > 1) {
                     seismogramTaper2D.apply(receiversStart.getSeismogramHandler()); 
                 }
                 seismogramTaper1D.apply(receiversStart.getSeismogramHandler());
@@ -898,7 +903,7 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
                     sourceEst.calcRefTracesEncode(commShot, shotNumber, config, modelCoordinates, ctx, dist, sourceSettingsEncode, receivers, sourceSignalTaper);
                 }                 
             }
-            if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {                                                   
+            if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                 seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
             }
             seismogramTaper1D.apply(receivers.getSeismogramHandler());
@@ -1017,7 +1022,9 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
             
             crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM);
             
-            crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);  
+            crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversion, config, modelTaper2DJoint, workflow);  
+            crossGradientDerivative->sumShotDomain(commInterShot); 
+            crossGradientDerivative->smooth(commAll, config);
             if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                 crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradient", config.get<IndexType>("FileFormat"), workflow);
             }
@@ -1026,12 +1033,13 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
             dataMisfit->addToCrossGradientMisfitStorage(crossGradientMisfit);
             HOST_PRINT(commAll, "cross gradient misfit " << equationType << " " << equationInd << " = " << crossGradientMisfit << "\n"); 
             
-            crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);
+            crossGradientDerivative->calcCrossGradientDerivative(*dataMisfitEM, *model, *derivativesInversion, config, modelTaper2DJoint, workflow);
             crossGradientDerivative->sumShotDomain(commInterShot); 
+            crossGradientDerivative->smooth(commAll, config);
             if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                 crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradientDerivative", config.get<IndexType>("FileFormat"), workflow);
             }      
-            if (inversionType == 2 && workflow.iteration > 1) {
+            if ((inversionType == 2 || config.getAndCatch("saveCrossGradientMisfit", 0) == 2) && workflow.iteration > 0) {
                 ValueType relativeCrossGradientMisfit = (dataMisfit->getCrossGradientMisfit(workflow.iteration - 1) - dataMisfit->getCrossGradientMisfit(workflow.iteration)) / dataMisfit->getCrossGradientMisfit(workflow.iteration - 1);
                 ValueType relativeMisfit = (dataMisfit->getMisfitSum(workflow.iteration - 1) - dataMisfit->getMisfitSum(workflow.iteration)) / dataMisfit->getMisfitSum(workflow.iteration - 1);
                 if (relativeMisfit > 0) {
@@ -1059,7 +1067,7 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
             HOST_PRINT(commAll, "\n===========================================\n");
             
             stabilizingFunctionalGradient->calcStabilizingFunctionalGradient(*model, *modelPriori, config, *dataMisfit, workflow);                    
-//                     stabilizingFunctionalGradient->smooth(commAll, config);  
+            stabilizingFunctionalGradient->smooth(commAll, config);  
             if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                 stabilizingFunctionalGradient->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".stabilizingFunctionalGradient", config.get<IndexType>("FileFormat"), workflow);
             }  
@@ -1131,10 +1139,9 @@ void KITGPI::InversionSingle<ValueType>::calcGradient(scai::dmemo::CommunicatorP
  \param workflowEM workflowEM
  \param dataMisfitEM dataMisfitEM
  \param crossGradientDerivativeEM crossGradientDerivativeEM
- \param derivativesInversionEM derivativesInversionEM
  */
 template <typename ValueType>
-void KITGPI::InversionSingle<ValueType>::updateModel(scai::dmemo::CommunicatorPtr commAll, scai::dmemo::DistributionPtr dist, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, KITGPI::Workflow::Workflow<ValueType> &workflow, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfit, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivative, KITGPI::StepLengthSearch<ValueType> &SLsearch, Taper::Taper2D<ValueType> modelTaper2DJoint, IndexType maxiterations, IndexType &useRTM, bool &breakLoop, scai::hmemo::ContextPtr ctx, IndexType &seedtime, IndexType inversionType, IndexType equationInd, bool &breakLoopEM, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &modelEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, KITGPI::Workflow::Workflow<ValueType> &workflowEM, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfitEM, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivativeEM, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversionEM)
+void KITGPI::InversionSingle<ValueType>::updateModel(scai::dmemo::CommunicatorPtr commAll, scai::dmemo::DistributionPtr dist, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Workflow::Workflow<ValueType> &workflow, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfit, KITGPI::StepLengthSearch<ValueType> &SLsearch, IndexType &useRTM, bool &breakLoop, IndexType inversionType, IndexType equationInd)
 {         
     if (inversionType != 0 && (breakLoop == false || breakLoopType == 2 || useRTM != 0)) {
         dmemo::CommunicatorPtr commShot = dist->getCommunicatorPtr();
@@ -1229,7 +1236,7 @@ void KITGPI::InversionSingle<ValueType>::updateModel(scai::dmemo::CommunicatorPt
  \param derivativesInversionEM derivativesInversionEM
  */
 template <typename ValueType>
-void KITGPI::InversionSingle<ValueType>::runExtra(scai::dmemo::CommunicatorPtr commAll, scai::dmemo::DistributionPtr dist, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, KITGPI::Workflow::Workflow<ValueType> &workflow, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfit, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivative, KITGPI::StepLengthSearch<ValueType> &SLsearch, Taper::Taper2D<ValueType> modelTaper2DJoint, IndexType maxiterations, IndexType &useRTM, bool &breakLoop, scai::hmemo::ContextPtr ctx, IndexType &seedtime, IndexType inversionType, IndexType equationInd, bool &breakLoopEM, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &modelEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, KITGPI::Workflow::Workflow<ValueType> &workflowEM, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfitEM, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivativeEM, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversionEM)
+void KITGPI::InversionSingle<ValueType>::runExtraModelling(scai::dmemo::CommunicatorPtr commAll, scai::dmemo::DistributionPtr dist, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &model, KITGPI::Configuration::Configuration config, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinates, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesBig, KITGPI::Workflow::Workflow<ValueType> &workflow, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfit, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivative, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversion, KITGPI::StepLengthSearch<ValueType> &SLsearch, Taper::Taper2D<ValueType> modelTaper2DJoint, IndexType maxiterations, IndexType &useRTM, bool &breakLoop, scai::hmemo::ContextPtr ctx, IndexType &seedtime, IndexType inversionType, IndexType equationInd, bool &breakLoopEM, typename Modelparameter::Modelparameter<ValueType>::ModelparameterPtr &modelEM, KITGPI::Configuration::Configuration configEM, KITGPI::Acquisition::Coordinates<ValueType> const &modelCoordinatesEM, KITGPI::Workflow::Workflow<ValueType> &workflowEM, typename KITGPI::Misfit::Misfit<ValueType>::MisfitPtr &dataMisfitEM, typename Gradient::Gradient<ValueType>::GradientPtr &crossGradientDerivativeEM, typename ForwardSolver::Derivatives::Derivatives<ValueType>::DerivativesPtr &derivativesInversionEM)
 {          
     /* -------------------------------------------------------------------- */
     /* One extra forward modelling to ensure complete and consistent output */
@@ -1349,9 +1356,11 @@ void KITGPI::InversionSingle<ValueType>::runExtra(scai::dmemo::CommunicatorPtr c
                 }
             }
 
-            if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {             
+            if (config.get<IndexType>("useSeismogramTaper") > 1) {             
                 seismogramTaper2D.init(receiversTrue.getSeismogramHandler());
-                if (config.get<IndexType>("useSeismogramTaper") == 4) {
+                if (config.get<IndexType>("useSeismogramTaper") == 5) {
+                    seismogramTaper2D.calcCosineTaper(receiversTrue.getSeismogramHandler(), workflow.getUpperCornerFreq(), workflow.getUpperCornerFreq(), config, shotIndTrue, ctx);
+                } else if (config.get<IndexType>("useSeismogramTaper") == 4) {
                     seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".misfitCalc.shot_" + std::to_string(shotNumber) + ".mtx");
                 } else {
                     seismogramTaper2D.read(config.get<std::string>("seismogramTaperName") + ".shot_" + std::to_string(shotNumber) + ".mtx");
@@ -1387,7 +1396,7 @@ void KITGPI::InversionSingle<ValueType>::runExtra(scai::dmemo::CommunicatorPtr c
                 }   
             }
             
-            if (config.get<IndexType>("useSeismogramTaper") > 1 && config.get<IndexType>("useSeismogramTaper") != 5) {                                                   
+            if (config.get<IndexType>("useSeismogramTaper") > 1) {                                                   
                 seismogramTaper2D.apply(receivers.getSeismogramHandler()); 
             }
             seismogramTaper1D.apply(receivers.getSeismogramHandler());
@@ -1475,7 +1484,9 @@ void KITGPI::InversionSingle<ValueType>::runExtra(scai::dmemo::CommunicatorPtr c
             
             crossGradientDerivativeEM->calcModelDerivative(*dataMisfitEM, *modelEM, *derivativesInversionEM, configEM, modelTaper2DJoint, workflowEM);
             
-            crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversionEM, configEM, modelTaper2DJoint, workflow);  
+            crossGradientDerivative->calcCrossGradient(*dataMisfitEM, *model, *derivativesInversion, config, modelTaper2DJoint, workflow);  
+            crossGradientDerivative->sumShotDomain(commInterShot);
+            crossGradientDerivative->smooth(commAll, config);
             if (config.get<IndexType>("writeGradient") == 2 && commInterShot->getRank() == 0){
                 crossGradientDerivative->write(gradname + ".stage_" + std::to_string(workflow.workflowStage + 1) + ".It_" + std::to_string(workflow.iteration + 1) + ".crossGradient", config.get<IndexType>("FileFormat"), workflow);
             }

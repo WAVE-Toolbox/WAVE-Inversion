@@ -30,7 +30,9 @@ namespace KITGPI
 
             void init(scai::dmemo::DistributionPtr rowDist, scai::dmemo::DistributionPtr colDist, scai::hmemo::ContextPtr ctx);
             void init(KITGPI::Acquisition::SeismogramHandler<ValueType> const seismograms);
-            void initTransformMatrix(scai::dmemo::DistributionPtr dist1, scai::dmemo::DistributionPtr dist2, scai::hmemo::ContextPtr ctx);
+            void initTransformMatrix(scai::dmemo::DistributionPtr dist1_in, scai::dmemo::DistributionPtr dist2_in, scai::hmemo::ContextPtr ctx);
+            
+            void calcCosineTaper(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismograms, ValueType lowerCornerFreq, ValueType upperCornerFreq, KITGPI::Configuration::Configuration const &config, IndexType shotInd, scai::hmemo::ContextPtr ctx);
 
             void apply(KITGPI::Acquisition::SeismogramHandler<ValueType> &seismograms) const;
             void apply(KITGPI::Acquisition::Seismogram<ValueType> &seismogram) const;
@@ -59,7 +61,11 @@ namespace KITGPI
           private:
             scai::lama::DenseMatrix<ValueType> data;
             SparseFormat transformMatrix1to2;
-            SparseFormat transformMatrix2to1;            
+            SparseFormat transformMatrix2to1;     
+            scai::dmemo::DistributionPtr dist1;
+            scai::dmemo::DistributionPtr dist2;
+            scai::lama::DenseVector<ValueType> modelTaper1;   
+            scai::lama::DenseVector<ValueType> modelTaper2;     
         };
     }
 }

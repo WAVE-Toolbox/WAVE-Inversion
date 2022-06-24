@@ -29,6 +29,81 @@ void KITGPI::Taper::Taper2D<ValueType>::init(KITGPI::Acquisition::SeismogramHand
     }
 }
 
+/*! \brief Wrapper to calculate a cosine taper using the inverted source
+ \param seismograms Seismogram handler of the inverted source
+ \param lowerCornerFreq Lower corner frequency
+ \param upperCornerFreq Upper corner frequency
+ \param DT DT
+ */
+template <typename ValueType>
+void KITGPI::Taper::Taper2D<ValueType>::calcCosineTaper(KITGPI::Acquisition::SeismogramHandler<ValueType> const &seismograms, ValueType lowerCornerFreq, ValueType upperCornerFreq, KITGPI::Configuration::Configuration const &config, IndexType shotInd, scai::hmemo::ContextPtr ctx)
+{
+    Acquisition::Seismogram<ValueType> thisSeismogram;
+    for (scai::IndexType iComponent = 0; iComponent < KITGPI::Acquisition::NUM_ELEMENTS_SEISMOGRAMTYPE; iComponent++) {
+        if (seismograms.getNumTracesGlobal(Acquisition::SeismogramType(iComponent)) != 0) {
+            thisSeismogram = seismograms.getSeismogram(Acquisition::SeismogramType(iComponent));
+        }
+        if (thisSeismogram.getData().getNumRows() != 0)
+            break;
+    }
+    scai::lama::DenseMatrix<ValueType> tempData = thisSeismogram.getData();
+    scai::lama::DenseVector<ValueType> tempRow;
+    ValueType DT = config.get<ValueType>("DT");
+    ValueType muteVelocity = config.getAndCatch("muteVelocity", config.get<ValueType>("VMaxCPML"));
+    Common::calcEnvelope(tempData);
+    tempData.reduce(tempRow, 0, common::BinaryOp::ADD, common::UnaryOp::COPY);
+    ValueType maxValue = tempRow.max();
+    IndexType maxIndex = 0;
+    for (IndexType ir = 0; ir < tempData.getNumRows(); ir++) {
+        if (tempRow[ir] == maxValue) {
+            maxIndex = ir;
+            break;
+        }
+    }
+    tempData.getRow(tempRow, maxIndex);
+    maxValue = tempRow.max();
+    IndexType tStepEnd = tempRow.size();
+    for (IndexType tStep = 0; tStep < tStepEnd; tStep++) {
+        if (tempRow[tStep] == maxValue) {
+            maxIndex = tStep;
+            break;
+        }
+    }
+    ValueType medFreq = (lowerCornerFreq + upperCornerFreq) / 2;
+    IndexType period = floor(1.0 / medFreq / DT);
+    IndexType iStart = maxIndex + period / 2;
+    IndexType iEnd = maxIndex + period;
+    
+    scai::lama::DenseVector<ValueType> taperVector; // calcCosineTaperUp, similar with Taper1D
+    
+    // first part of taper
+    lama::DenseVector<ValueType> firstPart(iStart, 0.0);
+
+    // second part of taper
+    lama::DenseVector<ValueType> secondPart = lama::linearDenseVector<ValueType>(iEnd - iStart, 1.0, -1.0 / (iEnd - iStart));
+    secondPart *= M_PI / 2.0;
+    secondPart.unaryOp(secondPart, common::UnaryOp::COS);
+    secondPart.binaryOpScalar(secondPart, 2.0, common::BinaryOp::POW, false);
+    taperVector.cat(firstPart, secondPart);
+
+    // third part of taper
+    firstPart = taperVector;
+    secondPart.allocate(tStepEnd - iEnd);
+    secondPart = 1.0;
+    taperVector.cat(firstPart, secondPart);
+    
+    scai::lama::DenseVector<ValueType> offset = thisSeismogram.getOffset(shotInd);
+    scai::lama::DenseVector<IndexType> timeIndexes;
+    for (IndexType ir = 0; ir < tempData.getNumRows(); ir++) {
+        IndexType tCut = static_cast<IndexType>(std::abs(offset.getValue(ir)) / muteVelocity / DT + 0.5);
+        firstPart = lama::linearDenseVector<ValueType>(tCut, 0, 0);
+        timeIndexes = lama::linearDenseVector<IndexType>(tStepEnd - tCut, 0, 1);
+        secondPart.gatherInto(taperVector, timeIndexes, common::BinaryOp::COPY);
+        tempRow.cat(firstPart, secondPart);
+        data.setRow(tempRow, ir, common::BinaryOp::COPY);
+    }
+}
+
 /*! \brief Wrapper to support SeismogramHandler
  \param seismograms SeismogramHandler object
  */
@@ -68,8 +143,10 @@ void KITGPI::Taper::Taper2D<ValueType>::apply(lama::DenseMatrix<ValueType> &mat)
  \param ctx Context
  */
 template <typename ValueType>
-void KITGPI::Taper::Taper2D<ValueType>::initTransformMatrix(dmemo::DistributionPtr dist1, dmemo::DistributionPtr dist2, hmemo::ContextPtr ctx)
+void KITGPI::Taper::Taper2D<ValueType>::initTransformMatrix(scai::dmemo::DistributionPtr dist1_in, scai::dmemo::DistributionPtr dist2_in, hmemo::ContextPtr ctx)
 {
+    dist1 = dist1_in;
+    dist2 = dist2_in;
     dmemo::DistributionPtr no_dist1(new scai::dmemo::NoDistribution(dist1->getGlobalSize()));
     dmemo::DistributionPtr no_dist2(new scai::dmemo::NoDistribution(dist2->getGlobalSize()));
     
@@ -86,7 +163,6 @@ template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::applyGradientTransform1to2(scai::lama::Vector<ValueType> const &gradientParameter1, scai::lama::Vector<ValueType> &gradientParameter2)
 {
     lama::DenseVector<ValueType> gradientParameterTransform;
-    dmemo::DistributionPtr dist2 = gradientParameter2.getDistributionPtr();
     dmemo::DistributionPtr no_dist1 = transformMatrix2to1.getRowDistributionPtr();
     
     scai::dmemo::CommunicatorPtr commShot = gradientParameter1.getDistributionPtr()->getCommunicatorPtr();
@@ -109,7 +185,6 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform1to2(scai::lama::Vect
 {
     lama::DenseVector<ValueType> modelParameterResidual;
     lama::DenseVector<ValueType> modelParameterTransform;
-    dmemo::DistributionPtr dist2 = modelParameter2.getDistributionPtr();
     dmemo::DistributionPtr no_dist1 = transformMatrix2to1.getRowDistributionPtr();
     dmemo::DistributionPtr no_dist2 = transformMatrix2to1.getColDistributionPtr();
     
@@ -119,6 +194,7 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform1to2(scai::lama::Vect
     
     modelParameter2.redistribute(no_dist2);
     modelParameterTransform = transformMatrix2to1 * modelParameter2;
+//     modelParameterTransform *= modelTaper1;
     modelParameterResidual = transformMatrix1to2 * modelParameterTransform;
     modelParameterResidual = modelParameter2 - modelParameterResidual;
     
@@ -130,6 +206,7 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform1to2(scai::lama::Vect
     commInterShot->sumArray(modelParameterTransform.getLocalValues()); // to remove the effect of model partitioning
     modelParameterTransform /= commInterShot->getSize();
     
+//     modelParameterTransform *= modelTaper1;
     modelParameter2 = transformMatrix1to2 * modelParameterTransform;
     modelParameter2 += modelParameterResidual;    
     modelParameter2.redistribute(dist2);
@@ -144,7 +221,6 @@ template <typename ValueType>
 void KITGPI::Taper::Taper2D<ValueType>::applyGradientTransform2to1(scai::lama::Vector<ValueType> &gradientParameter1, scai::lama::Vector<ValueType> const &gradientParameter2)
 {
     lama::DenseVector<ValueType> gradientParameterTransform;
-    dmemo::DistributionPtr dist1 = gradientParameter1.getDistributionPtr();
     dmemo::DistributionPtr no_dist2 = transformMatrix2to1.getColDistributionPtr();
     
     scai::dmemo::CommunicatorPtr commShot = gradientParameter2.getDistributionPtr()->getCommunicatorPtr();
@@ -167,7 +243,6 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform2to1(scai::lama::Vect
 {
     lama::DenseVector<ValueType> modelParameterResidual;
     lama::DenseVector<ValueType> modelParameterTransform;
-    dmemo::DistributionPtr dist1 = modelParameter1.getDistributionPtr();
     dmemo::DistributionPtr no_dist1 = transformMatrix2to1.getRowDistributionPtr();
     dmemo::DistributionPtr no_dist2 = transformMatrix2to1.getColDistributionPtr();
         
@@ -177,6 +252,7 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform2to1(scai::lama::Vect
     
     modelParameter1.redistribute(no_dist1);
     modelParameterTransform = transformMatrix1to2 * modelParameter1;
+//     modelParameterTransform *= modelTaper2;
     modelParameterResidual = transformMatrix2to1 * modelParameterTransform;
     modelParameterResidual = modelParameter1 - modelParameterResidual;
     
@@ -188,6 +264,7 @@ void KITGPI::Taper::Taper2D<ValueType>::applyModelTransform2to1(scai::lama::Vect
     commInterShot->sumArray(modelParameterTransform.getLocalValues()); // to remove the effect of model partitioning
     modelParameterTransform /= commInterShot->getSize();
     
+//     modelParameterTransform *= modelTaper2;
     modelParameter1 = transformMatrix2to1 * modelParameterTransform;
     modelParameter1 += modelParameterResidual;
     modelParameter1.redistribute(dist1);
@@ -226,32 +303,47 @@ void KITGPI::Taper::Taper2D<ValueType>::calcTransformMatrix(KITGPI::Acquisition:
     ValueType y01 = modelCoordinates1.getY0();
     ValueType x02 = modelCoordinates2.getX0();
     ValueType y02 = modelCoordinates2.getY0();       
+    IndexType NX1 = modelCoordinates1.getNX();
+    IndexType NY1 = modelCoordinates1.getNY();      
     IndexType NX2 = modelCoordinates2.getNX();
     IndexType NY2 = modelCoordinates2.getNY();
     ValueType x;
     ValueType y;
     ValueType z = 0;
     ValueType xy;
+    ValueType boundaryWidth = 20;
+    ValueType tempValue = 0;
     SCAI_ASSERT_ERROR(modelCoordinates2.getNZ() == 1, "Transformation can only be implemented for 2D model!");
     if (DH1 >= DH2) {
-        SCAI_ASSERT_ERROR( DH1 % DH2 == 0, "DH1 must be the same or multiples of DH2!");
+        SCAI_ASSERT_ERROR( DH1 - round(DH1 / DH2) * DH2 < 1e-4 * DH1, "DH1 (" << DH1 << ") must be the same or multiples of DH2 (" << DH2 << ")!");
     } else {
-        SCAI_ASSERT_ERROR( DH2 % DH1 == 0, "DH2 must be the same or multiples of DH1!");
+        SCAI_ASSERT_ERROR( DH2 - round(DH2 / DH1) * DH1 < 1e-4 * DH2, "DH2 (" << DH2 << ") must be the same or multiples of DH1 (" << DH1 << ")!");
     }
         
-    dmemo::DistributionPtr dist1;
-    if (equationInd == 1) { // 2->1
-        dist1 = transformMatrix2to1.getRowDistributionPtr();
-    } else { // 1->2
-        dist1 = transformMatrix1to2.getRowDistributionPtr();
-    }
     hmemo::HArray<IndexType> ownedIndexes; // all (global) points owned by this process
     IndexType colIndex;
     lama::MatrixAssembly<ValueType> assembly;
+    lama::DenseVector<ValueType> taper;
+    if (equationInd == 1) { // 2->1
+        dmemo::DistributionPtr dist1 = transformMatrix2to1.getRowDistributionPtr();
+        taper = scai::lama::fill<scai::lama::DenseVector<ValueType>>(dist1->getGlobalSize(), 1);
+        dist1->getOwnedIndexes(ownedIndexes);
+    } else { // 1->2
+        dmemo::DistributionPtr dist2 = transformMatrix1to2.getRowDistributionPtr();
+        taper = scai::lama::fill<scai::lama::DenseVector<ValueType>>(dist2->getGlobalSize(), 1);
+        dist2->getOwnedIndexes(ownedIndexes);
+    }
     
-    dist1->getOwnedIndexes(ownedIndexes);
     for (IndexType ownedIndex : hmemo::hostReadAccess(ownedIndexes)) {
         coordinate1 = modelCoordinates1.index2coordinate(ownedIndex);
+        if (coordinate1.x < boundaryWidth) {
+            tempValue = coordinate1.x / boundaryWidth;
+        } else if (coordinate1.x >= NX1 - boundaryWidth) {
+            tempValue = 1 - (NX1 - coordinate1.x) / boundaryWidth;
+        } else if (coordinate1.y >= NY1 - boundaryWidth) {
+            tempValue = 1 - (NY1 - coordinate1.y) / boundaryWidth;
+        }
+        taper.setValue(ownedIndex, tempValue);
         x = (coordinate1.x*DH1+x01-x02)/DH2;
         y = (coordinate1.y*DH1+y01-y02)/DH2;
         if (x <= NX2 - 1 && y <= NY2 - 1 && x >= 0 && y >= 0) {
@@ -260,31 +352,33 @@ void KITGPI::Taper::Taper2D<ValueType>::calcTransformMatrix(KITGPI::Acquisition:
                 assembly.push(ownedIndex, colIndex, 1);
             } else if (x == floor(x) && y > floor(y)) {
                 colIndex=modelCoordinates2.coordinate2index(floor(x), floor(y), z);
-                assembly.push(ownedIndex, colIndex, ceil(y) - y);
+                assembly.push(ownedIndex, colIndex, (ceil(y) - y));
                 colIndex=modelCoordinates2.coordinate2index(floor(x), ceil(y), z);
-                assembly.push(ownedIndex, colIndex, y - floor(y));
+                assembly.push(ownedIndex, colIndex, (y - floor(y)));
             } else if (x > floor(x) && y == floor(y)) {
                 colIndex=modelCoordinates2.coordinate2index(floor(x), floor(y), z);
-                assembly.push(ownedIndex, colIndex, ceil(x) - x);
+                assembly.push(ownedIndex, colIndex, (ceil(x) - x));
                 colIndex=modelCoordinates2.coordinate2index(ceil(x), floor(y), z);
-                assembly.push(ownedIndex, colIndex, x - floor(x));
+                assembly.push(ownedIndex, colIndex, (x - floor(x)));
             } else if (x > floor(x) && y > floor(y)) {
                 xy = 1 / sqrt(pow(x - floor(x), 2) + pow(y - floor(y), 2)) + 1 / sqrt(pow(ceil(x) - x, 2) + pow(y - floor(y), 2)) + 1 / sqrt(pow(x - floor(x), 2) + pow(ceil(y) - y, 2)) + 1 / sqrt(pow(ceil(x) - x, 2) + pow(ceil(y) - y, 2));
                 colIndex=modelCoordinates2.coordinate2index(floor(x), floor(y), z);
-                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(x - floor(x), 2) + pow(y - floor(y), 2)) / xy);
+                assembly.push(ownedIndex, colIndex, (1 / sqrt(pow(x - floor(x), 2) + pow(y - floor(y), 2)) / xy));
                 colIndex=modelCoordinates2.coordinate2index(ceil(x), floor(y), z);
-                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(ceil(x) - x, 2) + pow(y - floor(y), 2)) / xy);
+                assembly.push(ownedIndex, colIndex, (1 / sqrt(pow(ceil(x) - x, 2) + pow(y - floor(y), 2)) / xy));
                 colIndex=modelCoordinates2.coordinate2index(floor(x), ceil(y), z);
-                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(x - floor(x), 2) + pow(ceil(y) - y, 2)) / xy);
+                assembly.push(ownedIndex, colIndex, (1 / sqrt(pow(x - floor(x), 2) + pow(ceil(y) - y, 2)) / xy));
                 colIndex=modelCoordinates2.coordinate2index(ceil(x), ceil(y), z);
-                assembly.push(ownedIndex, colIndex, 1 / sqrt(pow(ceil(x) - x, 2) + pow(ceil(y) - y, 2)) / xy);
+                assembly.push(ownedIndex, colIndex, (1 / sqrt(pow(ceil(x) - x, 2) + pow(ceil(y) - y, 2)) / xy));
             }
         }
     }
     if (equationInd == 1) {
         transformMatrix2to1.fillFromAssembly(assembly);
+        modelTaper1 = taper;
     } else {
         transformMatrix1to2.fillFromAssembly(assembly);
+        modelTaper2 = taper;
     }
 }
 

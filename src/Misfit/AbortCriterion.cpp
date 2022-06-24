@@ -13,7 +13,7 @@ template <typename ValueType>
 bool KITGPI::AbortCriterion<ValueType>::check(scai::dmemo::CommunicatorPtr comm, KITGPI::Misfit::Misfit<ValueType> &misfit, ValueType &steplengthInit, KITGPI::Workflow::Workflow<ValueType> &workflow, bool const breakLoopEM, scai::IndexType const breakLoopType)
 {
     bool breakLoop = false;   
-    if ( workflow.iteration > 1 ) { 
+    if (workflow.iteration > 1) { 
         ValueType misfitResidual1 = 0;   
         ValueType misfitResidual2 = 0;      
         

@@ -58,6 +58,8 @@ int main(int argc, char *argv[])
     Configuration::Configuration configEM; 
     IndexType inversionType = 0;
     IndexType inversionTypeEM = 0;
+    bool useStreamConfig = false;
+    bool useStreamConfigEM = false;
     if (argc == 2) {
         config.readFromFile(argv[1], true);
         configEM.readFromFile(argv[1], true);
@@ -67,10 +69,16 @@ int main(int argc, char *argv[])
         configEM.readFromFile(argv[2], true);
         inversionType = config.getAndCatch("inversionType", 1);
         inversionTypeEM = configEM.getAndCatch("inversionType", 1);
-        if (inversionType == 0)
+        useStreamConfig = config.getAndCatch("useStreamConfig", false);
+        useStreamConfigEM = configEM.getAndCatch("useStreamConfig", false);
+        if (inversionType == 0) {
             config.readFromFile(argv[2], true);
-        if (inversionTypeEM == 0)
+            useStreamConfig = useStreamConfigEM;
+        }
+        if (inversionTypeEM == 0) {
             configEM.readFromFile(argv[1], true);
+            useStreamConfigEM = useStreamConfig;
+        }
     } else {
         std::cout << "\n\nNo configuration file given!\n\n" << std::endl;
         return (2);
@@ -96,8 +104,6 @@ int main(int argc, char *argv[])
         
     Configuration::Configuration configBig;
     Configuration::Configuration configBigEM;
-    bool useStreamConfig = config.getAndCatch("useStreamConfig", false);
-    bool useStreamConfigEM = configEM.getAndCatch("useStreamConfig", false);
     
     if (inversionType != 0 && useStreamConfig) {
         configBig.readFromFile(config.get<std::string>("streamConfigFilename"), true);
@@ -212,8 +218,8 @@ int main(int argc, char *argv[])
     /* --------------------------------------- */
     Taper::Taper2D<ValueType> modelTaper2DJoint;    
     
-    inversionSingle.init(commAll, config, inversionType, 1, modelCoordinates, modelCoordinatesBig, ctx, dist, distBig, derivativesInversion, maxiterations, model, workflow, crossGradientDerivative, SLsearch);
-    inversionSingleEM.init(commAll, configEM, inversionTypeEM, 2, modelCoordinatesEM, modelCoordinatesBigEM, ctx, distEM, distBigEM, derivativesInversionEM, maxiterations, modelEM, workflowEM, crossGradientDerivativeEM, SLsearchEM);
+    inversionSingle.init(commAll, config, inversionType, 1, modelCoordinates, modelCoordinatesBig, ctx, dist, distBig, maxiterations, model, workflow, crossGradientDerivative, derivativesInversion, SLsearch);
+    inversionSingleEM.init(commAll, configEM, inversionTypeEM, 2, modelCoordinatesEM, modelCoordinatesBigEM, ctx, distEM, distBigEM, maxiterations, modelEM, workflowEM, crossGradientDerivativeEM, derivativesInversionEM, SLsearchEM);
     
     inversionSingle.estimateMemory(commAll, config, inversionType, 1, dist, modelCoordinates, model);
     inversionSingleEM.estimateMemory(commAll, configEM, inversionTypeEM, 2, distEM, modelCoordinatesEM, modelEM);
@@ -224,15 +230,17 @@ int main(int argc, char *argv[])
         *derivativesInversionEM = *derivativesInversion;
         distEM = dist;
         distBigEM = distBig;
+        modelCoordinatesEM = modelCoordinates;
         modelCoordinatesBigEM = modelCoordinatesBig;
     } else if (inversionType == 0 && inversionTypeEM != 0) {
         *model = *modelEM;
         *derivativesInversion = *derivativesInversionEM;
         dist = distEM;
         distBig = distBigEM;
+        modelCoordinates = modelCoordinatesEM;
         modelCoordinatesBig = modelCoordinatesBigEM;
     }
-    if (inversionType > 1 || inversionTypeEM > 1) {
+    if (inversionType > 1 || inversionTypeEM > 1 || config.getAndCatch("saveCrossGradientMisfit", 0) || configEM.getAndCatch("saveCrossGradientMisfit", 0)) {
         if (!useStreamConfig && !useStreamConfigEM) {
             modelTaper2DJoint.initTransformMatrix(dist, distEM, ctx);  
             modelTaper2DJoint.calcTransformMatrix(modelCoordinates, modelCoordinatesEM, 2);
@@ -277,7 +285,7 @@ int main(int argc, char *argv[])
             /* --------------------------------------- */
             /*        Start the first inversion        */
             /* --------------------------------------- */   
-            inversionSingle.calcGradient(commAll, dist, model, config, modelCoordinates, modelCoordinatesBig, workflow, dataMisfit, crossGradientDerivative, SLsearch, modelTaper2DJoint, maxiterations, useRTM, breakLoop, ctx, seedtime, inversionType, 1, breakLoopEM, modelEM, configEM, modelCoordinatesEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, derivativesInversionEM);
+            inversionSingle.calcGradient(commAll, dist, model, config, modelCoordinates, modelCoordinatesBig, workflow, dataMisfit, crossGradientDerivative, derivativesInversion, SLsearch, modelTaper2DJoint, maxiterations, useRTM, breakLoop, ctx, seedtime, inversionType, 1, breakLoopEM, modelEM, configEM, modelCoordinatesEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, derivativesInversionEM);
             
             if (useRTM == 1) {
                 HOST_PRINT(commAll, "\nFinish inverse time migration after stage " << workflow.workflowStage + 1 << " in " << equationType << " 1 \n");
@@ -305,7 +313,7 @@ int main(int argc, char *argv[])
                 }           
             } 
 
-            inversionSingle.updateModel(commAll, dist, model, config, modelCoordinates, modelCoordinatesBig, workflow, dataMisfit, crossGradientDerivative, SLsearch, modelTaper2DJoint, maxiterations, useRTM, breakLoop, ctx, seedtime, inversionType, 1, breakLoopEM, modelEM, configEM, modelCoordinatesEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, derivativesInversionEM);
+            inversionSingle.updateModel(commAll, dist, model, config, modelCoordinates, workflow, dataMisfit, SLsearch, useRTM, breakLoop, inversionType, 1);
             
             if (inversionType > 2 && (breakLoop == false || breakLoopType == 2) && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflow.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
                 if (inversionType == 3) {
@@ -315,12 +323,12 @@ int main(int argc, char *argv[])
                 }            
             }            
             
-            inversionSingle.runExtra(commAll, dist, model, config, modelCoordinates, modelCoordinatesBig, workflow, dataMisfit, crossGradientDerivative, SLsearch, modelTaper2DJoint, maxiterations, useRTM, breakLoop, ctx, seedtime, inversionType, 1, breakLoopEM, modelEM, configEM, modelCoordinatesEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, derivativesInversionEM);
+            inversionSingle.runExtraModelling(commAll, dist, model, config, modelCoordinates, modelCoordinatesBig, workflow, dataMisfit, crossGradientDerivative, derivativesInversion, SLsearch, modelTaper2DJoint, maxiterations, useRTM, breakLoop, ctx, seedtime, inversionType, 1, breakLoopEM, modelEM, configEM, modelCoordinatesEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, derivativesInversionEM);
             
             /* --------------------------------------- */
             /*        Start the second inversion       */
             /* --------------------------------------- */            
-            inversionSingleEM.calcGradient(commAll, distEM, modelEM, configEM, modelCoordinatesEM, modelCoordinatesBigEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, SLsearchEM, modelTaper2DJoint, maxiterations, useRTMEM, breakLoopEM, ctx, seedtime, inversionTypeEM, 2, breakLoop, model, config, modelCoordinates, workflow, dataMisfit, crossGradientDerivative, derivativesInversion);   
+            inversionSingleEM.calcGradient(commAll, distEM, modelEM, configEM, modelCoordinatesEM, modelCoordinatesBigEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, derivativesInversionEM, SLsearchEM, modelTaper2DJoint, maxiterations, useRTMEM, breakLoopEM, ctx, seedtime, inversionTypeEM, 2, breakLoop, model, config, modelCoordinates, workflow, dataMisfit, crossGradientDerivative, derivativesInversion);   
            
             if (useRTMEM == 1) {
                 HOST_PRINT(commAll, "\nFinish inverse time migration after stage " << workflowEM.workflowStage + 1 << " in " << equationTypeEM << " 2 \n");
@@ -372,7 +380,7 @@ int main(int argc, char *argv[])
                 }
             } 
  
-            inversionSingleEM.updateModel(commAll, distEM, modelEM, configEM, modelCoordinatesEM, modelCoordinatesBigEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, SLsearchEM, modelTaper2DJoint, maxiterations, useRTMEM, breakLoopEM, ctx, seedtime, inversionTypeEM, 2, breakLoop, model, config, modelCoordinates, workflow, dataMisfit, crossGradientDerivative, derivativesInversionEM);    
+            inversionSingleEM.updateModel(commAll, distEM, modelEM, configEM, modelCoordinatesEM, workflowEM, dataMisfitEM, SLsearchEM, useRTMEM, breakLoopEM, inversionTypeEM, 2);    
                
             if (inversionTypeEM > 2 && (breakLoopEM == false || breakLoopType == 2) && (exchangeStrategy == 1 || exchangeStrategy == 2 || (workflowEM.iteration == maxiterations - 1 && (exchangeStrategy == 3 || exchangeStrategy == 5)))) {
                 if (inversionTypeEM == 3) {
@@ -382,7 +390,7 @@ int main(int argc, char *argv[])
                 }           
             }
 
-            inversionSingleEM.runExtra(commAll, distEM, modelEM, configEM, modelCoordinatesEM, modelCoordinatesBigEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, SLsearchEM, modelTaper2DJoint, maxiterations, useRTMEM, breakLoopEM, ctx, seedtime, inversionTypeEM, 2, breakLoop, model, config, modelCoordinates, workflow, dataMisfit, crossGradientDerivative, derivativesInversionEM);  
+            inversionSingleEM.runExtraModelling(commAll, distEM, modelEM, configEM, modelCoordinatesEM, modelCoordinatesBigEM, workflowEM, dataMisfitEM, crossGradientDerivativeEM, derivativesInversionEM, SLsearchEM, modelTaper2DJoint, maxiterations, useRTMEM, breakLoopEM, ctx, seedtime, inversionTypeEM, 2, breakLoop, model, config, modelCoordinates, workflow, dataMisfit, crossGradientDerivative, derivativesInversion);  
         } // end of loop over iterations 
     
         if (workflow.workflowStage < workflow.maxStage - 1) {
