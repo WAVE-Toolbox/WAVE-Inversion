@@ -1193,6 +1193,11 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradient(KITGPI::Misfit
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }       
     
+    if (config.getAndCatch("inversionType", 0) == 2 && config.getAndCatch("saveCrossGradientMisfit", 0) == 1) { 
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeXtemp, dataMisfitEM.getModelDerivativeX());  
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeYtemp, dataMisfitEM.getModelDerivativeY()); 
+    }
+    
     if (workflow.getInvertForDensity()) { 
         // cross gradient of density and vs   
         densitytemp *= 1 / density0mean;
@@ -1266,17 +1271,7 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITG
     Dyf = derivatives.getDyf();
     Dxf.scale(1.0 / DT);
     Dyf.scale(1.0 / DT);
-        
-    velocityStemp = model.getVelocityS(); 
-    
-    velocityStemp *= 1 / velocityS0mean;
-    
-    modelDerivativeXtemp = Dxf * velocityStemp;    
-    modelDerivativeYtemp = Dyf * velocityStemp;
-    
-    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
-    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);       
-              
+                
     scai::hmemo::ContextPtr ctx = model.getDensity().getContextPtr();
     scai::dmemo::DistributionPtr dist = model.getDensity().getDistributionPtr();  
                    
@@ -1301,7 +1296,22 @@ void KITGPI::Gradient::Viscoelastic<ValueType>::calcCrossGradientDerivative(KITG
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }   
-                             
+         
+    if (config.getAndCatch("inversionType", 0) == 2 && config.getAndCatch("saveCrossGradientMisfit", 0) == 1) { 
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeXtemp, dataMisfitEM.getModelDerivativeX());  
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeYtemp, dataMisfitEM.getModelDerivativeY()); 
+    } else {
+        velocityStemp = model.getVelocityS(); 
+        
+        velocityStemp *= 1 / velocityS0mean;
+        
+        modelDerivativeXtemp = Dxf * velocityStemp;    
+        modelDerivativeYtemp = Dyf * velocityStemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);   
+    }
+    
     if (workflow.getInvertForDensity()) {
         // derivative of cross gradient of density and vs with respect to density  
         tempYX = modelDerivativeXtemp * density; 

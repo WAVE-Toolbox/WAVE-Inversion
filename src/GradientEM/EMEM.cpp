@@ -903,6 +903,9 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit
     Dxf.scale(1.0 / DT);
     Dyf.scale(1.0 / DT);     
     
+    scai::hmemo::ContextPtr ctx = model.getDielectricPermittivity().getContextPtr();
+    scai::dmemo::DistributionPtr dist = model.getDielectricPermittivity().getDistributionPtr(); 
+                                 
     electricConductivitytemp = model.getElectricConductivity();
     dielectricPermittivitytemp = model.getDielectricPermittivity();  
         
@@ -922,10 +925,7 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit
     
     KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
     KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);  
-    
-    scai::hmemo::ContextPtr ctx = dielectricPermittivitytemp.getContextPtr();
-    scai::dmemo::DistributionPtr dist = dielectricPermittivitytemp.getDistributionPtr(); 
-                                                    
+                       
     if (workflow.getInvertForEpsilon() && exchangeStrategy != 0) {   
         // cross gradient of vs and modelDerivative    
         modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeX(), tempYX); 
@@ -941,7 +941,12 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit
     } else {
         this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }   
-                
+    
+    if (config.getAndCatch("inversionType", 0) == 2 && config.getAndCatch("saveCrossGradientMisfit", 0) == 1) { 
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeX(), modelDerivativeXtemp); 
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeY(), modelDerivativeYtemp); 
+    }
+    
     if (workflow.getInvertForSigma()) {
         // cross gradient of electricConductivity and modelDerivative  
         electricConductivitytemp *= 1 / electricConductivity0mean;
@@ -987,11 +992,8 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misf
     scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
         
-    dielectricPermittivitytemp = model.getDielectricPermittivity();
-    this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, model.getParameterisation());      
-                                     
-    scai::hmemo::ContextPtr ctx = dielectricPermittivitytemp.getContextPtr();
-    scai::dmemo::DistributionPtr dist = dielectricPermittivitytemp.getDistributionPtr();  
+    scai::hmemo::ContextPtr ctx = model.getDielectricPermittivity().getContextPtr();
+    scai::dmemo::DistributionPtr dist = model.getDielectricPermittivity().getDistributionPtr();  
         
     /* Get references to required derivatives matrices */
     scai::lama::CSRSparseMatrix<ValueType> Dxf;
@@ -1001,15 +1003,7 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misf
     Dyf = derivatives.getDyf();  
     Dxf.scale(1.0 / DT);
     Dyf.scale(1.0 / DT);      
-                               
-    dielectricPermittivitytemp *= 1 /dielectricPermittivity0mean;
-    
-    modelDerivativeXtemp = Dxf * dielectricPermittivitytemp;    
-    modelDerivativeYtemp = Dyf * dielectricPermittivitytemp;
-    
-    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
-    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);       
-              
+                          
     if (workflow.getInvertForEpsilon() && exchangeStrategy != 0) { 
         modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeX(), tempYX); 
         modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeY(), tempXY); 
@@ -1031,6 +1025,22 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misf
         this->initParameterisation(dielectricPermittivity, ctx, dist, 0.0);
     }        
             
+    if (config.getAndCatch("inversionType", 0) == 2 && config.getAndCatch("saveCrossGradientMisfit", 0) == 1) { 
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeX(), modelDerivativeXtemp); 
+        modelTaper2DJoint.applyGradientTransform1to2(dataMisfit.getModelDerivativeY(), modelDerivativeYtemp); 
+    } else { 
+        dielectricPermittivitytemp = model.getDielectricPermittivity();
+        this->applyParameterisation(dielectricPermittivitytemp, DielectricPermittivityVacuum, model.getParameterisation());      
+                                            
+        dielectricPermittivitytemp *= 1 /dielectricPermittivity0mean;
+        
+        modelDerivativeXtemp = Dxf * dielectricPermittivitytemp;    
+        modelDerivativeYtemp = Dyf * dielectricPermittivitytemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);    
+    }
+    
     if (workflow.getInvertForSigma()) {      
         // derivative of cross gradient with respect to electricConductivity   
         tempYX = modelDerivativeXtemp * electricConductivity; 

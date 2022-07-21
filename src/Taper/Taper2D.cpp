@@ -481,9 +481,7 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
  * \param config2 Seismic/EM config
  */
 template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeModelparameters(scai::dmemo::CommunicatorPtr commAll, KITGPI::Modelparameter::Modelparameter<ValueType> const &model2, KITGPI::Configuration::Configuration config2, KITGPI::Modelparameter::Modelparameter<ValueType> &model1, KITGPI::Configuration::Configuration config1, IndexType equationInd)
-{
-    double start_t = common::Walltime::get();
-    
+{    
     std::string equationType1 = config1.get<std::string>("equationType");
     std::transform(equationType1.begin(), equationType1.end(), equationType1.begin(), ::tolower);  
     bool isSeismic1 = Common::checkEquationType<ValueType>(equationType1); 
@@ -614,8 +612,6 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
             model1.setTauDielectricPermittivity(temp);
         }
     }     
-    double end_t = common::Walltime::get();
-    HOST_PRINT(commAll, "\nFinished exchange model in " << end_t - start_t << " sec.");
     HOST_PRINT(commAll, "\n=================================================\n");
 }
 

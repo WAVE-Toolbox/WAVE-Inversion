@@ -4,7 +4,7 @@ addpath('../common');
 
 modelName = 'EttlingerCB';
 observationType = 'Surface';
-equationType = 'Viscoelastic';
+equationType = 'ViscoSH';
 modelType = 'Inv';
 dimension=cellMerge({equationType,'2D'},0);
 configFilename=cellMerge({'configuration',modelName,observationType,dimension...
@@ -17,11 +17,11 @@ configTrueFilename=addfileSuffix(configTrueFilename,5);
 config=conf(configFilename);
 configTrue=conf(configTrueFilename);
 
-copy_inv = 0; copy_true_start = 0;
+copy_inv = 1; copy_true_start = 1;
 imagesave = 0;
 DIR_PATH_NEW = 'data/';
 invertParameterType = 'Field';
-bandPass = 'BP530MHz';
+bandPass = 'BP520Hz';
 NoisedB = '';
 sourceType = '';
 timeGain = '';

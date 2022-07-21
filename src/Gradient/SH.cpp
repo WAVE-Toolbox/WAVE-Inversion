@@ -972,6 +972,7 @@ void KITGPI::Gradient::SH<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<V
         // cross gradient of vs and EM model   
         modelTaper2DJoint.applyGradientTransform2to1(tempYX, dataMisfitEM.getModelDerivativeX());  
         modelTaper2DJoint.applyGradientTransform2to1(tempXY, dataMisfitEM.getModelDerivativeY());  
+        
         tempYX *= modelDerivativeYtemp;   
         tempXY *= modelDerivativeXtemp;
         
@@ -982,6 +983,11 @@ void KITGPI::Gradient::SH<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit<V
     } else {
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }       
+    
+    if (config.getAndCatch("inversionType", 0) == 2 && config.getAndCatch("saveCrossGradientMisfit", 0) == 1) { 
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeXtemp, dataMisfitEM.getModelDerivativeX());  
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeYtemp, dataMisfitEM.getModelDerivativeY()); 
+    } 
     
     if (workflow.getInvertForDensity()) { 
         // cross gradient of density and vs   
@@ -1043,6 +1049,7 @@ void KITGPI::Gradient::SH<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit
         // derivative of cross gradient of vs and EM model with respect to vs  
         modelTaper2DJoint.applyGradientTransform2to1(tempYX, dataMisfitEM.getModelDerivativeX());  
         modelTaper2DJoint.applyGradientTransform2to1(tempXY, dataMisfitEM.getModelDerivativeY());  
+        
         tempYX *= velocityS;   
         tempXY *= velocityS;
         
@@ -1060,16 +1067,21 @@ void KITGPI::Gradient::SH<ValueType>::calcCrossGradientDerivative(KITGPI::Misfit
         this->initParameterisation(velocityS, ctx, dist, 0.0);
     }   
         
-    velocityStemp = model.getVelocityS(); 
+    if (config.getAndCatch("inversionType", 0) == 2 && config.getAndCatch("saveCrossGradientMisfit", 0) == 1) { 
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeXtemp, dataMisfitEM.getModelDerivativeX());  
+        modelTaper2DJoint.applyGradientTransform2to1(modelDerivativeYtemp, dataMisfitEM.getModelDerivativeY()); 
+    } else {
+        velocityStemp = model.getVelocityS(); 
+        
+        velocityStemp *= 1 / velocityS0mean;
+        
+        modelDerivativeXtemp = Dxf * velocityStemp;    
+        modelDerivativeYtemp = Dyf * velocityStemp;
+        
+        KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
+        KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);   
+    }
     
-    velocityStemp *= 1 / velocityS0mean;
-    
-    modelDerivativeXtemp = Dxf * velocityStemp;    
-    modelDerivativeYtemp = Dyf * velocityStemp;
-    
-    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeXtemp, NX, NY, spatialLength);
-    KITGPI::Common::applyMedianFilterTo2DVector(modelDerivativeYtemp, NX, NY, spatialLength);       
-                                   
     if (workflow.getInvertForDensity()) {
         // derivative of cross gradient of density and vs with respect to density  
         tempYX = modelDerivativeXtemp * density; 
