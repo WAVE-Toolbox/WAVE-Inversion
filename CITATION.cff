@@ -1,0 +1,14 @@
+cff-version: v1.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Qin"
+  given-names: "Tan"
+  orcid: "https://orcid.org/0000-0001-8533-5763"
+- family-names: "Bohlen"
+  given-names: "Thomas"
+  orcid: "https://orcid.org/0000-0003-2845-9537"
+title: "WAVE-Inversion"
+version: 1.0
+doi: 10.5281/zenodo.6875824
+date-released: 2021-07-21
+url: "https://github.com/Tan-Qin-2019KIT/WAVE-Inversion"
