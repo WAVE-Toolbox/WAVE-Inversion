@@ -7,6 +7,16 @@ authors:
 - family-names: "Bohlen"
   given-names: "Thomas"
   orcid: "https://orcid.org/0000-0003-2845-9537"
+- family-names: "Wittkamp"
+  given-names: "Florian"
+- family-names: "Köllenberger"
+  given-names: "Leonard"
+- family-names: "Steinweg"
+  given-names: "Tilman"
+- family-names: "Habelitz"
+  given-names: "Peter"
+- family-names: "Duy"
+  given-names: "Hoang Hoang"
 title: "WAVE-Inversion"
 version: 1.0
 doi: 10.5281/zenodo.6875824

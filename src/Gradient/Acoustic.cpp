@@ -584,7 +584,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::scale(KITGPI::Modelparameter::Modelp
 {
     ValueType maxValue = 1;      
     
-    IndexType scaleGradient = config.get<IndexType>("scaleGradient");
+    IndexType scaleGradient = config.getAndCatch("scaleGradient", 1);
     if (scaleGradient != 0) {
         if (workflow.getInvertForVp() && velocityP.maxNorm() != 0) {
             if (scaleGradient == 1) {
@@ -902,7 +902,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::calcModelDerivative(KITGPI::Misfit::
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     
     /* Get references to required derivatives matrices */
     scai::lama::CSRSparseMatrix<ValueType> Dxf;
@@ -968,7 +968,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::calcCrossGradient(KITGPI::Misfit::Mi
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     
     /* Get references to required derivatives matrices */
     scai::lama::CSRSparseMatrix<ValueType> Dxf;
@@ -1062,7 +1062,7 @@ void KITGPI::Gradient::Acoustic<ValueType>::calcCrossGradientDerivative(KITGPI::
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
                   
     /* Get references to required derivatives matrices */
     scai::lama::CSRSparseMatrix<ValueType> Dxf;

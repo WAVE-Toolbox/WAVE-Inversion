@@ -33,8 +33,8 @@ KITGPI::InversionSingle<ValueType>::InversionSingle(KITGPI::Configuration::Confi
         gradientKernel = config.getAndCatch("gradientKernel", 0); 
         decomposition = config.getAndCatch("decomposition", 0); 
         snapType = config.getAndCatch("snapType", 0);
-        breakLoopType = config.get<IndexType>("breakLoopType");
-        exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+        breakLoopType = config.getAndCatch("breakLoopType", 0);
+        exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
         
         derivatives = ForwardSolver::Derivatives::Factory<ValueType>::Create(dimension);
         solver = ForwardSolver::Factory<ValueType>::Create(dimension, equationType);

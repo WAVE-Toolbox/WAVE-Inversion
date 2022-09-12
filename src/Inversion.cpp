@@ -113,13 +113,13 @@ int main(int argc, char *argv[])
     }
     
     /* exchangeStrategy: 0 = self-restraint, 1 = self-restraint + mutual restraint (single parameter), 2 = self-restraint + mutual restraint (all parameters), 3 = self-restraint + mutual restraint + staged exchange, 4 = self-restraint + mutual restraint + sequential exchange, 5 = mutual restraint + staged exchange, 6 = mutual restraint + sequential exchange. */
-    IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
-    IndexType exchangeStrategyEM = configEM.get<IndexType>("exchangeStrategy");
+    IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
+    IndexType exchangeStrategyEM = configEM.getAndCatch("exchangeStrategy", 0);
     SCAI_ASSERT_ERROR(exchangeStrategy == exchangeStrategyEM, "exchangeStrategy != exchangeStrategyEM"); // check whether exchangeStrategy has been applied successfully.
         
     /*breakLoop: 0 = break iteration loop of which the abort criterion is true while do not influence another one. 0 is the same as individual inversion. 1 = break iteration loop if one of the two abort criterion is true. 2 = break iteration loop if both the two abort criterion is true. */
-    IndexType breakLoopType = config.get<IndexType>("breakLoopType"); 
-    IndexType breakLoopTypeEM = configEM.get<IndexType>("breakLoopType");
+    IndexType breakLoopType = config.getAndCatch("breakLoopType", 0); 
+    IndexType breakLoopTypeEM = configEM.getAndCatch("breakLoopType", 0);
     SCAI_ASSERT_ERROR(breakLoopType == breakLoopTypeEM, "breakLoopType != breakLoopTypeEM"); // check whether breakLoopType has been applied successfully.
     if (inversionType == 1 || inversionTypeEM == 1 || exchangeStrategy > 2) {
         SCAI_ASSERT_ERROR(breakLoopType == 0, "breakLoopType != 0"); // check whether breakLoopType has been applied successfully.

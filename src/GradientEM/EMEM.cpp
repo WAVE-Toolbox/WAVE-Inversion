@@ -558,7 +558,7 @@ void KITGPI::Gradient::EMEM<ValueType>::scale(KITGPI::Modelparameter::Modelparam
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
     ValueType maxValue = 1;      
     
-    IndexType scaleGradient = config.get<IndexType>("scaleGradient");
+    IndexType scaleGradient = config.getAndCatch("scaleGradient", 1);
     if (scaleGradient != 0) {
         if (workflow.getInvertForSigma() && electricConductivity.maxNorm() != 0) {  
             if (scaleGradient == 1) {
@@ -819,7 +819,7 @@ void KITGPI::Gradient::EMEM<ValueType>::calcModelDerivative(KITGPI::Misfit::Misf
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
     
@@ -890,7 +890,7 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradient(KITGPI::Misfit::Misfit
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
     
@@ -989,7 +989,7 @@ void KITGPI::Gradient::EMEM<ValueType>::calcCrossGradientDerivative(KITGPI::Misf
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
         
     scai::hmemo::ContextPtr ctx = model.getDielectricPermittivity().getContextPtr();

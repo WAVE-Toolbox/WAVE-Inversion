@@ -422,7 +422,7 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangePe
     mask.unaryOp(mask, common::UnaryOp::SIGN);
     mask.unaryOp(mask, common::UnaryOp::ABS); 
     
-    IndexType exchangeStrategy = config1.get<IndexType>("exchangeStrategy"); 
+    IndexType exchangeStrategy = config1.getAndCatch("exchangeStrategy", 0); 
     if (exchangeStrategy == 2) {
         // case 2: exchange all of the petrophysical parameters 
         porositytemp = model1.getPorosity();            
@@ -485,7 +485,7 @@ template <typename ValueType> void KITGPI::Taper::Taper2D<ValueType>::exchangeMo
     std::string equationType1 = config1.get<std::string>("equationType");
     std::transform(equationType1.begin(), equationType1.end(), equationType1.begin(), ::tolower);  
     bool isSeismic1 = Common::checkEquationType<ValueType>(equationType1); 
-    IndexType exchangeStrategy1 = config1.get<IndexType>("exchangeStrategy");  
+    IndexType exchangeStrategy1 = config1.getAndCatch("exchangeStrategy", 0);  
     std::string equationType2 = config2.get<std::string>("equationType");
     std::transform(equationType2.begin(), equationType2.end(), equationType2.begin(), ::tolower);  
     bool isSeismic2 = Common::checkEquationType<ValueType>(equationType2); 

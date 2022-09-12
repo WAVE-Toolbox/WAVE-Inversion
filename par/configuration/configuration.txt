@@ -113,7 +113,7 @@ workflowFilename=workflow/workflow.txt # location/basename of workflow file
 steplengthInit=0.03                    # initial steplength
 steplengthMin=0.001                    # minimum step length
 steplengthMax=0.1                      # maximum step length
-maxStepCalc=4                          # maximum number of additional forward calculations to find a proper step length
+maxStepCalc=2                          # maximum number of additional forward calculations to find a proper step length
 scalingFactor=2                        # factor for multiplication or division of test step length
 testShotIncr=1                         # increment of test shots
 

@@ -680,7 +680,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::scale(KITGPI::Modelparameter::Model
     ValueType const TauElectricConductivityReference = model.getTauElectricConductivityReference(); 
     ValueType maxValue = 1;      
           
-    IndexType scaleGradient = config.get<IndexType>("scaleGradient");
+    IndexType scaleGradient = config.getAndCatch("scaleGradient", 1);
     if (scaleGradient != 0) {       
         if (workflow.getInvertForSigma() && electricConductivity.maxNorm() != 0) {  
             if (scaleGradient == 1) {
@@ -1172,7 +1172,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::calcModelDerivative(KITGPI::Misfit:
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
     ValueType const TauDielectricPermittivityReference = model.getTauDielectricPermittivityReference();
@@ -1275,7 +1275,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::calcCrossGradient(KITGPI::Misfit::M
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
     ValueType const ElectricConductivityReference = model.getElectricConductivityReference();
     ValueType const TauDielectricPermittivityReference = model.getTauDielectricPermittivityReference();
@@ -1424,7 +1424,7 @@ void KITGPI::Gradient::ViscoEMEM<ValueType>::calcCrossGradientDerivative(KITGPI:
     scai::IndexType NX = Common::getFromStreamFile<IndexType>(config, "NX");
     scai::IndexType NY = Common::getFromStreamFile<IndexType>(config, "NY");
     scai::IndexType spatialLength = config.get<IndexType>("spatialFDorder");
-    scai::IndexType exchangeStrategy = config.get<IndexType>("exchangeStrategy");
+    scai::IndexType exchangeStrategy = config.getAndCatch("exchangeStrategy", 0);
     ValueType const DielectricPermittivityVacuum = model.getDielectricPermittivityVacuum();
                         
     scai::hmemo::ContextPtr ctx = model.getDielectricPermittivityRealEffective().getContextPtr();
